@@ -1,0 +1,136 @@
+{
+  "id": "helio/payments-repo-agent@1.0.0",
+  "displayName": "Helio Payments Repository Agent",
+  "description": "Specializes repository assistance for the fictional payments service.",
+  "abstract": false,
+  "lineage": [
+    "system/object@1.0.0",
+    "helio/enterprise-agent@1.0.0",
+    "helio/repo-agent@1.0.0",
+    "helio/payments-repo-agent@1.0.0"
+  ],
+  "interfaces": [
+    "helio/interfaces/repository-observer@1.0.0"
+  ],
+  "slots": {
+    "organization": "context/organization.md",
+    "repository": "context/repository.md",
+    "safetyPolicy": "context/safety-policy.md"
+  },
+  "workingNorms": [
+    "Preserve a clear audit trail for material decisions.",
+    "State uncertainty and route work to an accountable owner when authority is unclear.",
+    "Prefer evidence from tests, diffs, and version control over recollection."
+  ],
+  "contextFiles": [
+    "context/organization.md",
+    "context/safety-policy.md",
+    "context/repository.md",
+    "context/payments-service.md"
+  ],
+  "skills": [
+    {
+      "dispatchName": "payments-repo-agent.repository-status",
+      "contractId": "helio/skills/repository-status@1.0.0",
+      "implementationId": "helio/skills/payments-repository-status@1.0.0",
+      "description": "Report payments-service health with contract and reconciliation evidence.",
+      "instructions": "Apply the repository-status contract, then include payment-contract compatibility, reconciliation checks, and rollback readiness.\nDo not report the service healthy when any required financial-control signal is unavailable.\n",
+      "inputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022focus\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022additionalProperties\u0022:false}",
+      "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022risks\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022status\u0022,\u0022evidence\u0022,\u0022risks\u0022]}",
+      "contextFiles": [
+        "context/organization.md",
+        "context/safety-policy.md",
+        "context/repository.md",
+        "context/payments-service.md"
+      ],
+      "provenance": [
+        {
+          "field": "skill.contract",
+          "source": "helio/skills/repository-status@1.0.0"
+        },
+        {
+          "field": "skill.implementation",
+          "source": "helio/skills/payments-repository-status@1.0.0"
+        }
+      ]
+    }
+  ],
+  "provenance": [
+    {
+      "field": "displayName",
+      "source": "system/object@1.0.0"
+    },
+    {
+      "field": "description",
+      "source": "system/object@1.0.0"
+    },
+    {
+      "field": "displayName",
+      "source": "helio/enterprise-agent@1.0.0"
+    },
+    {
+      "field": "description",
+      "source": "helio/enterprise-agent@1.0.0"
+    },
+    {
+      "field": "slots.organization",
+      "source": "helio/enterprise-agent@1.0.0"
+    },
+    {
+      "field": "slots.safetyPolicy",
+      "source": "helio/enterprise-agent@1.0.0"
+    },
+    {
+      "field": "workingNorms",
+      "source": "helio/enterprise-agent@1.0.0"
+    },
+    {
+      "field": "workingNorms",
+      "source": "helio/enterprise-agent@1.0.0"
+    },
+    {
+      "field": "contextFiles",
+      "source": "helio/enterprise-agent@1.0.0"
+    },
+    {
+      "field": "contextFiles",
+      "source": "helio/enterprise-agent@1.0.0"
+    },
+    {
+      "field": "displayName",
+      "source": "helio/repo-agent@1.0.0"
+    },
+    {
+      "field": "description",
+      "source": "helio/repo-agent@1.0.0"
+    },
+    {
+      "field": "slots.repository",
+      "source": "helio/repo-agent@1.0.0"
+    },
+    {
+      "field": "workingNorms",
+      "source": "helio/repo-agent@1.0.0"
+    },
+    {
+      "field": "contextFiles",
+      "source": "helio/repo-agent@1.0.0"
+    },
+    {
+      "field": "interfaces.helio/interfaces/repository-observer@1.0.0",
+      "source": "helio/repo-agent@1.0.0"
+    },
+    {
+      "field": "displayName",
+      "source": "helio/payments-repo-agent@1.0.0"
+    },
+    {
+      "field": "description",
+      "source": "helio/payments-repo-agent@1.0.0"
+    },
+    {
+      "field": "contextFiles",
+      "source": "helio/payments-repo-agent@1.0.0"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+schemaVersion: 1
+kind: agent
+id: helio/repo-agent@1.0.0
+displayName: Helio Repository Agent
+description: Applies Helio delivery practices within a software repository.
+abstract: true
+extends: helio/enterprise-agent@1.0.0
+implements:
+  - helio/interfaces/repository-observer@1.0.0
+slots:
+  repository: context/repository.md
+workingNorms:
+  - Prefer evidence from tests, diffs, and version control over recollection.
+contextFiles:
+  - context/repository.md
+skills:
+  - ref: helio/skills/repository-status@1.0.0

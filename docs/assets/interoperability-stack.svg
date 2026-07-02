@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="420" viewBox="0 0 940 420" role="img" aria-labelledby="title desc">
+  <title id="title">TypeFerence and ARD interoperability stack</title>
+  <desc id="desc">A canonical TypeFerence source compiles to separate Codex, Copilot, Cursor, and MCP artifacts, each published as a distinct ARD catalog entry.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#5b6079"/></marker>
+    <style>.box{rx:14;stroke-width:3}.title{font:700 22px Arial,sans-serif;fill:#171a2b;text-anchor:middle}.sub{font:15px Arial,sans-serif;fill:#5b6079;text-anchor:middle}.white{fill:white}.line{stroke:#5b6079;stroke-width:3;fill:none;marker-end:url(#arrow)}</style>
+  </defs>
+  <rect class="box" x="300" y="18" width="340" height="72" fill="#171a2b" stroke="#171a2b"/>
+  <text class="title white" x="470" y="49">TypeFerence source</text><text class="sub white" x="470" y="74">canonical + governed</text>
+  <path class="line" d="M470 90L100 148"/><path class="line" d="M470 90L345 148"/><path class="line" d="M470 90L595 148"/><path class="line" d="M470 90L840 148"/>
+  <g><rect class="box" x="10" y="150" width="180" height="72" fill="#e9ecff" stroke="#4455aa"/><text class="title" x="100" y="181">Codex bundle</text><text class="sub" x="100" y="205">target-specific</text></g>
+  <g><rect class="box" x="255" y="150" width="180" height="72" fill="#e9ecff" stroke="#4455aa"/><text class="title" x="345" y="181">Copilot bundle</text><text class="sub" x="345" y="205">target-specific</text></g>
+  <g><rect class="box" x="505" y="150" width="180" height="72" fill="#e9ecff" stroke="#4455aa"/><text class="title" x="595" y="181">Cursor bundle</text><text class="sub" x="595" y="205">target-specific</text></g>
+  <g><rect class="box" x="750" y="150" width="180" height="72" fill="#e9ecff" stroke="#4455aa"/><text class="title" x="840" y="181">MCP card</text><text class="sub" x="840" y="205">callable protocol</text></g>
+  <path class="line" d="M100 222L310 280"/><path class="line" d="M345 222L400 280"/><path class="line" d="M595 222L540 280"/><path class="line" d="M840 222L630 280"/>
+  <rect class="box" x="160" y="282" width="620" height="76" fill="#f1e9ff" stroke="#8154b5"/>
+  <text class="title" x="470" y="314">ARD catalog</text><text class="sub" x="470" y="340">canonical source entry + separately versioned target entries</text>
+  <path class="line" d="M470 358L470 390"/><text class="sub" x="470" y="414">consumer selects a compatible artifact or protocol</text>
+</svg>

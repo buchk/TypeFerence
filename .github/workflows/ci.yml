@@ -1,0 +1,30 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-test-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: dotnet restore TypeFerence.slnx
+      - run: dotnet build TypeFerence.slnx --no-restore --configuration Release
+      - run: dotnet test TypeFerence.slnx --no-build --configuration Release
+      - run: dotnet src/TypeFerence.Cli/bin/Release/net10.0/typeference.dll build examples/helio --target all --out dist-ci-1 --emit-ard --publisher-domain helio.example
+      - run: dotnet src/TypeFerence.Cli/bin/Release/net10.0/typeference.dll build examples/helio --target all --out dist-ci-2 --emit-ard --publisher-domain helio.example
+      - run: diff -qr dist-ci-1 dist-ci-2
+      - run: pip install -r requirements-docs.txt
+      - run: python tools/render_whitepaper.py
+      - run: cp output/pdf/typeference-whitepaper.pdf /tmp/typeference-whitepaper-first.pdf
+      - run: python tools/render_whitepaper.py
+      - run: cmp /tmp/typeference-whitepaper-first.pdf output/pdf/typeference-whitepaper.pdf
+      - run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - run: pdfinfo output/pdf/typeference-whitepaper.pdf

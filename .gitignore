@@ -1,0 +1,8 @@
+bin/
+obj/
+tmp/pdfs/
+*.user
+*.suo
+.vs/
+__pycache__/
+*.pyc

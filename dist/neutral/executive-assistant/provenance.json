@@ -1,0 +1,78 @@
+[
+  {
+    "field": "displayName",
+    "source": "system/object@1.0.0"
+  },
+  {
+    "field": "description",
+    "source": "system/object@1.0.0"
+  },
+  {
+    "field": "displayName",
+    "source": "helio/enterprise-agent@1.0.0"
+  },
+  {
+    "field": "description",
+    "source": "helio/enterprise-agent@1.0.0"
+  },
+  {
+    "field": "slots.organization",
+    "source": "helio/enterprise-agent@1.0.0"
+  },
+  {
+    "field": "slots.safetyPolicy",
+    "source": "helio/enterprise-agent@1.0.0"
+  },
+  {
+    "field": "workingNorms",
+    "source": "helio/enterprise-agent@1.0.0"
+  },
+  {
+    "field": "workingNorms",
+    "source": "helio/enterprise-agent@1.0.0"
+  },
+  {
+    "field": "contextFiles",
+    "source": "helio/enterprise-agent@1.0.0"
+  },
+  {
+    "field": "contextFiles",
+    "source": "helio/enterprise-agent@1.0.0"
+  },
+  {
+    "field": "displayName",
+    "source": "helio/person-agent@1.0.0"
+  },
+  {
+    "field": "description",
+    "source": "helio/person-agent@1.0.0"
+  },
+  {
+    "field": "slots.principal",
+    "source": "helio/person-agent@1.0.0"
+  },
+  {
+    "field": "workingNorms",
+    "source": "helio/person-agent@1.0.0"
+  },
+  {
+    "field": "contextFiles",
+    "source": "helio/person-agent@1.0.0"
+  },
+  {
+    "field": "interfaces.helio/interfaces/correspondent@1.0.0",
+    "source": "helio/person-agent@1.0.0"
+  },
+  {
+    "field": "displayName",
+    "source": "helio/executive-assistant@1.0.0"
+  },
+  {
+    "field": "description",
+    "source": "helio/executive-assistant@1.0.0"
+  },
+  {
+    "field": "contextFiles",
+    "source": "helio/executive-assistant@1.0.0"
+  }
+]

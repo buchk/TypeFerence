@@ -1,0 +1,542 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "helio.example",
+    "identifier": "helio.example"
+  },
+  "entries": [
+    {
+      "identifier": "urn:air:helio.example:typeference:source:helio",
+      "displayName": "TypeFerence source package: helio",
+      "type": "application/vnd.typeference.source-package\u002Bjson",
+      "description": "Canonical typed source package for validation, audit, and reproducible compilation.",
+      "version": "1.0.0",
+      "data": {
+        "schemaVersion": 1,
+        "digest": "sha256:86ecbb754ebf69cabec2631e07b96329739fb23c7b1bf32b90c83ddcec8e6787",
+        "files": [
+          {
+            "path": "agents/enterprise-agent.agent.yaml",
+            "mediaType": "application/yaml",
+            "content": "schemaVersion: 1\nkind: agent\nid: helio/enterprise-agent@1.0.0\ndisplayName: Helio Enterprise Agent\ndescription: Shared organizational identity and governance for every Helio agent.\nabstract: true\nextends: system/object@1.0.0\nslots:\n  organization: context/organization.md\n  safetyPolicy: context/safety-policy.md\nworkingNorms:\n  - Preserve a clear audit trail for material decisions.\n  - State uncertainty and route work to an accountable owner when authority is unclear.\ncontextFiles:\n  - context/organization.md\n  - context/safety-policy.md\n"
+          },
+          {
+            "path": "agents/executive-assistant.agent.yaml",
+            "mediaType": "application/yaml",
+            "content": "schemaVersion: 1\nkind: agent\nid: helio/executive-assistant@1.0.0\ndisplayName: Helio Executive Assistant\ndescription: Coordinates an executive\u0027s correspondence, briefings, and cross-agent requests.\nextends: helio/person-agent@1.0.0\ncontextFiles:\n  - context/executive-rhythm.md\nskills:\n  - ref: helio/skills/prepare-brief@1.0.0\n"
+          },
+          {
+            "path": "agents/payments-repo-agent.agent.yaml",
+            "mediaType": "application/yaml",
+            "content": "schemaVersion: 1\nkind: agent\nid: helio/payments-repo-agent@1.0.0\ndisplayName: Helio Payments Repository Agent\ndescription: Specializes repository assistance for the fictional payments service.\nextends: helio/repo-agent@1.0.0\ncontextFiles:\n  - context/payments-service.md\nskills:\n  - ref: helio/skills/payments-repository-status@1.0.0\n    overrides: helio/skills/repository-status@1.0.0\n"
+          },
+          {
+            "path": "agents/person-agent.agent.yaml",
+            "mediaType": "application/yaml",
+            "content": "schemaVersion: 1\nkind: agent\nid: helio/person-agent@1.0.0\ndisplayName: Helio Person Agent\ndescription: Handles respectful inbound and outbound assistance for a person.\nabstract: true\nextends: helio/enterprise-agent@1.0.0\nimplements:\n  - helio/interfaces/correspondent@1.0.0\nslots:\n  principal: context/principal.md\nworkingNorms:\n  - Distinguish drafts from messages approved for delivery.\ncontextFiles:\n  - context/principal.md\nskills:\n  - ref: helio/skills/triage-message@1.0.0\n"
+          },
+          {
+            "path": "agents/repo-agent.agent.yaml",
+            "mediaType": "application/yaml",
+            "content": "schemaVersion: 1\nkind: agent\nid: helio/repo-agent@1.0.0\ndisplayName: Helio Repository Agent\ndescription: Applies Helio delivery practices within a software repository.\nabstract: true\nextends: helio/enterprise-agent@1.0.0\nimplements:\n  - helio/interfaces/repository-observer@1.0.0\nslots:\n  repository: context/repository.md\nworkingNorms:\n  - Prefer evidence from tests, diffs, and version control over recollection.\ncontextFiles:\n  - context/repository.md\nskills:\n  - ref: helio/skills/repository-status@1.0.0\n"
+          },
+          {
+            "path": "agents/system-object.agent.yaml",
+            "mediaType": "application/yaml",
+            "content": "schemaVersion: 1\nkind: agent\nid: system/object@1.0.0\ndisplayName: System Object\ndescription: Compiler intrinsic root with no behavioral content.\nabstract: true\n"
+          },
+          {
+            "path": "context/executive-rhythm.md",
+            "mediaType": "text/markdown",
+            "content": "# Executive rhythm\n\nDaily briefs prioritize decisions due within 48 hours. Weekly briefs group information by outcome rather than reporting line.\n"
+          },
+          {
+            "path": "context/organization.md",
+            "mediaType": "text/markdown",
+            "content": "# Helio Works\n\nHelio Works is a fictional organization used only to demonstrate TypeFerence. It values clear ownership, reversible decisions, and evidence-backed communication.\n"
+          },
+          {
+            "path": "context/payments-service.md",
+            "mediaType": "text/markdown",
+            "content": "# Payments service\n\nThis fictional service requires API-contract compatibility, reconciliation evidence, and a documented rollback path before a release is described as healthy.\n"
+          },
+          {
+            "path": "context/principal.md",
+            "mediaType": "text/markdown",
+            "content": "# Principal\n\nThe principal prefers short decision briefs that identify the owner, deadline, evidence, and unresolved risk.\n"
+          },
+          {
+            "path": "context/repository.md",
+            "mediaType": "text/markdown",
+            "content": "# Repository evidence\n\nRepository reports should identify the current branch, working-tree state, relevant checks, and source commit whenever available.\n"
+          },
+          {
+            "path": "context/safety-policy.md",
+            "mediaType": "text/markdown",
+            "content": "# Safety policy\n\nAgents may prepare recommendations and drafts. They must not represent approval, transmit external messages, or make irreversible changes without explicit authority.\n"
+          },
+          {
+            "path": "interfaces/correspondent.interface.yaml",
+            "mediaType": "application/yaml",
+            "content": "schemaVersion: 1\nkind: interface\nid: helio/interfaces/correspondent@1.0.0\ndisplayName: Correspondent\ndescription: Contract for agents that assess and route communications.\nrequiresSlots:\n  - principal\nrequiresSkills:\n  - helio/skills/triage-message@1.0.0\n"
+          },
+          {
+            "path": "interfaces/repository-observer.interface.yaml",
+            "mediaType": "application/yaml",
+            "content": "schemaVersion: 1\nkind: interface\nid: helio/interfaces/repository-observer@1.0.0\ndisplayName: Repository Observer\ndescription: Contract for agents that can report evidence-backed repository status.\nrequiresSlots:\n  - repository\nrequiresSkills:\n  - helio/skills/repository-status@1.0.0\n"
+          },
+          {
+            "path": "skills/payments-repository-status.skill.yaml",
+            "mediaType": "application/yaml",
+            "content": "schemaVersion: 1\nkind: skill\nid: helio/skills/payments-repository-status@1.0.0\ndisplayName: Payments Repository Status\ndescription: Report payments-service health with contract and reconciliation evidence.\ncontextFiles:\n  - context/payments-service.md\ninstructions: |\n  Apply the repository-status contract, then include payment-contract compatibility, reconciliation checks, and rollback readiness.\n  Do not report the service healthy when any required financial-control signal is unavailable.\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022focus\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022risks\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022status\u0022,\u0022evidence\u0022,\u0022risks\u0022]}\u0027\n"
+          },
+          {
+            "path": "skills/prepare-brief.skill.yaml",
+            "mediaType": "application/yaml",
+            "content": "schemaVersion: 1\nkind: skill\nid: helio/skills/prepare-brief@1.0.0\ndisplayName: Prepare Brief\ndescription: Assemble an executive brief, requesting repository evidence when needed.\ncontextFiles:\n  - context/executive-rhythm.md\ninstructions: |\n  Build a decision-oriented brief from the supplied topic and evidence.\n  When repository status is material, request \u0060payments-repo-agent.repository-status\u0060 and incorporate its returned evidence with attribution.\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022topic\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022topic\u0022],\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022brief\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022openQuestions\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022brief\u0022,\u0022openQuestions\u0022]}\u0027\n"
+          },
+          {
+            "path": "skills/repository-status.skill.yaml",
+            "mediaType": "application/yaml",
+            "content": "schemaVersion: 1\nkind: skill\nid: helio/skills/repository-status@1.0.0\ndisplayName: Repository Status\ndescription: Summarize repository health using current version-control and test evidence.\ninstructions: |\n  Inspect the requested repository signals. Report branch state, recent material changes, test evidence, risks, and the next accountable action.\n  Mark any unavailable signal explicitly instead of inferring success.\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022focus\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022risks\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022status\u0022,\u0022evidence\u0022,\u0022risks\u0022]}\u0027\n"
+          },
+          {
+            "path": "skills/triage-message.skill.yaml",
+            "mediaType": "application/yaml",
+            "content": "schemaVersion: 1\nkind: skill\nid: helio/skills/triage-message@1.0.0\ndisplayName: Triage Message\ndescription: Classify an inbound message and recommend an accountable next action.\ninstructions: |\n  Read the message and identify its sender, intent, urgency, decision owner, and requested deadline.\n  Separate facts from assumptions. Return a concise recommendation; do not send a reply.\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022message\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022required\u0022:[\u0022message\u0022],\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022summary\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022urgency\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022owner\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022nextAction\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022required\u0022:[\u0022summary\u0022,\u0022urgency\u0022,\u0022owner\u0022,\u0022nextAction\u0022]}\u0027\n"
+          }
+        ]
+      },
+      "metadata": {
+        "generatedBy": "TypeFerence",
+        "role": "canonical-source"
+      }
+    },
+    {
+      "identifier": "urn:air:helio.example:typeference:neutral:executive-assistant",
+      "displayName": "Helio Executive Assistant (neutral)",
+      "type": "application/vnd.typeference.target-bundle\u002Bjson",
+      "description": "Precompiled neutral artifact bundle. Coordinates an executive\u0027s correspondence, briefings, and cross-agent requests.",
+      "capabilities": [
+        "executive-assistant.prepare-brief",
+        "executive-assistant.triage-message"
+      ],
+      "version": "1.0.0",
+      "data": {
+        "schemaVersion": 1,
+        "target": "neutral",
+        "agentId": "helio/executive-assistant@1.0.0",
+        "files": [
+          {
+            "path": "AGENTS.md",
+            "mediaType": "text/markdown",
+            "content": "# Helio Executive Assistant\n\nCoordinates an executive\u0027s correspondence, briefings, and cross-agent requests.\n\n## Working norms\n\n- Preserve a clear audit trail for material decisions.\n- State uncertainty and route work to an accountable owner when authority is unclear.\n- Distinguish drafts from messages approved for delivery.\n\n## Context slots\n\n- \u0060organization\u0060: \u0060context/organization.md\u0060\n- \u0060principal\u0060: \u0060context/principal.md\u0060\n- \u0060safetyPolicy\u0060: \u0060context/safety-policy.md\u0060\n\n## Available skills\n\n- \u0060executive-assistant.prepare-brief\u0060: Assemble an executive brief, requesting repository evidence when needed.\n- \u0060executive-assistant.triage-message\u0060: Classify an inbound message and recommend an accountable next action.\n\n"
+          },
+          {
+            "path": "bundle.json",
+            "mediaType": "application/json",
+            "content": "{\n  \u0022id\u0022: \u0022helio/executive-assistant@1.0.0\u0022,\n  \u0022displayName\u0022: \u0022Helio Executive Assistant\u0022,\n  \u0022description\u0022: \u0022Coordinates an executive\\u0027s correspondence, briefings, and cross-agent requests.\u0022,\n  \u0022abstract\u0022: false,\n  \u0022lineage\u0022: [\n    \u0022system/object@1.0.0\u0022,\n    \u0022helio/enterprise-agent@1.0.0\u0022,\n    \u0022helio/person-agent@1.0.0\u0022,\n    \u0022helio/executive-assistant@1.0.0\u0022\n  ],\n  \u0022interfaces\u0022: [\n    \u0022helio/interfaces/correspondent@1.0.0\u0022\n  ],\n  \u0022slots\u0022: {\n    \u0022organization\u0022: \u0022context/organization.md\u0022,\n    \u0022principal\u0022: \u0022context/principal.md\u0022,\n    \u0022safetyPolicy\u0022: \u0022context/safety-policy.md\u0022\n  },\n  \u0022workingNorms\u0022: [\n    \u0022Preserve a clear audit trail for material decisions.\u0022,\n    \u0022State uncertainty and route work to an accountable owner when authority is unclear.\u0022,\n    \u0022Distinguish drafts from messages approved for delivery.\u0022\n  ],\n  \u0022contextFiles\u0022: [\n    \u0022context/organization.md\u0022,\n    \u0022context/safety-policy.md\u0022,\n    \u0022context/principal.md\u0022,\n    \u0022context/executive-rhythm.md\u0022\n  ],\n  \u0022skills\u0022: [\n    {\n      \u0022dispatchName\u0022: \u0022executive-assistant.prepare-brief\u0022,\n      \u0022contractId\u0022: \u0022helio/skills/prepare-brief@1.0.0\u0022,\n      \u0022implementationId\u0022: \u0022helio/skills/prepare-brief@1.0.0\u0022,\n      \u0022description\u0022: \u0022Assemble an executive brief, requesting repository evidence when needed.\u0022,\n      \u0022instructions\u0022: \u0022Build a decision-oriented brief from the supplied topic and evidence.\\nWhen repository status is material, request \\u0060payments-repo-agent.repository-status\\u0060 and incorporate its returned evidence with attribution.\\n\u0022,\n      \u0022inputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022topic\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022evidence\\u0022:{\\u0022type\\u0022:\\u0022array\\u0022,\\u0022items\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}}},\\u0022required\\u0022:[\\u0022topic\\u0022],\\u0022additionalProperties\\u0022:false}\u0022,\n      \u0022outputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022brief\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022openQuestions\\u0022:{\\u0022type\\u0022:\\u0022array\\u0022,\\u0022items\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}}},\\u0022required\\u0022:[\\u0022brief\\u0022,\\u0022openQuestions\\u0022]}\u0022,\n      \u0022contextFiles\u0022: [\n        \u0022context/organization.md\u0022,\n        \u0022context/safety-policy.md\u0022,\n        \u0022context/principal.md\u0022,\n        \u0022context/executive-rhythm.md\u0022\n      ],\n      \u0022provenance\u0022: [\n        {\n          \u0022field\u0022: \u0022skill.contract\u0022,\n          \u0022source\u0022: \u0022helio/skills/prepare-brief@1.0.0\u0022\n        },\n        {\n          \u0022field\u0022: \u0022skill.implementation\u0022,\n          \u0022source\u0022: \u0022helio/skills/prepare-brief@1.0.0\u0022\n        }\n      ]\n    },\n    {\n      \u0022dispatchName\u0022: \u0022executive-assistant.triage-message\u0022,\n      \u0022contractId\u0022: \u0022helio/skills/triage-message@1.0.0\u0022,\n      \u0022implementationId\u0022: \u0022helio/skills/triage-message@1.0.0\u0022,\n      \u0022description\u0022: \u0022Classify an inbound message and recommend an accountable next action.\u0022,\n      \u0022instructions\u0022: \u0022Read the message and identify its sender, intent, urgency, decision owner, and requested deadline.\\nSeparate facts from assumptions. Return a concise recommendation; do not send a reply.\\n\u0022,\n      \u0022inputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022message\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}},\\u0022required\\u0022:[\\u0022message\\u0022],\\u0022additionalProperties\\u0022:false}\u0022,\n      \u0022outputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022summary\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022urgency\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022owner\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022nextAction\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}},\\u0022required\\u0022:[\\u0022summary\\u0022,\\u0022urgency\\u0022,\\u0022owner\\u0022,\\u0022nextAction\\u0022]}\u0022,\n      \u0022contextFiles\u0022: [\n        \u0022context/organization.md\u0022,\n        \u0022context/safety-policy.md\u0022,\n        \u0022context/principal.md\u0022\n      ],\n      \u0022provenance\u0022: [\n        {\n          \u0022field\u0022: \u0022skill.contract\u0022,\n          \u0022source\u0022: \u0022helio/skills/triage-message@1.0.0\u0022\n        },\n        {\n          \u0022field\u0022: \u0022skill.implementation\u0022,\n          \u0022source\u0022: \u0022helio/skills/triage-message@1.0.0\u0022\n        }\n      ]\n    }\n  ],\n  \u0022provenance\u0022: [\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022system/object@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022system/object@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.organization\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.safetyPolicy\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.principal\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022interfaces.helio/interfaces/correspondent@1.0.0\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/executive-assistant@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/executive-assistant@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/executive-assistant@1.0.0\u0022\n    }\n  ]\n}\n"
+          },
+          {
+            "path": "provenance.json",
+            "mediaType": "application/json",
+            "content": "[\n  {\n    \u0022field\u0022: \u0022displayName\u0022,\n    \u0022source\u0022: \u0022system/object@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022description\u0022,\n    \u0022source\u0022: \u0022system/object@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022displayName\u0022,\n    \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022description\u0022,\n    \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022slots.organization\u0022,\n    \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022slots.safetyPolicy\u0022,\n    \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022workingNorms\u0022,\n    \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022workingNorms\u0022,\n    \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022contextFiles\u0022,\n    \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022contextFiles\u0022,\n    \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022displayName\u0022,\n    \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022description\u0022,\n    \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022slots.principal\u0022,\n    \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022workingNorms\u0022,\n    \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022contextFiles\u0022,\n    \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022interfaces.helio/interfaces/correspondent@1.0.0\u0022,\n    \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022displayName\u0022,\n    \u0022source\u0022: \u0022helio/executive-assistant@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022description\u0022,\n    \u0022source\u0022: \u0022helio/executive-assistant@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022contextFiles\u0022,\n    \u0022source\u0022: \u0022helio/executive-assistant@1.0.0\u0022\n  }\n]\n"
+          },
+          {
+            "path": "skills/prepare-brief/SKILL.md",
+            "mediaType": "text/markdown",
+            "content": "---\nname: prepare-brief\ndescription: \u0022Assemble an executive brief, requesting repository evidence when needed.\u0022\n---\n\nBuild a decision-oriented brief from the supplied topic and evidence.\nWhen repository status is material, request \u0060payments-repo-agent.repository-status\u0060 and incorporate its returned evidence with attribution.\n\n## Context loaded on invocation\n\n- \u0060context/organization.md\u0060\n- \u0060context/safety-policy.md\u0060\n- \u0060context/principal.md\u0060\n- \u0060context/executive-rhythm.md\u0060\n"
+          },
+          {
+            "path": "skills/triage-message/SKILL.md",
+            "mediaType": "text/markdown",
+            "content": "---\nname: triage-message\ndescription: \u0022Classify an inbound message and recommend an accountable next action.\u0022\n---\n\nRead the message and identify its sender, intent, urgency, decision owner, and requested deadline.\nSeparate facts from assumptions. Return a concise recommendation; do not send a reply.\n\n## Context loaded on invocation\n\n- \u0060context/organization.md\u0060\n- \u0060context/safety-policy.md\u0060\n- \u0060context/principal.md\u0060\n"
+          }
+        ]
+      },
+      "metadata": {
+        "generatedBy": "TypeFerence",
+        "sourceDigest": "sha256:86ecbb754ebf69cabec2631e07b96329739fb23c7b1bf32b90c83ddcec8e6787",
+        "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
+        "target": "neutral"
+      },
+      "trustManifest": {
+        "identity": "https://helio.example",
+        "identityType": "https",
+        "provenance": [
+          {
+            "relation": "derivedFrom",
+            "sourceId": "urn:air:helio.example:typeference:source:helio",
+            "sourceDigest": "sha256:86ecbb754ebf69cabec2631e07b96329739fb23c7b1bf32b90c83ddcec8e6787"
+          }
+        ]
+      }
+    },
+    {
+      "identifier": "urn:air:helio.example:typeference:neutral:payments-repo-agent",
+      "displayName": "Helio Payments Repository Agent (neutral)",
+      "type": "application/vnd.typeference.target-bundle\u002Bjson",
+      "description": "Precompiled neutral artifact bundle. Specializes repository assistance for the fictional payments service.",
+      "capabilities": [
+        "payments-repo-agent.repository-status"
+      ],
+      "version": "1.0.0",
+      "data": {
+        "schemaVersion": 1,
+        "target": "neutral",
+        "agentId": "helio/payments-repo-agent@1.0.0",
+        "files": [
+          {
+            "path": "AGENTS.md",
+            "mediaType": "text/markdown",
+            "content": "# Helio Payments Repository Agent\n\nSpecializes repository assistance for the fictional payments service.\n\n## Working norms\n\n- Preserve a clear audit trail for material decisions.\n- State uncertainty and route work to an accountable owner when authority is unclear.\n- Prefer evidence from tests, diffs, and version control over recollection.\n\n## Context slots\n\n- \u0060organization\u0060: \u0060context/organization.md\u0060\n- \u0060repository\u0060: \u0060context/repository.md\u0060\n- \u0060safetyPolicy\u0060: \u0060context/safety-policy.md\u0060\n\n## Available skills\n\n- \u0060payments-repo-agent.repository-status\u0060: Report payments-service health with contract and reconciliation evidence.\n\n"
+          },
+          {
+            "path": "bundle.json",
+            "mediaType": "application/json",
+            "content": "{\n  \u0022id\u0022: \u0022helio/payments-repo-agent@1.0.0\u0022,\n  \u0022displayName\u0022: \u0022Helio Payments Repository Agent\u0022,\n  \u0022description\u0022: \u0022Specializes repository assistance for the fictional payments service.\u0022,\n  \u0022abstract\u0022: false,\n  \u0022lineage\u0022: [\n    \u0022system/object@1.0.0\u0022,\n    \u0022helio/enterprise-agent@1.0.0\u0022,\n    \u0022helio/repo-agent@1.0.0\u0022,\n    \u0022helio/payments-repo-agent@1.0.0\u0022\n  ],\n  \u0022interfaces\u0022: [\n    \u0022helio/interfaces/repository-observer@1.0.0\u0022\n  ],\n  \u0022slots\u0022: {\n    \u0022organization\u0022: \u0022context/organization.md\u0022,\n    \u0022repository\u0022: \u0022context/repository.md\u0022,\n    \u0022safetyPolicy\u0022: \u0022context/safety-policy.md\u0022\n  },\n  \u0022workingNorms\u0022: [\n    \u0022Preserve a clear audit trail for material decisions.\u0022,\n    \u0022State uncertainty and route work to an accountable owner when authority is unclear.\u0022,\n    \u0022Prefer evidence from tests, diffs, and version control over recollection.\u0022\n  ],\n  \u0022contextFiles\u0022: [\n    \u0022context/organization.md\u0022,\n    \u0022context/safety-policy.md\u0022,\n    \u0022context/repository.md\u0022,\n    \u0022context/payments-service.md\u0022\n  ],\n  \u0022skills\u0022: [\n    {\n      \u0022dispatchName\u0022: \u0022payments-repo-agent.repository-status\u0022,\n      \u0022contractId\u0022: \u0022helio/skills/repository-status@1.0.0\u0022,\n      \u0022implementationId\u0022: \u0022helio/skills/payments-repository-status@1.0.0\u0022,\n      \u0022description\u0022: \u0022Report payments-service health with contract and reconciliation evidence.\u0022,\n      \u0022instructions\u0022: \u0022Apply the repository-status contract, then include payment-contract compatibility, reconciliation checks, and rollback readiness.\\nDo not report the service healthy when any required financial-control signal is unavailable.\\n\u0022,\n      \u0022inputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022focus\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}},\\u0022additionalProperties\\u0022:false}\u0022,\n      \u0022outputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022status\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022evidence\\u0022:{\\u0022type\\u0022:\\u0022array\\u0022,\\u0022items\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}},\\u0022risks\\u0022:{\\u0022type\\u0022:\\u0022array\\u0022,\\u0022items\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}}},\\u0022required\\u0022:[\\u0022status\\u0022,\\u0022evidence\\u0022,\\u0022risks\\u0022]}\u0022,\n      \u0022contextFiles\u0022: [\n        \u0022context/organization.md\u0022,\n        \u0022context/safety-policy.md\u0022,\n        \u0022context/repository.md\u0022,\n        \u0022context/payments-service.md\u0022\n      ],\n      \u0022provenance\u0022: [\n        {\n          \u0022field\u0022: \u0022skill.contract\u0022,\n          \u0022source\u0022: \u0022helio/skills/repository-status@1.0.0\u0022\n        },\n        {\n          \u0022field\u0022: \u0022skill.implementation\u0022,\n          \u0022source\u0022: \u0022helio/skills/payments-repository-status@1.0.0\u0022\n        }\n      ]\n    }\n  ],\n  \u0022provenance\u0022: [\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022system/object@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022system/object@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.organization\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.safetyPolicy\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.repository\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022interfaces.helio/interfaces/repository-observer@1.0.0\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/payments-repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/payments-repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/payments-repo-agent@1.0.0\u0022\n    }\n  ]\n}\n"
+          },
+          {
+            "path": "provenance.json",
+            "mediaType": "application/json",
+            "content": "[\n  {\n    \u0022field\u0022: \u0022displayName\u0022,\n    \u0022source\u0022: \u0022system/object@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022description\u0022,\n    \u0022source\u0022: \u0022system/object@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022displayName\u0022,\n    \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022description\u0022,\n    \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022slots.organization\u0022,\n    \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022slots.safetyPolicy\u0022,\n    \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022workingNorms\u0022,\n    \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022workingNorms\u0022,\n    \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022contextFiles\u0022,\n    \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022contextFiles\u0022,\n    \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022displayName\u0022,\n    \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022description\u0022,\n    \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022slots.repository\u0022,\n    \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022workingNorms\u0022,\n    \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022contextFiles\u0022,\n    \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022interfaces.helio/interfaces/repository-observer@1.0.0\u0022,\n    \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022displayName\u0022,\n    \u0022source\u0022: \u0022helio/payments-repo-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022description\u0022,\n    \u0022source\u0022: \u0022helio/payments-repo-agent@1.0.0\u0022\n  },\n  {\n    \u0022field\u0022: \u0022contextFiles\u0022,\n    \u0022source\u0022: \u0022helio/payments-repo-agent@1.0.0\u0022\n  }\n]\n"
+          },
+          {
+            "path": "skills/repository-status/SKILL.md",
+            "mediaType": "text/markdown",
+            "content": "---\nname: repository-status\ndescription: \u0022Report payments-service health with contract and reconciliation evidence.\u0022\n---\n\nApply the repository-status contract, then include payment-contract compatibility, reconciliation checks, and rollback readiness.\nDo not report the service healthy when any required financial-control signal is unavailable.\n\n## Context loaded on invocation\n\n- \u0060context/organization.md\u0060\n- \u0060context/safety-policy.md\u0060\n- \u0060context/repository.md\u0060\n- \u0060context/payments-service.md\u0060\n"
+          }
+        ]
+      },
+      "metadata": {
+        "generatedBy": "TypeFerence",
+        "sourceDigest": "sha256:86ecbb754ebf69cabec2631e07b96329739fb23c7b1bf32b90c83ddcec8e6787",
+        "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
+        "target": "neutral"
+      },
+      "trustManifest": {
+        "identity": "https://helio.example",
+        "identityType": "https",
+        "provenance": [
+          {
+            "relation": "derivedFrom",
+            "sourceId": "urn:air:helio.example:typeference:source:helio",
+            "sourceDigest": "sha256:86ecbb754ebf69cabec2631e07b96329739fb23c7b1bf32b90c83ddcec8e6787"
+          }
+        ]
+      }
+    },
+    {
+      "identifier": "urn:air:helio.example:typeference:codex:executive-assistant",
+      "displayName": "Helio Executive Assistant (codex)",
+      "type": "application/vnd.typeference.target-bundle\u002Bjson",
+      "description": "Precompiled codex artifact bundle. Coordinates an executive\u0027s correspondence, briefings, and cross-agent requests.",
+      "capabilities": [
+        "executive-assistant.prepare-brief",
+        "executive-assistant.triage-message"
+      ],
+      "version": "1.0.0",
+      "data": {
+        "schemaVersion": 1,
+        "target": "codex",
+        "agentId": "helio/executive-assistant@1.0.0",
+        "files": [
+          {
+            "path": ".agents/skills/prepare-brief/SKILL.md",
+            "mediaType": "text/markdown",
+            "content": "---\nname: prepare-brief\ndescription: \u0022Assemble an executive brief, requesting repository evidence when needed.\u0022\n---\n\nBuild a decision-oriented brief from the supplied topic and evidence.\nWhen repository status is material, request \u0060payments-repo-agent.repository-status\u0060 and incorporate its returned evidence with attribution.\n\n## Context loaded on invocation\n\n- \u0060context/organization.md\u0060\n- \u0060context/safety-policy.md\u0060\n- \u0060context/principal.md\u0060\n- \u0060context/executive-rhythm.md\u0060\n"
+          },
+          {
+            "path": ".agents/skills/triage-message/SKILL.md",
+            "mediaType": "text/markdown",
+            "content": "---\nname: triage-message\ndescription: \u0022Classify an inbound message and recommend an accountable next action.\u0022\n---\n\nRead the message and identify its sender, intent, urgency, decision owner, and requested deadline.\nSeparate facts from assumptions. Return a concise recommendation; do not send a reply.\n\n## Context loaded on invocation\n\n- \u0060context/organization.md\u0060\n- \u0060context/safety-policy.md\u0060\n- \u0060context/principal.md\u0060\n"
+          },
+          {
+            "path": ".codex/config.toml",
+            "mediaType": "application/toml",
+            "content": "[mcp_servers.typeference]\ncommand = \u0022typeference\u0022\nargs = [\u0022serve\u0022, \u0022.typeference\u0022]\n"
+          },
+          {
+            "path": ".typeference/bundle.json",
+            "mediaType": "application/json",
+            "content": "{\n  \u0022id\u0022: \u0022helio/executive-assistant@1.0.0\u0022,\n  \u0022displayName\u0022: \u0022Helio Executive Assistant\u0022,\n  \u0022description\u0022: \u0022Coordinates an executive\\u0027s correspondence, briefings, and cross-agent requests.\u0022,\n  \u0022abstract\u0022: false,\n  \u0022lineage\u0022: [\n    \u0022system/object@1.0.0\u0022,\n    \u0022helio/enterprise-agent@1.0.0\u0022,\n    \u0022helio/person-agent@1.0.0\u0022,\n    \u0022helio/executive-assistant@1.0.0\u0022\n  ],\n  \u0022interfaces\u0022: [\n    \u0022helio/interfaces/correspondent@1.0.0\u0022\n  ],\n  \u0022slots\u0022: {\n    \u0022organization\u0022: \u0022context/organization.md\u0022,\n    \u0022principal\u0022: \u0022context/principal.md\u0022,\n    \u0022safetyPolicy\u0022: \u0022context/safety-policy.md\u0022\n  },\n  \u0022workingNorms\u0022: [\n    \u0022Preserve a clear audit trail for material decisions.\u0022,\n    \u0022State uncertainty and route work to an accountable owner when authority is unclear.\u0022,\n    \u0022Distinguish drafts from messages approved for delivery.\u0022\n  ],\n  \u0022contextFiles\u0022: [\n    \u0022context/organization.md\u0022,\n    \u0022context/safety-policy.md\u0022,\n    \u0022context/principal.md\u0022,\n    \u0022context/executive-rhythm.md\u0022\n  ],\n  \u0022skills\u0022: [\n    {\n      \u0022dispatchName\u0022: \u0022executive-assistant.prepare-brief\u0022,\n      \u0022contractId\u0022: \u0022helio/skills/prepare-brief@1.0.0\u0022,\n      \u0022implementationId\u0022: \u0022helio/skills/prepare-brief@1.0.0\u0022,\n      \u0022description\u0022: \u0022Assemble an executive brief, requesting repository evidence when needed.\u0022,\n      \u0022instructions\u0022: \u0022Build a decision-oriented brief from the supplied topic and evidence.\\nWhen repository status is material, request \\u0060payments-repo-agent.repository-status\\u0060 and incorporate its returned evidence with attribution.\\n\u0022,\n      \u0022inputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022topic\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022evidence\\u0022:{\\u0022type\\u0022:\\u0022array\\u0022,\\u0022items\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}}},\\u0022required\\u0022:[\\u0022topic\\u0022],\\u0022additionalProperties\\u0022:false}\u0022,\n      \u0022outputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022brief\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022openQuestions\\u0022:{\\u0022type\\u0022:\\u0022array\\u0022,\\u0022items\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}}},\\u0022required\\u0022:[\\u0022brief\\u0022,\\u0022openQuestions\\u0022]}\u0022,\n      \u0022contextFiles\u0022: [\n        \u0022context/organization.md\u0022,\n        \u0022context/safety-policy.md\u0022,\n        \u0022context/principal.md\u0022,\n        \u0022context/executive-rhythm.md\u0022\n      ],\n      \u0022provenance\u0022: [\n        {\n          \u0022field\u0022: \u0022skill.contract\u0022,\n          \u0022source\u0022: \u0022helio/skills/prepare-brief@1.0.0\u0022\n        },\n        {\n          \u0022field\u0022: \u0022skill.implementation\u0022,\n          \u0022source\u0022: \u0022helio/skills/prepare-brief@1.0.0\u0022\n        }\n      ]\n    },\n    {\n      \u0022dispatchName\u0022: \u0022executive-assistant.triage-message\u0022,\n      \u0022contractId\u0022: \u0022helio/skills/triage-message@1.0.0\u0022,\n      \u0022implementationId\u0022: \u0022helio/skills/triage-message@1.0.0\u0022,\n      \u0022description\u0022: \u0022Classify an inbound message and recommend an accountable next action.\u0022,\n      \u0022instructions\u0022: \u0022Read the message and identify its sender, intent, urgency, decision owner, and requested deadline.\\nSeparate facts from assumptions. Return a concise recommendation; do not send a reply.\\n\u0022,\n      \u0022inputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022message\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}},\\u0022required\\u0022:[\\u0022message\\u0022],\\u0022additionalProperties\\u0022:false}\u0022,\n      \u0022outputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022summary\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022urgency\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022owner\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022nextAction\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}},\\u0022required\\u0022:[\\u0022summary\\u0022,\\u0022urgency\\u0022,\\u0022owner\\u0022,\\u0022nextAction\\u0022]}\u0022,\n      \u0022contextFiles\u0022: [\n        \u0022context/organization.md\u0022,\n        \u0022context/safety-policy.md\u0022,\n        \u0022context/principal.md\u0022\n      ],\n      \u0022provenance\u0022: [\n        {\n          \u0022field\u0022: \u0022skill.contract\u0022,\n          \u0022source\u0022: \u0022helio/skills/triage-message@1.0.0\u0022\n        },\n        {\n          \u0022field\u0022: \u0022skill.implementation\u0022,\n          \u0022source\u0022: \u0022helio/skills/triage-message@1.0.0\u0022\n        }\n      ]\n    }\n  ],\n  \u0022provenance\u0022: [\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022system/object@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022system/object@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.organization\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.safetyPolicy\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.principal\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022interfaces.helio/interfaces/correspondent@1.0.0\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/executive-assistant@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/executive-assistant@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/executive-assistant@1.0.0\u0022\n    }\n  ]\n}\n"
+          },
+          {
+            "path": "AGENTS.md",
+            "mediaType": "text/markdown",
+            "content": "# Helio Executive Assistant\n\nCoordinates an executive\u0027s correspondence, briefings, and cross-agent requests.\n\n## Working norms\n\n- Preserve a clear audit trail for material decisions.\n- State uncertainty and route work to an accountable owner when authority is unclear.\n- Distinguish drafts from messages approved for delivery.\n\n## Context slots\n\n- \u0060organization\u0060: \u0060context/organization.md\u0060\n- \u0060principal\u0060: \u0060context/principal.md\u0060\n- \u0060safetyPolicy\u0060: \u0060context/safety-policy.md\u0060\n\n## Available skills\n\n- \u0060executive-assistant.prepare-brief\u0060: Assemble an executive brief, requesting repository evidence when needed.\n- \u0060executive-assistant.triage-message\u0060: Classify an inbound message and recommend an accountable next action.\n\n"
+          }
+        ]
+      },
+      "metadata": {
+        "generatedBy": "TypeFerence",
+        "sourceDigest": "sha256:86ecbb754ebf69cabec2631e07b96329739fb23c7b1bf32b90c83ddcec8e6787",
+        "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
+        "target": "codex"
+      },
+      "trustManifest": {
+        "identity": "https://helio.example",
+        "identityType": "https",
+        "provenance": [
+          {
+            "relation": "derivedFrom",
+            "sourceId": "urn:air:helio.example:typeference:source:helio",
+            "sourceDigest": "sha256:86ecbb754ebf69cabec2631e07b96329739fb23c7b1bf32b90c83ddcec8e6787"
+          }
+        ]
+      }
+    },
+    {
+      "identifier": "urn:air:helio.example:typeference:codex:payments-repo-agent",
+      "displayName": "Helio Payments Repository Agent (codex)",
+      "type": "application/vnd.typeference.target-bundle\u002Bjson",
+      "description": "Precompiled codex artifact bundle. Specializes repository assistance for the fictional payments service.",
+      "capabilities": [
+        "payments-repo-agent.repository-status"
+      ],
+      "version": "1.0.0",
+      "data": {
+        "schemaVersion": 1,
+        "target": "codex",
+        "agentId": "helio/payments-repo-agent@1.0.0",
+        "files": [
+          {
+            "path": ".agents/skills/repository-status/SKILL.md",
+            "mediaType": "text/markdown",
+            "content": "---\nname: repository-status\ndescription: \u0022Report payments-service health with contract and reconciliation evidence.\u0022\n---\n\nApply the repository-status contract, then include payment-contract compatibility, reconciliation checks, and rollback readiness.\nDo not report the service healthy when any required financial-control signal is unavailable.\n\n## Context loaded on invocation\n\n- \u0060context/organization.md\u0060\n- \u0060context/safety-policy.md\u0060\n- \u0060context/repository.md\u0060\n- \u0060context/payments-service.md\u0060\n"
+          },
+          {
+            "path": ".codex/config.toml",
+            "mediaType": "application/toml",
+            "content": "[mcp_servers.typeference]\ncommand = \u0022typeference\u0022\nargs = [\u0022serve\u0022, \u0022.typeference\u0022]\n"
+          },
+          {
+            "path": ".typeference/bundle.json",
+            "mediaType": "application/json",
+            "content": "{\n  \u0022id\u0022: \u0022helio/payments-repo-agent@1.0.0\u0022,\n  \u0022displayName\u0022: \u0022Helio Payments Repository Agent\u0022,\n  \u0022description\u0022: \u0022Specializes repository assistance for the fictional payments service.\u0022,\n  \u0022abstract\u0022: false,\n  \u0022lineage\u0022: [\n    \u0022system/object@1.0.0\u0022,\n    \u0022helio/enterprise-agent@1.0.0\u0022,\n    \u0022helio/repo-agent@1.0.0\u0022,\n    \u0022helio/payments-repo-agent@1.0.0\u0022\n  ],\n  \u0022interfaces\u0022: [\n    \u0022helio/interfaces/repository-observer@1.0.0\u0022\n  ],\n  \u0022slots\u0022: {\n    \u0022organization\u0022: \u0022context/organization.md\u0022,\n    \u0022repository\u0022: \u0022context/repository.md\u0022,\n    \u0022safetyPolicy\u0022: \u0022context/safety-policy.md\u0022\n  },\n  \u0022workingNorms\u0022: [\n    \u0022Preserve a clear audit trail for material decisions.\u0022,\n    \u0022State uncertainty and route work to an accountable owner when authority is unclear.\u0022,\n    \u0022Prefer evidence from tests, diffs, and version control over recollection.\u0022\n  ],\n  \u0022contextFiles\u0022: [\n    \u0022context/organization.md\u0022,\n    \u0022context/safety-policy.md\u0022,\n    \u0022context/repository.md\u0022,\n    \u0022context/payments-service.md\u0022\n  ],\n  \u0022skills\u0022: [\n    {\n      \u0022dispatchName\u0022: \u0022payments-repo-agent.repository-status\u0022,\n      \u0022contractId\u0022: \u0022helio/skills/repository-status@1.0.0\u0022,\n      \u0022implementationId\u0022: \u0022helio/skills/payments-repository-status@1.0.0\u0022,\n      \u0022description\u0022: \u0022Report payments-service health with contract and reconciliation evidence.\u0022,\n      \u0022instructions\u0022: \u0022Apply the repository-status contract, then include payment-contract compatibility, reconciliation checks, and rollback readiness.\\nDo not report the service healthy when any required financial-control signal is unavailable.\\n\u0022,\n      \u0022inputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022focus\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}},\\u0022additionalProperties\\u0022:false}\u0022,\n      \u0022outputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022status\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022evidence\\u0022:{\\u0022type\\u0022:\\u0022array\\u0022,\\u0022items\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}},\\u0022risks\\u0022:{\\u0022type\\u0022:\\u0022array\\u0022,\\u0022items\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}}},\\u0022required\\u0022:[\\u0022status\\u0022,\\u0022evidence\\u0022,\\u0022risks\\u0022]}\u0022,\n      \u0022contextFiles\u0022: [\n        \u0022context/organization.md\u0022,\n        \u0022context/safety-policy.md\u0022,\n        \u0022context/repository.md\u0022,\n        \u0022context/payments-service.md\u0022\n      ],\n      \u0022provenance\u0022: [\n        {\n          \u0022field\u0022: \u0022skill.contract\u0022,\n          \u0022source\u0022: \u0022helio/skills/repository-status@1.0.0\u0022\n        },\n        {\n          \u0022field\u0022: \u0022skill.implementation\u0022,\n          \u0022source\u0022: \u0022helio/skills/payments-repository-status@1.0.0\u0022\n        }\n      ]\n    }\n  ],\n  \u0022provenance\u0022: [\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022system/object@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022system/object@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.organization\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.safetyPolicy\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.repository\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022interfaces.helio/interfaces/repository-observer@1.0.0\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/payments-repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/payments-repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/payments-repo-agent@1.0.0\u0022\n    }\n  ]\n}\n"
+          },
+          {
+            "path": "AGENTS.md",
+            "mediaType": "text/markdown",
+            "content": "# Helio Payments Repository Agent\n\nSpecializes repository assistance for the fictional payments service.\n\n## Working norms\n\n- Preserve a clear audit trail for material decisions.\n- State uncertainty and route work to an accountable owner when authority is unclear.\n- Prefer evidence from tests, diffs, and version control over recollection.\n\n## Context slots\n\n- \u0060organization\u0060: \u0060context/organization.md\u0060\n- \u0060repository\u0060: \u0060context/repository.md\u0060\n- \u0060safetyPolicy\u0060: \u0060context/safety-policy.md\u0060\n\n## Available skills\n\n- \u0060payments-repo-agent.repository-status\u0060: Report payments-service health with contract and reconciliation evidence.\n\n"
+          }
+        ]
+      },
+      "metadata": {
+        "generatedBy": "TypeFerence",
+        "sourceDigest": "sha256:86ecbb754ebf69cabec2631e07b96329739fb23c7b1bf32b90c83ddcec8e6787",
+        "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
+        "target": "codex"
+      },
+      "trustManifest": {
+        "identity": "https://helio.example",
+        "identityType": "https",
+        "provenance": [
+          {
+            "relation": "derivedFrom",
+            "sourceId": "urn:air:helio.example:typeference:source:helio",
+            "sourceDigest": "sha256:86ecbb754ebf69cabec2631e07b96329739fb23c7b1bf32b90c83ddcec8e6787"
+          }
+        ]
+      }
+    },
+    {
+      "identifier": "urn:air:helio.example:typeference:copilot:executive-assistant",
+      "displayName": "Helio Executive Assistant (copilot)",
+      "type": "application/vnd.typeference.target-bundle\u002Bjson",
+      "description": "Precompiled copilot artifact bundle. Coordinates an executive\u0027s correspondence, briefings, and cross-agent requests.",
+      "capabilities": [
+        "executive-assistant.prepare-brief",
+        "executive-assistant.triage-message"
+      ],
+      "version": "1.0.0",
+      "data": {
+        "schemaVersion": 1,
+        "target": "copilot",
+        "agentId": "helio/executive-assistant@1.0.0",
+        "files": [
+          {
+            "path": ".github/agents/executive-assistant.agent.md",
+            "mediaType": "text/markdown",
+            "content": "---\nname: executive-assistant\ndescription: \u0022Coordinates an executive\u0027s correspondence, briefings, and cross-agent requests.\u0022\n---\n\n# Helio Executive Assistant\n\nCoordinates an executive\u0027s correspondence, briefings, and cross-agent requests.\n\n## Working norms\n\n- Preserve a clear audit trail for material decisions.\n- State uncertainty and route work to an accountable owner when authority is unclear.\n- Distinguish drafts from messages approved for delivery.\n\n## Context slots\n\n- \u0060organization\u0060: \u0060context/organization.md\u0060\n- \u0060principal\u0060: \u0060context/principal.md\u0060\n- \u0060safetyPolicy\u0060: \u0060context/safety-policy.md\u0060\n\n## Available skills\n\n- \u0060executive-assistant.prepare-brief\u0060: Assemble an executive brief, requesting repository evidence when needed.\n- \u0060executive-assistant.triage-message\u0060: Classify an inbound message and recommend an accountable next action.\n\n"
+          },
+          {
+            "path": ".github/copilot-instructions.md",
+            "mediaType": "text/markdown",
+            "content": "# Helio Executive Assistant\n\nCoordinates an executive\u0027s correspondence, briefings, and cross-agent requests.\n\n## Working norms\n\n- Preserve a clear audit trail for material decisions.\n- State uncertainty and route work to an accountable owner when authority is unclear.\n- Distinguish drafts from messages approved for delivery.\n\n## Context slots\n\n- \u0060organization\u0060: \u0060context/organization.md\u0060\n- \u0060principal\u0060: \u0060context/principal.md\u0060\n- \u0060safetyPolicy\u0060: \u0060context/safety-policy.md\u0060\n\n## Available skills\n\n- \u0060executive-assistant.prepare-brief\u0060: Assemble an executive brief, requesting repository evidence when needed.\n- \u0060executive-assistant.triage-message\u0060: Classify an inbound message and recommend an accountable next action.\n\n"
+          },
+          {
+            "path": ".typeference/bundle.json",
+            "mediaType": "application/json",
+            "content": "{\n  \u0022id\u0022: \u0022helio/executive-assistant@1.0.0\u0022,\n  \u0022displayName\u0022: \u0022Helio Executive Assistant\u0022,\n  \u0022description\u0022: \u0022Coordinates an executive\\u0027s correspondence, briefings, and cross-agent requests.\u0022,\n  \u0022abstract\u0022: false,\n  \u0022lineage\u0022: [\n    \u0022system/object@1.0.0\u0022,\n    \u0022helio/enterprise-agent@1.0.0\u0022,\n    \u0022helio/person-agent@1.0.0\u0022,\n    \u0022helio/executive-assistant@1.0.0\u0022\n  ],\n  \u0022interfaces\u0022: [\n    \u0022helio/interfaces/correspondent@1.0.0\u0022\n  ],\n  \u0022slots\u0022: {\n    \u0022organization\u0022: \u0022context/organization.md\u0022,\n    \u0022principal\u0022: \u0022context/principal.md\u0022,\n    \u0022safetyPolicy\u0022: \u0022context/safety-policy.md\u0022\n  },\n  \u0022workingNorms\u0022: [\n    \u0022Preserve a clear audit trail for material decisions.\u0022,\n    \u0022State uncertainty and route work to an accountable owner when authority is unclear.\u0022,\n    \u0022Distinguish drafts from messages approved for delivery.\u0022\n  ],\n  \u0022contextFiles\u0022: [\n    \u0022context/organization.md\u0022,\n    \u0022context/safety-policy.md\u0022,\n    \u0022context/principal.md\u0022,\n    \u0022context/executive-rhythm.md\u0022\n  ],\n  \u0022skills\u0022: [\n    {\n      \u0022dispatchName\u0022: \u0022executive-assistant.prepare-brief\u0022,\n      \u0022contractId\u0022: \u0022helio/skills/prepare-brief@1.0.0\u0022,\n      \u0022implementationId\u0022: \u0022helio/skills/prepare-brief@1.0.0\u0022,\n      \u0022description\u0022: \u0022Assemble an executive brief, requesting repository evidence when needed.\u0022,\n      \u0022instructions\u0022: \u0022Build a decision-oriented brief from the supplied topic and evidence.\\nWhen repository status is material, request \\u0060payments-repo-agent.repository-status\\u0060 and incorporate its returned evidence with attribution.\\n\u0022,\n      \u0022inputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022topic\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022evidence\\u0022:{\\u0022type\\u0022:\\u0022array\\u0022,\\u0022items\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}}},\\u0022required\\u0022:[\\u0022topic\\u0022],\\u0022additionalProperties\\u0022:false}\u0022,\n      \u0022outputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022brief\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022openQuestions\\u0022:{\\u0022type\\u0022:\\u0022array\\u0022,\\u0022items\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}}},\\u0022required\\u0022:[\\u0022brief\\u0022,\\u0022openQuestions\\u0022]}\u0022,\n      \u0022contextFiles\u0022: [\n        \u0022context/organization.md\u0022,\n        \u0022context/safety-policy.md\u0022,\n        \u0022context/principal.md\u0022,\n        \u0022context/executive-rhythm.md\u0022\n      ],\n      \u0022provenance\u0022: [\n        {\n          \u0022field\u0022: \u0022skill.contract\u0022,\n          \u0022source\u0022: \u0022helio/skills/prepare-brief@1.0.0\u0022\n        },\n        {\n          \u0022field\u0022: \u0022skill.implementation\u0022,\n          \u0022source\u0022: \u0022helio/skills/prepare-brief@1.0.0\u0022\n        }\n      ]\n    },\n    {\n      \u0022dispatchName\u0022: \u0022executive-assistant.triage-message\u0022,\n      \u0022contractId\u0022: \u0022helio/skills/triage-message@1.0.0\u0022,\n      \u0022implementationId\u0022: \u0022helio/skills/triage-message@1.0.0\u0022,\n      \u0022description\u0022: \u0022Classify an inbound message and recommend an accountable next action.\u0022,\n      \u0022instructions\u0022: \u0022Read the message and identify its sender, intent, urgency, decision owner, and requested deadline.\\nSeparate facts from assumptions. Return a concise recommendation; do not send a reply.\\n\u0022,\n      \u0022inputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022message\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}},\\u0022required\\u0022:[\\u0022message\\u0022],\\u0022additionalProperties\\u0022:false}\u0022,\n      \u0022outputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022summary\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022urgency\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022owner\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022nextAction\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}},\\u0022required\\u0022:[\\u0022summary\\u0022,\\u0022urgency\\u0022,\\u0022owner\\u0022,\\u0022nextAction\\u0022]}\u0022,\n      \u0022contextFiles\u0022: [\n        \u0022context/organization.md\u0022,\n        \u0022context/safety-policy.md\u0022,\n        \u0022context/principal.md\u0022\n      ],\n      \u0022provenance\u0022: [\n        {\n          \u0022field\u0022: \u0022skill.contract\u0022,\n          \u0022source\u0022: \u0022helio/skills/triage-message@1.0.0\u0022\n        },\n        {\n          \u0022field\u0022: \u0022skill.implementation\u0022,\n          \u0022source\u0022: \u0022helio/skills/triage-message@1.0.0\u0022\n        }\n      ]\n    }\n  ],\n  \u0022provenance\u0022: [\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022system/object@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022system/object@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.organization\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.safetyPolicy\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.principal\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022interfaces.helio/interfaces/correspondent@1.0.0\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/executive-assistant@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/executive-assistant@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/executive-assistant@1.0.0\u0022\n    }\n  ]\n}\n"
+          }
+        ]
+      },
+      "metadata": {
+        "generatedBy": "TypeFerence",
+        "sourceDigest": "sha256:86ecbb754ebf69cabec2631e07b96329739fb23c7b1bf32b90c83ddcec8e6787",
+        "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
+        "target": "copilot"
+      },
+      "trustManifest": {
+        "identity": "https://helio.example",
+        "identityType": "https",
+        "provenance": [
+          {
+            "relation": "derivedFrom",
+            "sourceId": "urn:air:helio.example:typeference:source:helio",
+            "sourceDigest": "sha256:86ecbb754ebf69cabec2631e07b96329739fb23c7b1bf32b90c83ddcec8e6787"
+          }
+        ]
+      }
+    },
+    {
+      "identifier": "urn:air:helio.example:typeference:copilot:payments-repo-agent",
+      "displayName": "Helio Payments Repository Agent (copilot)",
+      "type": "application/vnd.typeference.target-bundle\u002Bjson",
+      "description": "Precompiled copilot artifact bundle. Specializes repository assistance for the fictional payments service.",
+      "capabilities": [
+        "payments-repo-agent.repository-status"
+      ],
+      "version": "1.0.0",
+      "data": {
+        "schemaVersion": 1,
+        "target": "copilot",
+        "agentId": "helio/payments-repo-agent@1.0.0",
+        "files": [
+          {
+            "path": ".github/agents/payments-repo-agent.agent.md",
+            "mediaType": "text/markdown",
+            "content": "---\nname: payments-repo-agent\ndescription: \u0022Specializes repository assistance for the fictional payments service.\u0022\n---\n\n# Helio Payments Repository Agent\n\nSpecializes repository assistance for the fictional payments service.\n\n## Working norms\n\n- Preserve a clear audit trail for material decisions.\n- State uncertainty and route work to an accountable owner when authority is unclear.\n- Prefer evidence from tests, diffs, and version control over recollection.\n\n## Context slots\n\n- \u0060organization\u0060: \u0060context/organization.md\u0060\n- \u0060repository\u0060: \u0060context/repository.md\u0060\n- \u0060safetyPolicy\u0060: \u0060context/safety-policy.md\u0060\n\n## Available skills\n\n- \u0060payments-repo-agent.repository-status\u0060: Report payments-service health with contract and reconciliation evidence.\n\n"
+          },
+          {
+            "path": ".github/copilot-instructions.md",
+            "mediaType": "text/markdown",
+            "content": "# Helio Payments Repository Agent\n\nSpecializes repository assistance for the fictional payments service.\n\n## Working norms\n\n- Preserve a clear audit trail for material decisions.\n- State uncertainty and route work to an accountable owner when authority is unclear.\n- Prefer evidence from tests, diffs, and version control over recollection.\n\n## Context slots\n\n- \u0060organization\u0060: \u0060context/organization.md\u0060\n- \u0060repository\u0060: \u0060context/repository.md\u0060\n- \u0060safetyPolicy\u0060: \u0060context/safety-policy.md\u0060\n\n## Available skills\n\n- \u0060payments-repo-agent.repository-status\u0060: Report payments-service health with contract and reconciliation evidence.\n\n"
+          },
+          {
+            "path": ".typeference/bundle.json",
+            "mediaType": "application/json",
+            "content": "{\n  \u0022id\u0022: \u0022helio/payments-repo-agent@1.0.0\u0022,\n  \u0022displayName\u0022: \u0022Helio Payments Repository Agent\u0022,\n  \u0022description\u0022: \u0022Specializes repository assistance for the fictional payments service.\u0022,\n  \u0022abstract\u0022: false,\n  \u0022lineage\u0022: [\n    \u0022system/object@1.0.0\u0022,\n    \u0022helio/enterprise-agent@1.0.0\u0022,\n    \u0022helio/repo-agent@1.0.0\u0022,\n    \u0022helio/payments-repo-agent@1.0.0\u0022\n  ],\n  \u0022interfaces\u0022: [\n    \u0022helio/interfaces/repository-observer@1.0.0\u0022\n  ],\n  \u0022slots\u0022: {\n    \u0022organization\u0022: \u0022context/organization.md\u0022,\n    \u0022repository\u0022: \u0022context/repository.md\u0022,\n    \u0022safetyPolicy\u0022: \u0022context/safety-policy.md\u0022\n  },\n  \u0022workingNorms\u0022: [\n    \u0022Preserve a clear audit trail for material decisions.\u0022,\n    \u0022State uncertainty and route work to an accountable owner when authority is unclear.\u0022,\n    \u0022Prefer evidence from tests, diffs, and version control over recollection.\u0022\n  ],\n  \u0022contextFiles\u0022: [\n    \u0022context/organization.md\u0022,\n    \u0022context/safety-policy.md\u0022,\n    \u0022context/repository.md\u0022,\n    \u0022context/payments-service.md\u0022\n  ],\n  \u0022skills\u0022: [\n    {\n      \u0022dispatchName\u0022: \u0022payments-repo-agent.repository-status\u0022,\n      \u0022contractId\u0022: \u0022helio/skills/repository-status@1.0.0\u0022,\n      \u0022implementationId\u0022: \u0022helio/skills/payments-repository-status@1.0.0\u0022,\n      \u0022description\u0022: \u0022Report payments-service health with contract and reconciliation evidence.\u0022,\n      \u0022instructions\u0022: \u0022Apply the repository-status contract, then include payment-contract compatibility, reconciliation checks, and rollback readiness.\\nDo not report the service healthy when any required financial-control signal is unavailable.\\n\u0022,\n      \u0022inputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022focus\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}},\\u0022additionalProperties\\u0022:false}\u0022,\n      \u0022outputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022status\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022evidence\\u0022:{\\u0022type\\u0022:\\u0022array\\u0022,\\u0022items\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}},\\u0022risks\\u0022:{\\u0022type\\u0022:\\u0022array\\u0022,\\u0022items\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}}},\\u0022required\\u0022:[\\u0022status\\u0022,\\u0022evidence\\u0022,\\u0022risks\\u0022]}\u0022,\n      \u0022contextFiles\u0022: [\n        \u0022context/organization.md\u0022,\n        \u0022context/safety-policy.md\u0022,\n        \u0022context/repository.md\u0022,\n        \u0022context/payments-service.md\u0022\n      ],\n      \u0022provenance\u0022: [\n        {\n          \u0022field\u0022: \u0022skill.contract\u0022,\n          \u0022source\u0022: \u0022helio/skills/repository-status@1.0.0\u0022\n        },\n        {\n          \u0022field\u0022: \u0022skill.implementation\u0022,\n          \u0022source\u0022: \u0022helio/skills/payments-repository-status@1.0.0\u0022\n        }\n      ]\n    }\n  ],\n  \u0022provenance\u0022: [\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022system/object@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022system/object@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.organization\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.safetyPolicy\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.repository\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022interfaces.helio/interfaces/repository-observer@1.0.0\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/payments-repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/payments-repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/payments-repo-agent@1.0.0\u0022\n    }\n  ]\n}\n"
+          }
+        ]
+      },
+      "metadata": {
+        "generatedBy": "TypeFerence",
+        "sourceDigest": "sha256:86ecbb754ebf69cabec2631e07b96329739fb23c7b1bf32b90c83ddcec8e6787",
+        "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
+        "target": "copilot"
+      },
+      "trustManifest": {
+        "identity": "https://helio.example",
+        "identityType": "https",
+        "provenance": [
+          {
+            "relation": "derivedFrom",
+            "sourceId": "urn:air:helio.example:typeference:source:helio",
+            "sourceDigest": "sha256:86ecbb754ebf69cabec2631e07b96329739fb23c7b1bf32b90c83ddcec8e6787"
+          }
+        ]
+      }
+    },
+    {
+      "identifier": "urn:air:helio.example:typeference:cursor:executive-assistant",
+      "displayName": "Helio Executive Assistant (cursor)",
+      "type": "application/vnd.typeference.target-bundle\u002Bjson",
+      "description": "Precompiled cursor artifact bundle. Coordinates an executive\u0027s correspondence, briefings, and cross-agent requests.",
+      "capabilities": [
+        "executive-assistant.prepare-brief",
+        "executive-assistant.triage-message"
+      ],
+      "version": "1.0.0",
+      "data": {
+        "schemaVersion": 1,
+        "target": "cursor",
+        "agentId": "helio/executive-assistant@1.0.0",
+        "files": [
+          {
+            "path": ".cursor/rules/executive-assistant.mdc",
+            "mediaType": "text/markdown",
+            "content": "---\ndescription: \u0022Coordinates an executive\u0027s correspondence, briefings, and cross-agent requests.\u0022\nglobs:\nalwaysApply: true\n---\n\n# Helio Executive Assistant\n\nCoordinates an executive\u0027s correspondence, briefings, and cross-agent requests.\n\n## Working norms\n\n- Preserve a clear audit trail for material decisions.\n- State uncertainty and route work to an accountable owner when authority is unclear.\n- Distinguish drafts from messages approved for delivery.\n\n## Context slots\n\n- \u0060organization\u0060: \u0060context/organization.md\u0060\n- \u0060principal\u0060: \u0060context/principal.md\u0060\n- \u0060safetyPolicy\u0060: \u0060context/safety-policy.md\u0060\n\n## Available skills\n\n- \u0060executive-assistant.prepare-brief\u0060: Assemble an executive brief, requesting repository evidence when needed.\n- \u0060executive-assistant.triage-message\u0060: Classify an inbound message and recommend an accountable next action.\n\n"
+          },
+          {
+            "path": ".typeference/bundle.json",
+            "mediaType": "application/json",
+            "content": "{\n  \u0022id\u0022: \u0022helio/executive-assistant@1.0.0\u0022,\n  \u0022displayName\u0022: \u0022Helio Executive Assistant\u0022,\n  \u0022description\u0022: \u0022Coordinates an executive\\u0027s correspondence, briefings, and cross-agent requests.\u0022,\n  \u0022abstract\u0022: false,\n  \u0022lineage\u0022: [\n    \u0022system/object@1.0.0\u0022,\n    \u0022helio/enterprise-agent@1.0.0\u0022,\n    \u0022helio/person-agent@1.0.0\u0022,\n    \u0022helio/executive-assistant@1.0.0\u0022\n  ],\n  \u0022interfaces\u0022: [\n    \u0022helio/interfaces/correspondent@1.0.0\u0022\n  ],\n  \u0022slots\u0022: {\n    \u0022organization\u0022: \u0022context/organization.md\u0022,\n    \u0022principal\u0022: \u0022context/principal.md\u0022,\n    \u0022safetyPolicy\u0022: \u0022context/safety-policy.md\u0022\n  },\n  \u0022workingNorms\u0022: [\n    \u0022Preserve a clear audit trail for material decisions.\u0022,\n    \u0022State uncertainty and route work to an accountable owner when authority is unclear.\u0022,\n    \u0022Distinguish drafts from messages approved for delivery.\u0022\n  ],\n  \u0022contextFiles\u0022: [\n    \u0022context/organization.md\u0022,\n    \u0022context/safety-policy.md\u0022,\n    \u0022context/principal.md\u0022,\n    \u0022context/executive-rhythm.md\u0022\n  ],\n  \u0022skills\u0022: [\n    {\n      \u0022dispatchName\u0022: \u0022executive-assistant.prepare-brief\u0022,\n      \u0022contractId\u0022: \u0022helio/skills/prepare-brief@1.0.0\u0022,\n      \u0022implementationId\u0022: \u0022helio/skills/prepare-brief@1.0.0\u0022,\n      \u0022description\u0022: \u0022Assemble an executive brief, requesting repository evidence when needed.\u0022,\n      \u0022instructions\u0022: \u0022Build a decision-oriented brief from the supplied topic and evidence.\\nWhen repository status is material, request \\u0060payments-repo-agent.repository-status\\u0060 and incorporate its returned evidence with attribution.\\n\u0022,\n      \u0022inputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022topic\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022evidence\\u0022:{\\u0022type\\u0022:\\u0022array\\u0022,\\u0022items\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}}},\\u0022required\\u0022:[\\u0022topic\\u0022],\\u0022additionalProperties\\u0022:false}\u0022,\n      \u0022outputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022brief\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022openQuestions\\u0022:{\\u0022type\\u0022:\\u0022array\\u0022,\\u0022items\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}}},\\u0022required\\u0022:[\\u0022brief\\u0022,\\u0022openQuestions\\u0022]}\u0022,\n      \u0022contextFiles\u0022: [\n        \u0022context/organization.md\u0022,\n        \u0022context/safety-policy.md\u0022,\n        \u0022context/principal.md\u0022,\n        \u0022context/executive-rhythm.md\u0022\n      ],\n      \u0022provenance\u0022: [\n        {\n          \u0022field\u0022: \u0022skill.contract\u0022,\n          \u0022source\u0022: \u0022helio/skills/prepare-brief@1.0.0\u0022\n        },\n        {\n          \u0022field\u0022: \u0022skill.implementation\u0022,\n          \u0022source\u0022: \u0022helio/skills/prepare-brief@1.0.0\u0022\n        }\n      ]\n    },\n    {\n      \u0022dispatchName\u0022: \u0022executive-assistant.triage-message\u0022,\n      \u0022contractId\u0022: \u0022helio/skills/triage-message@1.0.0\u0022,\n      \u0022implementationId\u0022: \u0022helio/skills/triage-message@1.0.0\u0022,\n      \u0022description\u0022: \u0022Classify an inbound message and recommend an accountable next action.\u0022,\n      \u0022instructions\u0022: \u0022Read the message and identify its sender, intent, urgency, decision owner, and requested deadline.\\nSeparate facts from assumptions. Return a concise recommendation; do not send a reply.\\n\u0022,\n      \u0022inputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022message\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}},\\u0022required\\u0022:[\\u0022message\\u0022],\\u0022additionalProperties\\u0022:false}\u0022,\n      \u0022outputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022summary\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022urgency\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022owner\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022nextAction\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}},\\u0022required\\u0022:[\\u0022summary\\u0022,\\u0022urgency\\u0022,\\u0022owner\\u0022,\\u0022nextAction\\u0022]}\u0022,\n      \u0022contextFiles\u0022: [\n        \u0022context/organization.md\u0022,\n        \u0022context/safety-policy.md\u0022,\n        \u0022context/principal.md\u0022\n      ],\n      \u0022provenance\u0022: [\n        {\n          \u0022field\u0022: \u0022skill.contract\u0022,\n          \u0022source\u0022: \u0022helio/skills/triage-message@1.0.0\u0022\n        },\n        {\n          \u0022field\u0022: \u0022skill.implementation\u0022,\n          \u0022source\u0022: \u0022helio/skills/triage-message@1.0.0\u0022\n        }\n      ]\n    }\n  ],\n  \u0022provenance\u0022: [\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022system/object@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022system/object@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.organization\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.safetyPolicy\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.principal\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022interfaces.helio/interfaces/correspondent@1.0.0\u0022,\n      \u0022source\u0022: \u0022helio/person-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/executive-assistant@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/executive-assistant@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/executive-assistant@1.0.0\u0022\n    }\n  ]\n}\n"
+          },
+          {
+            "path": "AGENTS.md",
+            "mediaType": "text/markdown",
+            "content": "# Helio Executive Assistant\n\nCoordinates an executive\u0027s correspondence, briefings, and cross-agent requests.\n\n## Working norms\n\n- Preserve a clear audit trail for material decisions.\n- State uncertainty and route work to an accountable owner when authority is unclear.\n- Distinguish drafts from messages approved for delivery.\n\n## Context slots\n\n- \u0060organization\u0060: \u0060context/organization.md\u0060\n- \u0060principal\u0060: \u0060context/principal.md\u0060\n- \u0060safetyPolicy\u0060: \u0060context/safety-policy.md\u0060\n\n## Available skills\n\n- \u0060executive-assistant.prepare-brief\u0060: Assemble an executive brief, requesting repository evidence when needed.\n- \u0060executive-assistant.triage-message\u0060: Classify an inbound message and recommend an accountable next action.\n\n"
+          }
+        ]
+      },
+      "metadata": {
+        "generatedBy": "TypeFerence",
+        "sourceDigest": "sha256:86ecbb754ebf69cabec2631e07b96329739fb23c7b1bf32b90c83ddcec8e6787",
+        "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
+        "target": "cursor"
+      },
+      "trustManifest": {
+        "identity": "https://helio.example",
+        "identityType": "https",
+        "provenance": [
+          {
+            "relation": "derivedFrom",
+            "sourceId": "urn:air:helio.example:typeference:source:helio",
+            "sourceDigest": "sha256:86ecbb754ebf69cabec2631e07b96329739fb23c7b1bf32b90c83ddcec8e6787"
+          }
+        ]
+      }
+    },
+    {
+      "identifier": "urn:air:helio.example:typeference:cursor:payments-repo-agent",
+      "displayName": "Helio Payments Repository Agent (cursor)",
+      "type": "application/vnd.typeference.target-bundle\u002Bjson",
+      "description": "Precompiled cursor artifact bundle. Specializes repository assistance for the fictional payments service.",
+      "capabilities": [
+        "payments-repo-agent.repository-status"
+      ],
+      "version": "1.0.0",
+      "data": {
+        "schemaVersion": 1,
+        "target": "cursor",
+        "agentId": "helio/payments-repo-agent@1.0.0",
+        "files": [
+          {
+            "path": ".cursor/rules/payments-repo-agent.mdc",
+            "mediaType": "text/markdown",
+            "content": "---\ndescription: \u0022Specializes repository assistance for the fictional payments service.\u0022\nglobs:\nalwaysApply: true\n---\n\n# Helio Payments Repository Agent\n\nSpecializes repository assistance for the fictional payments service.\n\n## Working norms\n\n- Preserve a clear audit trail for material decisions.\n- State uncertainty and route work to an accountable owner when authority is unclear.\n- Prefer evidence from tests, diffs, and version control over recollection.\n\n## Context slots\n\n- \u0060organization\u0060: \u0060context/organization.md\u0060\n- \u0060repository\u0060: \u0060context/repository.md\u0060\n- \u0060safetyPolicy\u0060: \u0060context/safety-policy.md\u0060\n\n## Available skills\n\n- \u0060payments-repo-agent.repository-status\u0060: Report payments-service health with contract and reconciliation evidence.\n\n"
+          },
+          {
+            "path": ".typeference/bundle.json",
+            "mediaType": "application/json",
+            "content": "{\n  \u0022id\u0022: \u0022helio/payments-repo-agent@1.0.0\u0022,\n  \u0022displayName\u0022: \u0022Helio Payments Repository Agent\u0022,\n  \u0022description\u0022: \u0022Specializes repository assistance for the fictional payments service.\u0022,\n  \u0022abstract\u0022: false,\n  \u0022lineage\u0022: [\n    \u0022system/object@1.0.0\u0022,\n    \u0022helio/enterprise-agent@1.0.0\u0022,\n    \u0022helio/repo-agent@1.0.0\u0022,\n    \u0022helio/payments-repo-agent@1.0.0\u0022\n  ],\n  \u0022interfaces\u0022: [\n    \u0022helio/interfaces/repository-observer@1.0.0\u0022\n  ],\n  \u0022slots\u0022: {\n    \u0022organization\u0022: \u0022context/organization.md\u0022,\n    \u0022repository\u0022: \u0022context/repository.md\u0022,\n    \u0022safetyPolicy\u0022: \u0022context/safety-policy.md\u0022\n  },\n  \u0022workingNorms\u0022: [\n    \u0022Preserve a clear audit trail for material decisions.\u0022,\n    \u0022State uncertainty and route work to an accountable owner when authority is unclear.\u0022,\n    \u0022Prefer evidence from tests, diffs, and version control over recollection.\u0022\n  ],\n  \u0022contextFiles\u0022: [\n    \u0022context/organization.md\u0022,\n    \u0022context/safety-policy.md\u0022,\n    \u0022context/repository.md\u0022,\n    \u0022context/payments-service.md\u0022\n  ],\n  \u0022skills\u0022: [\n    {\n      \u0022dispatchName\u0022: \u0022payments-repo-agent.repository-status\u0022,\n      \u0022contractId\u0022: \u0022helio/skills/repository-status@1.0.0\u0022,\n      \u0022implementationId\u0022: \u0022helio/skills/payments-repository-status@1.0.0\u0022,\n      \u0022description\u0022: \u0022Report payments-service health with contract and reconciliation evidence.\u0022,\n      \u0022instructions\u0022: \u0022Apply the repository-status contract, then include payment-contract compatibility, reconciliation checks, and rollback readiness.\\nDo not report the service healthy when any required financial-control signal is unavailable.\\n\u0022,\n      \u0022inputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022focus\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}},\\u0022additionalProperties\\u0022:false}\u0022,\n      \u0022outputSchema\u0022: \u0022{\\u0022type\\u0022:\\u0022object\\u0022,\\u0022properties\\u0022:{\\u0022status\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022},\\u0022evidence\\u0022:{\\u0022type\\u0022:\\u0022array\\u0022,\\u0022items\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}},\\u0022risks\\u0022:{\\u0022type\\u0022:\\u0022array\\u0022,\\u0022items\\u0022:{\\u0022type\\u0022:\\u0022string\\u0022}}},\\u0022required\\u0022:[\\u0022status\\u0022,\\u0022evidence\\u0022,\\u0022risks\\u0022]}\u0022,\n      \u0022contextFiles\u0022: [\n        \u0022context/organization.md\u0022,\n        \u0022context/safety-policy.md\u0022,\n        \u0022context/repository.md\u0022,\n        \u0022context/payments-service.md\u0022\n      ],\n      \u0022provenance\u0022: [\n        {\n          \u0022field\u0022: \u0022skill.contract\u0022,\n          \u0022source\u0022: \u0022helio/skills/repository-status@1.0.0\u0022\n        },\n        {\n          \u0022field\u0022: \u0022skill.implementation\u0022,\n          \u0022source\u0022: \u0022helio/skills/payments-repository-status@1.0.0\u0022\n        }\n      ]\n    }\n  ],\n  \u0022provenance\u0022: [\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022system/object@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022system/object@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.organization\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.safetyPolicy\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/enterprise-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022slots.repository\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022workingNorms\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022interfaces.helio/interfaces/repository-observer@1.0.0\u0022,\n      \u0022source\u0022: \u0022helio/repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022displayName\u0022,\n      \u0022source\u0022: \u0022helio/payments-repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022description\u0022,\n      \u0022source\u0022: \u0022helio/payments-repo-agent@1.0.0\u0022\n    },\n    {\n      \u0022field\u0022: \u0022contextFiles\u0022,\n      \u0022source\u0022: \u0022helio/payments-repo-agent@1.0.0\u0022\n    }\n  ]\n}\n"
+          },
+          {
+            "path": "AGENTS.md",
+            "mediaType": "text/markdown",
+            "content": "# Helio Payments Repository Agent\n\nSpecializes repository assistance for the fictional payments service.\n\n## Working norms\n\n- Preserve a clear audit trail for material decisions.\n- State uncertainty and route work to an accountable owner when authority is unclear.\n- Prefer evidence from tests, diffs, and version control over recollection.\n\n## Context slots\n\n- \u0060organization\u0060: \u0060context/organization.md\u0060\n- \u0060repository\u0060: \u0060context/repository.md\u0060\n- \u0060safetyPolicy\u0060: \u0060context/safety-policy.md\u0060\n\n## Available skills\n\n- \u0060payments-repo-agent.repository-status\u0060: Report payments-service health with contract and reconciliation evidence.\n\n"
+          }
+        ]
+      },
+      "metadata": {
+        "generatedBy": "TypeFerence",
+        "sourceDigest": "sha256:86ecbb754ebf69cabec2631e07b96329739fb23c7b1bf32b90c83ddcec8e6787",
+        "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
+        "target": "cursor"
+      },
+      "trustManifest": {
+        "identity": "https://helio.example",
+        "identityType": "https",
+        "provenance": [
+          {
+            "relation": "derivedFrom",
+            "sourceId": "urn:air:helio.example:typeference:source:helio",
+            "sourceDigest": "sha256:86ecbb754ebf69cabec2631e07b96329739fb23c7b1bf32b90c83ddcec8e6787"
+          }
+        ]
+      }
+    }
+  ]
+}
