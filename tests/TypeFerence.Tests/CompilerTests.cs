@@ -232,12 +232,11 @@ abstract: true
     {
         using var compiled = new TempDirectory();
         new TypeFerenceCompiler().Build(Example, compiled.Path, [CompilationTarget.Neutral]);
-        var cli = Path.Combine(Root, "src", "TypeFerence.Cli", "bin", "Debug", "net10.0", "typeference.dll");
         var transport = new StdioClientTransport(new StdioClientTransportOptions
         {
             Name = "TypeFerence test",
             Command = "dotnet",
-            Arguments = [cli, "serve", Path.Combine(compiled.Path, "neutral")],
+            Arguments = [CliAssembly, "serve", Path.Combine(compiled.Path, "neutral")],
             WorkingDirectory = Root
         });
         await using var client = await McpClient.CreateAsync(transport);
@@ -273,19 +272,27 @@ abstract: true
 
     private static async Task<int> RunCli(params string[] arguments)
     {
-        var cli = Directory.EnumerateFiles(Path.Combine(Root, "src", "TypeFerence.Cli", "bin"), "typeference.dll", SearchOption.AllDirectories)
-            .OrderByDescending(File.GetLastWriteTimeUtc)
-            .First();
         using var process = Process.Start(new ProcessStartInfo("dotnet")
         {
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             WorkingDirectory = Root,
-            ArgumentList = { cli }
+            ArgumentList = { CliAssembly }
         }.WithArguments(arguments)) ?? throw new InvalidOperationException("Could not start TypeFerence CLI");
         await process.WaitForExitAsync();
         return process.ExitCode;
+    }
+
+    private static string CliAssembly
+    {
+        get
+        {
+            var configuration = new DirectoryInfo(AppContext.BaseDirectory).Parent?.Name
+                ?? throw new InvalidOperationException("Could not determine the active build configuration");
+            var cli = Path.Combine(Root, "src", "TypeFerence.Cli", "bin", configuration, "net10.0", "typeference.dll");
+            return File.Exists(cli) ? cli : throw new InvalidOperationException($"CLI assembly not found for {configuration}: {cli}");
+        }
     }
 
     private static void CopyDirectory(string source, string destination)
