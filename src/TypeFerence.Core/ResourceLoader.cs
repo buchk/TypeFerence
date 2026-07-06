@@ -16,12 +16,19 @@ public sealed class ResourceLoader
         "^[a-z0-9][a-z0-9.-]*(?:/[a-z0-9][a-z0-9.-]*)+@[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$",
         RegexOptions.CultureInvariant);
 
-    public IReadOnlyDictionary<string, ResourceDocument> Load(string sourceDirectory)
+    public IReadOnlyDictionary<string, ResourceDocument> Load(string sourceDirectory, string? trustConfigurationPath = null)
     {
         var root = Path.GetFullPath(sourceDirectory);
         if (!Directory.Exists(root)) throw new TypeFerenceException($"Source directory not found: {root}");
         var result = new SortedDictionary<string, ResourceDocument>(StringComparer.Ordinal);
-        foreach (var file in Directory.EnumerateFiles(root, "*.yaml", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
+        var excludedTrustFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            Path.Combine(root, TrustConfigurationLoader.DefaultFileName)
+        };
+        if (trustConfigurationPath is not null) excludedTrustFiles.Add(Path.GetFullPath(trustConfigurationPath));
+        foreach (var file in Directory.EnumerateFiles(root, "*.yaml", SearchOption.AllDirectories)
+                     .Where(x => !excludedTrustFiles.Contains(Path.GetFullPath(x)))
+                     .Order(StringComparer.Ordinal))
         {
             ResourceDocument resource;
             try

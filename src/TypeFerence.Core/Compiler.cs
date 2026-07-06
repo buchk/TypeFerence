@@ -6,15 +6,20 @@ namespace TypeFerence.Core;
 
 public enum CompilationTarget { Neutral, Codex, Copilot, Cursor }
 
-public sealed record ArdPublicationOptions(string PublisherDomain);
+public sealed record ArdPublicationOptions(
+    string PublisherDomain,
+    string? TrustConfigurationPath = null,
+    string? TrustSignaturesPath = null,
+    bool AllowUnsignedTrust = false);
 
 public sealed class TypeFerenceCompiler
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    public IReadOnlyList<ResolvedAgent> Validate(string source)
+    public IReadOnlyList<ResolvedAgent> Validate(string source, string? trustConfigurationPath = null)
     {
-        var resources = new ResourceLoader().Load(source);
+        var trust = TrustConfigurationLoader.Load(source, trustConfigurationPath);
+        var resources = new ResourceLoader().Load(source, trust?.Path);
         return new TypeResolver(resources).ResolveAll();
     }
 
@@ -24,7 +29,9 @@ public sealed class TypeFerenceCompiler
         IEnumerable<CompilationTarget> targets,
         ArdPublicationOptions? ardPublication = null)
     {
-        var agents = Validate(source).Where(x => !x.Abstract).OrderBy(x => x.Id, StringComparer.Ordinal).ToArray();
+        var trust = TrustConfigurationLoader.Load(source, ardPublication?.TrustConfigurationPath);
+        var resources = new ResourceLoader().Load(source, trust?.Path);
+        var agents = new TypeResolver(resources).ResolveAll().Where(x => !x.Abstract).OrderBy(x => x.Id, StringComparer.Ordinal).ToArray();
         var requestedTargets = targets.Distinct().Order().ToArray();
         if (requestedTargets.Length == 0) throw new TypeFerenceException("At least one compilation target is required");
         var root = Path.GetFullPath(output);
@@ -42,7 +49,22 @@ public sealed class TypeFerenceCompiler
             var ardRoot = Path.Combine(root, "ard");
             if (Directory.Exists(ardRoot)) Directory.Delete(ardRoot, true);
             Directory.CreateDirectory(ardRoot);
-            WriteArdCatalog(ardRoot, source, root, agents, requestedTargets, ardPublication.PublisherDomain, written);
+            if (ardPublication.TrustSignaturesPath is not null)
+            {
+                var sourceRoot = Path.GetFullPath(source).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                var signaturePath = Path.GetFullPath(ardPublication.TrustSignaturesPath);
+                if (signaturePath.StartsWith(sourceRoot, StringComparison.OrdinalIgnoreCase))
+                    throw new TypeFerenceException("Trust signatures file must be outside the source root to avoid a digest/signature cycle");
+            }
+            var signatures = ardPublication.TrustSignaturesPath is null
+                ? new SortedDictionary<string, string>(StringComparer.Ordinal)
+                : TrustConfigurationLoader.LoadSignatures(ardPublication.TrustSignaturesPath);
+            if (signatures.Count > 0 && trust is null)
+                throw new TypeFerenceException("--trust-signatures requires a trust configuration");
+            if (ardPublication.AllowUnsignedTrust && trust is null)
+                throw new TypeFerenceException("--allow-unsigned-trust requires a trust configuration");
+            WriteArdCatalog(ardRoot, source, root, agents, requestedTargets, ardPublication.PublisherDomain,
+                trust?.Configuration, signatures, ardPublication.AllowUnsignedTrust, written);
         }
         return written.Order(StringComparer.Ordinal).ToArray();
     }
@@ -126,6 +148,9 @@ public sealed class TypeFerenceCompiler
         IReadOnlyList<ResolvedAgent> agents,
         IReadOnlyList<CompilationTarget> targets,
         string publisherDomain,
+        TrustConfiguration? trustConfiguration,
+        IReadOnlyDictionary<string, string> signatures,
+        bool allowUnsignedTrust,
         List<string> written)
     {
         if (!System.Text.RegularExpressions.Regex.IsMatch(
@@ -137,37 +162,66 @@ public sealed class TypeFerenceCompiler
         var sourceName = UrnSegment(Path.GetFileName(Path.GetFullPath(source).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)));
         var sourceIdentifier = $"urn:air:{publisherDomain}:typeference:source:{sourceName}";
         var sourceDigest = "sha256:" + HashDirectory(source);
-        var entries = new List<object>
+        var sourceEntry = new
         {
-            new
+            identifier = sourceIdentifier,
+            displayName = $"TypeFerence source package: {sourceName}",
+            type = "application/vnd.typeference.source-package+json",
+            description = "Canonical typed source package for validation, audit, and reproducible compilation.",
+            version = "1.0.0",
+            data = new
             {
-                identifier = sourceIdentifier,
-                displayName = $"TypeFerence source package: {sourceName}",
-                type = "application/vnd.typeference.source-package+json",
-                description = "Canonical typed source package for validation, audit, and reproducible compilation.",
-                version = "1.0.0",
-                data = new
-                {
-                    schemaVersion = 1,
-                    digest = sourceDigest,
-                    files = PackageFiles(source)
-                },
-                metadata = new SortedDictionary<string, object>(StringComparer.Ordinal)
-                {
-                    ["generatedBy"] = "TypeFerence",
-                    ["role"] = "canonical-source"
-                }
+                schemaVersion = 1,
+                digest = sourceDigest,
+                files = PackageFiles(source)
+            },
+            metadata = new SortedDictionary<string, object>(StringComparer.Ordinal)
+            {
+                ["generatedBy"] = "TypeFerence",
+                ["role"] = "canonical-source"
             }
         };
+        var entries = new List<object>();
+        var signedIdentifiers = new HashSet<string>(StringComparer.Ordinal);
+        if (trustConfiguration?.Source is null) entries.Add(sourceEntry);
+        else
+        {
+            TrustConfigurationLoader.ValidateIdentityForPublisher(
+                trustConfiguration.Source.Identity,
+                trustConfiguration.Source.IdentityType,
+                publisherDomain,
+                "source.identity");
+            var manifest = BuildTrustManifest(
+                trustConfiguration.Source,
+                trustConfiguration.Source.Identity,
+                [],
+                sourceDigest,
+                signatures.GetValueOrDefault(sourceIdentifier),
+                sourceIdentifier,
+                allowUnsignedTrust);
+            if (signatures.ContainsKey(sourceIdentifier)) signedIdentifiers.Add(sourceIdentifier);
+            entries.Add(new
+            {
+                sourceEntry.identifier,
+                sourceEntry.displayName,
+                sourceEntry.type,
+                sourceEntry.description,
+                sourceEntry.version,
+                sourceEntry.data,
+                sourceEntry.metadata,
+                trustManifest = manifest
+            });
+        }
 
         foreach (var target in targets)
             foreach (var agent in agents)
             {
                 var targetName = target.ToString().ToLowerInvariant();
                 var agentRoot = Path.Combine(outputRoot, targetName, Slug(agent.Id));
-                entries.Add(new
+                var identifier = $"urn:air:{publisherDomain}:typeference:{targetName}:{Slug(agent.Id)}";
+                var targetEntry = new
                 {
-                    identifier = $"urn:air:{publisherDomain}:typeference:{targetName}:{Slug(agent.Id)}",
+                    identifier,
                     displayName = $"{agent.DisplayName} ({targetName})",
                     type = "application/vnd.typeference.target-bundle+json",
                     description = $"Precompiled {targetName} artifact bundle. {agent.Description}",
@@ -196,8 +250,53 @@ public sealed class TypeFerenceCompiler
                         new { relation = "derivedFrom", sourceId = sourceIdentifier, sourceDigest }
                     }
                     }
-                });
+                };
+                if (trustConfiguration?.Bundles is null) entries.Add(targetEntry);
+                else
+                {
+                    var version = agent.Id.Split('@').Last();
+                    var identity = TrustConfigurationLoader.ExpandIdentity(
+                        trustConfiguration.Bundles.IdentityTemplate,
+                        publisherDomain,
+                        targetName,
+                        Slug(agent.Id),
+                        version);
+                    TrustConfigurationLoader.ValidateIdentityForPublisher(
+                        identity,
+                        trustConfiguration.Bundles.IdentityType,
+                        publisherDomain,
+                        "bundles.identityTemplate");
+                    var compilerProvenance = new[]
+                    {
+                        new TrustProvenanceLink { Relation = "derivedFrom", SourceId = sourceIdentifier, SourceDigest = sourceDigest }
+                    };
+                    var artifactDigest = "sha256:" + HashDirectory(agentRoot);
+                    var manifest = BuildTrustManifest(
+                        trustConfiguration.Bundles,
+                        identity,
+                        compilerProvenance,
+                        artifactDigest,
+                        signatures.GetValueOrDefault(identifier),
+                        identifier,
+                        allowUnsignedTrust);
+                    if (signatures.ContainsKey(identifier)) signedIdentifiers.Add(identifier);
+                    entries.Add(new
+                    {
+                        targetEntry.identifier,
+                        targetEntry.displayName,
+                        targetEntry.type,
+                        targetEntry.description,
+                        targetEntry.capabilities,
+                        targetEntry.version,
+                        targetEntry.data,
+                        targetEntry.metadata,
+                        trustManifest = manifest
+                    });
+                }
             }
+        var unknownSignature = signatures.Keys.FirstOrDefault(x => !signedIdentifiers.Contains(x));
+        if (unknownSignature is not null)
+            throw new TypeFerenceException($"Trust signature identifier does not match a configured catalog entry: {unknownSignature}");
         var catalog = new
         {
             specVersion = "1.0",
@@ -205,6 +304,92 @@ public sealed class TypeFerenceCompiler
             entries = entries.ToArray()
         };
         Write(Path.Combine(ardRoot, "ai-catalog.json"), JsonSerializer.Serialize(catalog, JsonOptions) + "\n", written);
+    }
+
+    private static SortedDictionary<string, object?> BuildTrustManifest(
+        TrustProfile profile,
+        string identity,
+        IEnumerable<TrustProvenanceLink> compilerProvenance,
+        string artifactDigest,
+        string? signature,
+        string catalogIdentifier,
+        bool allowUnsignedTrust)
+    {
+        if (profile.SignatureIntent?.Required == true && signature is null && !allowUnsignedTrust)
+            throw new TypeFerenceException($"Trust signature is required for catalog entry: {catalogIdentifier}");
+        var metadata = TrustConfigurationLoader.CanonicalMetadata(profile.Metadata);
+        var digestKey = TrustConfigurationLoader.TypeFerenceMetadataPrefix + ".artifactDigest";
+        var intentKey = TrustConfigurationLoader.TypeFerenceMetadataPrefix + ".signatureIntent";
+        if (metadata.ContainsKey(digestKey) || metadata.ContainsKey(intentKey))
+            throw new TypeFerenceException($"Trust metadata cannot override TypeFerence-managed keys for catalog entry: {catalogIdentifier}");
+        metadata[digestKey] = new SortedDictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["digest"] = artifactDigest,
+            ["scheme"] = "typeference-directory-v1"
+        };
+        if (profile.SignatureIntent is not null)
+        {
+            var intent = new SortedDictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["required"] = profile.SignatureIntent.Required,
+                ["status"] = "external"
+            };
+            if (!string.IsNullOrWhiteSpace(profile.SignatureIntent.Algorithm)) intent["algorithm"] = profile.SignatureIntent.Algorithm;
+            if (!string.IsNullOrWhiteSpace(profile.SignatureIntent.KeyRef)) intent["keyRef"] = profile.SignatureIntent.KeyRef;
+            metadata[intentKey] = intent;
+        }
+
+        var manifest = new SortedDictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["identity"] = identity,
+            ["metadata"] = metadata
+        };
+        if (!string.IsNullOrWhiteSpace(profile.IdentityType)) manifest["identityType"] = profile.IdentityType;
+        if (profile.TrustSchema is not null) manifest["trustSchema"] = TrustSchemaObject(profile.TrustSchema);
+        if (profile.Attestations.Count > 0) manifest["attestations"] = profile.Attestations.Select(AttestationObject).ToArray();
+        var provenance = compilerProvenance.Concat(profile.Provenance).Select(ProvenanceObject).ToArray();
+        if (provenance.Length > 0) manifest["provenance"] = provenance;
+        if (signature is not null) manifest["signature"] = signature;
+        return manifest;
+    }
+
+    private static SortedDictionary<string, object?> TrustSchemaObject(TrustSchema value)
+    {
+        var result = new SortedDictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["identifier"] = value.Identifier,
+            ["version"] = value.Version
+        };
+        if (value.GovernanceUri is not null) result["governanceUri"] = value.GovernanceUri;
+        if (value.VerificationMethods.Count > 0) result["verificationMethods"] = value.VerificationMethods.ToArray();
+        return result;
+    }
+
+    private static SortedDictionary<string, object?> AttestationObject(TrustAttestation value)
+    {
+        var result = new SortedDictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["type"] = value.Type,
+            ["uri"] = value.Uri
+        };
+        if (value.Digest is not null) result["digest"] = value.Digest;
+        if (value.Size is not null) result["size"] = value.Size;
+        if (value.Description is not null) result["description"] = value.Description;
+        return result;
+    }
+
+    private static SortedDictionary<string, object?> ProvenanceObject(TrustProvenanceLink value)
+    {
+        var result = new SortedDictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["relation"] = value.Relation,
+            ["sourceId"] = value.SourceId
+        };
+        if (value.SourceDigest is not null) result["sourceDigest"] = value.SourceDigest;
+        if (value.RegistryUri is not null) result["registryUri"] = value.RegistryUri;
+        if (value.StatementUri is not null) result["statementUri"] = value.StatementUri;
+        if (value.SignatureRef is not null) result["signatureRef"] = value.SignatureRef;
+        return result;
     }
 
     private static object[] PackageFiles(string root) => Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)

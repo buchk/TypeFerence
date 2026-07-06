@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Diagnostics;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
@@ -87,6 +88,237 @@ public sealed class CompilerTests
         });
         File.AppendAllText(Path.Combine(two.Path, "neutral", "executive-assistant", "AGENTS.md"), "changed");
         Assert.True(DiffResult.Compare(one.Path, two.Path).Different);
+    }
+
+    [Fact]
+    public void TrustConfiguration_EnrichesSourceAndBundlesDeterministically()
+    {
+        using var source = new TempDirectory();
+        using var one = new TempDirectory();
+        using var two = new TempDirectory();
+        CopyDirectory(Example, source.Path);
+        File.WriteAllText(Path.Combine(source.Path, "typeference.trust.yaml"), TrustConfiguration());
+
+        var compiler = new TypeFerenceCompiler();
+        compiler.Build(source.Path, one.Path, [CompilationTarget.Neutral], new ArdPublicationOptions("helio.example"));
+        compiler.Build(source.Path, two.Path, [CompilationTarget.Neutral], new ArdPublicationOptions("helio.example"));
+        Assert.Equal(TypeFerenceCompiler.HashDirectory(one.Path), TypeFerenceCompiler.HashDirectory(two.Path));
+        Assert.False(DiffResult.Compare(one.Path, two.Path).Different);
+
+        using var catalog = JsonDocument.Parse(File.ReadAllText(Path.Combine(one.Path, "ard", "ai-catalog.json")));
+        var entries = catalog.RootElement.GetProperty("entries").EnumerateArray().ToArray();
+        var sourceEntry = Assert.Single(entries, x => x.GetProperty("type").GetString() == "application/vnd.typeference.source-package+json");
+        var sourceTrust = sourceEntry.GetProperty("trustManifest");
+        Assert.Equal("did:web:helio.example:typeference:source:helio", sourceTrust.GetProperty("identity").GetString());
+        Assert.Equal("https://slsa.dev/provenance/v1", sourceTrust.GetProperty("attestations")[0].GetProperty("type").GetString());
+        Assert.Equal("external", sourceTrust.GetProperty("metadata")
+            .GetProperty("com.github.buchk.typeference.signatureIntent").GetProperty("status").GetString());
+
+        var bundles = entries.Where(x => x.GetProperty("type").GetString() == "application/vnd.typeference.target-bundle+json").ToArray();
+        Assert.Equal(2, bundles.Length);
+        Assert.All(bundles, entry =>
+        {
+            var trust = entry.GetProperty("trustManifest");
+            Assert.StartsWith("spiffe://helio.example/typeference/neutral/", trust.GetProperty("identity").GetString(), StringComparison.Ordinal);
+            Assert.Equal("spiffe", trust.GetProperty("identityType").GetString());
+            Assert.Equal("urn:trust:helio-agent-governance-v1", trust.GetProperty("trustSchema").GetProperty("identifier").GetString());
+            Assert.Equal("derivedFrom", trust.GetProperty("provenance")[0].GetProperty("relation").GetString());
+            Assert.Equal("publishedFrom", trust.GetProperty("provenance")[1].GetProperty("relation").GetString());
+            var metadata = trust.GetProperty("metadata");
+            Assert.Equal("typeference-directory-v1", metadata.GetProperty("com.github.buchk.typeference.artifactDigest").GetProperty("scheme").GetString());
+            Assert.Equal("sha256:" + new string('c', 64), metadata.GetProperty("com.helio.verification").GetProperty("policyDigest").GetString());
+        });
+    }
+
+    [Fact]
+    public void ExternalDetachedJwsSignatures_AreImportedWithoutKeys()
+    {
+        using var source = new TempDirectory();
+        using var output = new TempDirectory();
+        using var unsignedOutput = new TempDirectory();
+        using var signatureDirectory = new TempDirectory();
+        CopyDirectory(Example, source.Path);
+        File.WriteAllText(Path.Combine(source.Path, "typeference.trust.yaml"), TrustConfiguration());
+        new TypeFerenceCompiler().Build(
+            source.Path, unsignedOutput.Path, [CompilationTarget.Neutral], new ArdPublicationOptions("helio.example"));
+        var signaturesPath = Path.Combine(signatureDirectory.Path, "signatures.json");
+        File.WriteAllText(signaturesPath, """
+{
+  "urn:air:helio.example:typeference:neutral:executive-assistant": "eyJhbGciOiJFUzI1NiJ9..c2ln",
+  "urn:air:helio.example:typeference:neutral:payments-repo-agent": "eyJhbGciOiJFUzI1NiJ9..c2ln"
+}
+""");
+
+        new TypeFerenceCompiler().Build(
+            source.Path,
+            output.Path,
+            [CompilationTarget.Neutral],
+            new ArdPublicationOptions("helio.example", TrustSignaturesPath: signaturesPath));
+        using var catalog = JsonDocument.Parse(File.ReadAllText(Path.Combine(output.Path, "ard", "ai-catalog.json")));
+        var unsignedCatalog = JsonNode.Parse(File.ReadAllText(Path.Combine(unsignedOutput.Path, "ard", "ai-catalog.json")))!;
+        var unsignedManifests = unsignedCatalog["entries"]!.AsArray()
+            .Where(x => x!["type"]!.GetValue<string>() == "application/vnd.typeference.target-bundle+json")
+            .ToDictionary(x => x!["identifier"]!.GetValue<string>(), x => x!["trustManifest"]!.DeepClone(), StringComparer.Ordinal);
+        var bundles = catalog.RootElement.GetProperty("entries").EnumerateArray()
+            .Where(x => x.GetProperty("type").GetString() == "application/vnd.typeference.target-bundle+json");
+        Assert.All(bundles, entry =>
+        {
+            var trust = entry.GetProperty("trustManifest");
+            Assert.Equal("eyJhbGciOiJFUzI1NiJ9..c2ln", trust.GetProperty("signature").GetString());
+            Assert.Equal("external", trust.GetProperty("metadata")
+                .GetProperty("com.github.buchk.typeference.signatureIntent").GetProperty("status").GetString());
+            var signedPayload = JsonNode.Parse(trust.GetRawText())!.AsObject();
+            signedPayload.Remove("signature");
+            Assert.True(JsonNode.DeepEquals(unsignedManifests[entry.GetProperty("identifier").GetString()!], signedPayload));
+        });
+    }
+
+    [Fact]
+    public void TrustSignaturesInsideSource_AreRejectedToPreventCycles()
+    {
+        using var source = new TempDirectory();
+        using var output = new TempDirectory();
+        CopyDirectory(Example, source.Path);
+        File.WriteAllText(Path.Combine(source.Path, "typeference.trust.yaml"), TrustConfiguration());
+        var signatures = Path.Combine(source.Path, "signatures.json");
+        File.WriteAllText(signatures, "{}");
+        var exception = Assert.Throws<TypeFerenceException>(() => new TypeFerenceCompiler().Build(
+            source.Path, output.Path, [CompilationTarget.Neutral], new ArdPublicationOptions("helio.example", TrustSignaturesPath: signatures)));
+        Assert.Contains("digest/signature cycle", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("sha256:abc")]
+    [InlineData("SHA256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    public void TrustConfiguration_RejectsMalformedDigests(string digest)
+    {
+        using var source = new TempDirectory();
+        CopyDirectory(Example, source.Path);
+        var valid = "sha256:" + new string('a', 64);
+        File.WriteAllText(Path.Combine(source.Path, "typeference.trust.yaml"), TrustConfiguration().Replace(valid, digest, StringComparison.Ordinal));
+        var exception = Assert.Throws<TypeFerenceException>(() => new TypeFerenceCompiler().Validate(source.Path));
+        Assert.Contains("lowercase SHA-256", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void TrustSignatureMap_RejectsUnknownEntries()
+    {
+        using var source = new TempDirectory();
+        using var output = new TempDirectory();
+        using var signatureDirectory = new TempDirectory();
+        CopyDirectory(Example, source.Path);
+        File.WriteAllText(Path.Combine(source.Path, "typeference.trust.yaml"), TrustConfiguration());
+        var signatures = Path.Combine(signatureDirectory.Path, "signatures.json");
+        File.WriteAllText(signatures, "{\"urn:air:helio.example:typeference:neutral:unknown\":\"e30..c2ln\"}");
+        var exception = Assert.Throws<TypeFerenceException>(() => new TypeFerenceCompiler().Build(
+            source.Path, output.Path, [CompilationTarget.Neutral], new ArdPublicationOptions("helio.example", TrustSignaturesPath: signatures)));
+        Assert.Contains("does not match", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void RequiredTrustSignatures_MustCoverEveryConfiguredEntry()
+    {
+        using var source = new TempDirectory();
+        using var output = new TempDirectory();
+        CopyDirectory(Example, source.Path);
+        File.WriteAllText(Path.Combine(source.Path, "typeference.trust.yaml"), TrustConfiguration(bundleSignatureRequired: true));
+        var exception = Assert.Throws<TypeFerenceException>(() => new TypeFerenceCompiler().Build(
+            source.Path, output.Path, [CompilationTarget.Neutral], new ArdPublicationOptions("helio.example")));
+        Assert.Contains("signature is required", exception.Message, StringComparison.OrdinalIgnoreCase);
+
+        new TypeFerenceCompiler().Build(
+            source.Path,
+            output.Path,
+            [CompilationTarget.Neutral],
+            new ArdPublicationOptions("helio.example", AllowUnsignedTrust: true));
+        using var catalog = JsonDocument.Parse(File.ReadAllText(Path.Combine(output.Path, "ard", "ai-catalog.json")));
+        var bundles = catalog.RootElement.GetProperty("entries").EnumerateArray()
+            .Where(x => x.GetProperty("type").GetString() == "application/vnd.typeference.target-bundle+json");
+        Assert.All(bundles, x => Assert.False(x.GetProperty("trustManifest").TryGetProperty("signature", out _)));
+    }
+
+    [Theory]
+    [InlineData("spiffe://other.example/typeference/{target}/{agent}", "does not align")]
+    [InlineData("spiffe://helio.example/typeference/{agent}", "must contain {agent} and {target}")]
+    public void InvalidTrustIdentities_AreRejected(string identityTemplate, string expected)
+    {
+        using var source = new TempDirectory();
+        using var output = new TempDirectory();
+        CopyDirectory(Example, source.Path);
+        File.WriteAllText(Path.Combine(source.Path, "typeference.trust.yaml"), TrustConfiguration(identityTemplate: identityTemplate));
+        var exception = Assert.Throws<TypeFerenceException>(() => new TypeFerenceCompiler().Build(
+            source.Path, output.Path, [CompilationTarget.Neutral], new ArdPublicationOptions("helio.example")));
+        Assert.Contains(expected, exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("dns:other.example", "dns", "does not align")]
+    [InlineData("did:key:z6MkhExample", "did", "does not expose")]
+    public void TrustIdentity_MustExposeThePublisherDomain(string identity, string identityType, string expected)
+    {
+        using var source = new TempDirectory();
+        using var output = new TempDirectory();
+        CopyDirectory(Example, source.Path);
+        File.WriteAllText(Path.Combine(source.Path, "typeference.trust.yaml"), SourceTrustConfiguration(identity, identityType));
+        var exception = Assert.Throws<TypeFerenceException>(() => new TypeFerenceCompiler().Build(
+            source.Path, output.Path, [CompilationTarget.Neutral], new ArdPublicationOptions("helio.example")));
+        Assert.Contains(expected, exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void CustomIdentityTypeHints_RemainExtensible()
+    {
+        using var source = new TempDirectory();
+        using var output = new TempDirectory();
+        CopyDirectory(Example, source.Path);
+        var configuration = TrustConfiguration().Replace("identityType: spiffe", "identityType: helio-workload-v1", StringComparison.Ordinal);
+        File.WriteAllText(Path.Combine(source.Path, "typeference.trust.yaml"), configuration);
+        new TypeFerenceCompiler().Build(
+            source.Path, output.Path, [CompilationTarget.Neutral], new ArdPublicationOptions("helio.example"));
+        using var catalog = JsonDocument.Parse(File.ReadAllText(Path.Combine(output.Path, "ard", "ai-catalog.json")));
+        var bundle = catalog.RootElement.GetProperty("entries").EnumerateArray()
+            .First(x => x.GetProperty("type").GetString() == "application/vnd.typeference.target-bundle+json");
+        Assert.Equal("helio-workload-v1", bundle.GetProperty("trustManifest").GetProperty("identityType").GetString());
+    }
+
+    [Fact]
+    public void DnsIdentity_CanBindToPublisherDomain()
+    {
+        using var source = new TempDirectory();
+        using var output = new TempDirectory();
+        CopyDirectory(Example, source.Path);
+        File.WriteAllText(Path.Combine(source.Path, "typeference.trust.yaml"), SourceTrustConfiguration("dns:helio.example", "dns"));
+        new TypeFerenceCompiler().Build(
+            source.Path, output.Path, [CompilationTarget.Neutral], new ArdPublicationOptions("helio.example"));
+        using var catalog = JsonDocument.Parse(File.ReadAllText(Path.Combine(output.Path, "ard", "ai-catalog.json")));
+        Assert.Equal("dns:helio.example", catalog.RootElement.GetProperty("entries")[0]
+            .GetProperty("trustManifest").GetProperty("identity").GetString());
+    }
+
+    [Fact]
+    public async Task CliBuild_AcceptsExplicitTrustConfiguration()
+    {
+        using var source = new TempDirectory();
+        using var output = new TempDirectory();
+        CopyDirectory(Example, source.Path);
+        var trustPath = Path.Combine(source.Path, "enterprise.trust.yaml");
+        File.WriteAllText(trustPath, TrustConfiguration());
+        File.WriteAllText(Path.Combine(source.Path, "typeference.trust.yaml"), SourceTrustConfiguration("did:web:other.example:unused", "did"));
+        Assert.Equal(0, await RunCli("validate", source.Path, "--trust-config", trustPath));
+        Assert.Equal(0, await RunCli("build", source.Path, "--target", "neutral", "--out", output.Path,
+            "--emit-ard", "--publisher-domain", "helio.example", "--trust-config", trustPath));
+        using var catalog = JsonDocument.Parse(File.ReadAllText(Path.Combine(output.Path, "ard", "ai-catalog.json")));
+        Assert.All(catalog.RootElement.GetProperty("entries").EnumerateArray(), x => Assert.True(x.TryGetProperty("trustManifest", out _)));
+    }
+
+    [Theory]
+    [InlineData("--trust-config")]
+    [InlineData("--trust-signatures")]
+    public async Task CliTrustOptions_RequireValues(string option)
+    {
+        using var output = new TempDirectory();
+        Assert.Equal(2, await RunCli("build", Example, "--target", "neutral", "--out", output.Path,
+            "--emit-ard", "--publisher-domain", "helio.example", option));
     }
 
     [Fact]
@@ -302,6 +534,54 @@ abstract: true
         foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
             File.Copy(file, Path.Combine(destination, Path.GetRelativePath(source, file)), true);
     }
+
+    private static string TrustConfiguration(string? identityTemplate = null, bool bundleSignatureRequired = false) => $$"""
+schemaVersion: 1
+source:
+  identity: did:web:helio.example:typeference:source:helio
+  identityType: did
+  attestations:
+    - type: https://slsa.dev/provenance/v1
+      uri: https://trust.helio.example/provenance/source.intoto.jsonl
+      digest: sha256:{{new string('a', 64)}}
+  metadata:
+    com.helio.governance:
+      policy:
+        digest: sha256:{{new string('b', 64)}}
+  signatureIntent:
+    algorithm: ES256
+    keyRef: did:web:helio.example#catalog-signing
+bundles:
+  identityTemplate: {{identityTemplate ?? "spiffe://helio.example/typeference/{target}/{agent}"}}
+  identityType: spiffe
+  trustSchema:
+    identifier: urn:trust:helio-agent-governance-v1
+    version: "1.0"
+    governanceUri: https://policy.helio.example/governance
+    verificationMethods: [spiffe, x509]
+  attestations:
+    - type: tag:agentrust.io,2026:trace-v0.1
+      uri: https://trust.helio.example/runtime-evidence-profile.json
+  provenance:
+    - relation: publishedFrom
+      sourceId: https://github.com/helio/agents
+      sourceDigest: sha256:{{new string('d', 64)}}
+  metadata:
+    com.helio.verification:
+      policyDigest: sha256:{{new string('c', 64)}}
+      runtimeEvidenceExpected: true
+  signatureIntent:
+    algorithm: ES256
+    keyRef: did:web:helio.example#catalog-signing
+    required: {{bundleSignatureRequired.ToString().ToLowerInvariant()}}
+""";
+
+    private static string SourceTrustConfiguration(string identity, string identityType) => $$"""
+schemaVersion: 1
+source:
+  identity: {{identity}}
+  identityType: {{identityType}}
+""";
 
     private sealed class TempDirectory : IDisposable
     {
