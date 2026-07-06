@@ -31,7 +31,7 @@ internal static class Entry
     private static int Validate(string[] args)
     {
         var source = Required(args, 1, "source");
-        var agents = new TypeFerenceCompiler().Validate(source);
+        var agents = new TypeFerenceCompiler().Validate(source, Option(args, "--trust-config"));
         Console.WriteLine($"Valid: {agents.Count} agents resolved.");
         return 0;
     }
@@ -42,14 +42,20 @@ internal static class Entry
         var output = Option(args, "--out") ?? "dist";
         var target = Option(args, "--target") ?? "all";
         var publisherDomain = Option(args, "--publisher-domain");
+        var trustConfig = Option(args, "--trust-config");
+        var trustSignatures = Option(args, "--trust-signatures");
+        var allowUnsignedTrust = args.Contains("--allow-unsigned-trust", StringComparer.Ordinal);
         var emitArd = args.Contains("--emit-ard", StringComparer.Ordinal);
         if (emitArd && publisherDomain is null) throw new TypeFerenceException("--emit-ard requires --publisher-domain");
         if (!emitArd && publisherDomain is not null) throw new TypeFerenceException("--publisher-domain requires --emit-ard");
+        if (!emitArd && trustConfig is not null) throw new TypeFerenceException("--trust-config requires --emit-ard");
+        if (!emitArd && trustSignatures is not null) throw new TypeFerenceException("--trust-signatures requires --emit-ard");
+        if (!emitArd && allowUnsignedTrust) throw new TypeFerenceException("--allow-unsigned-trust requires --emit-ard");
         var files = new TypeFerenceCompiler().Build(
             source,
             output,
             ParseTargets(target),
-            emitArd ? new ArdPublicationOptions(publisherDomain!) : null);
+            emitArd ? new ArdPublicationOptions(publisherDomain!, trustConfig, trustSignatures, allowUnsignedTrust) : null);
         Console.WriteLine($"Built {files.Count} files at {Path.GetFullPath(output)}");
         Console.WriteLine($"SHA-256 {TypeFerenceCompiler.HashDirectory(output)}");
         return 0;
@@ -73,14 +79,20 @@ internal static class Entry
         try
         {
             var publisherDomain = Option(args, "--publisher-domain");
+            var trustConfig = Option(args, "--trust-config");
+            var trustSignatures = Option(args, "--trust-signatures");
+            var allowUnsignedTrust = args.Contains("--allow-unsigned-trust", StringComparer.Ordinal);
             var emitArd = args.Contains("--emit-ard", StringComparer.Ordinal);
             if (emitArd && publisherDomain is null) throw new TypeFerenceException("--emit-ard requires --publisher-domain");
             if (!emitArd && publisherDomain is not null) throw new TypeFerenceException("--publisher-domain requires --emit-ard");
+            if (!emitArd && trustConfig is not null) throw new TypeFerenceException("--trust-config requires --emit-ard");
+            if (!emitArd && trustSignatures is not null) throw new TypeFerenceException("--trust-signatures requires --emit-ard");
+            if (!emitArd && allowUnsignedTrust) throw new TypeFerenceException("--allow-unsigned-trust requires --emit-ard");
             new TypeFerenceCompiler().Build(
                 source,
                 temp,
                 ParseTargets(Option(args, "--target") ?? "all"),
-                emitArd ? new ArdPublicationOptions(publisherDomain!) : null);
+                emitArd ? new ArdPublicationOptions(publisherDomain!, trustConfig, trustSignatures, allowUnsignedTrust) : null);
             var result = DiffResult.Compare(against, temp);
             if (args.Contains("--json", StringComparer.Ordinal)) Console.WriteLine(JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true }));
             else
@@ -132,7 +144,14 @@ internal static class Entry
     };
 
     private static string Required(string[] args, int index, string name) => args.Length > index ? args[index] : throw new TypeFerenceException($"Missing {name}");
-    private static string? Option(string[] args, string name) { var i = Array.IndexOf(args, name); return i >= 0 && i + 1 < args.Length ? args[i + 1] : null; }
+    private static string? Option(string[] args, string name)
+    {
+        var i = Array.IndexOf(args, name);
+        if (i < 0) return null;
+        if (i + 1 >= args.Length || args[i + 1].StartsWith("--", StringComparison.Ordinal))
+            throw new TypeFerenceException($"{name} requires a value");
+        return args[i + 1];
+    }
     private static int Fail(string message) { Console.Error.WriteLine($"typeference: {message}"); return 2; }
     private static int Help()
     {
@@ -140,12 +159,16 @@ internal static class Entry
 TypeFerence - typed coherence for AI agents
 
 Commands:
-  typeference validate <source>
+  typeference validate <source> [--trust-config path]
   typeference build <source> [--target all|neutral|codex|copilot|cursor] [--out dist]
-      [--emit-ard --publisher-domain example.com]
+      [--emit-ard --publisher-domain example.com] [--trust-config path]
+      [--trust-signatures signatures.json]
+      [--allow-unsigned-trust]
   typeference inspect <agent-id> [--source path]
   typeference diff <source> --against <compiled-dir> [--target all]
-      [--emit-ard --publisher-domain example.com] [--json]
+      [--emit-ard --publisher-domain example.com] [--trust-config path]
+      [--trust-signatures signatures.json] [--json]
+      [--allow-unsigned-trust]
   typeference serve <source>
 """);
         return 0;

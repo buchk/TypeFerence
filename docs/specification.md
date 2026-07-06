@@ -79,6 +79,45 @@ When requested, the reference compiler emits:
 
 The v1 package media types are experimental `application/vnd.typeference.source-package+json` and `application/vnd.typeference.target-bundle+json`. A target bundle contains the exact generated files and names its intended runtime. ARD discovery does not install those files or make one target's format executable by another target. Directly callable services SHOULD instead be published using their native MCP, A2A, OpenAPI, or successor artifact card after deployment.
 
+### Trust metadata compilation
+
+TypeFerence targets the draft AI Catalog Trust Manifest as published at <https://ai-catalog.io/>. Draft evolution MAY require corresponding changes in a future TypeFerence schema version.
+
+A source root MAY contain `typeference.trust.yaml`. The file is part of the canonical source package and its digest, but it is not a typed agent resource and does not participate in inheritance or behavioral resolution. A different trust configuration beneath the source root MAY be selected explicitly. Trust metadata is publication configuration: native target bundles remain usable without ARD.
+
+The trust configuration has `schemaVersion: 1` and MAY contain `source` and `bundles` profiles. At least one profile is required. A source profile requires a literal `identity`. A bundles profile requires an `identityTemplate` containing both `{agent}` and `{target}`; `{publisher}` and `{version}` are also supported. Each profile MAY contain:
+
+- `identityType`
+- an AI Catalog `trustSchema`
+- AI Catalog `attestations`
+- additional AI Catalog `provenance` links
+- arbitrary JSON-compatible `metadata`
+- `signatureIntent` containing an algorithm, key reference, and optional required flag
+
+TypeFerence MUST preserve its generated `derivedFrom` link as the first provenance link for every target bundle. Configured links follow it in source order. It MUST add a deterministic target artifact digest to `com.github.buchk.typeference.artifactDigest` in Trust Manifest metadata. The digest is covered when the Trust Manifest is externally signed.
+
+Trust metadata is declarative. TypeFerence MUST NOT dereference identity, attestation, policy, provenance, or key URIs; issue compliance claims; infer a SLSA level; claim that runtime governance executed; or treat referenced TRACE-style runtime evidence as deployment state. A referenced attestation asserts only that the publisher supplied that reference.
+
+Identity and URI syntax, known publisher-domain bindings, attestation shape, digest encoding, template placeholders, and metadata keys MUST be validated locally. Identity schemes remain open, but known `did`, `spiffe`, and `https` scheme/type contradictions MUST be rejected. Digests MUST be lowercase SHA-256, SHA-384, or SHA-512 values in `algorithm:hex` form.
+
+### Artifact digest algorithm
+
+`typeference-directory-v1` hashes a text artifact directory as follows:
+
+1. Enumerate files recursively and sort their platform paths using ordinal comparison.
+2. For each file, append its forward-slash relative path, one NUL byte, its UTF-8 text content with CRLF normalized to LF, and one NUL byte.
+3. SHA-256 hash the UTF-8 encoding of the resulting sequence and encode it as lowercase hexadecimal with a `sha256:` prefix.
+
+The v1 package formats contain text files only. A future binary package format MUST define a different digest scheme rather than silently changing this algorithm.
+
+### Trust Manifest signatures
+
+The AI Catalog `signature` member is reserved for a compact detached JWS over the RFC 8785 JCS-canonicalized Trust Manifest after removing `signature`. TypeFerence MUST NOT place placeholders in this field.
+
+TypeFerence MAY import externally created detached JWS strings from a JSON object keyed by generated catalog identifier. It validates compact detached form but does not verify cryptographic validity or resolve keys. Unknown identifiers MUST be rejected. When `signatureIntent.required` is true, publication MUST fail unless the entry has an imported signature. An explicit unsigned-staging option MAY bypass this check solely to emit the payload for an external signer. Signing intent is emitted under `com.github.buchk.typeference.signatureIntent` with invariant `status: external`; whether signing is fulfilled is represented solely by the standard `signature` member. This metadata MUST NOT change when a signature is injected, because it is part of the signed payload.
+
+The signature map MUST reside outside the source root. This prevents a cycle in which adding a signature changes the source-package digest embedded in the content being signed. Repeated builds from identical source, trust configuration, and signature map MUST be byte-identical.
+
 ## Diff contract
 
 `typeference diff` compiles to temporary storage and compares relative paths and content. Exit code `0` means identical, `1` means changed, and `2` means validation or execution failed.

@@ -57,6 +57,33 @@ Calls return a deterministic invocation package for the host agent. TypeFerence 
 
 `--emit-ard` publishes one canonical TypeFerence source-package entry and one precompiled bundle entry for each concrete agent and selected target. Compiled entries carry `derivedFrom` provenance back to the canonical source digest. ARD is an envelope: a target-aware installer must understand static Codex, Copilot, or Cursor bundles, while callable MCP or A2A resources require their own deployed endpoint and native card.
 
+### Trust manifests
+
+An optional `typeference.trust.yaml` at the source root enriches the draft AI Catalog `trustManifest` for the source package and compiled bundles. It can declare DID, SPIFFE, or HTTPS identity; trust schemas; attestation and provenance references; policy or enterprise verification metadata; and an intent to sign. TypeFerence validates and publishes these declarations without resolving remote documents or asserting that an external authority has verified them.
+
+```yaml
+schemaVersion: 1
+source:
+  identity: did:web:helio.example:typeference:source:helio
+  identityType: did
+  attestations:
+    - type: https://slsa.dev/provenance/v1
+      uri: https://trust.helio.example/provenance/source.intoto.jsonl
+      digest: sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+bundles:
+  identityTemplate: spiffe://helio.example/typeference/{target}/{agent}
+  identityType: spiffe
+  metadata:
+    com.helio.governance:
+      policyDigest: sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      runtimeEvidenceProfile: tag:agentrust.io,2026:trace-v0.1
+  signatureIntent:
+    algorithm: ES256
+    keyRef: did:web:helio.example#catalog-signing
+```
+
+TypeFerence does not hold signing keys. An external signer can produce detached JWS values over the unsigned, JCS-canonicalized trust manifests and provide them through `--trust-signatures signatures.json`. Use `--allow-unsigned-trust` only to emit signing input when `signatureIntent.required` is true; normal publication fails closed without those signatures. The signature map must be outside the source root so adding signatures cannot change the source digest they sign. Identical source, trust config, and signature map inputs produce byte-identical output.
+
 ## Repository map
 
 - `src/` - compiler, target adapters, CLI, and MCP runtime.
