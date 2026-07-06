@@ -1,12 +1,11 @@
-schemaVersion: 1
+schemaVersion: 2
 kind: agent
 id: helio/person-agent@1.0.0
 displayName: Helio Person Agent
 description: Handles respectful inbound and outbound assistance for a person.
-abstract: true
-extends: helio/enterprise-agent@1.0.0
-implements:
-  - helio/interfaces/correspondent@1.0.0
+emit: false
+embeds:
+  - helio/enterprise-agent@1.0.0
 slots:
   principal: context/principal.md
 workingNorms:

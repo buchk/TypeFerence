@@ -31,7 +31,7 @@ public sealed class TypeFerenceCompiler
     {
         var trust = TrustConfigurationLoader.Load(source, ardPublication?.TrustConfigurationPath);
         var resources = new ResourceLoader().Load(source, trust?.Path);
-        var agents = new TypeResolver(resources).ResolveAll().Where(x => !x.Abstract).OrderBy(x => x.Id, StringComparer.Ordinal).ToArray();
+        var agents = new TypeResolver(resources).ResolveAll().Where(x => x.Emit).OrderBy(x => x.Id, StringComparer.Ordinal).ToArray();
         var requestedTargets = targets.Distinct().Order().ToArray();
         if (requestedTargets.Length == 0) throw new TypeFerenceException("At least one compilation target is required");
         var root = Path.GetFullPath(output);

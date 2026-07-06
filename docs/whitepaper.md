@@ -8,37 +8,37 @@ TypeFerence contributors - July 2026
 
 Organizations are teaching AI assistants the same business rules repeatedly: once for a coding agent, again for an executive assistant, again for each repository, and again for every vendor-specific Markdown format. The result is semantic drift hidden inside apparently simple files.
 
-TypeFerence treats agent definitions as typed source code. Organizations define an instruction-free root, an enterprise-owned base, domain agents, contract-only interfaces, and versioned skills. A deterministic compiler resolves those definitions and emits native artifacts for Codex, GitHub Copilot, Cursor, neutral Agent Markdown, and MCP. The central result is not merely portability. It is coherent reuse of domain decisions across people, repositories, tools, and time. Behavioral equivalence across hosts is the long-term objective; v1 supplies a typed baseline from which equivalence can be evaluated rather than claiming it has already been achieved.
+TypeFerence treats agent definitions as typed source code. Organizations define reusable agents, structurally satisfied interfaces, and versioned skills, then combine behavior through Go-like embedding. A deterministic compiler resolves those definitions and emits native artifacts for Codex, GitHub Copilot, Cursor, neutral Agent Markdown, and MCP. The central result is not merely portability. It is coherent reuse of domain decisions across people, repositories, tools, and time. Behavioral equivalence across hosts is the long-term objective; v2 supplies a typed baseline from which equivalence can be evaluated rather than claiming it has already been achieved.
 
 ## 1. The coherence problem
 
-Markdown is an excellent runtime format and a poor organization-wide type system. As agent adoption grows, similar instructions appear in many places. Security language diverges. Status-reporting methods acquire incompatible meanings. A policy correction must be rediscovered and edited in dozens of files. Reviewers can see textual differences but cannot reliably identify which behavior is inherited, overridden, or accidentally missing.
+Markdown is an excellent runtime format and a poor organization-wide type system. As agent adoption grows, similar instructions appear in many places. Security language diverges. Status-reporting methods acquire incompatible meanings. A policy correction must be rediscovered and edited in dozens of files. Reviewers can see textual differences but cannot reliably identify which behavior was embedded, replaced, or accidentally omitted.
 
 The underlying problem is repeated domain modeling. Each local agent solves identity, capability, context selection, and governance again. Vendor portability is one visible symptom; duplicated organizational reasoning is the larger cost.
 
 TypeFerence introduces a canonical typed layer above runtime Markdown. Source definitions are small. Skills conditionally reference context. Compilation is deterministic. The generated artifacts remain ordinary files that existing tools understand.
 
-## 2. Semantics belong below behavior
+## 2. Composition over ancestry
 
-TypeFerence defines `system/object@1.0.0` as an abstract and deliberately empty root. It supplies no voice, policies, permissions, or context. It exists to define identity, inheritance, validation, dispatch, and provenance.
+TypeFerence has no universal root. Organizations can define a reusable enterprise agent as the home for organization-wide norms and governance, then embed it wherever those behaviors belong. Agents with unrelated responsibilities do not need to pretend they share an ancestor.
 
-Every organization then creates a minimal enterprise base. That base is the first behavioral object and therefore the correct home for organization-wide norms and governance. Domain bases and concrete agents specialize it through a single implementation lineage.
+An embedding agent promotes the slots, norms, context, and skill contracts of its embedded agents. It can embed more than one reusable component. Local declarations resolve promoted-name conflicts explicitly, so composition never depends on a hidden linearization order.
 
-![Type hierarchy](assets/type-hierarchy.svg)
+![Agent embedding](assets/type-hierarchy.svg)
 
-This separation matters. If a framework ships an opinionated root prompt, every downstream organization inherits the framework author's culture. TypeFerence instead owns semantics while organizations own behavior.
+This separation matters. The framework owns composition mechanics while organizations own behavior. Nothing is inherited merely because every resource is forced beneath the same root.
 
 ## 3. A sustainable object model
 
-Agents have one implementation parent and may implement multiple contract-only interfaces. Single inheritance eliminates ambiguous diamond resolution. Interfaces state required slots and skill signatures but contribute no implementation.
+Agents may embed multiple agents. Interfaces state required slots and skill contracts but contribute no implementation, and interfaces may themselves embed narrower interfaces. Agents satisfy them implicitly when their resolved member sets match—there is no nominal `implements` list to drift out of sync.
 
-Skills behave like versioned methods. A base repository agent may provide `repository-status`. A payments repository agent can override its implementation while preserving the same JSON input and output contracts. Callers use the specialized namespace and receive the nearest compatible implementation.
+Skills behave like versioned methods. A repository agent may provide `repository-status`. A payments repository agent can bind a specialized implementation to that promoted contract while preserving the same JSON input and output schemas. Callers use the outer namespace and receive its explicitly selected implementation.
 
-This is structural substitutability at a declared contract boundary rather than text concatenation. An interface can require a status capability without knowing which concrete repository agent will satisfy it. Compilation rejects missing requirements and contract-breaking overrides before runtime. Whether two model executions behave equivalently remains an empirical question for evaluation, not a compiler guarantee.
+This is structural substitutability rather than text concatenation. An interface can require a status capability without knowing which concrete repository agent will satisfy it. Compilation reports structural matches, rejects ambiguous promotion, and rejects contract-breaking implementations before runtime. Whether two model executions behave equivalently remains an empirical question for evaluation, not a compiler guarantee.
 
 ## 4. Compilation and native targets
 
-The compiler parses resources, validates references, resolves a single lineage, checks interfaces, canonicalizes skill contracts, and creates a normalized intermediate representation. Target adapters then emit platform-native artifacts.
+The compiler parses resources, validates references, resolves embedding graphs, computes structural interface satisfaction, canonicalizes skill contracts, and creates a normalized intermediate representation. Target adapters then emit platform-native artifacts.
 
 ![Compiler pipeline](assets/compiler-pipeline.svg)
 
@@ -84,7 +84,7 @@ This arrangement preserves distinct responsibilities. The executive assistant ow
 
 Traditional infrastructure tools made declarative diffs operationally important. TypeFerence applies the useful portion of that idea without coupling compilation to deployment. Its lifecycle is author, validate, resolve, compile, diff, and publish.
 
-A change to an enterprise norm can be compiled across every concrete agent. Reviewers can inspect exactly which target artifacts changed. Provenance answers why a line exists and which ancestor or skill supplied it. Contract validation prevents an apparently harmless specialization from silently changing what callers may send or expect.
+A change to an enterprise norm can be compiled across every concrete agent. Reviewers can inspect exactly which target artifacts changed. Provenance answers why a line exists and which embedded agent or skill supplied it. Contract validation prevents an apparently harmless specialization from silently changing what callers may send or expect.
 
 This enables governance through normal software practices: pull requests, deterministic CI, golden artifacts, versioned contracts, and explicit ownership.
 
@@ -100,7 +100,7 @@ The important boundary should remain: portable mechanics in TypeFerence, behavio
 
 Agent coherence is not achieved by finding one perfect prompt. It is achieved by giving organizational behavior a maintainable type system and compiling that system into the places where work happens.
 
-TypeFerence offers a compact thesis: define agent configuration once, inherit intentionally, override compatibly, load context when needed, and emit native artifacts for each execution surface. The result is less duplicated Markdown, clearer ownership, and reviewable change. The route toward behavioral equivalence is then concrete: declare shared contracts, compile traceable target variants, and evaluate those variants against the same scenarios.
+TypeFerence offers a compact thesis: define agent configuration once, embed intentionally, implement contracts compatibly, load context when needed, and emit native artifacts for each execution surface. The result is less duplicated Markdown, clearer ownership, and reviewable change. The route toward behavioral equivalence is then concrete: declare shared contracts, compile traceable target variants, and evaluate those variants against the same scenarios.
 
 ## References
 

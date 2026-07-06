@@ -1,6 +1,6 @@
 # TypeFerence Draft Specification
 
-Status: experimental reference draft, July 2026. The manifest `schemaVersion` is 1; this document is not a claim of ecosystem-standard or production-stable status.
+Status: experimental reference draft, July 2026. Typed resources use `schemaVersion: 2`; this document is not a claim of ecosystem-standard or production-stable status.
 
 ## Scope and non-goals
 
@@ -10,35 +10,33 @@ Agentic Resource Discovery (ARD) can advertise compiled TypeFerence outputs. ARD
 
 ## Resource identity
 
-A source tree contains YAML documents with `schemaVersion: 1`, a `kind`, and an `id`. IDs use `namespace/name@semantic-version`. Supported kinds are `agent`, `interface`, and `skill`.
-
-## Root object
-
-`system/object@1.0.0` is the universal abstract root. It MUST be behavior-free: no parent, interfaces, skills, slots, norms, context files, or instructions. A non-system enterprise agent MUST directly extend it. TypeFerence owns root semantics; each organization owns its behavioral base.
+A source tree contains YAML documents with `schemaVersion: 2`, a `kind`, and an `id`. IDs use `namespace/name@semantic-version`. Supported kinds are `agent`, `interface`, and `skill`.
 
 ## Agents
 
-An agent MAY extend exactly one agent and MAY implement multiple interfaces. Except for `system/object`, every agent MUST have a parent. A lineage may be arbitrarily deep but MUST NOT contain a cycle.
+An agent MAY embed zero or more agents. Embedding promotes the embedded agents' slots, norms, contexts, and skills into the embedding agent. An embedding graph MUST NOT contain a cycle. No universal root is required.
 
-Resolution proceeds from the root toward the concrete agent:
+An agent with `emit: false` participates in composition and validation but does not produce a target bundle. This is useful for reusable organizational or domain components without introducing abstract base types.
 
-1. Scalars use the nearest non-empty derived value.
-2. Slots are keyed; a derived value replaces the same key.
-3. Norms and context paths append and deduplicate in first-seen order.
-4. Skills are keyed by contract ID.
-5. Implemented interfaces accumulate through the lineage.
+Resolution proceeds from embedded agents toward the embedding agent:
+
+1. Display name and description belong to the declaring agent and are not promoted.
+2. Slots are promoted by name. The shallowest declaration wins; conflicting declarations at the same depth are ambiguous unless the embedding agent declares that slot locally.
+3. Norms and context paths append in embedding order and deduplicate in first-seen order.
+4. Skills are promoted by contract ID. The shallowest implementation wins; conflicting implementations at the same depth are ambiguous unless the embedding agent declares that contract locally.
+5. Interfaces are computed structurally from the final promoted member set.
 
 Every resolved contribution records its source resource in provenance.
 
 ## Interfaces
 
-Interfaces are contracts only. They MAY require slot names and skill contract IDs. They MUST NOT extend another resource or provide implementation. Resolution fails when a concrete or abstract implementing agent does not satisfy every accumulated requirement.
+Interfaces are contracts only. They MAY require slot names and skill contract IDs, and MAY embed other interfaces. They MUST NOT provide implementation. Every agent whose resolved slots and skill contracts contain all requirements satisfies the interface implicitly; agents do not declare `implements`. Interface embedding MUST NOT contain a cycle.
 
-## Skills and overrides
+## Skills and contract implementations
 
-A skill defines instructions, conditional context references, and JSON input/output schemas. Adding a skill establishes its own ID as the contract ID. An override names both a replacement implementation and the inherited contract it replaces.
+A skill defines instructions, conditional context references, and JSON input/output schemas. Adding a skill establishes its own ID as the contract ID. A binding MAY name a different `contract`; its `ref` is then the local implementation of that contract.
 
-An override MUST preserve canonical input and output schemas. It MAY change instructions, description, and conditional context. The derived dispatch name resolves to the nearest implementation while the base agent retains its own namespace.
+A contract implementation MUST preserve canonical input and output schemas. It MAY change instructions, description, and conditional context. The outer dispatch name resolves to the local implementation while the embedded agent retains its own namespace.
 
 ## Dispatch
 
@@ -83,7 +81,7 @@ The v1 package media types are experimental `application/vnd.typeference.source-
 
 TypeFerence targets the draft AI Catalog Trust Manifest as published at <https://ai-catalog.io/>. Draft evolution MAY require corresponding changes in a future TypeFerence schema version.
 
-A source root MAY contain `typeference.trust.yaml`. The file is part of the canonical source package and its digest, but it is not a typed agent resource and does not participate in inheritance or behavioral resolution. A different trust configuration beneath the source root MAY be selected explicitly. Trust metadata is publication configuration: native target bundles remain usable without ARD.
+A source root MAY contain `typeference.trust.yaml`. The file is part of the canonical source package and its digest, but it is not a typed agent resource and does not participate in embedding or behavioral resolution. A different trust configuration beneath the source root MAY be selected explicitly. Trust metadata is publication configuration: native target bundles remain usable without ARD.
 
 The trust configuration has `schemaVersion: 1` and MAY contain `source` and `bundles` profiles. At least one profile is required. A source profile requires a literal `identity`. A bundles profile requires an `identityTemplate` containing both `{agent}` and `{target}`; `{publisher}` and `{version}` are also supported. Each profile MAY contain:
 

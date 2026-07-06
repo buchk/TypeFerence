@@ -103,14 +103,14 @@ def node(d, x, y, w, h, title, subtitle="", fill=colors.HexColor("#F7F8FC"), str
 
 def hierarchy():
     d = Drawing(470, 238)
-    node(d, 165, 190, 140, 38, "system/object", "mechanics only", NAVY, NAVY, True)
-    node(d, 155, 125, 160, 42, "enterprise-agent", "organization-owned", colors.HexColor("#E9ECFF"))
+    node(d, 155, 185, 160, 42, "enterprise-agent", "reusable behavior", colors.HexColor("#E9ECFF"))
     node(d, 25, 60, 160, 42, "person-agent", "human-facing domain")
     node(d, 285, 60, 160, 42, "repo-agent", "repository domain")
     node(d, 25, 0, 160, 38, "executive-assistant", fill=PALE, stroke=PURPLE)
     node(d, 285, 0, 160, 38, "payments-repo-agent", fill=PALE, stroke=PURPLE)
-    for x1, y1, x2, y2 in [(235,190,235,167),(235,125,105,102),(235,125,365,102),(105,60,105,38),(365,60,365,38)]:
+    for x1, y1, x2, y2 in [(235,185,105,102),(235,185,365,102),(105,60,105,38),(365,60,365,38)]:
         d.add(Line(x1,y1,x2,y2,strokeColor=MUTED,strokeWidth=1.2))
+    d.add(String(235, 145, "embedded by", textAnchor="middle", fontName=BODY, fontSize=7.2, fillColor=MUTED))
     return d
 
 
@@ -118,7 +118,7 @@ def pipeline():
     d = Drawing(470, 165)
     node(d, 0, 60, 90, 48, "Typed YAML", "agents + skills")
     arrow(d, 90, 84, 120, 84)
-    node(d, 120, 60, 90, 48, "Validate", "contracts + paths")
+    node(d, 120, 60, 90, 48, "Compose", "embedding + contracts")
     arrow(d, 210, 84, 240, 84)
     node(d, 240, 55, 105, 58, "Resolved IR", "behavior + provenance", NAVY, NAVY, True)
     for y, label in [(125,"Codex"),(72,"Copilot"),(19,"Cursor + MCP")]:
@@ -147,7 +147,7 @@ def dispatch():
     d = Drawing(470, 150)
     node(d, 0, 48, 130, 55, "MCP call", "derived skill name")
     arrow(d, 130, 75, 165, 75)
-    node(d, 165, 40, 140, 70, "Resolve contract", "nearest compatible override", NAVY, NAVY, True)
+    node(d, 165, 40, 140, 70, "Resolve contract", "compatible local binding", NAVY, NAVY, True)
     arrow(d, 305, 75, 340, 75)
     node(d, 340, 20, 130, 110, "Invocation package", "args + context + provenance", PALE, PURPLE)
     return d
@@ -252,7 +252,7 @@ def main():
     reader = PdfReader(str(OUTPUT))
     if len(reader.pages) < 6: raise RuntimeError("Whitepaper unexpectedly short")
     extracted = "".join(page.extract_text() or "" for page in reader.pages)
-    for phrase in ("TypeFerence", "system/object", "deterministic compiler", "Conclusion"):
+    for phrase in ("TypeFerence", "Composition over ancestry", "deterministic compiler", "Conclusion"):
         if phrase not in extracted: raise RuntimeError(f"Missing PDF text: {phrase}")
     print(f"Rendered {OUTPUT} ({len(reader.pages)} pages)")
 

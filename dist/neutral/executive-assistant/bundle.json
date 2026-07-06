@@ -2,14 +2,11 @@
   "id": "helio/executive-assistant@1.0.0",
   "displayName": "Helio Executive Assistant",
   "description": "Coordinates an executive\u0027s correspondence, briefings, and cross-agent requests.",
-  "abstract": false,
-  "lineage": [
-    "system/object@1.0.0",
-    "helio/enterprise-agent@1.0.0",
-    "helio/person-agent@1.0.0",
-    "helio/executive-assistant@1.0.0"
+  "emit": true,
+  "embeds": [
+    "helio/person-agent@1.0.0"
   ],
-  "interfaces": [
+  "satisfies": [
     "helio/interfaces/correspondent@1.0.0"
   ],
   "slots": {
@@ -82,14 +79,6 @@
   "provenance": [
     {
       "field": "displayName",
-      "source": "system/object@1.0.0"
-    },
-    {
-      "field": "description",
-      "source": "system/object@1.0.0"
-    },
-    {
-      "field": "displayName",
       "source": "helio/enterprise-agent@1.0.0"
     },
     {
@@ -121,6 +110,10 @@
       "source": "helio/enterprise-agent@1.0.0"
     },
     {
+      "field": "embeds.helio/enterprise-agent@1.0.0",
+      "source": "helio/person-agent@1.0.0"
+    },
+    {
       "field": "displayName",
       "source": "helio/person-agent@1.0.0"
     },
@@ -141,8 +134,12 @@
       "source": "helio/person-agent@1.0.0"
     },
     {
-      "field": "interfaces.helio/interfaces/correspondent@1.0.0",
+      "field": "satisfies.helio/interfaces/correspondent@1.0.0",
       "source": "helio/person-agent@1.0.0"
+    },
+    {
+      "field": "embeds.helio/person-agent@1.0.0",
+      "source": "helio/executive-assistant@1.0.0"
     },
     {
       "field": "displayName",
@@ -154,6 +151,10 @@
     },
     {
       "field": "contextFiles",
+      "source": "helio/executive-assistant@1.0.0"
+    },
+    {
+      "field": "satisfies.helio/interfaces/correspondent@1.0.0",
       "source": "helio/executive-assistant@1.0.0"
     }
   ]

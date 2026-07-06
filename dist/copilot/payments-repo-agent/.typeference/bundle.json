@@ -2,14 +2,11 @@
   "id": "helio/payments-repo-agent@1.0.0",
   "displayName": "Helio Payments Repository Agent",
   "description": "Specializes repository assistance for the fictional payments service.",
-  "abstract": false,
-  "lineage": [
-    "system/object@1.0.0",
-    "helio/enterprise-agent@1.0.0",
-    "helio/repo-agent@1.0.0",
-    "helio/payments-repo-agent@1.0.0"
+  "emit": true,
+  "embeds": [
+    "helio/repo-agent@1.0.0"
   ],
-  "interfaces": [
+  "satisfies": [
     "helio/interfaces/repository-observer@1.0.0"
   ],
   "slots": {
@@ -58,14 +55,6 @@
   "provenance": [
     {
       "field": "displayName",
-      "source": "system/object@1.0.0"
-    },
-    {
-      "field": "description",
-      "source": "system/object@1.0.0"
-    },
-    {
-      "field": "displayName",
       "source": "helio/enterprise-agent@1.0.0"
     },
     {
@@ -97,6 +86,10 @@
       "source": "helio/enterprise-agent@1.0.0"
     },
     {
+      "field": "embeds.helio/enterprise-agent@1.0.0",
+      "source": "helio/repo-agent@1.0.0"
+    },
+    {
       "field": "displayName",
       "source": "helio/repo-agent@1.0.0"
     },
@@ -117,8 +110,12 @@
       "source": "helio/repo-agent@1.0.0"
     },
     {
-      "field": "interfaces.helio/interfaces/repository-observer@1.0.0",
+      "field": "satisfies.helio/interfaces/repository-observer@1.0.0",
       "source": "helio/repo-agent@1.0.0"
+    },
+    {
+      "field": "embeds.helio/repo-agent@1.0.0",
+      "source": "helio/payments-repo-agent@1.0.0"
     },
     {
       "field": "displayName",
@@ -130,6 +127,10 @@
     },
     {
       "field": "contextFiles",
+      "source": "helio/payments-repo-agent@1.0.0"
+    },
+    {
+      "field": "satisfies.helio/interfaces/repository-observer@1.0.0",
       "source": "helio/payments-repo-agent@1.0.0"
     }
   ]
