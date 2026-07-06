@@ -1,4 +1,4 @@
-schemaVersion: 1
+schemaVersion: 2
 kind: skill
 id: helio/skills/repository-status@1.0.0
 displayName: Repository Status

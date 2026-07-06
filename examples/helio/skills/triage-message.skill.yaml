@@ -1,4 +1,4 @@
-schemaVersion: 1
+schemaVersion: 2
 kind: skill
 id: helio/skills/triage-message@1.0.0
 displayName: Triage Message

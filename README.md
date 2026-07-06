@@ -2,20 +2,16 @@
 
 **Define organizational agents once. Validate their composition. Compile them into the native shapes your teams already use.**
 
-TypeFerence is an experimental reference implementation of a typed definition and compilation layer for AI agents. It replaces sprawling, duplicated instruction files with a small object model: single inheritance, contract-only interfaces, versioned skills, deterministic compilation, provenance, and artifact diffing.
+TypeFerence is an experimental reference implementation of a typed definition and compilation layer for AI agents. It replaces sprawling, duplicated instruction files with Go-like composition: agent embedding, structurally satisfied interfaces, versioned skill contracts, deterministic compilation, provenance, and artifact diffing.
 
-Read the [whitepaper](docs/whitepaper.md), the [rendered PDF](output/pdf/typeference-whitepaper.pdf), or the [draft v1 specification](docs/specification.md).
+Read the [whitepaper](docs/whitepaper.md), the [rendered PDF](output/pdf/typeference-whitepaper.pdf), or the [draft v2 specification](docs/specification.md).
 
 ```text
-system/object
-└── helio/enterprise-agent
-    ├── helio/person-agent
-    │   └── helio/executive-assistant
-    └── helio/repo-agent
-        └── helio/payments-repo-agent
+helio/enterprise-agent ──embedded by──> helio/person-agent ──embedded by──> helio/executive-assistant
+                       └─embedded by──> helio/repo-agent   ──embedded by──> helio/payments-repo-agent
 ```
 
-`system/object` owns mechanics and emits no instructions. Organizations own their enterprise base, policies, voice, and domain knowledge.
+There is no universal root and no nominal `implements` declaration. Agents embed reusable agents, promoted behavior is checked for ambiguity, and interfaces are discovered from the resulting slot and skill set.
 
 ## Where it fits
 
@@ -29,7 +25,22 @@ TypeFerence source
 
 [Agentic Resource Discovery](https://agenticresourcediscovery.org/) helps clients find and verify deployed capabilities. TypeFerence addresses the earlier authoring problem: producing compatible native artifacts from one governed definition. Discovery portability does not itself provide definition portability.
 
-The long-term objective is behavioral equivalence: preserving declared organizational intent across supported hosts closely enough to be measured and governed. V1 provides the common typed source, deterministic adapters, and provenance needed to test that objective; it does not claim that different models or runtimes already behave identically.
+The long-term objective is behavioral equivalence: preserving declared organizational intent across supported hosts closely enough to be measured and governed. V2 provides the common typed source, deterministic adapters, and provenance needed to test that objective; it does not claim that different models or runtimes already behave identically.
+
+The v2 source shape is deliberately small:
+
+```yaml
+schemaVersion: 2
+kind: agent
+id: helio/payments-repo-agent@1.0.0
+embeds:
+  - helio/repo-agent@1.0.0
+skills:
+  - ref: helio/skills/payments-repository-status@1.0.0
+    contract: helio/skills/repository-status@1.0.0
+```
+
+Use `emit: false` for reusable agents that should participate in composition without producing their own target bundle.
 
 ## Quick start
 
@@ -88,18 +99,19 @@ TypeFerence does not hold signing keys. An external signer can produce detached 
 
 - `src/` - compiler, target adapters, CLI, and MCP runtime.
 - `examples/helio/` - fictional cross-domain organization.
-- `docs/specification.md` - normative v1 behavior.
+- `docs/specification.md` - normative v2 behavior.
 - `docs/whitepaper.md` and `output/pdf/typeference-whitepaper.pdf` - design paper.
 - `tests/` - type-system, target, determinism, and MCP integration tests.
 
 ## Design boundaries
 
-- One implementation parent; multiple contract-only interfaces.
-- Interface and skill contracts are explicit and versioned.
+- Agents may embed multiple agents; local slots and skills resolve promoted-name ambiguity.
+- Interfaces may embed interfaces and are satisfied structurally, without declarations on agents.
+- Skill contracts are explicit and versioned; a local implementation may name the contract it fulfills.
 - Context is referenced and loaded only with the skill that needs it.
 - Target adapters emit platform-native shapes while retaining the portable fields each target supports.
 - Build output is deterministic and carries provenance.
-- No deployment state, hosted runtime, or model credentials in v1.
+- No deployment state, hosted runtime, or model credentials in v2.
 - Structural validation does not guarantee identical LLM behavior across models or hosts.
 - ARD publication wraps selected target outputs; it is not itself a compilation target or execution runtime.
 
