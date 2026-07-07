@@ -1,9 +1,9 @@
-schemaVersion: 1
+schemaVersion: 3
 kind: interface
 id: helio/interfaces/repository-observer@1.0.0
 displayName: Repository Observer
 description: Contract for agents that can report evidence-backed repository status.
 requiresSlots:
   - repository
-requiresSkills:
-  - helio/skills/repository-status@1.0.0
+requiresCapabilities:
+  - helio/capabilities/repository-status@1.0.0

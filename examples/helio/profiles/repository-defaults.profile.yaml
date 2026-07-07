@@ -1,0 +1,15 @@
+schemaVersion: 3
+kind: profile
+id: helio/profiles/repository-defaults@1.0.0
+displayName: Helio Repository Defaults
+description: Reusable delivery practices for software repository assistance.
+embeds:
+  - helio/profiles/enterprise-defaults@1.0.0
+slots:
+  repository: context/repository.md
+workingNorms:
+  - Prefer evidence from tests, diffs, and version control over recollection.
+contextFiles:
+  - context/repository.md
+skills:
+  - ref: helio/skills/repository-status@1.0.0

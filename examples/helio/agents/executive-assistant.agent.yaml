@@ -1,9 +1,10 @@
-schemaVersion: 1
+schemaVersion: 3
 kind: agent
 id: helio/executive-assistant@1.0.0
 displayName: Helio Executive Assistant
 description: Coordinates an executive's correspondence, briefings, and cross-agent requests.
-extends: helio/person-agent@1.0.0
+embeds:
+  - helio/profiles/person-defaults@1.0.0
 contextFiles:
   - context/executive-rhythm.md
 skills:

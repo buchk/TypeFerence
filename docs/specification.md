@@ -1,44 +1,44 @@
 # TypeFerence Draft Specification
 
-Status: experimental reference draft, July 2026. The manifest `schemaVersion` is 1; this document is not a claim of ecosystem-standard or production-stable status.
+Status: experimental reference draft, July 2026. Typed resources use `schemaVersion: 3`; this document is not a claim of ecosystem-standard or production-stable status.
 
 ## Scope and non-goals
 
-TypeFerence defines structural composition and deterministic compilation of agent instructions, skill contracts, and context references. It does not define an inference runtime, guarantee equivalent behavior across models or hosts, establish publisher trust, or provide resource discovery.
+TypeFerence defines structural composition and deterministic compilation of agent instructions, capability contracts, skill implementations, and context references. It does not define an inference runtime, guarantee equivalent behavior across models or hosts, establish publisher trust, or provide resource discovery.
 
 Agentic Resource Discovery (ARD) can advertise compiled TypeFerence outputs. ARD identifies and locates artifacts; TypeFerence produces target-specific artifacts before publication. Invocation remains the responsibility of MCP, A2A, OpenAPI, or a host-native mechanism.
 
 ## Resource identity
 
-A source tree contains YAML documents with `schemaVersion: 1`, a `kind`, and an `id`. IDs use `namespace/name@semantic-version`. Supported kinds are `agent`, `interface`, and `skill`.
+A source tree contains YAML documents with `schemaVersion: 3`, a `kind`, and an `id`. IDs use `namespace/name@semantic-version`. Supported kinds are `agent`, `profile`, `interface`, `capability`, and `skill`.
 
-## Root object
+## Agents and profiles
 
-`system/object@1.0.0` is the universal abstract root. It MUST be behavior-free: no parent, interfaces, skills, slots, norms, context files, or instructions. A non-system enterprise agent MUST directly extend it. TypeFerence owns root semantics; each organization owns its behavioral base.
+An agent is an identity-bearing unit that MAY produce target artifacts. A profile is a reusable composition unit for organizational, domain, or team defaults. Agents MAY embed profiles or agents. Profiles MAY embed profiles but MUST NOT embed agents. Embedding promotes the embedded resources' slots, norms, contexts, and capability bindings into the embedding resource. An embedding graph MUST NOT contain a cycle. No universal root is required.
 
-## Agents
+Profiles participate in composition and validation but do not produce target bundles. This lets users start with `kind: agent` while platform teams define reusable profiles underneath.
 
-An agent MAY extend exactly one agent and MAY implement multiple interfaces. Except for `system/object`, every agent MUST have a parent. A lineage may be arbitrarily deep but MUST NOT contain a cycle.
+Resolution proceeds from embedded resources toward the embedding resource:
 
-Resolution proceeds from the root toward the concrete agent:
-
-1. Scalars use the nearest non-empty derived value.
-2. Slots are keyed; a derived value replaces the same key.
-3. Norms and context paths append and deduplicate in first-seen order.
-4. Skills are keyed by contract ID.
-5. Implemented interfaces accumulate through the lineage.
+1. Display name and description belong to the declaring resource and are not promoted.
+2. Slots are promoted by name. The shallowest declaration wins; conflicting declarations at the same depth are ambiguous unless the embedding resource declares that slot locally.
+3. Norms and context paths append in embedding order and deduplicate in first-seen order.
+4. Capability bindings are promoted by capability ID. The shallowest implementation wins; conflicting implementations at the same depth are ambiguous unless the embedding resource binds that capability locally.
+5. Interfaces are computed structurally from the final promoted member set.
 
 Every resolved contribution records its source resource in provenance.
 
 ## Interfaces
 
-Interfaces are contracts only. They MAY require slot names and skill contract IDs. They MUST NOT extend another resource or provide implementation. Resolution fails when a concrete or abstract implementing agent does not satisfy every accumulated requirement.
+Interfaces are contracts only. They MAY require slot names and capability IDs, and MAY embed other interfaces. They MUST NOT provide implementation. Every agent whose resolved slots and capability bindings contain all requirements satisfies the interface implicitly; agents do not declare `implements`. Interface embedding MUST NOT contain a cycle.
 
-## Skills and overrides
+## Capabilities and skill implementations
 
-A skill defines instructions, conditional context references, and JSON input/output schemas. Adding a skill establishes its own ID as the contract ID. An override names both a replacement implementation and the inherited contract it replaces.
+A capability defines a stable semantic method slot and its public JSON input/output schemas. It has no instructions and no runtime context.
 
-An override MUST preserve canonical input and output schemas. It MAY change instructions, description, and conditional context. The derived dispatch name resolves to the nearest implementation while the base agent retains its own namespace.
+A skill defines instructions, conditional context references, and JSON input/output schemas. Every skill MUST declare `binds: <capability-id>`. A skill implementation MUST preserve the bound capability's canonical input and output schemas. It MAY change instructions, description, and conditional context.
+
+An agent's or profile's `skills` list binds skill implementations into that resource's resolved method set. If a binding omits `capability`, the capability is inferred from the referenced skill's `binds` field. If it names `capability`, that value MUST match the referenced skill's `binds` field. The outer dispatch name resolves the capability to the nearest compatible skill implementation while the embedded resource retains its own namespace.
 
 ## Dispatch
 
@@ -83,7 +83,7 @@ The v1 package media types are experimental `application/vnd.typeference.source-
 
 TypeFerence targets the draft AI Catalog Trust Manifest as published at <https://ai-catalog.io/>. Draft evolution MAY require corresponding changes in a future TypeFerence schema version.
 
-A source root MAY contain `typeference.trust.yaml`. The file is part of the canonical source package and its digest, but it is not a typed agent resource and does not participate in inheritance or behavioral resolution. A different trust configuration beneath the source root MAY be selected explicitly. Trust metadata is publication configuration: native target bundles remain usable without ARD.
+A source root MAY contain `typeference.trust.yaml`. The file is part of the canonical source package and its digest, but it is not a typed agent resource and does not participate in embedding or behavioral resolution. A different trust configuration beneath the source root MAY be selected explicitly. Trust metadata is publication configuration: native target bundles remain usable without ARD.
 
 The trust configuration has `schemaVersion: 1` and MAY contain `source` and `bundles` profiles. At least one profile is required. A source profile requires a literal `identity`. A bundles profile requires an `identityTemplate` containing both `{agent}` and `{target}`; `{publisher}` and `{version}` are also supported. Each profile MAY contain:
 
