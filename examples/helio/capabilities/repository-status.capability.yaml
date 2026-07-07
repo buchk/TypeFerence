@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: capability
+id: helio/capabilities/repository-status@1.0.0
+displayName: Repository Status
+description: Capability slot for evidence-backed repository health summaries.
+inputSchema: '{"type":"object","properties":{"focus":{"type":"string"}},"additionalProperties":false}'
+outputSchema: '{"type":"object","properties":{"status":{"type":"string"},"evidence":{"type":"array","items":{"type":"string"}},"risks":{"type":"array","items":{"type":"string"}}},"required":["status","evidence","risks"]}'

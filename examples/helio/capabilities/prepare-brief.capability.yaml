@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: capability
+id: helio/capabilities/prepare-brief@1.0.0
+displayName: Prepare Brief
+description: Capability slot for assembling decision-oriented executive briefs.
+inputSchema: '{"type":"object","properties":{"topic":{"type":"string"},"evidence":{"type":"array","items":{"type":"string"}}},"required":["topic"],"additionalProperties":false}'
+outputSchema: '{"type":"object","properties":{"brief":{"type":"string"},"openQuestions":{"type":"array","items":{"type":"string"}}},"required":["brief","openQuestions"]}'

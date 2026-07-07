@@ -438,7 +438,7 @@ public sealed class TypeFerenceCompiler
     }
 
     private static string RenderSkill(ResolvedSkill skill) => $"---\nname: {SkillSlug(skill)}\ndescription: {EscapeYaml(skill.Description)}\n---\n\n{skill.Instructions.Trim()}\n\n## Context loaded on invocation\n\n{string.Join("\n", skill.ContextFiles.Select(x => $"- `{x}`"))}\n";
-    private static string SkillSlug(ResolvedSkill skill) => skill.ContractId.Split('/').Last().Split('@')[0];
+    private static string SkillSlug(ResolvedSkill skill) => skill.CapabilityId.Split('/').Last().Split('@')[0];
     private static string Slug(string id) => id.Split('/').Last().Split('@')[0];
     private static string EscapeYaml(string value) => "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
 

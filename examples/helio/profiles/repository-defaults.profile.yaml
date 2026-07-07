@@ -1,11 +1,10 @@
-schemaVersion: 2
-kind: agent
-id: helio/repo-agent@1.0.0
-displayName: Helio Repository Agent
-description: Applies Helio delivery practices within a software repository.
-emit: false
+schemaVersion: 3
+kind: profile
+id: helio/profiles/repository-defaults@1.0.0
+displayName: Helio Repository Defaults
+description: Reusable delivery practices for software repository assistance.
 embeds:
-  - helio/enterprise-agent@1.0.0
+  - helio/profiles/enterprise-defaults@1.0.0
 slots:
   repository: context/repository.md
 workingNorms:
