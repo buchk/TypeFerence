@@ -111,8 +111,8 @@ internal static class Entry
     {
         var source = Required(args, 1, "source or compiled directory");
         var agents = Directory.EnumerateFiles(source, "*.yaml", SearchOption.AllDirectories).Any()
-            ? new TypeFerenceCompiler().Validate(source).Where(x => !x.Abstract).ToArray()
-            : TypeFerenceCompiler.LoadCompiled(source).Where(x => !x.Abstract).ToArray();
+            ? new TypeFerenceCompiler().Validate(source).Where(x => x.Emit).ToArray()
+            : TypeFerenceCompiler.LoadCompiled(source).Where(x => x.Emit).ToArray();
         var tools = agents.SelectMany(agent => agent.Skills.Select(skill =>
         {
             Func<JsonElement, string> handler = arguments => JsonSerializer.Serialize(TypeFerenceCompiler.Invoke(agent, skill, arguments));

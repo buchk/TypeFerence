@@ -31,7 +31,7 @@ public sealed class TypeFerenceCompiler
     {
         var trust = TrustConfigurationLoader.Load(source, ardPublication?.TrustConfigurationPath);
         var resources = new ResourceLoader().Load(source, trust?.Path);
-        var agents = new TypeResolver(resources).ResolveAll().Where(x => !x.Abstract).OrderBy(x => x.Id, StringComparer.Ordinal).ToArray();
+        var agents = new TypeResolver(resources).ResolveAll().Where(x => x.Emit).OrderBy(x => x.Id, StringComparer.Ordinal).ToArray();
         var requestedTargets = targets.Distinct().Order().ToArray();
         if (requestedTargets.Length == 0) throw new TypeFerenceException("At least one compilation target is required");
         var root = Path.GetFullPath(output);
@@ -438,7 +438,7 @@ public sealed class TypeFerenceCompiler
     }
 
     private static string RenderSkill(ResolvedSkill skill) => $"---\nname: {SkillSlug(skill)}\ndescription: {EscapeYaml(skill.Description)}\n---\n\n{skill.Instructions.Trim()}\n\n## Context loaded on invocation\n\n{string.Join("\n", skill.ContextFiles.Select(x => $"- `{x}`"))}\n";
-    private static string SkillSlug(ResolvedSkill skill) => skill.ContractId.Split('/').Last().Split('@')[0];
+    private static string SkillSlug(ResolvedSkill skill) => skill.CapabilityId.Split('/').Last().Split('@')[0];
     private static string Slug(string id) => id.Split('/').Last().Split('@')[0];
     private static string EscapeYaml(string value) => "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
 

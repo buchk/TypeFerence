@@ -2,14 +2,11 @@
   "id": "helio/executive-assistant@1.0.0",
   "displayName": "Helio Executive Assistant",
   "description": "Coordinates an executive\u0027s correspondence, briefings, and cross-agent requests.",
-  "abstract": false,
-  "lineage": [
-    "system/object@1.0.0",
-    "helio/enterprise-agent@1.0.0",
-    "helio/person-agent@1.0.0",
-    "helio/executive-assistant@1.0.0"
+  "emit": true,
+  "embeds": [
+    "helio/profiles/person-defaults@1.0.0"
   ],
-  "interfaces": [
+  "satisfies": [
     "helio/interfaces/correspondent@1.0.0"
   ],
   "slots": {
@@ -31,7 +28,7 @@
   "skills": [
     {
       "dispatchName": "executive-assistant.prepare-brief",
-      "contractId": "helio/skills/prepare-brief@1.0.0",
+      "capabilityId": "helio/capabilities/prepare-brief@1.0.0",
       "implementationId": "helio/skills/prepare-brief@1.0.0",
       "description": "Assemble an executive brief, requesting repository evidence when needed.",
       "instructions": "Build a decision-oriented brief from the supplied topic and evidence.\nWhen repository status is material, request \u0060payments-repo-agent.repository-status\u0060 and incorporate its returned evidence with attribution.\n",
@@ -45,8 +42,8 @@
       ],
       "provenance": [
         {
-          "field": "skill.contract",
-          "source": "helio/skills/prepare-brief@1.0.0"
+          "field": "skill.capability",
+          "source": "helio/capabilities/prepare-brief@1.0.0"
         },
         {
           "field": "skill.implementation",
@@ -56,7 +53,7 @@
     },
     {
       "dispatchName": "executive-assistant.triage-message",
-      "contractId": "helio/skills/triage-message@1.0.0",
+      "capabilityId": "helio/capabilities/triage-message@1.0.0",
       "implementationId": "helio/skills/triage-message@1.0.0",
       "description": "Classify an inbound message and recommend an accountable next action.",
       "instructions": "Read the message and identify its sender, intent, urgency, decision owner, and requested deadline.\nSeparate facts from assumptions. Return a concise recommendation; do not send a reply.\n",
@@ -69,8 +66,8 @@
       ],
       "provenance": [
         {
-          "field": "skill.contract",
-          "source": "helio/skills/triage-message@1.0.0"
+          "field": "skill.capability",
+          "source": "helio/capabilities/triage-message@1.0.0"
         },
         {
           "field": "skill.implementation",
@@ -81,68 +78,48 @@
   ],
   "provenance": [
     {
-      "field": "displayName",
-      "source": "system/object@1.0.0"
-    },
-    {
-      "field": "description",
-      "source": "system/object@1.0.0"
-    },
-    {
-      "field": "displayName",
-      "source": "helio/enterprise-agent@1.0.0"
-    },
-    {
-      "field": "description",
-      "source": "helio/enterprise-agent@1.0.0"
-    },
-    {
       "field": "slots.organization",
-      "source": "helio/enterprise-agent@1.0.0"
+      "source": "helio/profiles/enterprise-defaults@1.0.0"
     },
     {
       "field": "slots.safetyPolicy",
-      "source": "helio/enterprise-agent@1.0.0"
+      "source": "helio/profiles/enterprise-defaults@1.0.0"
     },
     {
       "field": "workingNorms",
-      "source": "helio/enterprise-agent@1.0.0"
+      "source": "helio/profiles/enterprise-defaults@1.0.0"
     },
     {
       "field": "workingNorms",
-      "source": "helio/enterprise-agent@1.0.0"
+      "source": "helio/profiles/enterprise-defaults@1.0.0"
     },
     {
       "field": "contextFiles",
-      "source": "helio/enterprise-agent@1.0.0"
+      "source": "helio/profiles/enterprise-defaults@1.0.0"
     },
     {
       "field": "contextFiles",
-      "source": "helio/enterprise-agent@1.0.0"
+      "source": "helio/profiles/enterprise-defaults@1.0.0"
     },
     {
-      "field": "displayName",
-      "source": "helio/person-agent@1.0.0"
-    },
-    {
-      "field": "description",
-      "source": "helio/person-agent@1.0.0"
+      "field": "embeds.helio/profiles/enterprise-defaults@1.0.0",
+      "source": "helio/profiles/person-defaults@1.0.0"
     },
     {
       "field": "slots.principal",
-      "source": "helio/person-agent@1.0.0"
+      "source": "helio/profiles/person-defaults@1.0.0"
     },
     {
       "field": "workingNorms",
-      "source": "helio/person-agent@1.0.0"
+      "source": "helio/profiles/person-defaults@1.0.0"
     },
     {
       "field": "contextFiles",
-      "source": "helio/person-agent@1.0.0"
+      "source": "helio/profiles/person-defaults@1.0.0"
     },
     {
-      "field": "interfaces.helio/interfaces/correspondent@1.0.0",
-      "source": "helio/person-agent@1.0.0"
+      "field": "embeds.helio/profiles/person-defaults@1.0.0",
+      "source": "helio/executive-assistant@1.0.0"
     },
     {
       "field": "displayName",
@@ -154,6 +131,10 @@
     },
     {
       "field": "contextFiles",
+      "source": "helio/executive-assistant@1.0.0"
+    },
+    {
+      "field": "satisfies.helio/interfaces/correspondent@1.0.0",
       "source": "helio/executive-assistant@1.0.0"
     }
   ]

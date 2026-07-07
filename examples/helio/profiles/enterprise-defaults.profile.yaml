@@ -1,10 +1,8 @@
-schemaVersion: 1
-kind: agent
-id: helio/enterprise-agent@1.0.0
-displayName: Helio Enterprise Agent
-description: Shared organizational identity and governance for every Helio agent.
-abstract: true
-extends: system/object@1.0.0
+schemaVersion: 3
+kind: profile
+id: helio/profiles/enterprise-defaults@1.0.0
+displayName: Helio Enterprise Defaults
+description: Shared organizational governance for every Helio resource.
 slots:
   organization: context/organization.md
   safetyPolicy: context/safety-policy.md

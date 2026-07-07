@@ -1,11 +1,12 @@
-schemaVersion: 1
+schemaVersion: 3
 kind: agent
 id: helio/payments-repo-agent@1.0.0
 displayName: Helio Payments Repository Agent
 description: Specializes repository assistance for the fictional payments service.
-extends: helio/repo-agent@1.0.0
+embeds:
+  - helio/profiles/repository-defaults@1.0.0
 contextFiles:
   - context/payments-service.md
 skills:
   - ref: helio/skills/payments-repository-status@1.0.0
-    overrides: helio/skills/repository-status@1.0.0
+    capability: helio/capabilities/repository-status@1.0.0

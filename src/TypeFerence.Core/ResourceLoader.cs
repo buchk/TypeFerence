@@ -44,19 +44,19 @@ public sealed class ResourceLoader
             if (!result.TryAdd(resource.Id, resource)) throw new TypeFerenceException($"Duplicate resource id: {resource.Id}");
         }
         if (result.Count == 0) throw new TypeFerenceException($"No YAML resources found under {root}");
-        if (!result.ContainsKey("system/object@1.0.0"))
-            throw new TypeFerenceException("Source must define system/object@1.0.0");
         return result;
     }
 
     private static void ValidateShape(ResourceDocument resource, string file, string root)
     {
-        if (resource.SchemaVersion != 1) throw new TypeFerenceException($"{file}: schemaVersion must be 1");
-        if (resource.Kind is not ("agent" or "interface" or "skill")) throw new TypeFerenceException($"{file}: unknown kind '{resource.Kind}'");
+        if (resource.SchemaVersion != 3) throw new TypeFerenceException($"{file}: schemaVersion must be 3");
+        if (resource.Kind is not ("agent" or "profile" or "interface" or "capability" or "skill")) throw new TypeFerenceException($"{file}: unknown kind '{resource.Kind}'");
         if (!ResourceId.IsMatch(resource.Id))
             throw new TypeFerenceException($"{file}: id must use lowercase namespace/name@semantic-version");
-        if (resource.Kind == "interface" && resource.Extends is not null) throw new TypeFerenceException($"{file}: interfaces cannot extend resources");
-        if (resource.Kind != "agent" && resource.Implements.Count != 0) throw new TypeFerenceException($"{file}: only agents implement interfaces");
+        if (resource.Kind is "capability" or "skill" && resource.Embeds.Count != 0) throw new TypeFerenceException($"{file}: {resource.Kind}s cannot embed resources");
+        if (resource.Kind == "skill" && string.IsNullOrWhiteSpace(resource.Binds)) throw new TypeFerenceException($"{file}: skills must bind a capability");
+        if (resource.Kind == "skill" && !ResourceId.IsMatch(resource.Binds)) throw new TypeFerenceException($"{file}: binds must reference a capability id");
+        if (resource.Kind != "skill" && !string.IsNullOrWhiteSpace(resource.Binds)) throw new TypeFerenceException($"{file}: only skills can bind capabilities");
         foreach (var relative in resource.ContextFiles.Concat(resource.Slots.Values))
         {
             var full = Path.GetFullPath(Path.Combine(root, relative.Replace('/', Path.DirectorySeparatorChar)));

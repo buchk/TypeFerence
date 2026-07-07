@@ -9,11 +9,11 @@ public sealed class ResourceDocument
     public string Id { get; set; } = "";
     public string DisplayName { get; set; } = "";
     public string Description { get; set; } = "";
-    public bool Abstract { get; set; }
-    public string? Extends { get; set; }
-    public List<string> Implements { get; set; } = [];
+    public string Binds { get; set; } = "";
+    public bool Emit { get; set; } = true;
+    public List<string> Embeds { get; set; } = [];
     public List<string> RequiresSlots { get; set; } = [];
-    public List<string> RequiresSkills { get; set; } = [];
+    public List<string> RequiresCapabilities { get; set; } = [];
     public SortedDictionary<string, string> Slots { get; set; } = new(StringComparer.Ordinal);
     public List<string> WorkingNorms { get; set; } = [];
     public List<string> ContextFiles { get; set; } = [];
@@ -26,7 +26,7 @@ public sealed class ResourceDocument
 public sealed class SkillBinding
 {
     public string Ref { get; set; } = "";
-    public string? Overrides { get; set; }
+    public string? Capability { get; set; }
 }
 
 public sealed record ProvenanceEntry(string Field, string Source);
@@ -34,7 +34,7 @@ public sealed record ProvenanceEntry(string Field, string Source);
 public sealed class ResolvedSkill
 {
     public string DispatchName { get; init; } = "";
-    public string ContractId { get; init; } = "";
+    public string CapabilityId { get; init; } = "";
     public string ImplementationId { get; init; } = "";
     public string Description { get; init; } = "";
     public string Instructions { get; init; } = "";
@@ -49,9 +49,9 @@ public sealed class ResolvedAgent
     public string Id { get; init; } = "";
     public string DisplayName { get; init; } = "";
     public string Description { get; init; } = "";
-    public bool Abstract { get; init; }
-    public IReadOnlyList<string> Lineage { get; init; } = [];
-    public IReadOnlyList<string> Interfaces { get; init; } = [];
+    public bool Emit { get; init; } = true;
+    public IReadOnlyList<string> Embeds { get; init; } = [];
+    public IReadOnlyList<string> Satisfies { get; init; } = [];
     public IReadOnlyDictionary<string, string> Slots { get; init; } = new SortedDictionary<string, string>();
     public IReadOnlyList<string> WorkingNorms { get; init; } = [];
     public IReadOnlyList<string> ContextFiles { get; init; } = [];
