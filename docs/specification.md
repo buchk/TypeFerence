@@ -8,6 +8,8 @@ TypeFerence defines structural composition and deterministic compilation of agen
 
 Agentic Resource Discovery (ARD) can advertise compiled TypeFerence outputs. ARD identifies and locates artifacts; TypeFerence produces target-specific artifacts before publication. Invocation remains the responsibility of MCP, A2A, OpenAPI, or a host-native mechanism.
 
+TypeFerence does not define ARD registry lifecycle, release policy, deprecation, deployment instance metadata, dependency manifests, auth feasibility hints, access or monetization policy, install-time consent envelopes, registry federation, DID resolution rules, relay addressing, search filters, registry APIs, or ARD governance. If ARD standardizes any of those fields, TypeFerence MAY preserve them as publication metadata, but they MUST NOT participate in TypeFerence embedding, composition, skill dispatch, or target compilation semantics.
+
 ## Resource identity
 
 A source tree contains YAML documents with `schemaVersion: 3`, a `kind`, and an `id`. IDs use `namespace/name@semantic-version`. Supported kinds are `agent`, `profile`, `interface`, `capability`, and `skill`.
@@ -78,6 +80,8 @@ When requested, the reference compiler emits:
 3. `derivedFrom` provenance from each target bundle to the canonical source identifier and digest.
 
 The v1 package media types are experimental `application/vnd.typeference.source-package+json` and `application/vnd.typeference.target-bundle+json`. A target bundle contains the exact generated files and names its intended runtime. ARD discovery does not install those files or make one target's format executable by another target. Directly callable services SHOULD instead be published using their native MCP, A2A, OpenAPI, or successor artifact card after deployment.
+
+TypeFerence-generated catalog entries intentionally omit ARD-owned lifecycle, deployment, dependency, install-safety, federation, and registry-search metadata unless supplied as external publication metadata. TypeFerence source versions describe authoring resources; they do not imply discovery-time availability, migration windows, deprecation state, supported regions, credential requirements, commercial terms, or registry federation consent.
 
 ### Trust metadata compilation
 

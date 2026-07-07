@@ -4,7 +4,7 @@
 
 TypeFerence is an experimental reference implementation of a typed definition and compilation layer for AI agents. It replaces sprawling, duplicated instruction files with Go-like composition: reusable profiles, agent embedding, structurally satisfied interfaces, versioned capabilities, skill implementations, deterministic compilation, provenance, and artifact diffing.
 
-Read the [whitepaper](docs/whitepaper.md), the [rendered PDF](output/pdf/typeference-whitepaper.pdf), or the [draft v3 specification](docs/specification.md).
+Read the [whitepaper](docs/whitepaper.md), the [rendered PDF](output/pdf/typeference-whitepaper.pdf), the [draft v3 specification](docs/specification.md), or the [ARD alignment notes](docs/ard-alignment.md).
 
 ```text
 helio/profiles/enterprise-defaults ──embedded by──> helio/profiles/person-defaults     ──embedded by──> helio/executive-assistant
@@ -12,6 +12,12 @@ helio/profiles/enterprise-defaults ──embedded by──> helio/profiles/perso
 ```
 
 There is no universal root and no nominal `implements` declaration. Agents embed reusable profiles, promoted behavior is checked for ambiguity, and interfaces are discovered from the resulting slot and capability set.
+
+## Why not just write AGENTS.md?
+
+You can, and for one small agent you often should. TypeFerence becomes useful when those instructions need reuse, review, specialization, provenance, and repeatable output across several agents or hosts.
+
+Agent runtime system prompts are like machine code: they are what the model actually consumes at execution time. `AGENTS.md` and similar host-native instruction files are like assembly language: readable and controllable, but still close to one runtime's concrete shape. TypeFerence is the higher-level language above that. It lets teams model profiles, capabilities, skills, context, and trust metadata once, then compile the result into `AGENTS.md`, Copilot instructions, Cursor rules, neutral bundles, and ARD catalog entries.
 
 ## Where it fits
 
@@ -112,6 +118,7 @@ TypeFerence does not hold signing keys. An external signer can produce detached 
 - Target adapters emit platform-native shapes while retaining the portable fields each target supports.
 - Build output is deterministic and carries provenance.
 - No deployment state, hosted runtime, or model credentials in v3.
+- No ARD registry lifecycle, federation, dependency, install-safety, or deployment metadata in core TypeFerence semantics.
 - Structural validation does not guarantee identical LLM behavior across models or hosts.
 - ARD publication wraps selected target outputs; it is not itself a compilation target or execution runtime.
 
