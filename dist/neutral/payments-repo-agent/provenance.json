@@ -1,66 +1,46 @@
 [
   {
-    "field": "displayName",
-    "source": "helio/enterprise-agent@1.0.0"
-  },
-  {
-    "field": "description",
-    "source": "helio/enterprise-agent@1.0.0"
-  },
-  {
     "field": "slots.organization",
-    "source": "helio/enterprise-agent@1.0.0"
+    "source": "helio/profiles/enterprise-defaults@1.0.0"
   },
   {
     "field": "slots.safetyPolicy",
-    "source": "helio/enterprise-agent@1.0.0"
+    "source": "helio/profiles/enterprise-defaults@1.0.0"
   },
   {
     "field": "workingNorms",
-    "source": "helio/enterprise-agent@1.0.0"
+    "source": "helio/profiles/enterprise-defaults@1.0.0"
   },
   {
     "field": "workingNorms",
-    "source": "helio/enterprise-agent@1.0.0"
+    "source": "helio/profiles/enterprise-defaults@1.0.0"
   },
   {
     "field": "contextFiles",
-    "source": "helio/enterprise-agent@1.0.0"
+    "source": "helio/profiles/enterprise-defaults@1.0.0"
   },
   {
     "field": "contextFiles",
-    "source": "helio/enterprise-agent@1.0.0"
+    "source": "helio/profiles/enterprise-defaults@1.0.0"
   },
   {
-    "field": "embeds.helio/enterprise-agent@1.0.0",
-    "source": "helio/repo-agent@1.0.0"
-  },
-  {
-    "field": "displayName",
-    "source": "helio/repo-agent@1.0.0"
-  },
-  {
-    "field": "description",
-    "source": "helio/repo-agent@1.0.0"
+    "field": "embeds.helio/profiles/enterprise-defaults@1.0.0",
+    "source": "helio/profiles/repository-defaults@1.0.0"
   },
   {
     "field": "slots.repository",
-    "source": "helio/repo-agent@1.0.0"
+    "source": "helio/profiles/repository-defaults@1.0.0"
   },
   {
     "field": "workingNorms",
-    "source": "helio/repo-agent@1.0.0"
+    "source": "helio/profiles/repository-defaults@1.0.0"
   },
   {
     "field": "contextFiles",
-    "source": "helio/repo-agent@1.0.0"
+    "source": "helio/profiles/repository-defaults@1.0.0"
   },
   {
-    "field": "satisfies.helio/interfaces/repository-observer@1.0.0",
-    "source": "helio/repo-agent@1.0.0"
-  },
-  {
-    "field": "embeds.helio/repo-agent@1.0.0",
+    "field": "embeds.helio/profiles/repository-defaults@1.0.0",
     "source": "helio/payments-repo-agent@1.0.0"
   },
   {

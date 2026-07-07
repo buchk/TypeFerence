@@ -9,10 +9,11 @@ public sealed class ResourceDocument
     public string Id { get; set; } = "";
     public string DisplayName { get; set; } = "";
     public string Description { get; set; } = "";
+    public string Binds { get; set; } = "";
     public bool Emit { get; set; } = true;
     public List<string> Embeds { get; set; } = [];
     public List<string> RequiresSlots { get; set; } = [];
-    public List<string> RequiresSkills { get; set; } = [];
+    public List<string> RequiresCapabilities { get; set; } = [];
     public SortedDictionary<string, string> Slots { get; set; } = new(StringComparer.Ordinal);
     public List<string> WorkingNorms { get; set; } = [];
     public List<string> ContextFiles { get; set; } = [];
@@ -25,7 +26,7 @@ public sealed class ResourceDocument
 public sealed class SkillBinding
 {
     public string Ref { get; set; } = "";
-    public string? Contract { get; set; }
+    public string? Capability { get; set; }
 }
 
 public sealed record ProvenanceEntry(string Field, string Source);
@@ -33,7 +34,7 @@ public sealed record ProvenanceEntry(string Field, string Source);
 public sealed class ResolvedSkill
 {
     public string DispatchName { get; init; } = "";
-    public string ContractId { get; init; } = "";
+    public string CapabilityId { get; init; } = "";
     public string ImplementationId { get; init; } = "";
     public string Description { get; init; } = "";
     public string Instructions { get; init; } = "";

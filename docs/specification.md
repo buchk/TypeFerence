@@ -1,42 +1,44 @@
 # TypeFerence Draft Specification
 
-Status: experimental reference draft, July 2026. Typed resources use `schemaVersion: 2`; this document is not a claim of ecosystem-standard or production-stable status.
+Status: experimental reference draft, July 2026. Typed resources use `schemaVersion: 3`; this document is not a claim of ecosystem-standard or production-stable status.
 
 ## Scope and non-goals
 
-TypeFerence defines structural composition and deterministic compilation of agent instructions, skill contracts, and context references. It does not define an inference runtime, guarantee equivalent behavior across models or hosts, establish publisher trust, or provide resource discovery.
+TypeFerence defines structural composition and deterministic compilation of agent instructions, capability contracts, skill implementations, and context references. It does not define an inference runtime, guarantee equivalent behavior across models or hosts, establish publisher trust, or provide resource discovery.
 
 Agentic Resource Discovery (ARD) can advertise compiled TypeFerence outputs. ARD identifies and locates artifacts; TypeFerence produces target-specific artifacts before publication. Invocation remains the responsibility of MCP, A2A, OpenAPI, or a host-native mechanism.
 
 ## Resource identity
 
-A source tree contains YAML documents with `schemaVersion: 2`, a `kind`, and an `id`. IDs use `namespace/name@semantic-version`. Supported kinds are `agent`, `interface`, and `skill`.
+A source tree contains YAML documents with `schemaVersion: 3`, a `kind`, and an `id`. IDs use `namespace/name@semantic-version`. Supported kinds are `agent`, `profile`, `interface`, `capability`, and `skill`.
 
-## Agents
+## Agents and profiles
 
-An agent MAY embed zero or more agents. Embedding promotes the embedded agents' slots, norms, contexts, and skills into the embedding agent. An embedding graph MUST NOT contain a cycle. No universal root is required.
+An agent is an identity-bearing unit that MAY produce target artifacts. A profile is a reusable composition unit for organizational, domain, or team defaults. Agents MAY embed profiles or agents. Profiles MAY embed profiles but MUST NOT embed agents. Embedding promotes the embedded resources' slots, norms, contexts, and capability bindings into the embedding resource. An embedding graph MUST NOT contain a cycle. No universal root is required.
 
-An agent with `emit: false` participates in composition and validation but does not produce a target bundle. This is useful for reusable organizational or domain components without introducing abstract base types.
+Profiles participate in composition and validation but do not produce target bundles. This lets users start with `kind: agent` while platform teams define reusable profiles underneath.
 
-Resolution proceeds from embedded agents toward the embedding agent:
+Resolution proceeds from embedded resources toward the embedding resource:
 
-1. Display name and description belong to the declaring agent and are not promoted.
-2. Slots are promoted by name. The shallowest declaration wins; conflicting declarations at the same depth are ambiguous unless the embedding agent declares that slot locally.
+1. Display name and description belong to the declaring resource and are not promoted.
+2. Slots are promoted by name. The shallowest declaration wins; conflicting declarations at the same depth are ambiguous unless the embedding resource declares that slot locally.
 3. Norms and context paths append in embedding order and deduplicate in first-seen order.
-4. Skills are promoted by contract ID. The shallowest implementation wins; conflicting implementations at the same depth are ambiguous unless the embedding agent declares that contract locally.
+4. Capability bindings are promoted by capability ID. The shallowest implementation wins; conflicting implementations at the same depth are ambiguous unless the embedding resource binds that capability locally.
 5. Interfaces are computed structurally from the final promoted member set.
 
 Every resolved contribution records its source resource in provenance.
 
 ## Interfaces
 
-Interfaces are contracts only. They MAY require slot names and skill contract IDs, and MAY embed other interfaces. They MUST NOT provide implementation. Every agent whose resolved slots and skill contracts contain all requirements satisfies the interface implicitly; agents do not declare `implements`. Interface embedding MUST NOT contain a cycle.
+Interfaces are contracts only. They MAY require slot names and capability IDs, and MAY embed other interfaces. They MUST NOT provide implementation. Every agent whose resolved slots and capability bindings contain all requirements satisfies the interface implicitly; agents do not declare `implements`. Interface embedding MUST NOT contain a cycle.
 
-## Skills and contract implementations
+## Capabilities and skill implementations
 
-A skill defines instructions, conditional context references, and JSON input/output schemas. Adding a skill establishes its own ID as the contract ID. A binding MAY name a different `contract`; its `ref` is then the local implementation of that contract.
+A capability defines a stable semantic method slot and its public JSON input/output schemas. It has no instructions and no runtime context.
 
-A contract implementation MUST preserve canonical input and output schemas. It MAY change instructions, description, and conditional context. The outer dispatch name resolves to the local implementation while the embedded agent retains its own namespace.
+A skill defines instructions, conditional context references, and JSON input/output schemas. Every skill MUST declare `binds: <capability-id>`. A skill implementation MUST preserve the bound capability's canonical input and output schemas. It MAY change instructions, description, and conditional context.
+
+An agent's or profile's `skills` list binds skill implementations into that resource's resolved method set. If a binding omits `capability`, the capability is inferred from the referenced skill's `binds` field. If it names `capability`, that value MUST match the referenced skill's `binds` field. The outer dispatch name resolves the capability to the nearest compatible skill implementation while the embedded resource retains its own namespace.
 
 ## Dispatch
 

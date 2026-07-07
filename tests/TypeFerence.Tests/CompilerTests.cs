@@ -14,11 +14,13 @@ public sealed class CompilerTests
     private static string Example => Path.Combine(Root, "examples", "helio");
 
     [Fact]
-    public void Agents_DoNotNeedAUniversalRoot()
+    public void Profiles_AreReusableAndNotEmittedAsAgents()
     {
-        var enterprise = new TypeFerenceCompiler().Validate(Example).Single(x => x.Id == "helio/enterprise-agent@1.0.0");
-        Assert.False(enterprise.Emit);
-        Assert.Empty(enterprise.Embeds);
+        var agents = new TypeFerenceCompiler().Validate(Example);
+        Assert.Equal(2, agents.Count);
+        Assert.DoesNotContain(agents, x => x.Id == "helio/profiles/enterprise-defaults@1.0.0");
+        Assert.All(agents, x => Assert.True(x.Emit));
+        Assert.All(agents, x => Assert.Contains("helio/profiles/", x.Embeds.Single()));
     }
 
     [Fact]
@@ -29,11 +31,11 @@ public sealed class CompilerTests
     }
 
     [Fact]
-    public void Override_PreservesContractAndUsesDerivedDispatch()
+    public void Override_PreservesCapabilityAndUsesDerivedDispatch()
     {
         var agent = new TypeFerenceCompiler().Validate(Example).Single(x => x.Id == "helio/payments-repo-agent@1.0.0");
         var skill = Assert.Single(agent.Skills);
-        Assert.Equal("helio/skills/repository-status@1.0.0", skill.ContractId);
+        Assert.Equal("helio/capabilities/repository-status@1.0.0", skill.CapabilityId);
         Assert.Equal("helio/skills/payments-repository-status@1.0.0", skill.ImplementationId);
         Assert.Equal("payments-repo-agent.repository-status", skill.DispatchName);
     }
@@ -57,7 +59,7 @@ public sealed class CompilerTests
         var compiler = new TypeFerenceCompiler();
         compiler.Build(Example, one.Path, Enum.GetValues<CompilationTarget>(), new ArdPublicationOptions("helio.example"));
         compiler.Build(Example, two.Path, Enum.GetValues<CompilationTarget>(), new ArdPublicationOptions("helio.example"));
-        Assert.Equal("3217c82010c4859535f76797d04b432d07531a7f02c3b1c2ef84adb655c6eae5", TypeFerenceCompiler.HashDirectory(one.Path));
+        Assert.Equal("a22f5410ba5f8e172c8d25dd2ff3efb867b212753723fd2e3b1faca21d2b3963", TypeFerenceCompiler.HashDirectory(one.Path));
         Assert.Equal(TypeFerenceCompiler.HashDirectory(one.Path), TypeFerenceCompiler.HashDirectory(two.Path));
         Assert.False(DiffResult.Compare(one.Path, two.Path).Different);
         Assert.True(File.Exists(Path.Combine(one.Path, "codex", "executive-assistant", ".agents", "skills", "prepare-brief", "SKILL.md")));
@@ -323,8 +325,8 @@ public sealed class CompilerTests
     {
         var resources = new Dictionary<string, ResourceDocument>
         {
-            ["test/a@1.0.0"] = new() { SchemaVersion = 2, Kind = "agent", Id = "test/a@1.0.0", Embeds = ["test/b@1.0.0"] },
-            ["test/b@1.0.0"] = new() { SchemaVersion = 2, Kind = "agent", Id = "test/b@1.0.0", Embeds = ["test/a@1.0.0"] }
+            ["test/a@1.0.0"] = new() { SchemaVersion = 3, Kind = "agent", Id = "test/a@1.0.0", Embeds = ["test/b@1.0.0"] },
+            ["test/b@1.0.0"] = new() { SchemaVersion = 3, Kind = "agent", Id = "test/b@1.0.0", Embeds = ["test/a@1.0.0"] }
         };
         Assert.Contains("cycle", Assert.Throws<TypeFerenceException>(() => new TypeResolver(resources).ResolveAll()).Message, StringComparison.OrdinalIgnoreCase);
     }
@@ -334,11 +336,11 @@ public sealed class CompilerTests
     {
         var resources = new Dictionary<string, ResourceDocument>
         {
-            ["test/left@1.0.0"] = new() { SchemaVersion = 2, Kind = "agent", Id = "test/left@1.0.0", Slots = { ["owner"] = "left.md" } },
-            ["test/right@1.0.0"] = new() { SchemaVersion = 2, Kind = "agent", Id = "test/right@1.0.0", Slots = { ["owner"] = "right.md" } },
+            ["test/left@1.0.0"] = new() { SchemaVersion = 3, Kind = "agent", Id = "test/left@1.0.0", Slots = { ["owner"] = "left.md" } },
+            ["test/right@1.0.0"] = new() { SchemaVersion = 3, Kind = "agent", Id = "test/right@1.0.0", Slots = { ["owner"] = "right.md" } },
             ["test/ambiguous@1.0.0"] = new()
             {
-                SchemaVersion = 2,
+                SchemaVersion = 3,
                 Kind = "agent",
                 Id = "test/ambiguous@1.0.0",
                 Embeds = ["test/left@1.0.0", "test/right@1.0.0"]
@@ -353,25 +355,34 @@ public sealed class CompilerTests
     [Fact]
     public void MultipleEmbedding_PrefersTheShallowestPromotedMember()
     {
+        var capability = new ResourceDocument
+        {
+            SchemaVersion = 3,
+            Kind = "capability",
+            Id = "test/capabilities/status@1.0.0"
+        };
         var baseSkill = new ResourceDocument
         {
-            SchemaVersion = 2,
+            SchemaVersion = 3,
             Kind = "skill",
-            Id = "test/skills/status@1.0.0"
+            Id = "test/skills/status@1.0.0",
+            Binds = capability.Id
         };
         var specializedSkill = new ResourceDocument
         {
-            SchemaVersion = 2,
+            SchemaVersion = 3,
             Kind = "skill",
-            Id = "test/skills/special-status@1.0.0"
+            Id = "test/skills/special-status@1.0.0",
+            Binds = capability.Id
         };
         var resources = new Dictionary<string, ResourceDocument>
         {
+            [capability.Id] = capability,
             [baseSkill.Id] = baseSkill,
             [specializedSkill.Id] = specializedSkill,
             ["test/deep@1.0.0"] = new()
             {
-                SchemaVersion = 2,
+                SchemaVersion = 3,
                 Kind = "agent",
                 Id = "test/deep@1.0.0",
                 Slots = { ["owner"] = "deep.md" },
@@ -379,22 +390,22 @@ public sealed class CompilerTests
             },
             ["test/middle@1.0.0"] = new()
             {
-                SchemaVersion = 2,
+                SchemaVersion = 3,
                 Kind = "agent",
                 Id = "test/middle@1.0.0",
                 Embeds = ["test/deep@1.0.0"]
             },
             ["test/shallow@1.0.0"] = new()
             {
-                SchemaVersion = 2,
+                SchemaVersion = 3,
                 Kind = "agent",
                 Id = "test/shallow@1.0.0",
                 Slots = { ["owner"] = "shallow.md" },
-                Skills = [new SkillBinding { Ref = specializedSkill.Id, Contract = baseSkill.Id }]
+                Skills = [new SkillBinding { Ref = specializedSkill.Id, Capability = capability.Id }]
             },
             ["test/outer@1.0.0"] = new()
             {
-                SchemaVersion = 2,
+                SchemaVersion = 3,
                 Kind = "agent",
                 Id = "test/outer@1.0.0",
                 Embeds = ["test/middle@1.0.0", "test/shallow@1.0.0"]
@@ -414,7 +425,7 @@ public sealed class CompilerTests
         Assert.Contains(agent.Provenance, x => x.Field.StartsWith("satisfies.", StringComparison.Ordinal));
         Assert.All(agent.Skills, skill =>
         {
-            Assert.Contains(skill.Provenance, x => x.Field == "skill.contract");
+            Assert.Contains(skill.Provenance, x => x.Field == "skill.capability");
             Assert.Contains(skill.Provenance, x => x.Field == "skill.implementation");
         });
     }
@@ -424,9 +435,9 @@ public sealed class CompilerTests
     {
         var resources = new Dictionary<string, ResourceDocument>
         {
-            ["test/contract@1.0.0"] = new() { SchemaVersion = 2, Kind = "interface", Id = "test/contract@1.0.0", RequiresSlots = ["owner"] },
-            ["test/plain@1.0.0"] = new() { SchemaVersion = 2, Kind = "agent", Id = "test/plain@1.0.0" },
-            ["test/owned@1.0.0"] = new() { SchemaVersion = 2, Kind = "agent", Id = "test/owned@1.0.0", Slots = { ["owner"] = "owner.md" } }
+            ["test/contract@1.0.0"] = new() { SchemaVersion = 3, Kind = "interface", Id = "test/contract@1.0.0", RequiresSlots = ["owner"] },
+            ["test/plain@1.0.0"] = new() { SchemaVersion = 3, Kind = "agent", Id = "test/plain@1.0.0" },
+            ["test/owned@1.0.0"] = new() { SchemaVersion = 3, Kind = "agent", Id = "test/owned@1.0.0", Slots = { ["owner"] = "owner.md" } }
         };
         var agents = new TypeResolver(resources).ResolveAll();
         Assert.Empty(agents.Single(x => x.Id == "test/plain@1.0.0").Satisfies);
@@ -434,48 +445,105 @@ public sealed class CompilerTests
     }
 
     [Fact]
-    public void InterfaceSkillRequirements_MustReferenceSkills()
+    public void InterfaceCapabilityRequirements_MustReferenceCapabilities()
     {
         var resources = new Dictionary<string, ResourceDocument>
         {
             ["test/contract@1.0.0"] = new()
             {
-                SchemaVersion = 2,
+                SchemaVersion = 3,
                 Kind = "interface",
                 Id = "test/contract@1.0.0",
-                RequiresSkills = ["test/skills/missing@1.0.0"]
+                RequiresCapabilities = ["test/capabilities/missing@1.0.0"]
             }
         };
 
-        Assert.Contains("Missing skill", Assert.Throws<TypeFerenceException>(() => new TypeResolver(resources).ResolveAll()).Message, StringComparison.Ordinal);
+        Assert.Contains("Missing capability", Assert.Throws<TypeFerenceException>(() => new TypeResolver(resources).ResolveAll()).Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void MissingEmbeddedAgents_AreRejected()
+    public void Skills_MustBindACapability()
+    {
+        using var source = new TempDirectory();
+        File.WriteAllText(Path.Combine(source.Path, "skill.yaml"), """
+schemaVersion: 3
+kind: skill
+id: test/skills/status@1.0.0
+""");
+
+        Assert.Contains("skills must bind a capability", Assert.Throws<TypeFerenceException>(() => new ResourceLoader().Load(source.Path)).Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void AgentSkillBindings_MustMatchTheSkillCapability()
+    {
+        var capability = new ResourceDocument { SchemaVersion = 3, Kind = "capability", Id = "test/capabilities/status@1.0.0" };
+        var otherCapability = new ResourceDocument { SchemaVersion = 3, Kind = "capability", Id = "test/capabilities/other-status@1.0.0" };
+        var skill = new ResourceDocument { SchemaVersion = 3, Kind = "skill", Id = "test/skills/status@1.0.0", Binds = capability.Id };
+        var resources = new Dictionary<string, ResourceDocument>
+        {
+            [capability.Id] = capability,
+            [otherCapability.Id] = otherCapability,
+            [skill.Id] = skill,
+            ["test/agent@1.0.0"] = new()
+            {
+                SchemaVersion = 3,
+                Kind = "agent",
+                Id = "test/agent@1.0.0",
+                Skills = [new SkillBinding { Ref = skill.Id, Capability = otherCapability.Id }]
+            }
+        };
+
+        Assert.Contains("binding declares capability", Assert.Throws<TypeFerenceException>(() => new TypeResolver(resources).ResolveAll()).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MissingEmbeddedResources_AreRejected()
     {
         var resources = new Dictionary<string, ResourceDocument>
         {
-            ["test/base@1.0.0"] = new() { SchemaVersion = 2, Kind = "agent", Id = "test/base@1.0.0", Embeds = ["test/missing@1.0.0"] }
+            ["test/base@1.0.0"] = new() { SchemaVersion = 3, Kind = "agent", Id = "test/base@1.0.0", Embeds = ["test/missing@1.0.0"] }
         };
-        Assert.Contains("Missing agent", Assert.Throws<TypeFerenceException>(() => new TypeResolver(resources).ResolveAll()).Message, StringComparison.Ordinal);
+        Assert.Contains("Missing embeddable resource", Assert.Throws<TypeFerenceException>(() => new TypeResolver(resources).ResolveAll()).Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void SkillContractImplementations_MustPreserveSchemas()
+    public void Profiles_CannotEmbedAgents()
     {
+        var resources = new Dictionary<string, ResourceDocument>
+        {
+            ["test/profile@1.0.0"] = new() { SchemaVersion = 3, Kind = "profile", Id = "test/profile@1.0.0", Embeds = ["test/agent@1.0.0"] },
+            ["test/agent@1.0.0"] = new() { SchemaVersion = 3, Kind = "agent", Id = "test/agent@1.0.0" }
+        };
+        Assert.Contains("profiles can only embed profiles", Assert.Throws<TypeFerenceException>(() => new TypeResolver(resources).ResolveAll()).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SkillCapabilityImplementations_MustPreserveSchemas()
+    {
+        var capability = new ResourceDocument
+        {
+            SchemaVersion = 3,
+            Kind = "capability",
+            Id = "test/capabilities/status@1.0.0",
+            InputSchema = "{\"type\":\"object\",\"properties\":{\"focus\":{\"type\":\"string\"}}}",
+            OutputSchema = "{\"type\":\"object\"}"
+        };
         var baseSkill = new ResourceDocument
         {
-            SchemaVersion = 2,
+            SchemaVersion = 3,
             Kind = "skill",
             Id = "test/skills/status@1.0.0",
+            Binds = capability.Id,
             InputSchema = "{\"type\":\"object\",\"properties\":{\"focus\":{\"type\":\"string\"}}}",
             OutputSchema = "{\"type\":\"object\"}"
         };
         var replacement = new ResourceDocument
         {
-            SchemaVersion = 2,
+            SchemaVersion = 3,
             Kind = "skill",
             Id = "test/skills/special-status@1.0.0",
+            Binds = capability.Id,
             InputSchema = "{\"type\":\"object\",\"properties\":{\"count\":{\"type\":\"number\"}}}",
             OutputSchema = "{\"type\":\"object\"}"
         };
@@ -483,7 +551,7 @@ public sealed class CompilerTests
         {
             ["test/base@1.0.0"] = new()
             {
-                SchemaVersion = 2,
+                SchemaVersion = 3,
                 Kind = "agent",
                 Id = "test/base@1.0.0",
                 Emit = false,
@@ -491,12 +559,13 @@ public sealed class CompilerTests
             },
             ["test/concrete@1.0.0"] = new()
             {
-                SchemaVersion = 2,
+                SchemaVersion = 3,
                 Kind = "agent",
                 Id = "test/concrete@1.0.0",
                 Embeds = ["test/base@1.0.0"],
-                Skills = [new SkillBinding { Ref = replacement.Id, Contract = baseSkill.Id }]
+                Skills = [new SkillBinding { Ref = replacement.Id, Capability = capability.Id }]
             },
+            [capability.Id] = capability,
             [baseSkill.Id] = baseSkill,
             [replacement.Id] = replacement
         };
@@ -507,9 +576,9 @@ public sealed class CompilerTests
     public void Interfaces_CanEmbedInterfaces()
     {
         using var source = new TempDirectory();
-        File.WriteAllText(Path.Combine(source.Path, "base.yaml"), "schemaVersion: 2\nkind: interface\nid: test/base@1.0.0\nrequiresSlots: [owner]\n");
-        File.WriteAllText(Path.Combine(source.Path, "interface.yaml"), "schemaVersion: 2\nkind: interface\nid: test/contract@1.0.0\nembeds: [test/base@1.0.0]\nrequiresSlots: [repository]\n");
-        File.WriteAllText(Path.Combine(source.Path, "agent.yaml"), "schemaVersion: 2\nkind: agent\nid: test/agent@1.0.0\nslots: { owner: owner.md, repository: repository.md }\n");
+        File.WriteAllText(Path.Combine(source.Path, "base.yaml"), "schemaVersion: 3\nkind: interface\nid: test/base@1.0.0\nrequiresSlots: [owner]\n");
+        File.WriteAllText(Path.Combine(source.Path, "interface.yaml"), "schemaVersion: 3\nkind: interface\nid: test/contract@1.0.0\nembeds: [test/base@1.0.0]\nrequiresSlots: [repository]\n");
+        File.WriteAllText(Path.Combine(source.Path, "agent.yaml"), "schemaVersion: 3\nkind: agent\nid: test/agent@1.0.0\nslots: { owner: owner.md, repository: repository.md }\n");
         File.WriteAllText(Path.Combine(source.Path, "owner.md"), "owner");
         File.WriteAllText(Path.Combine(source.Path, "repository.md"), "repository");
         var agent = new TypeResolver(new ResourceLoader().Load(source.Path)).Resolve("test/agent@1.0.0");
@@ -522,7 +591,7 @@ public sealed class CompilerTests
     public void ContextPaths_MustStayInsideSourceAndExist(string path, string expected)
     {
         using var source = new TempDirectory();
-        File.WriteAllText(Path.Combine(source.Path, "agent.yaml"), $"schemaVersion: 2\nkind: agent\nid: test/agent@1.0.0\ncontextFiles:\n  - {path}\n");
+        File.WriteAllText(Path.Combine(source.Path, "agent.yaml"), $"schemaVersion: 3\nkind: agent\nid: test/agent@1.0.0\ncontextFiles:\n  - {path}\n");
         Assert.Contains(expected, Assert.Throws<TypeFerenceException>(() => new ResourceLoader().Load(source.Path)).Message, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -531,7 +600,7 @@ public sealed class CompilerTests
     {
         using var source = new TempDirectory();
         File.WriteAllText(Path.Combine(source.Path, "root.yaml"), """
-schemaVersion: 2
+schemaVersion: 3
 kind: agent
 id: test/agent@1.0.0
 unknownField: rejected
@@ -545,7 +614,7 @@ unknownField: rejected
     public void LegacyInheritanceFields_AreRejected(string field)
     {
         using var source = new TempDirectory();
-        File.WriteAllText(Path.Combine(source.Path, "agent.yaml"), $"schemaVersion: 2\nkind: agent\nid: test/agent@1.0.0\n{field}\n");
+        File.WriteAllText(Path.Combine(source.Path, "agent.yaml"), $"schemaVersion: 3\nkind: agent\nid: test/agent@1.0.0\n{field}\n");
         Assert.Contains("invalid YAML", Assert.Throws<TypeFerenceException>(() => new ResourceLoader().Load(source.Path)).Message, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -554,7 +623,7 @@ unknownField: rejected
     {
         using var source = new TempDirectory();
         File.WriteAllText(Path.Combine(source.Path, "agent.yaml"), "schemaVersion: 1\nkind: agent\nid: test/agent@1.0.0\n");
-        Assert.Contains("schemaVersion must be 2", Assert.Throws<TypeFerenceException>(() => new ResourceLoader().Load(source.Path)).Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("schemaVersion must be 3", Assert.Throws<TypeFerenceException>(() => new ResourceLoader().Load(source.Path)).Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -562,7 +631,7 @@ unknownField: rejected
     {
         using var source = new TempDirectory();
         File.WriteAllText(Path.Combine(source.Path, "root.yaml"), """
-schemaVersion: 2
+schemaVersion: 3
 kind: agent
 id: system/object@latest
 """);

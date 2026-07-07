@@ -49,11 +49,14 @@ public sealed class ResourceLoader
 
     private static void ValidateShape(ResourceDocument resource, string file, string root)
     {
-        if (resource.SchemaVersion != 2) throw new TypeFerenceException($"{file}: schemaVersion must be 2");
-        if (resource.Kind is not ("agent" or "interface" or "skill")) throw new TypeFerenceException($"{file}: unknown kind '{resource.Kind}'");
+        if (resource.SchemaVersion != 3) throw new TypeFerenceException($"{file}: schemaVersion must be 3");
+        if (resource.Kind is not ("agent" or "profile" or "interface" or "capability" or "skill")) throw new TypeFerenceException($"{file}: unknown kind '{resource.Kind}'");
         if (!ResourceId.IsMatch(resource.Id))
             throw new TypeFerenceException($"{file}: id must use lowercase namespace/name@semantic-version");
-        if (resource.Kind == "skill" && resource.Embeds.Count != 0) throw new TypeFerenceException($"{file}: skills cannot embed resources");
+        if (resource.Kind is "capability" or "skill" && resource.Embeds.Count != 0) throw new TypeFerenceException($"{file}: {resource.Kind}s cannot embed resources");
+        if (resource.Kind == "skill" && string.IsNullOrWhiteSpace(resource.Binds)) throw new TypeFerenceException($"{file}: skills must bind a capability");
+        if (resource.Kind == "skill" && !ResourceId.IsMatch(resource.Binds)) throw new TypeFerenceException($"{file}: binds must reference a capability id");
+        if (resource.Kind != "skill" && !string.IsNullOrWhiteSpace(resource.Binds)) throw new TypeFerenceException($"{file}: only skills can bind capabilities");
         foreach (var relative in resource.ContextFiles.Concat(resource.Slots.Values))
         {
             var full = Path.GetFullPath(Path.Combine(root, relative.Replace('/', Path.DirectorySeparatorChar)));
