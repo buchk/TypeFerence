@@ -14,6 +14,8 @@ TypeFerence treats agent definitions as typed source code. Organizations define 
 
 Markdown is an excellent runtime format and a poor organization-wide type system. As agent adoption grows, similar instructions appear in many places. Security language diverges. Status-reporting methods acquire incompatible meanings. A policy correction must be rediscovered and edited in dozens of files. Reviewers can see textual differences but cannot reliably identify which behavior was embedded, replaced, or accidentally omitted.
 
+This is the answer to "why not just write `AGENTS.md` directly?" Direct instruction files are the right level for small, local customization, but they are not the best level for organization-wide reuse. Agent runtime system prompts are like machine code: they are the concrete behavior stream the model consumes. `AGENTS.md`, Copilot instructions, Cursor rules, and similar files are like assembly language: human-readable and powerful, but still tied to one host's instruction shape. TypeFerence is the higher-level language above them, where teams can express shared concepts once and compile them into the host-native forms.
+
 The underlying problem is repeated domain modeling. Each local agent solves identity, capability, context selection, and governance again. Vendor portability is one visible symptom; duplicated organizational reasoning is the larger cost.
 
 TypeFerence introduces a canonical typed layer above runtime Markdown. Source definitions are small. Skills conditionally reference context. Compilation is deterministic. The generated artifacts remain ordinary files that existing tools understand.
