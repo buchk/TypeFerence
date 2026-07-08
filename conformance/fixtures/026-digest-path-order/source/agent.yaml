@@ -1,0 +1,10 @@
+schemaVersion: 3
+kind: agent
+id: conformance/path-order@1.0.0
+displayName: Path Order
+description: References files whose names sort differently under platform separators.
+contextFiles:
+  - context/notes/deep.md
+  - context/notesA.md
+  - context/notes0.md
+  - context/notes.md
