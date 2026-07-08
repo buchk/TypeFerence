@@ -12,7 +12,7 @@
 | `conformance/` | Shared cross-implementation fixture corpus. |
 | `examples/helio` | Example organization used by tests and the quick start. |
 | `dist/` | Committed reference output of `examples/helio` (byte-compared in CI). |
-| `agents/maintainer/` | This definition; compiled into the root `AGENTS.md` and `dist/maintainer/`. |
+| `agents/maintainer/` | This definition; compiled into the root `AGENTS.md` and `dist-maintainer/`. |
 | `.github/workflows/ci.yml` | Build, test, conformance, and self-host drift gates. |
 
 The root `AGENTS.md` is generated from this definition. To change it, edit the

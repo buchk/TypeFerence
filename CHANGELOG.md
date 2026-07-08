@@ -25,7 +25,7 @@ First tagged release. Everything before this version was unversioned development
   and independently verified by the C# runner; both run in CI (ADR-0005).
 - **Self-hosted maintainer agent** under `agents/maintainer/` — the repository's
   own maintainer defined in TypeFerence; the root `AGENTS.md` and
-  `dist/maintainer/` are compiled artifacts, with a CI gate that fails on drift
+  `dist-maintainer/` are compiled artifacts, with a CI gate that fails on drift
   (ADR-0006).
 - `typeference version` command in both implementations.
 - Architecture decision records under `docs/decisions/`.

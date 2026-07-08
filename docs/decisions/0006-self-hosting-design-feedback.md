@@ -7,11 +7,13 @@
 The agent that maintains this repository is now defined in TypeFerence's own terms
 under `agents/maintainer/` (four profiles: spec-conformance, determinism-guardian,
 trust-signing, contribution-workflow; two real capabilities: verify-conformance and
-audit-drift). The repository-root `AGENTS.md` and `dist/maintainer/` are build
-artifacts of that definition; CI (`selfhost-drift` job) recompiles the definition and
-fails on any byte of drift. Provenance back to the canonical source digest is carried
-by `dist/maintainer/ard/ai-catalog.json` (source-package digest plus `derivedFrom`
-links), using the spec's own optional ARD emission rather than an ad-hoc mechanism.
+audit-drift). The repository-root `AGENTS.md` and `dist-maintainer/` are build
+artifacts of that definition (kept outside `dist/`, which remains purely the
+committed reference output of `examples/helio`); CI (`selfhost-drift` job)
+recompiles the definition and fails on any byte of drift. Provenance back to the
+canonical source digest is carried by `dist-maintainer/ard/ai-catalog.json`
+(source-package digest plus `derivedFrom` links), using the spec's own optional ARD
+emission rather than an ad-hoc mechanism.
 The publisher domain is `typeference.example` — a reserved documentation TLD, chosen
 deliberately so the artifact cannot be mistaken for a real published catalog.
 
