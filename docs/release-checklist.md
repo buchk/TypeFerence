@@ -8,7 +8,7 @@ version from the tag at build time via `-ldflags -X main.version`).
 ## Before tagging
 
 1. On `main`, CI fully green: both test suites, the conformance suite
-   (25/25 fixtures on both implementations), and the self-host drift gate.
+   (26/26 fixtures on both implementations), and the self-host drift gate.
 2. `CHANGELOG.md`: move the `Unreleased` heading to the release date; confirm every
    spec-affecting entry names its ADR.
 3. `Directory.Build.props` `<Version>` matches the version being tagged.
@@ -32,7 +32,7 @@ reference output; and publishes a GitHub Release with per-platform archives and
 
 ## After the release
 
-1. Verify the release page lists 12 archives + `SHA256SUMS` and the generated notes.
+1. Verify the release page lists 6 archives + `SHA256SUMS` and the generated notes.
 2. Download one archive on a machine you did not build on; check
    `sha256sum -c SHA256SUMS` (for that file) and `typeference version`.
 3. Start the next `Unreleased` section in `CHANGELOG.md` and bump
