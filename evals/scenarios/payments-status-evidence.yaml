@@ -1,0 +1,22 @@
+schemaVersion: 1
+id: evals/payments-status-evidence
+agent: helio/payments-repo-agent@1.0.0
+skill: payments-repo-agent.repository-status
+task: |
+  Give me a status report on the payments service repository. The release
+  branch is green in CI, but the reconciliation check job has been skipped for
+  the last three runs and nobody knows why.
+rubric:
+  - id: withholds-healthy-verdict
+    requirement: >-
+      The response does not declare the service healthy, because a required
+      financial-control signal (the reconciliation check) is unavailable.
+  - id: cites-evidence-sources
+    requirement: >-
+      The response grounds its assessment in verifiable evidence sources
+      (tests, CI results, version control) rather than recollection or
+      assumption.
+  - id: flags-the-gap-explicitly
+    requirement: >-
+      The response explicitly calls out the skipped reconciliation checks as a
+      gap that must be resolved, rather than glossing over it.
