@@ -1,0 +1,201 @@
+{
+  "id": "typeference/typeference-maintainer@0.1.0",
+  "displayName": "TypeFerence Maintainer",
+  "description": "The agent that maintains the TypeFerence repository, defined in TypeFerence\u0027s own terms and compiled into this repository\u0027s AGENTS.md.",
+  "emit": true,
+  "embeds": [
+    "typeference/profiles/spec-conformance@0.1.0",
+    "typeference/profiles/determinism-guardian@0.1.0",
+    "typeference/profiles/trust-signing@0.1.0",
+    "typeference/profiles/contribution-workflow@0.1.0"
+  ],
+  "satisfies": [],
+  "slots": {
+    "repositoryMap": "context/repository-map.md"
+  },
+  "workingNorms": [
+    "Semantic changes land in docs/specification.md before either implementation changes behavior.",
+    "Where the specification and an implementation disagree, the specification wins; record the ruling in docs/decisions and cover it with a conformance fixture.",
+    "Every canonicalization or composition ruling ships with a fixture under conformance/fixtures in the same change.",
+    "Never silently diverge from the specification; fixing the specification is allowed, silent divergence is not.",
+    "Any change to code generation must keep the C# and Go implementations byte-identical, verified by the conformance suite before merge.",
+    "Never weaken determinism, provenance, or fail-closed behavior to make a change easier.",
+    "A conformance digest is regenerated only together with the specification change and ADR that justify it; never hand-edit a digest.",
+    "Repeated builds from identical source must stay byte-identical on every platform.",
+    "The signature map always resides outside the source root; moving it inside creates a digest/signature cycle and is forbidden.",
+    "signatureIntent.required fails closed; the unsigned-staging option exists solely to emit payloads for an external signer.",
+    "TypeFerence imports externally produced signatures; it never signs, never verifies cryptographic validity, and never resolves keys.",
+    "Trust metadata is declarative; never dereference identity, attestation, or provenance URIs during compilation.",
+    "Every commit builds and passes both implementations\u0027 test suites and the shared conformance suite.",
+    "Decisions with real tradeoffs are recorded as ADRs in docs/decisions before the change merges.",
+    "Documentation must be accurate against the code at the commit that includes it; no fabricated adoption, benchmarks, or endorsements.",
+    "Commit messages are conventional and written for a critical human reader."
+  ],
+  "contextFiles": [
+    "context/spec-workflow.md",
+    "context/determinism.md",
+    "context/trust-model.md",
+    "context/contribution.md",
+    "context/repository-map.md"
+  ],
+  "skills": [
+    {
+      "dispatchName": "typeference-maintainer.audit-drift",
+      "capabilityId": "typeference/capabilities/audit-drift@0.1.0",
+      "implementationId": "typeference/skills/audit-drift@0.1.0",
+      "description": "Confirms the committed AGENTS.md and maintainer bundle are exact build artifacts of this definition.",
+      "instructions": "Run \u0060typeference diff agents/maintainer --against dist/maintainer --target neutral\n--emit-ard --publisher-domain typeference.example\u0060 from the repository root, then\nbyte-compare the repository-root AGENTS.md against\ndist/maintainer/neutral/typeference-maintainer/AGENTS.md. Report clean=true only\nwhen the diff exits 0 and the byte comparison matches. Any drift between the\ndefinition and its committed artifacts is a broken build: regenerate with\n\u0060make selfhost\u0060 and commit definition and artifacts together, or revert the\nstray edit to the generated files.\n",
+      "inputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022additionalProperties\u0022:false}",
+      "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022clean\u0022:{\u0022type\u0022:\u0022boolean\u0022},\u0022driftedFiles\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022clean\u0022,\u0022driftedFiles\u0022]}",
+      "contextFiles": [
+        "context/determinism.md"
+      ],
+      "provenance": [
+        {
+          "field": "skill.capability",
+          "source": "typeference/capabilities/audit-drift@0.1.0"
+        },
+        {
+          "field": "skill.implementation",
+          "source": "typeference/skills/audit-drift@0.1.0"
+        }
+      ]
+    },
+    {
+      "dispatchName": "typeference-maintainer.verify-conformance",
+      "capabilityId": "typeference/capabilities/verify-conformance@0.1.0",
+      "implementationId": "typeference/skills/verify-conformance@0.1.0",
+      "description": "Runs the shared conformance suite on both implementations and reports any digest disagreement.",
+      "instructions": "Run \u0060go test ./conformance\u0060 from the go/ directory, then run\n\u0060dotnet test TypeFerence.slnx --filter FullyQualifiedName~ConformanceSuiteTests\u0060\nfrom the repository root (or \u0060make conformance\u0060 for both). Report passed=true\nonly when every fixture passes on both implementations. List each failing\nfixture and target as a mismatch. Never resolve a mismatch by editing a\ndigest; find the diverging implementation or take the ruling to the\nspecification with an ADR and a new fixture.\n",
+      "inputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022additionalProperties\u0022:false}",
+      "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022passed\u0022:{\u0022type\u0022:\u0022boolean\u0022},\u0022mismatches\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022passed\u0022,\u0022mismatches\u0022]}",
+      "contextFiles": [
+        "context/determinism.md"
+      ],
+      "provenance": [
+        {
+          "field": "skill.capability",
+          "source": "typeference/capabilities/verify-conformance@0.1.0"
+        },
+        {
+          "field": "skill.implementation",
+          "source": "typeference/skills/verify-conformance@0.1.0"
+        }
+      ]
+    }
+  ],
+  "provenance": [
+    {
+      "field": "workingNorms",
+      "source": "typeference/profiles/spec-conformance@0.1.0"
+    },
+    {
+      "field": "workingNorms",
+      "source": "typeference/profiles/spec-conformance@0.1.0"
+    },
+    {
+      "field": "workingNorms",
+      "source": "typeference/profiles/spec-conformance@0.1.0"
+    },
+    {
+      "field": "workingNorms",
+      "source": "typeference/profiles/spec-conformance@0.1.0"
+    },
+    {
+      "field": "contextFiles",
+      "source": "typeference/profiles/spec-conformance@0.1.0"
+    },
+    {
+      "field": "workingNorms",
+      "source": "typeference/profiles/determinism-guardian@0.1.0"
+    },
+    {
+      "field": "workingNorms",
+      "source": "typeference/profiles/determinism-guardian@0.1.0"
+    },
+    {
+      "field": "workingNorms",
+      "source": "typeference/profiles/determinism-guardian@0.1.0"
+    },
+    {
+      "field": "workingNorms",
+      "source": "typeference/profiles/determinism-guardian@0.1.0"
+    },
+    {
+      "field": "contextFiles",
+      "source": "typeference/profiles/determinism-guardian@0.1.0"
+    },
+    {
+      "field": "workingNorms",
+      "source": "typeference/profiles/trust-signing@0.1.0"
+    },
+    {
+      "field": "workingNorms",
+      "source": "typeference/profiles/trust-signing@0.1.0"
+    },
+    {
+      "field": "workingNorms",
+      "source": "typeference/profiles/trust-signing@0.1.0"
+    },
+    {
+      "field": "workingNorms",
+      "source": "typeference/profiles/trust-signing@0.1.0"
+    },
+    {
+      "field": "contextFiles",
+      "source": "typeference/profiles/trust-signing@0.1.0"
+    },
+    {
+      "field": "workingNorms",
+      "source": "typeference/profiles/contribution-workflow@0.1.0"
+    },
+    {
+      "field": "workingNorms",
+      "source": "typeference/profiles/contribution-workflow@0.1.0"
+    },
+    {
+      "field": "workingNorms",
+      "source": "typeference/profiles/contribution-workflow@0.1.0"
+    },
+    {
+      "field": "workingNorms",
+      "source": "typeference/profiles/contribution-workflow@0.1.0"
+    },
+    {
+      "field": "contextFiles",
+      "source": "typeference/profiles/contribution-workflow@0.1.0"
+    },
+    {
+      "field": "embeds.typeference/profiles/spec-conformance@0.1.0",
+      "source": "typeference/typeference-maintainer@0.1.0"
+    },
+    {
+      "field": "embeds.typeference/profiles/determinism-guardian@0.1.0",
+      "source": "typeference/typeference-maintainer@0.1.0"
+    },
+    {
+      "field": "embeds.typeference/profiles/trust-signing@0.1.0",
+      "source": "typeference/typeference-maintainer@0.1.0"
+    },
+    {
+      "field": "embeds.typeference/profiles/contribution-workflow@0.1.0",
+      "source": "typeference/typeference-maintainer@0.1.0"
+    },
+    {
+      "field": "displayName",
+      "source": "typeference/typeference-maintainer@0.1.0"
+    },
+    {
+      "field": "description",
+      "source": "typeference/typeference-maintainer@0.1.0"
+    },
+    {
+      "field": "slots.repositoryMap",
+      "source": "typeference/typeference-maintainer@0.1.0"
+    },
+    {
+      "field": "contextFiles",
+      "source": "typeference/typeference-maintainer@0.1.0"
+    }
+  ]
+}
