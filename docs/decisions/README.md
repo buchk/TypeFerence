@@ -14,3 +14,4 @@ Format: `NNNN-short-title.md` with sections **Status**, **Context**, **Decision*
 | [0003](0003-go-implementation-layout.md) | Go implementation layout and dependency policy |
 | [0004](0004-canonicalization-rulings.md) | Canonicalization rulings for cross-implementation byte identity |
 | [0005](0005-conformance-suite.md) | Cross-implementation conformance suite design |
+| [0006](0006-self-hosting-design-feedback.md) | Self-hosting the maintainer agent, and what it revealed |

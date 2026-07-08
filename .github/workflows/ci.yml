@@ -69,3 +69,20 @@ jobs:
         working-directory: go
       - name: Conformance suite (C# reference implementation)
         run: dotnet test TypeFerence.slnx --filter FullyQualifiedName~ConformanceSuiteTests
+
+  # The repository-root AGENTS.md and dist/maintainer are build artifacts of
+  # agents/maintainer (the self-hosted maintainer definition). Drift between
+  # the definition and its committed artifacts is a broken build.
+  selfhost-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache-dependency-path: go/go.sum
+      - name: Recompile maintainer definition and diff committed artifacts
+        run: go run ./cmd/typeference diff ../agents/maintainer --against ../dist/maintainer --target neutral --emit-ard --publisher-domain typeference.example
+        working-directory: go
+      - name: Root AGENTS.md is the compiled artifact
+        run: cmp AGENTS.md dist/maintainer/neutral/typeference-maintainer/AGENTS.md
