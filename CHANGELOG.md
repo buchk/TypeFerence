@@ -27,6 +27,10 @@ First tagged release. Everything before this version was unversioned development
   own maintainer defined in TypeFerence; the root `AGENTS.md` and
   `dist-maintainer/` are compiled artifacts, with a CI gate that fails on drift
   (ADR-0006).
+- **Behavioral eval harness** (`typeference eval`, Go implementation) — scenario
+  files with expected-behavior rubrics, LLM-judged adherence scoring, and a
+  dry-run default that emits exact request payloads with no network calls
+  (ADR-0008). Starter corpus under `evals/`.
 - `typeference version` command in both implementations.
 - Architecture decision records under `docs/decisions/`.
 - Tag-driven release workflow shipping per-platform archives of the Go CLI with

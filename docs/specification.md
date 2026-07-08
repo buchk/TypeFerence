@@ -87,7 +87,7 @@ Behavioral equivalence across hosts is a long-term conformance objective, not a 
 
 ## ARD publication
 
-ARD publication is an optional post-compilation operation. It MUST NOT be modeled as a peer compilation target.
+ARD publication is an optional post-compilation operation. It MUST NOT be modeled as a peer compilation target. This section tracks the ARD v0.9 draft proposal (see `docs/ard-alignment.md` for the review baseline); draft evolution MAY require corresponding changes in a future TypeFerence schema version.
 
 When requested, the reference compiler emits:
 
