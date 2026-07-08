@@ -38,15 +38,15 @@ conformance:
 	$(DOTNET) test TypeFerence.slnx --filter FullyQualifiedName~ConformanceSuiteTests
 
 # Recompile the self-hosted maintainer definition (agents/maintainer) into its
-# committed artifacts: dist/maintainer and the repository-root AGENTS.md.
+# committed artifacts: dist-maintainer and the repository-root AGENTS.md.
 selfhost: build-go
-	$(BINDIR)/typeference$(shell $(GO) env GOEXE) build agents/maintainer --target neutral --out dist/maintainer --emit-ard --publisher-domain typeference.example
-	cp dist/maintainer/neutral/typeference-maintainer/AGENTS.md AGENTS.md
+	$(BINDIR)/typeference$(shell $(GO) env GOEXE) build agents/maintainer --target neutral --out dist-maintainer --emit-ard --publisher-domain typeference.example
+	cp dist-maintainer/neutral/typeference-maintainer/AGENTS.md AGENTS.md
 
 # Fail if the committed artifacts have drifted from the definition.
 selfhost-check: build-go
-	$(BINDIR)/typeference$(shell $(GO) env GOEXE) diff agents/maintainer --against dist/maintainer --target neutral --emit-ard --publisher-domain typeference.example
-	cmp AGENTS.md dist/maintainer/neutral/typeference-maintainer/AGENTS.md
+	$(BINDIR)/typeference$(shell $(GO) env GOEXE) diff agents/maintainer --against dist-maintainer --target neutral --emit-ard --publisher-domain typeference.example
+	cmp AGENTS.md dist-maintainer/neutral/typeference-maintainer/AGENTS.md
 
 fmt:
 	cd go && gofmt -l -w .

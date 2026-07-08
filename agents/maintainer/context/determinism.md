@@ -7,7 +7,7 @@ platforms, and across implementations. The guarantee is enforced, not aspiration
   every emitted target for 25+ fixtures. Both implementations run the corpus in CI.
 - The committed `dist/` tree is the fully materialized reference output for
   `examples/helio`; both implementations byte-compare against it in their own tests.
-- The committed root `AGENTS.md` and `dist/maintainer/` are build artifacts of
+- The committed root `AGENTS.md` and `dist-maintainer/` are build artifacts of
   `agents/maintainer/`; CI recompiles the definition and fails on any drift.
 
 Rules that protect the guarantee:

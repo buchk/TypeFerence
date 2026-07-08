@@ -33,8 +33,8 @@ jobs:
         working-directory: go
       - name: Self-host drift gate
         run: |
-          go run ./cmd/typeference diff ../agents/maintainer --against ../dist/maintainer --target neutral --emit-ard --publisher-domain typeference.example
-          cmp ../AGENTS.md ../dist/maintainer/neutral/typeference-maintainer/AGENTS.md
+          go run ./cmd/typeference diff ../agents/maintainer --against ../dist-maintainer --target neutral --emit-ard --publisher-domain typeference.example
+          cmp ../AGENTS.md ../dist-maintainer/neutral/typeference-maintainer/AGENTS.md
         working-directory: go
 
   release:
