@@ -147,6 +147,7 @@ var (
 	digestPattern    = regexp.MustCompile(`^(?:sha256:[0-9a-f]{64}|sha384:[0-9a-f]{96}|sha512:[0-9a-f]{128})$`)
 	base64URLPattern = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 	placeholder      = regexp.MustCompile(`\{([^{}]+)\}`)
+	metadataKey      = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
 )
 
 var knownIdentityTypes = map[string]bool{"did": true, "dns": true, "https": true, "spiffe": true}
@@ -300,6 +301,13 @@ func ValidateIdentityForPublisher(identity, identityType, publisherDomain, field
 // ValidateIdentity checks URI shape, DID syntax, and identity-type/scheme
 // consistency.
 func ValidateIdentity(identity, identityType, field string) error {
+	// Spec ("Canonical text and ordering"): identities must be ASCII so
+	// domain alignment does not depend on an implementation's IDN handling.
+	for _, r := range identity {
+		if r > 0x7F {
+			return resource.Errorf("%s must be ASCII; encode internationalized authorities as punycode", field)
+		}
+	}
 	if err := validateURI(identity, field, false); err != nil {
 		return err
 	}
@@ -639,8 +647,8 @@ func canonicalMetadataValue(node *yaml.Node) (MetadataValue, error) {
 		m := NewMetadataMap()
 		for i := 0; i+1 < len(node.Content); i += 2 {
 			key := resolveAlias(node.Content[i])
-			if key.Kind != yaml.ScalarNode || strings.TrimSpace(key.Value) == "" {
-				return nil, resource.Errorf("Trust metadata keys must be non-empty strings")
+			if key.Kind != yaml.ScalarNode || !metadataKey.MatchString(key.Value) {
+				return nil, resource.Errorf("Trust metadata keys must be ASCII identifiers matching [A-Za-z0-9][A-Za-z0-9._-]*")
 			}
 			value, err := canonicalMetadataValue(node.Content[i+1])
 			if err != nil {
