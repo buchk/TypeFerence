@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: profile
+id: conformance/profiles/a@1.0.0
+displayName: A
+description: Embeds B.
+embeds:
+  - conformance/profiles/b@1.0.0

@@ -1,0 +1,4 @@
+{
+  "description": "A profile embeds an agent, which the composition rules forbid.",
+  "expect": "error"
+}

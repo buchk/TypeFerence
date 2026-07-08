@@ -154,7 +154,11 @@ internal static partial class TrustConfigurationLoader
     }
 
     internal static SortedDictionary<string, object?> CanonicalMetadata(IEnumerable<KeyValuePair<string, object?>> metadata) =>
-        new(metadata.ToDictionary(x => x.Key, x => CanonicalValue(x.Value), StringComparer.Ordinal), StringComparer.Ordinal);
+        new(metadata.ToDictionary(x => CheckedMetadataKey(x.Key), x => CanonicalValue(x.Value), StringComparer.Ordinal), StringComparer.Ordinal);
+
+    private static string CheckedMetadataKey(string key) => MetadataKey().IsMatch(key)
+        ? key
+        : throw new TypeFerenceException("Trust metadata keys must be ASCII identifiers matching [A-Za-z0-9][A-Za-z0-9._-]*");
 
     private static void Validate(TrustConfiguration configuration, string file)
     {
@@ -229,6 +233,11 @@ internal static partial class TrustConfigurationLoader
 
     private static void ValidateIdentity(string identity, string identityType, string field)
     {
+        // Spec ("Canonical text and ordering"): identities must be ASCII so
+        // domain alignment does not depend on an implementation's IDN
+        // handling. Internationalized authorities must be pre-punycoded.
+        if (identity.Any(c => c > 0x7F))
+            throw new TypeFerenceException($"{field} must be ASCII; encode internationalized authorities as punycode");
         ValidateUri(identity, field);
         if (identity.StartsWith("did:", StringComparison.Ordinal) && !Did().IsMatch(identity))
             throw new TypeFerenceException($"{field} is not valid DID syntax");
@@ -295,7 +304,7 @@ internal static partial class TrustConfigurationLoader
             var result = new SortedDictionary<string, object?>(StringComparer.Ordinal);
             foreach (DictionaryEntry entry in dictionary)
             {
-                if (entry.Key is not string key || string.IsNullOrWhiteSpace(key)) throw new TypeFerenceException("Trust metadata keys must be non-empty strings");
+                if (entry.Key is not string key || !MetadataKey().IsMatch(key)) throw new TypeFerenceException("Trust metadata keys must be ASCII identifiers matching [A-Za-z0-9][A-Za-z0-9._-]*");
                 result[key] = CanonicalValue(entry.Value);
             }
             return result;
@@ -312,4 +321,6 @@ internal static partial class TrustConfigurationLoader
     private static partial Regex Digest();
     [GeneratedRegex("^[A-Za-z0-9_-]+$", RegexOptions.CultureInvariant)]
     private static partial Regex Base64Url();
+    [GeneratedRegex("^[A-Za-z0-9][A-Za-z0-9._-]*$", RegexOptions.CultureInvariant)]
+    private static partial Regex MetadataKey();
 }

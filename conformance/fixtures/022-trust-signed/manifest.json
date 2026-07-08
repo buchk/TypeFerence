@@ -1,0 +1,13 @@
+{
+  "description": "Externally produced detached JWS signatures are imported from a signature map outside the source root; every configured entry is signed.",
+  "expect": "success",
+  "emitArd": "conformance.example",
+  "trustSignatures": "signatures.json",
+  "digests": {
+    "ard": "sha256:1bc4f382997259f31e278fad45dd418929221e332c6a91430aed974964726109",
+    "codex": "sha256:3131b8acaefdfd4687d43a84f887d3c9c09550b3e1d783052ce99d44e959e37b",
+    "copilot": "sha256:db822bb5584023ec0ed69aba3b9469380600cc0798f4a3a6b0c6bbfc77382a65",
+    "cursor": "sha256:757ff81f6a161693e61b5d9e6a4b55441c2a621d6fa01114503f1d372915b744",
+    "neutral": "sha256:dc6ac18ce290c31febcfabd385c0495f83d360f53fa02249a1f9c1c6e42f8439"
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "description": "Two embeds declare the same slot at equal depth and the agent does not resolve it locally: compile-time ambiguity error.",
+  "expect": "error"
+}

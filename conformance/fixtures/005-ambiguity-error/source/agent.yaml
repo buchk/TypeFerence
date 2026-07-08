@@ -1,0 +1,8 @@
+schemaVersion: 3
+kind: agent
+id: conformance/ambiguous@1.0.0
+displayName: Ambiguous
+description: Fails because the promoted slot conflict is unresolved.
+embeds:
+  - conformance/profiles/left@1.0.0
+  - conformance/profiles/right@1.0.0

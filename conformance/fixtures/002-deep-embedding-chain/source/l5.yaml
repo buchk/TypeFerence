@@ -1,0 +1,11 @@
+schemaVersion: 3
+kind: profile
+id: conformance/profiles/l5@1.0.0
+displayName: Level Five
+description: Deepest profile.
+slots:
+  deepest: context/deep.md
+workingNorms:
+  - Norm from level five.
+contextFiles:
+  - context/deep.md

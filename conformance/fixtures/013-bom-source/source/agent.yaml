@@ -1,0 +1,7 @@
+﻿schemaVersion: 3
+kind: agent
+id: conformance/bommed@1.0.0
+displayName: BOM Agent
+description: Authored by an editor that writes byte-order marks.
+contextFiles:
+  - context/bom.md

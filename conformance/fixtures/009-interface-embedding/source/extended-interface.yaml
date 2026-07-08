@@ -1,0 +1,9 @@
+schemaVersion: 3
+kind: interface
+id: conformance/interfaces/reporting-contextual@1.0.0
+displayName: Reporting Contextual
+description: Extends the contextual contract with a reporting capability.
+embeds:
+  - conformance/interfaces/contextual@1.0.0
+requiresCapabilities:
+  - conformance/capabilities/report@1.0.0

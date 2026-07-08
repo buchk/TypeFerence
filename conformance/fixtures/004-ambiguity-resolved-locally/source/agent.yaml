@@ -1,0 +1,12 @@
+schemaVersion: 3
+kind: agent
+id: conformance/local-resolution@1.0.0
+displayName: Local Resolution
+description: Declares the conflicting slot locally to resolve the tie.
+embeds:
+  - conformance/profiles/left@1.0.0
+  - conformance/profiles/right@1.0.0
+slots:
+  policy: context/local.md
+contextFiles:
+  - context/local.md

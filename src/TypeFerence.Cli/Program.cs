@@ -21,6 +21,7 @@ internal static class Entry
                 "inspect" => Inspect(args),
                 "diff" => Diff(args),
                 "serve" => await ServeAsync(args),
+                "version" or "--version" => Version(),
                 _ => Fail($"Unknown command: {args[0]}")
             };
         }
@@ -152,6 +153,17 @@ internal static class Entry
             throw new TypeFerenceException($"{name} requires a value");
         return args[i + 1];
     }
+    private static int Version()
+    {
+        var informational = typeof(Entry).Assembly
+            .GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+            .OfType<System.Reflection.AssemblyInformationalVersionAttribute>()
+            .FirstOrDefault()?.InformationalVersion ?? "unknown";
+        // Deterministic builds may append "+<commit>"; the version is the part before it.
+        Console.WriteLine($"typeference {informational.Split('+')[0]}");
+        return 0;
+    }
+
     private static int Fail(string message) { Console.Error.WriteLine($"typeference: {message}"); return 2; }
     private static int Help()
     {
@@ -170,6 +182,7 @@ Commands:
       [--trust-signatures signatures.json] [--json]
       [--allow-unsigned-trust]
   typeference serve <source>
+  typeference version
 """);
         return 0;
     }

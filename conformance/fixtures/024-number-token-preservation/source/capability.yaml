@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: capability
+id: conformance/capabilities/measure@1.0.0
+displayName: Measure
+description: Numeric bounds exercise token preservation.
+inputSchema: '{"type":"object","properties":{"value":{"type":"number","minimum":1.0,"maximum":1e5,"multipleOf":0.10}},"additionalProperties":false}'
+outputSchema: '{"type":"object","properties":{"scaled":{"type":"number","default":-0}},"required":["scaled"]}'

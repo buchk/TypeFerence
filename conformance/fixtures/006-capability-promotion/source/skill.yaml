@@ -1,0 +1,12 @@
+schemaVersion: 3
+kind: skill
+id: conformance/skills/report@1.0.0
+binds: conformance/capabilities/report@1.0.0
+displayName: Report Skill
+description: Default reporting behavior.
+instructions: |
+  Gather the facts, then produce the report.
+contextFiles:
+  - context/reporting.md
+inputSchema: '{"type":"object","properties":{"topic":{"type":"string"}},"additionalProperties":false}'
+outputSchema: '{"type":"object","properties":{"summary":{"type":"string"}},"required":["summary"]}'

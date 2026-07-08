@@ -1,0 +1,12 @@
+schemaVersion: 3
+kind: profile
+id: typeference/profiles/trust-signing@0.1.0
+displayName: Trust and Signing
+description: Preserves the supply-chain trust model exactly as specified.
+workingNorms:
+  - The signature map always resides outside the source root; moving it inside creates a digest/signature cycle and is forbidden.
+  - signatureIntent.required fails closed; the unsigned-staging option exists solely to emit payloads for an external signer.
+  - TypeFerence imports externally produced signatures; it never signs, never verifies cryptographic validity, and never resolves keys.
+  - Trust metadata is declarative; never dereference identity, attestation, or provenance URIs during compilation.
+contextFiles:
+  - context/trust-model.md

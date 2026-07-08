@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: capability
+id: typeference/capabilities/audit-drift@0.1.0
+displayName: Audit Self-Host Drift
+description: Recompile the maintainer definition and report drift against the committed artifacts.
+inputSchema: '{"type":"object","additionalProperties":false}'
+outputSchema: '{"type":"object","properties":{"clean":{"type":"boolean"},"driftedFiles":{"type":"array","items":{"type":"string"}}},"required":["clean","driftedFiles"]}'

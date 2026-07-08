@@ -1,0 +1,10 @@
+schemaVersion: 3
+kind: skill
+id: conformance/skills/audit@1.0.0
+binds: conformance/capabilities/audit@1.0.0
+displayName: Audit Skill
+description: Policy audit behavior.
+instructions: |
+  Compare the subject against every applicable policy and list findings.
+inputSchema: '{"type":"object","properties":{"subject":{"type":"string"}},"additionalProperties":false}'
+outputSchema: '{"type":"object","properties":{"passed":{"type":"boolean"},"findings":{"type":"array","items":{"type":"string"}}},"required":["passed","findings"]}'

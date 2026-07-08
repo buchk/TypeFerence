@@ -1,0 +1,90 @@
+name: release
+
+# Releases are cut by pushing a semver tag (e.g. `git tag v0.0.3 && git push
+# origin v0.0.3`) after the release checklist (docs/release-checklist.md) is
+# complete. The release ships the Go CLI as single static binaries per
+# platform — no installer and no runtime dependencies; users unpack one file
+# and put it on PATH. See ADR-0007.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  # Nothing ships unless both implementations, the shared conformance suite,
+  # and the self-host drift gate are green at the tagged commit.
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache-dependency-path: go/go.sum
+      - run: dotnet test TypeFerence.slnx
+      - run: go test ./...
+        working-directory: go
+      - name: Self-host drift gate
+        run: |
+          go run ./cmd/typeference diff ../agents/maintainer --against ../dist-maintainer --target neutral --emit-ard --publisher-domain typeference.example
+          cmp ../AGENTS.md ../dist-maintainer/neutral/typeference-maintainer/AGENTS.md
+        working-directory: go
+
+  release:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache-dependency-path: go/go.sum
+      - name: Build static binaries for all supported platforms
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p release
+          for platform in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
+            GOOS="${platform%/*}"
+            GOARCH="${platform#*/}"
+            EXT=""
+            [ "$GOOS" = "windows" ] && EXT=".exe"
+            STAGE="$(mktemp -d)"
+            (cd go && CGO_ENABLED=0 GOOS="$GOOS" GOARCH="$GOARCH" \
+              go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" \
+              -o "${STAGE}/typeference${EXT}" ./cmd/typeference)
+            cp LICENSE README.md "$STAGE"
+            ARCHIVE="typeference_${VERSION}_${GOOS}_${GOARCH}"
+            if [ "$GOOS" = "windows" ]; then
+              (cd "$STAGE" && zip -q "${GITHUB_WORKSPACE}/release/${ARCHIVE}.zip" "typeference${EXT}" LICENSE README.md)
+            else
+              tar -czf "release/${ARCHIVE}.tar.gz" -C "$STAGE" "typeference${EXT}" LICENSE README.md
+            fi
+            rm -rf "$STAGE"
+          done
+          (cd release && sha256sum -- * > SHA256SUMS)
+      - name: Smoke-test the linux binary reproduces the committed reference output
+        run: |
+          set -euo pipefail
+          STAGE="$(mktemp -d)"
+          tar -xzf "release/typeference_${GITHUB_REF_NAME#v}_linux_amd64.tar.gz" -C "$STAGE"
+          "$STAGE/typeference" version
+          "$STAGE/typeference" diff examples/helio --against dist --emit-ard --publisher-domain helio.example
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          PRERELEASE=""
+          case "${GITHUB_REF_NAME}" in v0.*) PRERELEASE="--prerelease" ;; esac
+          gh release create "${GITHUB_REF_NAME}" release/* \
+            --title "typeference ${GITHUB_REF_NAME}" \
+            --generate-notes \
+            ${PRERELEASE}

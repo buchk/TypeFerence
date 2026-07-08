@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: agent
+id: conformance/measurer@1.0.0
+displayName: Measurer
+description: Exercises number-token preservation through canonicalization.
+skills:
+  - ref: conformance/skills/measure@1.0.0

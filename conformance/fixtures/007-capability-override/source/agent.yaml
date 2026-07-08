@@ -1,0 +1,10 @@
+schemaVersion: 3
+kind: agent
+id: conformance/special-reporter@1.0.0
+displayName: Special Reporter
+description: Overrides the promoted reporting skill with a specialized one.
+embeds:
+  - conformance/profiles/reporter@1.0.0
+skills:
+  - ref: conformance/skills/special-report@1.0.0
+    capability: conformance/capabilities/report@1.0.0

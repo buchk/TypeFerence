@@ -1,0 +1,7 @@
+schemaVersion: 1
+source:
+  identity: https://conformance.example
+  identityType: https
+  signatureIntent:
+    algorithm: ES256
+    required: true

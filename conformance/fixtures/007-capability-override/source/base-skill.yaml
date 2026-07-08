@@ -1,0 +1,10 @@
+schemaVersion: 3
+kind: skill
+id: conformance/skills/base-report@1.0.0
+binds: conformance/capabilities/report@1.0.0
+displayName: Base Report Skill
+description: Generic reporting behavior.
+instructions: |
+  Produce a plain report.
+inputSchema: '{"type":"object","properties":{"topic":{"type":"string"}},"additionalProperties":false}'
+outputSchema: '{"type":"object","properties":{"summary":{"type":"string"}},"required":["summary"]}'

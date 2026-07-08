@@ -1,0 +1,5 @@
+schemaVersion: 3
+kind: agent
+id: conformance/inner@1.0.0
+displayName: Inner Agent
+description: An agent a profile tries to embed.

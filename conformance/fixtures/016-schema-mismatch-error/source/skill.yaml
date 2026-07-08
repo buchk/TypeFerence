@@ -1,0 +1,8 @@
+schemaVersion: 3
+kind: skill
+id: conformance/skills/report@1.0.0
+binds: conformance/capabilities/report@1.0.0
+displayName: Report Skill
+description: Tries to widen the public contract.
+inputSchema: '{"type":"object"}'
+outputSchema: '{"type":"object","properties":{"summary":{"type":"string"},"extra":{"type":"number"}},"required":["summary"]}'
