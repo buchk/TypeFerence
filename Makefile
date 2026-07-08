@@ -67,4 +67,5 @@ release-binaries:
 	cd go && CGO_ENABLED=0 GOOS=darwin  GOARCH=amd64 $(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o ../$(BINDIR)/typeference-darwin-amd64 ./cmd/typeference
 	cd go && CGO_ENABLED=0 GOOS=darwin  GOARCH=arm64 $(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o ../$(BINDIR)/typeference-darwin-arm64 ./cmd/typeference
 	cd go && CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o ../$(BINDIR)/typeference-windows-amd64.exe ./cmd/typeference
+	cd go && CGO_ENABLED=0 GOOS=windows GOARCH=arm64 $(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o ../$(BINDIR)/typeference-windows-arm64.exe ./cmd/typeference
 	cd $(BINDIR) && sha256sum typeference-* > SHA256SUMS
