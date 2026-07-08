@@ -18,6 +18,11 @@ import (
 
 var resourceID = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]*(?:/[a-z0-9][a-z0-9.-]*)+@[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$`)
 
+// Spec ("Canonical text and ordering"): slot names are a canonical key space
+// and must be ASCII so every conforming implementation orders them
+// identically.
+var slotName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
+
 // IsResourceID reports whether id is a well-formed resource identifier.
 func IsResourceID(id string) bool { return resourceID.MatchString(id) }
 
@@ -315,6 +320,12 @@ func validateShape(doc *Document, file, root string) error {
 	}
 	if doc.Kind != "skill" && strings.TrimSpace(doc.Binds) != "" {
 		return Errorf("%s: only skills can bind capabilities", file)
+	}
+	slotNames := append(SortedKeys(doc.Slots), doc.RequiresSlots...)
+	for _, name := range slotNames {
+		if !slotName.MatchString(name) {
+			return Errorf("%s: slot name '%s' must be an ASCII identifier matching [A-Za-z0-9][A-Za-z0-9._-]*", file, name)
+		}
 	}
 	var referenced []string
 	referenced = append(referenced, doc.ContextFiles...)

@@ -104,10 +104,20 @@ public sealed class TypeFerenceCompiler
     {
         using var sha = SHA256.Create();
         var payload = new StringBuilder();
-        foreach (var file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
-            payload.Append(Path.GetRelativePath(directory, file).Replace('\\', '/')).Append('\0').Append(File.ReadAllText(file).Replace("\r\n", "\n")).Append('\0');
+        foreach (var file in EnumerateRelativeFiles(directory))
+            payload.Append(file.Relative).Append('\0').Append(File.ReadAllText(file.Full).Replace("\r\n", "\n")).Append('\0');
         return Convert.ToHexString(sha.ComputeHash(Encoding.UTF8.GetBytes(payload.ToString()))).ToLowerInvariant();
     }
+
+    // Spec ("Artifact digest algorithm"): files are ordered by their
+    // forward-slash relative path in canonical code point order. Sorting
+    // platform-native paths would make the order (and therefore the digest)
+    // separator-dependent.
+    private static (string Full, string Relative)[] EnumerateRelativeFiles(string root) =>
+        Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
+            .Select(x => (Full: x, Relative: Path.GetRelativePath(root, x).Replace('\\', '/')))
+            .OrderBy(x => x.Relative, CanonicalOrder.Instance)
+            .ToArray();
 
     private static void WriteTarget(CompilationTarget target, string root, ResolvedAgent agent, List<string> written)
     {
@@ -392,13 +402,12 @@ public sealed class TypeFerenceCompiler
         return result;
     }
 
-    private static object[] PackageFiles(string root) => Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
-        .Order(StringComparer.Ordinal)
+    private static object[] PackageFiles(string root) => EnumerateRelativeFiles(root)
         .Select(file => (object)new
         {
-            path = Path.GetRelativePath(root, file).Replace('\\', '/'),
-            mediaType = MediaType(file),
-            content = File.ReadAllText(file).Replace("\r\n", "\n")
+            path = file.Relative,
+            mediaType = MediaType(file.Full),
+            content = File.ReadAllText(file.Full).Replace("\r\n", "\n")
         })
         .ToArray();
 

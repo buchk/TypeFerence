@@ -63,7 +63,23 @@ Hosts execute the package. The v1 server does not call an LLM.
 
 ## Deterministic compilation
 
-Compilers MUST normalize paths to forward slashes, use LF newlines, serialize keys in ordinal order, omit timestamps, and sort resources by stable ID. Repeated builds from identical source MUST be byte-identical.
+Compilers MUST normalize paths to forward slashes, use LF newlines, omit timestamps, and sort resources by stable ID. Repeated builds from identical source MUST be byte-identical, and independent conforming implementations MUST produce byte-identical artifacts from identical source (see the conformance suite under `conformance/`).
+
+### Canonical text and ordering
+
+- All source and artifact files are UTF-8 text. Implementations MUST ignore a leading byte-order mark when reading and MUST write artifacts as UTF-8 without a byte-order mark. Behavior on invalid UTF-8 input is unspecified; implementations MAY reject it.
+- Wherever this specification requires sorting or deduplicating strings, the ordering is lexicographic by Unicode code point (equivalently: by UTF-8 byte sequence). Implementations MUST NOT use UTF-16 code-unit order, culture-aware collation, or case folding. To keep the divergent encodings' orderings observably identical, canonical key spaces are restricted to ASCII: resource IDs (already ASCII by grammar), slot names, and trust metadata keys MUST match `^[A-Za-z0-9][A-Za-z0-9._-]*$`, and trust identity URIs MUST be ASCII (internationalized authorities MUST be pre-encoded as punycode).
+- Emitted artifact files always end with LF-terminated content exactly as specified per artifact; no implementation-chosen trailing whitespace is permitted.
+
+### Canonical JSON serialization
+
+JSON artifacts (`bundle.json`, `provenance.json`, `ai-catalog.json`) are serialized as follows:
+
+- **Member order.** Objects serialize their members in the canonical order defined per artifact shape (for `bundle.json`: `id`, `displayName`, `description`, `emit`, `embeds`, `satisfies`, `slots`, `workingNorms`, `contextFiles`, `skills`, `provenance`; skills: `dispatchName`, `capabilityId`, `implementationId`, `description`, `instructions`, `inputSchema`, `outputSchema`, `contextFiles`, `provenance`; provenance entries: `field`, `source`). Map-like objects (slots, trust manifests, trust metadata) serialize keys in canonical string order as defined above. Member order is not alphabetical unless stated.
+- **Layout.** Indented artifacts use two-space indentation, `": "` after keys, one member or element per line, `[]` and `{}` for empty collections, and LF line endings, followed by one trailing LF at end of file. Canonical embedded JSON (schema strings) uses the compact layout with no whitespace.
+- **String escaping.** ASCII characters 0x20–0x7E are emitted literally except `"` `&` `'` `+` `<` `>` `` ` `` and `\`. Backspace, tab, line feed, form feed, and carriage return use the two-character escapes `\b` `\t` `\n` `\f` `\r`; backslash is `\\`. Every other character — remaining control characters and all code points above 0x7E — is escaped as `\uXXXX` with uppercase hexadecimal digits, using UTF-16 surrogate pairs for supplementary-plane code points.
+- **Numbers.** JSON number tokens carried through canonicalization (for example inside capability schemas) are preserved byte-for-byte as authored; implementations MUST NOT reformat `1.0` as `1` or normalize exponent notation.
+- **Schema canonicalization.** A JSON schema's canonical form is its compact serialization under the rules above, preserving authored member order, duplicate keys, and number tokens. Schema equality (capability contract preservation) is byte equality of canonical forms.
 
 The neutral target emits `AGENTS.md`, `bundle.json`, `provenance.json`, and skill folders. Codex, GitHub Copilot, and Cursor adapters emit their native instruction and skill/rule locations. Target-specific outputs MAY add native metadata. An adapter MUST represent each portable resolved field or emit a diagnostic when the target cannot represent it; this requirement does not imply equivalent model behavior.
 
@@ -108,8 +124,8 @@ Identity and URI syntax, known publisher-domain bindings, attestation shape, dig
 
 `typeference-directory-v1` hashes a text artifact directory as follows:
 
-1. Enumerate files recursively and sort their platform paths using ordinal comparison.
-2. For each file, append its forward-slash relative path, one NUL byte, its UTF-8 text content with CRLF normalized to LF, and one NUL byte.
+1. Enumerate files recursively and sort their forward-slash relative paths in canonical string order (Unicode code point order; see Deterministic compilation). Sorting platform-native paths is non-conforming: platform separators (`\` vs `/`) order differently against other characters, which makes the digest platform-dependent.
+2. For each file, append its forward-slash relative path, one NUL byte, its UTF-8 text content with any leading byte-order mark removed and CRLF normalized to LF, and one NUL byte.
 3. SHA-256 hash the UTF-8 encoding of the resulting sequence and encode it as lowercase hexadecimal with a `sha256:` prefix.
 
 The v1 package formats contain text files only. A future binary package format MUST define a different digest scheme rather than silently changing this algorithm.
