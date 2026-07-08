@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: profile
+id: conformance/profiles/l1@1.0.0
+displayName: Level One
+description: First profile.
+embeds:
+  - conformance/profiles/l2@1.0.0

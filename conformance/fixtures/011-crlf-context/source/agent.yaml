@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: agent
+id: conformance/crlf@1.0.0
+displayName: CRLF Agent
+description: References a CRLF context file.
+contextFiles:
+  - context/windowsy.md

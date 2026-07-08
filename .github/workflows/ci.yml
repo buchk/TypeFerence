@@ -28,3 +28,63 @@ jobs:
       - run: cmp /tmp/typeference-whitepaper-first.pdf output/pdf/typeference-whitepaper.pdf
       - run: sudo apt-get update && sudo apt-get install -y poppler-utils
       - run: pdfinfo output/pdf/typeference-whitepaper.pdf
+
+  go-implementation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache-dependency-path: go/go.sum
+      - name: gofmt
+        run: test -z "$(gofmt -l .)"
+        working-directory: go
+      - run: go vet ./...
+        working-directory: go
+      - run: go test ./...
+        working-directory: go
+      - name: Static binary (CGO_ENABLED=0)
+        run: CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /tmp/typeference ./cmd/typeference
+        working-directory: go
+      - name: Go binary reproduces committed reference output byte-for-byte
+        run: /tmp/typeference diff examples/helio --against dist --emit-ard --publisher-domain helio.example
+      - name: Eval harness dry run (no API key, no network)
+        run: /tmp/typeference eval examples/helio --scenarios evals/scenarios --out /tmp/eval-dry-run
+
+  # Cross-implementation conformance: both compilers run the shared fixture
+  # corpus in conformance/; a digest mismatch on any fixture is a broken
+  # build. See conformance/README.md and ADR-0005.
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache-dependency-path: go/go.sum
+      - name: Conformance suite (Go implementation)
+        run: go test ./conformance -v
+        working-directory: go
+      - name: Conformance suite (C# reference implementation)
+        run: dotnet test TypeFerence.slnx --filter FullyQualifiedName~ConformanceSuiteTests
+
+  # The repository-root AGENTS.md and dist-maintainer are build artifacts of
+  # agents/maintainer (the self-hosted maintainer definition). Drift between
+  # the definition and its committed artifacts is a broken build.
+  selfhost-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache-dependency-path: go/go.sum
+      - name: Recompile maintainer definition and diff committed artifacts
+        run: go run ./cmd/typeference diff ../agents/maintainer --against ../dist-maintainer --target neutral --emit-ard --publisher-domain typeference.example
+        working-directory: go
+      - name: Root AGENTS.md is the compiled artifact
+        run: cmp AGENTS.md dist-maintainer/neutral/typeference-maintainer/AGENTS.md

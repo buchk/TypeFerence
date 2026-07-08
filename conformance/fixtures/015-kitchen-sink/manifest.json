@@ -1,0 +1,12 @@
+{
+  "description": "Maximal composition: multi-level profiles, interfaces, promoted and overridden skills, a non-emitting agent embedded by an emitting one, and ARD emission.",
+  "expect": "success",
+  "emitArd": "conformance.example",
+  "digests": {
+    "ard": "sha256:ec9641e8ba188bdc513a8058559204fe8f175047b2fb2e0da897f1193ec49f7b",
+    "codex": "sha256:e7cbf898886493c2732b140f46dd43ac1100ae4d3a1dcee2f49085eeea5b76f2",
+    "copilot": "sha256:c562cf680d46f02891fb4679887ab508de751ed03bcd70ff9b3b11d405587087",
+    "cursor": "sha256:627fc2d6d7349e5c9c2d556f23cb41f89685fbb46268c64c453b8639e76f992b",
+    "neutral": "sha256:3299639f297a9b6b6ac3bc27fb12febe47ac30aee53c85e278702c876177b222"
+  }
+}

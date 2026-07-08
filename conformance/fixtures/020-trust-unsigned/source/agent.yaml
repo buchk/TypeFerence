@@ -1,0 +1,5 @@
+schemaVersion: 3
+kind: agent
+id: conformance/trusted@1.0.0
+displayName: Trusted Agent
+description: Compiled with a full trust configuration.

@@ -1,0 +1,11 @@
+schemaVersion: 3
+kind: agent
+id: conformance/full@1.0.0
+displayName: Full Agent
+description: Satisfies both interfaces structurally.
+slots:
+  policy: context/policy.md
+contextFiles:
+  - context/policy.md
+skills:
+  - ref: conformance/skills/report@1.0.0

@@ -1,0 +1,10 @@
+{
+  "description": "Agent with no displayName and no description: displayName falls back to the resource id, empty strings serialize as empty.",
+  "expect": "success",
+  "digests": {
+    "codex": "sha256:b8284cf759922da3be8b36f262b8439291d6854d0357fbf09978b372fc12ae97",
+    "copilot": "sha256:b132b72e4925c49b55048cccb8966f3d05b88337ceba31dfdbc90c13b840a47b",
+    "cursor": "sha256:98ca20ff2d462cdc163078f35cc7922875ae3e443a6a30054ba442c74e3d323c",
+    "neutral": "sha256:1664054874a501adf6a11eb00cad28161e90f43fb38dd82256b7abc806fac541"
+  }
+}

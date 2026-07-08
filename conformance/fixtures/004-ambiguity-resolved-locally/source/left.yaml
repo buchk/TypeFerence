@@ -1,0 +1,9 @@
+schemaVersion: 3
+kind: profile
+id: conformance/profiles/left@1.0.0
+displayName: Left
+description: Declares the policy slot.
+slots:
+  policy: context/left.md
+contextFiles:
+  - context/left.md

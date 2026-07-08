@@ -1,6 +1,9 @@
 # ARD Alignment Notes
 
-Status: reviewed against open `ards-project/ard-spec` issues on July 7, 2026.
+Status: tracks the **ARD v0.9 draft proposal**; reviewed against open
+`ards-project/ard-spec` issues on July 7, 2026. ARD integration in TypeFerence is
+optional (`--emit-ard`), excluded from core composition/compilation semantics, and
+may require changes in a future TypeFerence schema version as the draft evolves.
 
 TypeFerence should remain a typed authoring and compilation layer. ARD should remain the discovery, registry, publication, and deployed-resource metadata layer. The current ARD issue backlog reinforces that split.
 

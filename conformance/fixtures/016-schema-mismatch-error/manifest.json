@@ -1,0 +1,4 @@
+{
+  "description": "A skill implementation changes the bound capability's output schema: the public contract is violated and compilation fails.",
+  "expect": "error"
+}

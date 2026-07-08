@@ -1,0 +1,9 @@
+schemaVersion: 3
+kind: agent
+id: conformance/bad-slot@1.0.0
+displayName: Bad Slot
+description: Fails because the slot name is not an ASCII identifier.
+slots:
+  règlePolitique: context/policy.md
+contextFiles:
+  - context/policy.md

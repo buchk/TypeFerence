@@ -16,6 +16,11 @@ public sealed class ResourceLoader
         "^[a-z0-9][a-z0-9.-]*(?:/[a-z0-9][a-z0-9.-]*)+@[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$",
         RegexOptions.CultureInvariant);
 
+    // Spec ("Canonical text and ordering"): slot names are a canonical key
+    // space and must be ASCII so every conforming implementation orders them
+    // identically.
+    private static readonly Regex SlotName = new("^[A-Za-z0-9][A-Za-z0-9._-]*$", RegexOptions.CultureInvariant);
+
     public IReadOnlyDictionary<string, ResourceDocument> Load(string sourceDirectory, string? trustConfigurationPath = null)
     {
         var root = Path.GetFullPath(sourceDirectory);
@@ -27,6 +32,7 @@ public sealed class ResourceLoader
         };
         if (trustConfigurationPath is not null) excludedTrustFiles.Add(Path.GetFullPath(trustConfigurationPath));
         foreach (var file in Directory.EnumerateFiles(root, "*.yaml", SearchOption.AllDirectories)
+                     .Where(x => x.EndsWith(".yaml", StringComparison.Ordinal)) // pin: case-insensitive file systems must not admit .YAML
                      .Where(x => !excludedTrustFiles.Contains(Path.GetFullPath(x)))
                      .Order(StringComparer.Ordinal))
         {
@@ -57,6 +63,9 @@ public sealed class ResourceLoader
         if (resource.Kind == "skill" && string.IsNullOrWhiteSpace(resource.Binds)) throw new TypeFerenceException($"{file}: skills must bind a capability");
         if (resource.Kind == "skill" && !ResourceId.IsMatch(resource.Binds)) throw new TypeFerenceException($"{file}: binds must reference a capability id");
         if (resource.Kind != "skill" && !string.IsNullOrWhiteSpace(resource.Binds)) throw new TypeFerenceException($"{file}: only skills can bind capabilities");
+        foreach (var name in resource.Slots.Keys.Concat(resource.RequiresSlots))
+            if (!SlotName.IsMatch(name))
+                throw new TypeFerenceException($"{file}: slot name '{name}' must be an ASCII identifier matching [A-Za-z0-9][A-Za-z0-9._-]*");
         foreach (var relative in resource.ContextFiles.Concat(resource.Slots.Values))
         {
             var full = Path.GetFullPath(Path.Combine(root, relative.Replace('/', Path.DirectorySeparatorChar)));

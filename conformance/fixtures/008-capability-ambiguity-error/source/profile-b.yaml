@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: profile
+id: conformance/profiles/b@1.0.0
+displayName: Profile B
+description: Binds implementation B.
+skills:
+  - ref: conformance/skills/report-b@1.0.0

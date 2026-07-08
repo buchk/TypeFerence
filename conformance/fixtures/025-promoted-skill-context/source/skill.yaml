@@ -1,0 +1,10 @@
+schemaVersion: 3
+kind: skill
+id: conformance/skills/answer@1.0.0
+binds: conformance/capabilities/answer@1.0.0
+displayName: Answer Skill
+description: Answers with the profile's context only.
+contextFiles:
+  - context/profile-notes.md
+inputSchema: '{"type":"object"}'
+outputSchema: '{"type":"object"}'

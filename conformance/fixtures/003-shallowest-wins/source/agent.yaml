@@ -1,0 +1,8 @@
+schemaVersion: 3
+kind: agent
+id: conformance/shallow-wins@1.0.0
+displayName: Shallowest Wins
+description: The shallow declaration must supply the policy slot.
+embeds:
+  - conformance/profiles/deep-outer@1.0.0
+  - conformance/profiles/shallow@1.0.0

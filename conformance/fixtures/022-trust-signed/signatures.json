@@ -1,0 +1,7 @@
+{
+  "urn:air:conformance.example:typeference:source:source": "eyJhbGciOiJFUzI1NiJ9..c2lnbmF0dXJlLXNvdXJjZQ",
+  "urn:air:conformance.example:typeference:neutral:signed-agent": "eyJhbGciOiJFUzI1NiJ9..c2lnbmF0dXJlLW5ldXRyYWw",
+  "urn:air:conformance.example:typeference:codex:signed-agent": "eyJhbGciOiJFUzI1NiJ9..c2lnbmF0dXJlLWNvZGV4",
+  "urn:air:conformance.example:typeference:copilot:signed-agent": "eyJhbGciOiJFUzI1NiJ9..c2lnbmF0dXJlLWNvcGlsb3Q",
+  "urn:air:conformance.example:typeference:cursor:signed-agent": "eyJhbGciOiJFUzI1NiJ9..c2lnbmF0dXJlLWN1cnNvcg"
+}

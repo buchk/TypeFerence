@@ -1,0 +1,10 @@
+schemaVersion: 3
+kind: agent
+id: conformance/base@1.0.0
+displayName: Base Agent
+description: Embeddable non-emitting agent carrying the audit skill.
+emit: false
+embeds:
+  - conformance/profiles/team@1.0.0
+skills:
+  - ref: conformance/skills/audit@1.0.0

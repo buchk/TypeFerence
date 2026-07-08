@@ -1,0 +1,114 @@
+[
+  {
+    "field": "workingNorms",
+    "source": "typeference/profiles/spec-conformance@0.1.0"
+  },
+  {
+    "field": "workingNorms",
+    "source": "typeference/profiles/spec-conformance@0.1.0"
+  },
+  {
+    "field": "workingNorms",
+    "source": "typeference/profiles/spec-conformance@0.1.0"
+  },
+  {
+    "field": "workingNorms",
+    "source": "typeference/profiles/spec-conformance@0.1.0"
+  },
+  {
+    "field": "contextFiles",
+    "source": "typeference/profiles/spec-conformance@0.1.0"
+  },
+  {
+    "field": "workingNorms",
+    "source": "typeference/profiles/determinism-guardian@0.1.0"
+  },
+  {
+    "field": "workingNorms",
+    "source": "typeference/profiles/determinism-guardian@0.1.0"
+  },
+  {
+    "field": "workingNorms",
+    "source": "typeference/profiles/determinism-guardian@0.1.0"
+  },
+  {
+    "field": "workingNorms",
+    "source": "typeference/profiles/determinism-guardian@0.1.0"
+  },
+  {
+    "field": "contextFiles",
+    "source": "typeference/profiles/determinism-guardian@0.1.0"
+  },
+  {
+    "field": "workingNorms",
+    "source": "typeference/profiles/trust-signing@0.1.0"
+  },
+  {
+    "field": "workingNorms",
+    "source": "typeference/profiles/trust-signing@0.1.0"
+  },
+  {
+    "field": "workingNorms",
+    "source": "typeference/profiles/trust-signing@0.1.0"
+  },
+  {
+    "field": "workingNorms",
+    "source": "typeference/profiles/trust-signing@0.1.0"
+  },
+  {
+    "field": "contextFiles",
+    "source": "typeference/profiles/trust-signing@0.1.0"
+  },
+  {
+    "field": "workingNorms",
+    "source": "typeference/profiles/contribution-workflow@0.1.0"
+  },
+  {
+    "field": "workingNorms",
+    "source": "typeference/profiles/contribution-workflow@0.1.0"
+  },
+  {
+    "field": "workingNorms",
+    "source": "typeference/profiles/contribution-workflow@0.1.0"
+  },
+  {
+    "field": "workingNorms",
+    "source": "typeference/profiles/contribution-workflow@0.1.0"
+  },
+  {
+    "field": "contextFiles",
+    "source": "typeference/profiles/contribution-workflow@0.1.0"
+  },
+  {
+    "field": "embeds.typeference/profiles/spec-conformance@0.1.0",
+    "source": "typeference/typeference-maintainer@0.1.0"
+  },
+  {
+    "field": "embeds.typeference/profiles/determinism-guardian@0.1.0",
+    "source": "typeference/typeference-maintainer@0.1.0"
+  },
+  {
+    "field": "embeds.typeference/profiles/trust-signing@0.1.0",
+    "source": "typeference/typeference-maintainer@0.1.0"
+  },
+  {
+    "field": "embeds.typeference/profiles/contribution-workflow@0.1.0",
+    "source": "typeference/typeference-maintainer@0.1.0"
+  },
+  {
+    "field": "displayName",
+    "source": "typeference/typeference-maintainer@0.1.0"
+  },
+  {
+    "field": "description",
+    "source": "typeference/typeference-maintainer@0.1.0"
+  },
+  {
+    "field": "slots.repositoryMap",
+    "source": "typeference/typeference-maintainer@0.1.0"
+  },
+  {
+    "field": "contextFiles",
+    "source": "typeference/typeference-maintainer@0.1.0"
+  }
+]

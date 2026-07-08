@@ -1,0 +1,10 @@
+{
+  "description": "Two embeds declare the same slot at equal depth; the embedding agent resolves the conflict by declaring the slot locally.",
+  "expect": "success",
+  "digests": {
+    "codex": "sha256:3bdb23f399432a6a3092ebe75c7e064cbc207b2e2e3ce24d58d468727f32788d",
+    "copilot": "sha256:4a113bf774b0a10d28ab9cce2aeb7be6dddfccf57062fd9eca8f1e369a92f8bd",
+    "cursor": "sha256:7c45ba6ddf77d52569597eb769e9961ded2eb4bd3483297cb04f85974a80d571",
+    "neutral": "sha256:b8dfbda10fff422e0ff24fad135faabafcb728e0b00f273e1e4f60e6c9f34c5c"
+  }
+}

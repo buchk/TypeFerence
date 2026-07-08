@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: agent
+id: conformance/promoted-reporter@1.0.0
+displayName: Promoted Reporter
+description: Receives the reporting skill through embedding.
+embeds:
+  - conformance/profiles/reporter@1.0.0

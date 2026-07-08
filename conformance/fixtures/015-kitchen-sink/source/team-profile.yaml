@@ -1,0 +1,15 @@
+schemaVersion: 3
+kind: profile
+id: conformance/profiles/team@1.0.0
+displayName: Team Defaults
+description: Team defaults layered on the org.
+embeds:
+  - conformance/profiles/org@1.0.0
+slots:
+  playbook: context/playbook.md
+workingNorms:
+  - Prefer evidence over recollection.
+contextFiles:
+  - context/playbook.md
+skills:
+  - ref: conformance/skills/summarize@1.0.0
