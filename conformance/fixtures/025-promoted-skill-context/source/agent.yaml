@@ -1,0 +1,9 @@
+schemaVersion: 3
+kind: agent
+id: conformance/answerer@1.0.0
+displayName: Answerer
+description: Adds agent-level context that must not leak into the promoted skill.
+embeds:
+  - conformance/profiles/answering@1.0.0
+contextFiles:
+  - context/agent-notes.md

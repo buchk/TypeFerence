@@ -1,0 +1,9 @@
+schemaVersion: 3
+kind: interface
+id: conformance/interfaces/auditor@1.0.0
+displayName: Auditor
+description: Requires audit ability and an organization slot.
+requiresSlots:
+  - organization
+requiresCapabilities:
+  - conformance/capabilities/audit@1.0.0

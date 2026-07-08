@@ -1,0 +1,12 @@
+{
+  "description": "Full trust configuration (schema, attestations, provenance links, metadata, non-required signature intent) compiled into ARD trust manifests without signatures.",
+  "expect": "success",
+  "emitArd": "conformance.example",
+  "digests": {
+    "ard": "sha256:d9333955fad318f98dbb7257dc5d47a011f5202039384ea797a66af59ea154d8",
+    "codex": "sha256:f54b22db84e9cb5af0f7b2acf8678491732c1cbc51256f69b4628b5e0c028711",
+    "copilot": "sha256:3adb2e6ab82aac6c9b47e2602a65a1bdd35db4e384daa4c9e5fbf813e5ce35f7",
+    "cursor": "sha256:768c459cf6af8dfb5553ac684d52c2dd793ac4ba704ccdf42849ff7dac76f5a7",
+    "neutral": "sha256:ae62d4707320decf06df0a695aef0968dfd5aef933613afed88ec40075a128d8"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "description": "Source files carrying a UTF-8 BOM: the BOM is ignored when reading and stripped before hashing and packaging.",
+  "expect": "success",
+  "emitArd": "conformance.example",
+  "digests": {
+    "ard": "sha256:cc1c65064eabe4a925a45ba5f44473c866a2b47fa2aae73496f0e4c867c76653",
+    "codex": "sha256:d8c29653d73c64b082127824246c78a40d4b077ec9a4686610b42680e0d3eebe",
+    "copilot": "sha256:3a81319dab87c3cce2814919ebd4c39d42aaf64b11c080b599463007ad54e762",
+    "cursor": "sha256:46b0f3ec863d160ccc3a35b5ff136818f046b8283ebaa0086cad83218e31cb88",
+    "neutral": "sha256:b0093aa45b100a1e27821fc8664c00dc3603149eeba506bfc2336398ec33161e"
+  }
+}

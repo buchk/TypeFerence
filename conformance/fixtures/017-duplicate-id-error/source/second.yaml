@@ -1,0 +1,5 @@
+schemaVersion: 3
+kind: agent
+id: conformance/twin@1.0.0
+displayName: Twin Two
+description: Second declaration of the same id.

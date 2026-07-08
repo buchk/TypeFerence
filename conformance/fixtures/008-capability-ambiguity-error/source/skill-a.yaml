@@ -1,0 +1,8 @@
+schemaVersion: 3
+kind: skill
+id: conformance/skills/report-a@1.0.0
+binds: conformance/capabilities/report@1.0.0
+displayName: Report A
+description: First implementation.
+inputSchema: '{"type":"object"}'
+outputSchema: '{"type":"object"}'

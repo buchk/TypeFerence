@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: capability
+id: conformance/capabilities/report@1.0.0
+displayName: Report
+description: Produce a structured report.
+inputSchema: '{"type":"object"}'
+outputSchema: '{"type":"object"}'

@@ -1,0 +1,8 @@
+schemaVersion: 3
+kind: skill
+id: conformance/skills/measure@1.0.0
+binds: conformance/capabilities/measure@1.0.0
+displayName: Measure Skill
+description: Same schemas, differently formatted; must canonicalize equal.
+inputSchema: '{ "type": "object", "properties": { "value": { "type": "number", "minimum": 1.0, "maximum": 1e5, "multipleOf": 0.10 } }, "additionalProperties": false }'
+outputSchema: '{ "type": "object", "properties": { "scaled": { "type": "number", "default": -0 } }, "required": ["scaled"] }'

@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: profile
+id: conformance/profiles/b@1.0.0
+displayName: B
+description: Embeds A, closing the cycle.
+embeds:
+  - conformance/profiles/a@1.0.0

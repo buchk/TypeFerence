@@ -1,0 +1,4 @@
+{
+  "description": "Two embeds bind different implementations of the same capability at equal depth and the agent does not bind it locally: compile-time ambiguity error.",
+  "expect": "error"
+}

@@ -1,0 +1,4 @@
+{
+  "description": "Two files declare the same resource id: compilation fails.",
+  "expect": "error"
+}

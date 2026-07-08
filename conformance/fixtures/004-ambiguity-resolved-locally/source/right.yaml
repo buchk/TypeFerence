@@ -1,0 +1,9 @@
+schemaVersion: 3
+kind: profile
+id: conformance/profiles/right@1.0.0
+displayName: Right
+description: Also declares the policy slot.
+slots:
+  policy: context/right.md
+contextFiles:
+  - context/right.md

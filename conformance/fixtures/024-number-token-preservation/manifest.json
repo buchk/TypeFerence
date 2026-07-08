@@ -1,0 +1,10 @@
+{
+  "description": "JSON number tokens in schemas (1.0, 1e5, -0, 0.10) must survive canonicalization byte-for-byte in both capability and implementation.",
+  "expect": "success",
+  "digests": {
+    "codex": "sha256:4e68ed1620e1cf4dcb498e1f2b5ad4d8cceb650d96b831f94e948eaa7068365e",
+    "copilot": "sha256:f11ea44b8f7763ffb2534cacbe3360bf2e80ad61cc68ebd5571d9d11b4d19fd2",
+    "cursor": "sha256:fceab32b26b09577e5e2a08f557a26701c5175c2fdbf5e4e1c8d2ec3b2826b6d",
+    "neutral": "sha256:3bd8e2d7d8181cab633f36500d71d120043a9eebd37989bd93db27c9a9c27a51"
+  }
+}

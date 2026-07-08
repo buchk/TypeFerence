@@ -1,0 +1,9 @@
+schemaVersion: 3
+kind: profile
+id: conformance/profiles/answering@1.0.0
+displayName: Answering Profile
+description: Binds the answer skill with its own context.
+contextFiles:
+  - context/profile-notes.md
+skills:
+  - ref: conformance/skills/answer@1.0.0

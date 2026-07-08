@@ -1,0 +1,5 @@
+schemaVersion: 3
+kind: agent
+id: conformance/minimal@1.0.0
+displayName: Minimal Agent
+description: The smallest valid agent.

@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: profile
+id: conformance/profiles/deep-outer@1.0.0
+displayName: Deep Outer
+description: Wraps the deep declaration.
+embeds:
+  - conformance/profiles/deep-inner@1.0.0

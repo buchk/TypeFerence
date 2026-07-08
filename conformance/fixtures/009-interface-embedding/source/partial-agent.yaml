@@ -1,0 +1,9 @@
+schemaVersion: 3
+kind: agent
+id: conformance/partial@1.0.0
+displayName: Partial Agent
+description: Satisfies only the base interface.
+slots:
+  policy: context/policy.md
+contextFiles:
+  - context/policy.md

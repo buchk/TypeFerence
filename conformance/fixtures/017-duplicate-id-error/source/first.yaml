@@ -1,0 +1,5 @@
+schemaVersion: 3
+kind: agent
+id: conformance/twin@1.0.0
+displayName: Twin One
+description: First declaration.

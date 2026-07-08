@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: interface
+id: conformance/interfaces/contextual@1.0.0
+displayName: Contextual
+description: Requires a policy slot.
+requiresSlots:
+  - policy

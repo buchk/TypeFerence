@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: capability
+id: conformance/capabilities/audit@1.0.0
+displayName: Audit
+description: Check work against policy.
+inputSchema: '{"type":"object","properties":{"subject":{"type":"string"}},"additionalProperties":false}'
+outputSchema: '{"type":"object","properties":{"passed":{"type":"boolean"},"findings":{"type":"array","items":{"type":"string"}}},"required":["passed","findings"]}'

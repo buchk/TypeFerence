@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: capability
+id: conformance/capabilities/answer@1.0.0
+displayName: Answer
+description: Answer a question.
+inputSchema: '{"type":"object"}'
+outputSchema: '{"type":"object"}'

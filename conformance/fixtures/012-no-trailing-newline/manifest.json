@@ -1,0 +1,12 @@
+{
+  "description": "A context file without a trailing newline: content is hashed and packaged exactly as authored.",
+  "expect": "success",
+  "emitArd": "conformance.example",
+  "digests": {
+    "ard": "sha256:75a5b16fbf63f11e7c797601daea18d16a13ce214e93912bfd032eaf97cc2b6a",
+    "codex": "sha256:32d3c4dddacf5f1c2b5455fc529ef32db23e01026cd2ce68c1bb06367b4c1e73",
+    "copilot": "sha256:c8e8ebb9cb28714baaf5e68cfa6142ee8875d71e610bea20412889b55207ba23",
+    "cursor": "sha256:4300dbfc02a62f08b02a9cf47fb60d640c65a4a90ee21bc7f3a27b739ecad2f4",
+    "neutral": "sha256:75f98e1bb7777c63d628b4ed5faaeb9656541144ff8029d0641685714be8fb5d"
+  }
+}

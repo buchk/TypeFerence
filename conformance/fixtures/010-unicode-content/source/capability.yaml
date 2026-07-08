@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: capability
+id: conformance/capabilities/translate@1.0.0
+displayName: Translate — 翻訳
+description: 'Translate content: & < > '' + ` " characters must escape.'
+inputSchema: '{"type":"object","properties":{"text":{"type":"string","description":"Texte à traduire 😀"}},"additionalProperties":false}'
+outputSchema: '{"type":"object","properties":{"translated":{"type":"string"}},"required":["translated"]}'
