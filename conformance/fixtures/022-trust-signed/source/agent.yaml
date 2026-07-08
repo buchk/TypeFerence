@@ -1,0 +1,5 @@
+schemaVersion: 3
+kind: agent
+id: conformance/signed-agent@1.0.0
+displayName: Signed Agent
+description: Every published entry for this agent carries an imported signature.

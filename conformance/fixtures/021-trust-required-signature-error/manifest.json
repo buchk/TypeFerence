@@ -1,0 +1,5 @@
+{
+  "description": "signatureIntent.required is true and no signature map is supplied: publication fails closed.",
+  "expect": "error",
+  "emitArd": "conformance.example"
+}

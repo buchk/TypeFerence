@@ -1,0 +1,8 @@
+schemaVersion: 3
+kind: agent
+id: conformance/torn@1.0.0
+displayName: Torn Agent
+description: Fails because two equal-depth implementations compete for one capability.
+embeds:
+  - conformance/profiles/a@1.0.0
+  - conformance/profiles/b@1.0.0

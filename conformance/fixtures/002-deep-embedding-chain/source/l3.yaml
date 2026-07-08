@@ -1,0 +1,11 @@
+schemaVersion: 3
+kind: profile
+id: conformance/profiles/l3@1.0.0
+displayName: Level Three
+description: Third profile.
+embeds:
+  - conformance/profiles/l4@1.0.0
+slots:
+  midway: context/mid.md
+contextFiles:
+  - context/mid.md

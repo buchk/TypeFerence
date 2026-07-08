@@ -1,0 +1,9 @@
+schemaVersion: 3
+kind: profile
+id: conformance/profiles/l2@1.0.0
+displayName: Level Two
+description: Second profile.
+embeds:
+  - conformance/profiles/l3@1.0.0
+workingNorms:
+  - Norm from level two.

@@ -1,0 +1,5 @@
+schemaVersion: 3
+kind: agent
+id: conformance/unsigned@1.0.0
+displayName: Unsigned Agent
+description: Fails because the required signature is missing.

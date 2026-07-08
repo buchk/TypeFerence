@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: profile
+id: conformance/profiles/reporter@1.0.0
+displayName: Reporter Profile
+description: Binds the reporting skill for reuse.
+skills:
+  - ref: conformance/skills/report@1.0.0

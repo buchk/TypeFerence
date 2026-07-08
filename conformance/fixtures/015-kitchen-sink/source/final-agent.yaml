@@ -1,0 +1,14 @@
+schemaVersion: 3
+kind: agent
+id: conformance/final@1.0.0
+displayName: Final Agent
+description: Emitting agent that embeds the base agent and overrides summarization.
+embeds:
+  - conformance/base@1.0.0
+slots:
+  escalation: context/escalation.md
+contextFiles:
+  - context/escalation.md
+skills:
+  - ref: conformance/skills/focused-summarize@1.0.0
+    capability: conformance/capabilities/summarize@1.0.0

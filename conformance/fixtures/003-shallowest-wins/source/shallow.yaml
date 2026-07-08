@@ -1,0 +1,9 @@
+schemaVersion: 3
+kind: profile
+id: conformance/profiles/shallow@1.0.0
+displayName: Shallow
+description: Declares the same slot one level up.
+slots:
+  policy: context/shallow-policy.md
+contextFiles:
+  - context/shallow-policy.md

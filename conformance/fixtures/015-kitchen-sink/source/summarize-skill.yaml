@@ -1,0 +1,10 @@
+schemaVersion: 3
+kind: skill
+id: conformance/skills/summarize@1.0.0
+binds: conformance/capabilities/summarize@1.0.0
+displayName: Summarize Skill
+description: Default summarization.
+instructions: |
+  Summarize into at most five points.
+inputSchema: '{"type":"object","properties":{"text":{"type":"string"}},"required":["text"],"additionalProperties":false}'
+outputSchema: '{"type":"object","properties":{"points":{"type":"array","items":{"type":"string"}}},"required":["points"]}'

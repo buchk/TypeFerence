@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: agent
+id: conformance/notrail@1.0.0
+displayName: No Trailing Newline
+description: References a file that does not end with a newline.
+contextFiles:
+  - context/abrupt.md

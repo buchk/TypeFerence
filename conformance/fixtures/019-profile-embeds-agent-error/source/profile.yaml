@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: profile
+id: conformance/profiles/bad@1.0.0
+displayName: Bad Profile
+description: Fails because profiles cannot embed agents.
+embeds:
+  - conformance/inner@1.0.0

@@ -13,3 +13,4 @@ Format: `NNNN-short-title.md` with sections **Status**, **Context**, **Decision*
 | [0002](0002-cli-verb-typeference.md) | The CLI verb is `typeference` |
 | [0003](0003-go-implementation-layout.md) | Go implementation layout and dependency policy |
 | [0004](0004-canonicalization-rulings.md) | Canonicalization rulings for cross-implementation byte identity |
+| [0005](0005-conformance-suite.md) | Cross-implementation conformance suite design |

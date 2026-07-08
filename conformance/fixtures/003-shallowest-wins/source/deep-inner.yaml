@@ -1,0 +1,9 @@
+schemaVersion: 3
+kind: profile
+id: conformance/profiles/deep-inner@1.0.0
+displayName: Deep Inner
+description: Declares the policy slot two levels down.
+slots:
+  policy: context/deep-policy.md
+contextFiles:
+  - context/deep-policy.md

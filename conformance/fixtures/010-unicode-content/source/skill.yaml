@@ -1,0 +1,13 @@
+schemaVersion: 3
+kind: skill
+id: conformance/skills/translate@1.0.0
+binds: conformance/capabilities/translate@1.0.0
+displayName: Übersetzen
+description: 'Traduis fidèlement — 你好, mind A&B <tags> and 1+1.'
+instructions: |
+  Traduis le texte fidèlement. Conserve les émojis 😀 et les guillemets "doubles".
+  Ne modifie jamais les identifiants `code` ni les expressions comme a < b && b > c.
+contextFiles:
+  - context/glossaire.md
+inputSchema: '{"type":"object","properties":{"text":{"type":"string","description":"Texte à traduire 😀"}},"additionalProperties":false}'
+outputSchema: '{"type":"object","properties":{"translated":{"type":"string"}},"required":["translated"]}'

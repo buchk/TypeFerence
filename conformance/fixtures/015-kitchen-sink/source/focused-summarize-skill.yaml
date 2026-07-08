@@ -1,0 +1,12 @@
+schemaVersion: 3
+kind: skill
+id: conformance/skills/focused-summarize@1.0.0
+binds: conformance/capabilities/summarize@1.0.0
+displayName: Focused Summarize Skill
+description: Summarization tuned for compliance material.
+instructions: |
+  Summarize with citations to the policy sections involved.
+contextFiles:
+  - context/compliance.md
+inputSchema: '{"type":"object","properties":{"text":{"type":"string"}},"required":["text"],"additionalProperties":false}'
+outputSchema: '{"type":"object","properties":{"points":{"type":"array","items":{"type":"string"}}},"required":["points"]}'

@@ -1,0 +1,10 @@
+{
+  "description": "A skill bound in an embedded profile is promoted into the agent; the dispatch name derives from the outer agent, not the profile.",
+  "expect": "success",
+  "digests": {
+    "codex": "sha256:1609387a77916ac4cc0d0ba40959e3d0ab52214fa7577706037b578c8730e176",
+    "copilot": "sha256:de256b844ada436fdfd7f8bc66a82a4931614a66c6280080057287aaf2000ec9",
+    "cursor": "sha256:d1ac17dd7361af178e6f9bad31aa401207ea883058e400a8765c0deacbcaf32c",
+    "neutral": "sha256:7b610852e3beb112d8e0c84d4683362de8ab1893a174c58b074fd5d39bf5137f"
+  }
+}

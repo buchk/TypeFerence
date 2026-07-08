@@ -1,0 +1,10 @@
+{
+  "description": "Five-level profile embedding chain; slots, norms, and contexts promote through every level in first-seen order.",
+  "expect": "success",
+  "digests": {
+    "codex": "sha256:255141125ad53b9a9b88aa0c0072ec4fd5d8e42bb2b52787e78c5cf8f7a2076e",
+    "copilot": "sha256:ff5d3ee5fe9cc0cb1538746f54a18663ca9c728b019c29d3b4ec31f2c6a70239",
+    "cursor": "sha256:87f8d01f7c4f6a4526b260278204167441ff0108e16a34aa5e1b44b3a5811cf6",
+    "neutral": "sha256:ec6c984a2c66a62c51d48e3087abe6acd8893665983392c660dc844d60f4aa01"
+  }
+}

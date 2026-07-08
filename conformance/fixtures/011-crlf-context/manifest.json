@@ -1,0 +1,12 @@
+{
+  "description": "A context file authored with CRLF line endings: the digest and ARD packaging normalize CRLF to LF.",
+  "expect": "success",
+  "emitArd": "conformance.example",
+  "digests": {
+    "ard": "sha256:1ff7675f094666c36920dd4fbd90106d2045205f10d915083f2e26cb3460868b",
+    "codex": "sha256:6ad4ea78b95528372196bcfad51893ed5faaad4bcaf8704da58d7ee3c8456db9",
+    "copilot": "sha256:12d9d2450fb8e3d0e9acb954f7439ffeebb6e6623856c32604f29246ab40edbb",
+    "cursor": "sha256:0c6da6936e8862b1e7380394313ed96906c5175d1239593286964be831150672",
+    "neutral": "sha256:a762a3e6820ebaf9cfe06ae1460b2040f98f4466d3d1e08e62c280c08c0a544d"
+  }
+}

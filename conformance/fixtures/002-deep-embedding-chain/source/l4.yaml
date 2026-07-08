@@ -1,0 +1,9 @@
+schemaVersion: 3
+kind: profile
+id: conformance/profiles/l4@1.0.0
+displayName: Level Four
+description: Fourth profile.
+embeds:
+  - conformance/profiles/l5@1.0.0
+workingNorms:
+  - Norm from level four.

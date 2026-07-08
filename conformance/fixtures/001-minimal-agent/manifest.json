@@ -1,0 +1,10 @@
+{
+  "description": "Smallest valid source tree: one agent with defaults only.",
+  "expect": "success",
+  "digests": {
+    "codex": "sha256:89ab7ee073b61c2be0a731b060d8d7b558693f9a7c3f76e3f489c349f9e6c3a0",
+    "copilot": "sha256:46a9836ed41f7e861324a2749035548392063717937c8c05a7bc433c5542048d",
+    "cursor": "sha256:9a6acc2525e6aab1fb36db60d8d97dba6d7681c4e53780ef6b39e9a921a1989b",
+    "neutral": "sha256:bc64e751b5267801d8d0bcb2411e9ff574d0940c813c09fc187092d364a94f3b"
+  }
+}

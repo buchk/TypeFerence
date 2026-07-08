@@ -1,0 +1,7 @@
+schemaVersion: 3
+kind: agent
+id: conformance/violator@1.0.0
+displayName: Violator
+description: Fails because the implementation changes the capability contract.
+skills:
+  - ref: conformance/skills/report@1.0.0
