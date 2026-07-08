@@ -16,6 +16,10 @@ import (
 	"github.com/buchk/TypeFerence/go/internal/resource"
 )
 
+// version is stamped by the release workflow via
+// -ldflags "-X main.version=<semver>"; development builds report "dev".
+var version = "dev"
+
 func main() {
 	os.Exit(run(os.Args[1:]))
 }
@@ -35,6 +39,9 @@ func run(args []string) int {
 		code, err = inspect(args)
 	case "diff":
 		code, err = diff(args)
+	case "version", "--version":
+		fmt.Printf("typeference %s\n", version)
+		return 0
 	default:
 		return fail(fmt.Sprintf("Unknown command: %s", args[0]))
 	}
@@ -280,6 +287,7 @@ Commands:
       [--emit-ard --publisher-domain example.com] [--trust-config path]
       [--trust-signatures signatures.json] [--json]
       [--allow-unsigned-trust]
+  typeference version
 `)
 	return 0
 }
