@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/buchk/TypeFerence/go/internal/compile"
+	"github.com/buchk/TypeFerence/go/internal/eval"
 	"github.com/buchk/TypeFerence/go/internal/jsonx"
 	"github.com/buchk/TypeFerence/go/internal/resource"
 )
@@ -39,6 +40,8 @@ func run(args []string) int {
 		code, err = inspect(args)
 	case "diff":
 		code, err = diff(args)
+	case "eval":
+		code, err = evalCommand(args)
 	case "version", "--version":
 		fmt.Printf("typeference %s\n", version)
 		return 0
@@ -200,6 +203,39 @@ func diff(args []string) (int, error) {
 	return 0, nil
 }
 
+func evalCommand(args []string) (int, error) {
+	source, err := requiredArg(args, 1, "source")
+	if err != nil {
+		return 0, err
+	}
+	scenarios, err := option(args, "--scenarios")
+	if err != nil {
+		return 0, err
+	}
+	if scenarios == "" {
+		return 0, resource.Errorf("--scenarios is required")
+	}
+	model, err := option(args, "--model")
+	if err != nil {
+		return 0, err
+	}
+	outDir, err := option(args, "--out")
+	if err != nil {
+		return 0, err
+	}
+	live := slices.Contains(args, "--live")
+
+	opts := eval.Options{Model: model, Live: live, OutDir: outDir}
+	if live {
+		apiKey := os.Getenv("ANTHROPIC_API_KEY")
+		if apiKey == "" {
+			return 0, resource.Errorf("--live requires ANTHROPIC_API_KEY in the environment; run without --live for a dry run")
+		}
+		opts.Backend = &eval.AnthropicBackend{APIKey: apiKey}
+	}
+	return eval.Run(source, scenarios, opts)
+}
+
 func stringArr(values []string) jsonx.Arr {
 	arr := jsonx.Arr{}
 	for _, v := range values {
@@ -287,6 +323,9 @@ Commands:
       [--emit-ard --publisher-domain example.com] [--trust-config path]
       [--trust-signatures signatures.json] [--json]
       [--allow-unsigned-trust]
+  typeference eval <source> --scenarios <file-or-dir> [--live] [--model id] [--out dir]
+      (dry run by default: validates scenarios and emits exact request
+       payloads without calling any API; --live reads ANTHROPIC_API_KEY)
   typeference version
 `)
 	return 0
