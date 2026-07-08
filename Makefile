@@ -4,8 +4,9 @@
 
 GO ?= go
 DOTNET ?= dotnet
+VERSION ?= dev
 GOFLAGS := -trimpath
-LDFLAGS := -s -w
+LDFLAGS := -s -w -X main.version=$(VERSION)
 BINDIR := bin
 
 .PHONY: all build build-go build-dotnet test test-go test-dotnet conformance \

@@ -15,3 +15,4 @@ Format: `NNNN-short-title.md` with sections **Status**, **Context**, **Decision*
 | [0004](0004-canonicalization-rulings.md) | Canonicalization rulings for cross-implementation byte identity |
 | [0005](0005-conformance-suite.md) | Cross-implementation conformance suite design |
 | [0006](0006-self-hosting-design-feedback.md) | Self-hosting the maintainer agent, and what it revealed |
+| [0007](0007-release-distribution.md) | Release distribution: static binaries, no installer |
