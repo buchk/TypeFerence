@@ -1,6 +1,7 @@
 bin/
 obj/
 tmp/pdfs/
+beth-runs/
 *.user
 *.suo
 .vs/

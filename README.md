@@ -126,6 +126,13 @@ run by default, emitting the exact request payloads without any network call. A
 pass is an adherence signal, not behavioral equivalence; the framing and its limits
 are documented in [evals/README.md](evals/README.md).
 
+`typeference equivalence` (BETH, the Behavioral Equivalence Test Harness) is the
+deployment-side counterpart: `pack` lays out the same scenarios as run-ready cells
+per compiled target surface, an operator collects one response per cell from a real
+host, and `score` reports adherence per surface and agreement across surfaces,
+listing every divergence. A scorecard is one observation per surface, not a proof;
+see [ADR-0009](docs/decisions/0009-behavioral-equivalence-harness.md).
+
 `--emit-ard` publishes one canonical TypeFerence source-package entry and one precompiled bundle entry for each concrete agent and selected target. Compiled entries carry `derivedFrom` provenance back to the canonical source digest. ARD is an envelope: a target-aware installer must understand static Codex, Copilot, or Cursor bundles, while callable MCP or A2A resources require their own deployed endpoint and native card.
 
 ### Trust manifests
