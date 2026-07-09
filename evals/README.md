@@ -101,7 +101,10 @@ the API, and otherwise the exact judge payload is written to `judge-request.json
 and the cell is reported unjudged. The scorecard (`scorecard.json` / `scorecard.md`)
 reports **adherence** (per surface) and **agreement** (across surfaces) separately —
 two surfaces failing an item identically are equivalent but non-adherent — and lists
-every divergence with the judge's reasoning. Exit 1 on any divergence or failure.
+every divergence with the judge's reasoning. Exit 0 only for a green scorecard —
+one judged response per surface, all agreeing, none failing (ADR-0009); exit 1 on
+any divergence, failure, or incomplete coverage (so a dry or partly-collected run,
+which observes nothing conclusive, is not mistaken for a pass).
 
 A green scorecard is one observation per surface on one day — an instrument reading,
 not a proof. Its value is longitudinal: re-pack and re-score the same corpus across

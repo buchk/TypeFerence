@@ -160,8 +160,10 @@ func TestScoreDryEmitsJudgeRequestsAndReportsStatuses(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if code != 0 {
-		t.Fatalf("expected exit 0 (nothing judged, nothing divergent), got %d", code)
+	// A dry run judges nothing, so it has no per-surface coverage and is not a
+	// pass (ADR-0009); the exit code reflects that (see TestScoreVacuousRun).
+	if code != 1 {
+		t.Fatalf("expected exit 1 (no judged coverage), got %d", code)
 	}
 	if _, statErr := os.Stat(filepath.Join(cellDir(runDir, "codex"), judgeRequestFileName)); statErr != nil {
 		t.Error("dry score should emit judge-request.json for the collected cell")
@@ -273,8 +275,10 @@ func TestScoreExcludesDriftedWorkspaces(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if code != 0 {
-		t.Fatalf("drifted cell must not be judged; expected exit 0, got %d", code)
+	// The drifted cell is excluded from judging, leaving the surface with no
+	// judged coverage: not a pass, exit 1.
+	if code != 1 {
+		t.Fatalf("drifted cell must not be judged, leaving no coverage; expected exit 1, got %d", code)
 	}
 	card := readScorecard(t, runDir)
 	counts := member(card, "cells").(jsonx.Obj)
@@ -283,6 +287,54 @@ func TestScoreExcludesDriftedWorkspaces(t *testing.T) {
 	}
 	if got := member(counts, "judged").(jsonx.Num); string(got) != "0" {
 		t.Errorf("cells.judged = %s, want 0", got)
+	}
+	if passed := member(card, "passed").(jsonx.Bool); bool(passed) {
+		t.Error("a run whose only cell drifted has no judged coverage and must not pass")
+	}
+}
+
+// TestScoreVacuousRunIsNotPassed pins ADR-0009: a green scorecard means one
+// judged response per surface. A run with no collected responses observes
+// nothing, so it must not report passed or exit 0 — otherwise a pack with no
+// host responses (e.g. an offline CI smoke run) would look green while proving
+// nothing.
+func TestScoreVacuousRunIsNotPassed(t *testing.T) {
+	runDir := packTestRun(t, "codex,cursor")
+	code, err := Score(runDir, ScoreOptions{Stdout: &bytes.Buffer{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if code != 1 {
+		t.Fatalf("expected exit 1 for a run with no judged responses, got %d", code)
+	}
+	card := readScorecard(t, runDir)
+	if passed := member(card, "passed").(jsonx.Bool); bool(passed) {
+		t.Error("scorecard.passed must be false when no cell was judged")
+	}
+	counts := member(card, "cells").(jsonx.Obj)
+	if got := member(counts, "noResponse").(jsonx.Num); string(got) != "2" {
+		t.Errorf("cells.noResponse = %s, want 2", got)
+	}
+}
+
+// TestScorePartialCoverageIsNotPassed pins the per-surface half of ADR-0009:
+// one surface judged and agreeing is not a pass while another surface has no
+// judged response.
+func TestScorePartialCoverageIsNotPassed(t *testing.T) {
+	runDir := packTestRun(t, "codex,cursor")
+	seedResponse(t, cellDir(runDir, "codex"), "Qualified summary; rollback signal unavailable.")
+	seedJudgeResponse(t, cellDir(runDir, "codex"), true)
+	// cursor is left with no response.
+	code, err := Score(runDir, ScoreOptions{Stdout: &bytes.Buffer{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if code != 1 {
+		t.Fatalf("expected exit 1 when a surface has no judged response, got %d", code)
+	}
+	card := readScorecard(t, runDir)
+	if passed := member(card, "passed").(jsonx.Bool); bool(passed) {
+		t.Error("scorecard.passed must be false when a surface lacks judged coverage")
 	}
 }
 
