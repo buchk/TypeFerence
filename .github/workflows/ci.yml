@@ -51,6 +51,10 @@ jobs:
         run: /tmp/typeference diff examples/helio --against dist --emit-ard --publisher-domain helio.example
       - name: Eval harness dry run (no API key, no network)
         run: /tmp/typeference eval examples/helio --scenarios evals/scenarios --out /tmp/eval-dry-run
+      - name: BETH pack and offline score (no API key, no network)
+        run: |
+          /tmp/typeference equivalence pack examples/helio --scenarios evals/scenarios --out /tmp/beth-run
+          /tmp/typeference equivalence score /tmp/beth-run
 
   # Cross-implementation conformance: both compilers run the shared fixture
   # corpus in conformance/; a digest mismatch on any fixture is a broken
