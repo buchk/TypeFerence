@@ -42,6 +42,8 @@ func run(args []string) int {
 		code, err = diff(args)
 	case "eval":
 		code, err = evalCommand(args)
+	case "equivalence":
+		code, err = equivalenceCommand(args)
 	case "version", "--version":
 		fmt.Printf("typeference %s\n", version)
 		return 0
@@ -236,6 +238,66 @@ func evalCommand(args []string) (int, error) {
 	return eval.Run(source, scenarios, opts)
 }
 
+func equivalenceCommand(args []string) (int, error) {
+	subcommand, err := requiredArg(args, 1, "subcommand (pack or score)")
+	if err != nil {
+		return 0, err
+	}
+	switch subcommand {
+	case "pack":
+		source, err := requiredArg(args, 2, "source")
+		if err != nil {
+			return 0, err
+		}
+		scenarios, err := option(args, "--scenarios")
+		if err != nil {
+			return 0, err
+		}
+		if scenarios == "" {
+			return 0, resource.Errorf("--scenarios is required")
+		}
+		outDir, err := option(args, "--out")
+		if err != nil {
+			return 0, err
+		}
+		if outDir == "" {
+			return 0, resource.Errorf("--out is required")
+		}
+		target := "all"
+		if v, err := option(args, "--target"); err != nil {
+			return 0, err
+		} else if v != "" {
+			target = v
+		}
+		targets, err := eval.ParseTargetList(target)
+		if err != nil {
+			return 0, err
+		}
+		return eval.Pack(source, scenarios, outDir, eval.PackOptions{Targets: targets})
+	case "score":
+		runDir, err := requiredArg(args, 2, "run directory")
+		if err != nil {
+			return 0, err
+		}
+		model, err := option(args, "--model")
+		if err != nil {
+			return 0, err
+		}
+		live := slices.Contains(args, "--live")
+		opts := eval.ScoreOptions{Model: model, Live: live}
+		if live {
+			apiKey := os.Getenv("ANTHROPIC_API_KEY")
+			if apiKey == "" {
+				return 0, resource.Errorf("--live requires ANTHROPIC_API_KEY in the environment; run without --live to emit judge payloads")
+			}
+			opts.Backend = &eval.AnthropicBackend{APIKey: apiKey}
+		}
+		return eval.Score(runDir, opts)
+	default:
+		return 0, resource.Errorf("Unknown equivalence subcommand: %s (expected pack or score)", subcommand)
+	}
+}
+
 func stringArr(values []string) jsonx.Arr {
 	arr := jsonx.Arr{}
 	for _, v := range values {
@@ -326,6 +388,13 @@ Commands:
   typeference eval <source> --scenarios <file-or-dir> [--live] [--model id] [--out dir]
       (dry run by default: validates scenarios and emits exact request
        payloads without calling any API; --live reads ANTHROPIC_API_KEY)
+  typeference equivalence pack <source> --scenarios <file-or-dir> --out <run-dir>
+      [--target all|<name>[,<name>...]]
+      (lays out one cell per scenario x surface: compiled bundle, context,
+       and prompt; an operator collects one host response per cell)
+  typeference equivalence score <run-dir> [--live] [--model id]
+      (judges collected responses and writes the equivalence scorecard;
+       without --live it emits judge payloads and stays offline)
   typeference version
 `)
 	return 0

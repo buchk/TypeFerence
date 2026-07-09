@@ -17,3 +17,4 @@ Format: `NNNN-short-title.md` with sections **Status**, **Context**, **Decision*
 | [0006](0006-self-hosting-design-feedback.md) | Self-hosting the maintainer agent, and what it revealed |
 | [0007](0007-release-distribution.md) | Release distribution: static binaries, no installer |
 | [0008](0008-eval-harness-scope.md) | Behavioral eval harness: scope and design |
+| [0009](0009-behavioral-equivalence-harness.md) | BETH: the behavioral equivalence test harness |
