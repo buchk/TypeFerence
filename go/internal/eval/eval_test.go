@@ -61,6 +61,27 @@ func TestScenarioValidation(t *testing.T) {
 	}
 }
 
+// TestLoadScenariosRejectsSlugCollision pins the P1 guard: pack keys cell
+// directories on slug(ID), which is lossy, so two distinct raw ids that
+// slugify to the same value would share a cell path and silently clobber each
+// other. LoadScenarios must reject the collision even though the raw ids differ.
+func TestLoadScenariosRejectsSlugCollision(t *testing.T) {
+	dir := t.TempDir()
+	// "foo/bar" and "foo-bar" are distinct raw ids that both slug to "foo-bar".
+	a := "schemaVersion: 1\nid: foo/bar\nagent: a/b@1.0.0\ntask: t\nrubric:\n  - id: r\n    requirement: q\n"
+	b := "schemaVersion: 1\nid: foo-bar\nagent: a/b@1.0.0\ntask: t\nrubric:\n  - id: r\n    requirement: q\n"
+	if err := os.WriteFile(filepath.Join(dir, "a.yaml"), []byte(a), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "b.yaml"), []byte(b), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err := LoadScenarios(dir)
+	if err == nil || !strings.Contains(err.Error(), "collides") {
+		t.Errorf("expected a slug-collision error, got %v", err)
+	}
+}
+
 func TestDryRunEmitsValidPayloadsWithoutNetwork(t *testing.T) {
 	source := repoPath(t, "examples", "helio")
 	if _, err := os.Stat(source); err != nil {
