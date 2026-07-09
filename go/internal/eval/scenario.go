@@ -66,6 +66,13 @@ func LoadScenarios(path string) ([]*Scenario, error) {
 
 	scenarios := make([]*Scenario, 0, len(files))
 	seen := map[string]string{}
+	// pack keys each cell directory on slug(ID), which is lossy (lowercase,
+	// non-safe runes collapsed to "-"). Distinct raw IDs that slug to the same
+	// value (e.g. "foo/bar" and "foo-bar", or any two all-symbol IDs → the
+	// "scenario" fallback) would share a cell path and silently clobber each
+	// other while the manifest still lists both. Reject the collision here,
+	// where the invariant "one scenario = one cell path" is enforced.
+	seenSlug := map[string]string{}
 	for _, file := range files {
 		scenario, loadErr := loadScenarioFile(file)
 		if loadErr != nil {
@@ -74,7 +81,12 @@ func LoadScenarios(path string) ([]*Scenario, error) {
 		if previous, duplicate := seen[scenario.ID]; duplicate {
 			return nil, fmt.Errorf("%s: duplicate scenario id %q (also in %s)", file, scenario.ID, previous)
 		}
+		s := slug(scenario.ID)
+		if previous, collides := seenSlug[s]; collides {
+			return nil, fmt.Errorf("%s: scenario id %q collides with %q under path slug %q; ids must differ after slugification", file, scenario.ID, previous, s)
+		}
 		seen[scenario.ID] = file
+		seenSlug[s] = scenario.ID
 		scenarios = append(scenarios, scenario)
 	}
 	return scenarios, nil

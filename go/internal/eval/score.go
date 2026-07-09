@@ -44,8 +44,10 @@ type scoredCell struct {
 // scorecard. Per cell, a pre-existing judge-response.json wins; --live grades
 // via the backend; otherwise the exact judge request payload is emitted and
 // the cell is reported unjudged. Without --live, Score is a pure function of
-// the run directory. It returns the process exit code: 1 when any judged
-// rubric item diverges across surfaces or fails anywhere.
+// the run directory. It returns the process exit code: 0 only for a green
+// scorecard (ADR-0009: one judged response per surface, all agreeing, none
+// failing); 1 otherwise — divergence, failure, or incomplete coverage (a
+// surface with no judged response, or a run with no surfaces at all).
 func Score(runDir string, opts ScoreOptions) (int, error) {
 	if opts.Model == "" {
 		opts.Model = DefaultModel
@@ -262,8 +264,12 @@ func buildScorecard(model string, surfaces []string, cells []*scoredCell) *score
 	}
 
 	statusCounts := map[string]int{}
+	judgedBySurface := map[string]int{}
 	for _, cell := range cells {
 		statusCounts[cell.Status]++
+		if cell.Status == statusJudged {
+			judgedBySurface[cell.Surface]++
+		}
 	}
 	adherencePassed := map[string]int{}
 	adherenceJudged := map[string]int{}
@@ -381,7 +387,20 @@ func buildScorecard(model string, surfaces []string, cells []*scoredCell) *score
 			{K: "verdicts", V: verdictArr},
 		})
 	}
-	passed := divergent == 0 && !anyFailure
+	// ADR-0009: a green scorecard means one judged response per surface. A run
+	// with no judged coverage on a surface (all cells no-response, unjudged, or
+	// drifted) has observed nothing there and must not pass, regardless of the
+	// absence of failures or divergences. surfaces comes from the manifest, so
+	// an empty set is itself a non-passing, vacuous run.
+	fullyJudged := len(surfaces) > 0
+	unjudgedSurfaces := []string{}
+	for _, surface := range surfaces {
+		if judgedBySurface[surface] == 0 {
+			fullyJudged = false
+			unjudgedSurfaces = append(unjudgedSurfaces, surface)
+		}
+	}
+	passed := fullyJudged && divergent == 0 && !anyFailure
 
 	card := jsonx.Obj{
 		{K: "schemaVersion", V: jsonx.Int(1)},
@@ -415,6 +434,13 @@ func buildScorecard(model string, surfaces []string, cells []*scoredCell) *score
 		}
 	}
 	fmt.Fprintf(&md, "- Agreement: %d/%d comparable rubric items agree across surfaces\n", agreed, agreed+divergent)
+	if !fullyJudged {
+		if len(surfaces) == 0 {
+			md.WriteString("- **Not passed:** no surfaces observed (vacuous run)\n")
+		} else {
+			fmt.Fprintf(&md, "- **Not passed:** no judged response on surface(s): %s\n", strings.Join(unjudgedSurfaces, ", "))
+		}
+	}
 	for _, group := range groups {
 		scenario := group.cells[0].Scenario
 		fmt.Fprintf(&md, "\n## %s\n\nAgent: `%s`\n\n", group.id, scenario.Agent)
