@@ -48,6 +48,18 @@ skills:
 
 Use profiles for reusable organizational, domain, or team defaults that should participate in composition without producing their own target bundle.
 
+## Try it in your browser
+
+The **[playground](https://buchk.github.io/TypeFerence/)** runs the real Go
+compiler — built for WebAssembly, internals untouched — entirely in your tab.
+Edit typed source, watch the compiled Codex/Copilot/Cursor/neutral artifacts,
+the embedding graph, and the diagnostics update live. The status-bar digest is
+the determinism guarantee made interactive: the Helio example reproduces the
+digest of this repository's committed `dist/` exactly, and the self-hosting
+example recompiles the repository's own root `AGENTS.md` byte for byte. There
+is no backend; nothing you type leaves the browser
+([ADR-0010](docs/decisions/0010-browser-playground.md)).
+
 ## Quick start
 
 Requires Go 1.24+ and nothing else. From clone to compiled artifacts:

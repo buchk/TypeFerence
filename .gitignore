@@ -7,3 +7,7 @@ beth-runs/
 .vs/
 __pycache__/
 *.pyc
+# Generated playground assets (make playground)
+web/playground/typeference.wasm
+web/playground/wasm_exec.js
+web/playground/examples.json

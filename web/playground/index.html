@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TypeFerence Playground</title>
+  <meta name="description" content="Compile typed AI-agent definitions to native artifacts, live in your browser. The real Go compiler, compiled to WebAssembly.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f46e5'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='17' font-weight='bold' fill='white' text-anchor='middle'%3ETf%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <script src="memfs.js"></script>
+  <script src="wasm_exec.js"></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><rect width="32" height="32" rx="7" fill="var(--accent)"/><text x="16" y="22" font-family="monospace" font-size="17" font-weight="bold" fill="white" text-anchor="middle">Tf</text></svg>
+      <h1>TypeFerence <span>Playground</span></h1>
+    </div>
+    <label class="control">Example
+      <select id="example-select" aria-label="Example"></select>
+    </label>
+    <button id="reset-btn" class="ghost" title="Restore the current example's original files">Reset</button>
+    <label class="control checkbox" title="Also emit the ARD catalog (ard/ai-catalog.json)">
+      <input type="checkbox" id="emit-ard" checked> ARD
+    </label>
+    <span class="tagline">The real Go compiler, in your tab. Nothing you type leaves the browser.</span>
+    <span class="spacer"></span>
+    <button id="share-btn" class="ghost" title="Copy a link that reproduces this exact source">Share</button>
+    <button id="theme-btn" class="ghost" title="Toggle theme" aria-label="Toggle theme">◐</button>
+    <a class="ghost" href="https://github.com/buchk/TypeFerence" target="_blank" rel="noopener">GitHub</a>
+  </header>
+
+  <main>
+    <aside id="file-pane">
+      <div class="pane-head">Source
+        <button id="add-file" class="ghost" title="Add a file">+</button>
+      </div>
+      <ul id="file-list"></ul>
+    </aside>
+
+    <section id="editor-pane">
+      <div class="editor">
+        <pre id="highlight" aria-hidden="true"><code></code></pre>
+        <textarea id="editor" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Source editor"></textarea>
+      </div>
+      <div id="diagnostics" hidden></div>
+    </section>
+
+    <section id="output-pane">
+      <nav class="tabs" role="tablist">
+        <button data-tab="artifacts" class="active" role="tab">Artifacts</button>
+        <button data-tab="graph" role="tab">Graph</button>
+        <button data-tab="bundle" role="tab">Bundle</button>
+      </nav>
+      <div id="tab-artifacts" class="tab active">
+        <aside id="artifact-list"></aside>
+        <pre id="artifact-view"><code></code></pre>
+      </div>
+      <div id="tab-graph" class="tab">
+        <div id="graph-legend"></div>
+        <div id="graph-scroll"><svg id="graph" xmlns="http://www.w3.org/2000/svg"></svg></div>
+      </div>
+      <div id="tab-bundle" class="tab">
+        <div class="bundle-head">
+          <label class="control">Agent <select id="bundle-agent"></select></label>
+          <span class="hint">resolved composition: every field with its provenance</span>
+        </div>
+        <pre id="bundle-view"><code></code></pre>
+      </div>
+    </section>
+  </main>
+
+  <footer id="status" class="loading">Loading compiler…</footer>
+</body>
+</html>
