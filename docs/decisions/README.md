@@ -18,3 +18,4 @@ Format: `NNNN-short-title.md` with sections **Status**, **Context**, **Decision*
 | [0007](0007-release-distribution.md) | Release distribution: static binaries, no installer |
 | [0008](0008-eval-harness-scope.md) | Behavioral eval harness: scope and design |
 | [0009](0009-behavioral-equivalence-harness.md) | BETH: the behavioral equivalence test harness |
+| [0010](0010-browser-playground.md) | Browser playground: the Go compiler as WebAssembly |
