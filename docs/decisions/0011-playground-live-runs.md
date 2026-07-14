@@ -2,9 +2,8 @@
 
 ## Status
 
-Accepted. Extends ADR-0010; implementation in progress on
-`feature/playground-run` (an interim bring-your-own-key Run tab exists on
-that branch as scaffolding and will be replaced before merge).
+Accepted and implemented (the playground's Equivalence tab). Extends
+ADR-0010.
 
 ## Context
 
@@ -60,10 +59,13 @@ operator console** that keeps every credential in the user's own terminal:
   becomes walkable from a browser tab, and the only step that touches a
   credential happens in the user's terminal against the provider's own CLI
   or API.
-- The interim BYOK adapters (`providers.js`) and key UI are deleted before
-  merge; the verified per-provider transport knowledge they encode (CORS
-  behavior, SSE wire formats) is preserved in this ADR's history should a
-  legitimate need return.
+- The interim BYOK adapters (`providers.js`) and key UI were deleted; the
+  verified per-provider transport knowledge they encoded (CORS behavior, SSE
+  wire formats) is preserved in this branch's history should a legitimate
+  need return. The page's CSP now pins `connect-src` to its own origin.
+- The export is a plain ustar + gzip archive written with a fixed mtime, so
+  identical runs produce byte-identical archives; the CLI's workspace-digest
+  check verified the browser-written bytes exactly during development.
 - The console must not blur illustration into measurement: it emits and
   consumes BETH's own run-directory and scorecard shapes rather than
   inventing a parallel result format.

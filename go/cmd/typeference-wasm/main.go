@@ -13,6 +13,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path"
@@ -22,6 +23,7 @@ import (
 	"syscall/js"
 
 	"github.com/buchk/TypeFerence/go/internal/compile"
+	"github.com/buchk/TypeFerence/go/internal/eval"
 	"github.com/buchk/TypeFerence/go/internal/resource"
 )
 
@@ -30,16 +32,66 @@ import (
 var version = "dev"
 
 const (
-	workRoot   = "/work"
-	outputRoot = "/out"
+	workRoot      = "/work"
+	outputRoot    = "/out"
+	scenariosRoot = "/scenarios"
+	runRoot       = "/run"
 )
 
 func main() {
+	// eval.Pack stages the compiled build through os.MkdirTemp.
+	if err := os.MkdirAll(os.TempDir(), 0o755); err != nil {
+		panic(err)
+	}
 	js.Global().Set("TypeFerence", js.ValueOf(map[string]any{
 		"version": version,
 		"compile": js.FuncOf(compileFunc),
+		"pack":    js.FuncOf(packFunc),
 	}))
 	select {}
+}
+
+// packFunc implements TypeFerence.pack(request): the BETH `equivalence pack`
+// pipeline (eval.Pack) over in-memory sources and scenarios. The request
+// object carries files, sourceName, and scenarios (a path-to-YAML map); the
+// result carries ok, error, and files — the complete run directory keyed by
+// slash-relative path, byte-identical to what the CLI lays out on disk.
+func packFunc(_ js.Value, args []js.Value) (result any) {
+	defer func() {
+		if r := recover(); r != nil {
+			result = map[string]any{"ok": false, "error": fmt.Sprintf("internal error: %v", r)}
+		}
+	}()
+	if len(args) < 1 || args[0].Type() != js.TypeObject {
+		return map[string]any{"ok": false, "error": "pack requires a request object"}
+	}
+	request := args[0]
+
+	sourceName := "src"
+	if n := request.Get("sourceName"); n.Type() == js.TypeString {
+		if clean := sanitizeName(n.String()); clean != "" {
+			sourceName = clean
+		}
+	}
+	sourceRoot := path.Join(workRoot, sourceName)
+	if err := writeSources(sourceRoot, request.Get("files")); err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	if err := materializeTree(scenariosRoot, request.Get("scenarios")); err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	if err := os.RemoveAll(runRoot); err != nil {
+		return map[string]any{"ok": false, "error": "cannot reset run directory"}
+	}
+
+	if _, err := eval.Pack(sourceRoot, scenariosRoot, runRoot, eval.PackOptions{Stdout: io.Discard}); err != nil {
+		return map[string]any{"ok": false, "error": relativizeError(err.Error(), sourceRoot)}
+	}
+	files, err := readTree(runRoot)
+	if err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	return map[string]any{"ok": true, "files": files}
 }
 
 // compileFunc implements TypeFerence.compile(request). The request object
@@ -152,14 +204,23 @@ func sanitizeName(name string) string {
 // writeSources resets the work tree and materializes the request's file map
 // beneath sourceRoot.
 func writeSources(sourceRoot string, files js.Value) error {
-	if files.Type() != js.TypeObject {
-		return resource.Errorf("compile request needs a files object")
-	}
 	if err := os.RemoveAll(workRoot); err != nil {
 		return resource.Errorf("cannot reset source root: %s", err)
 	}
-	if err := os.MkdirAll(sourceRoot, 0o755); err != nil {
-		return resource.Errorf("cannot create source root: %s", err)
+	return materializeTree(sourceRoot, files)
+}
+
+// materializeTree writes a JS path-to-content object beneath root, resetting
+// root first.
+func materializeTree(root string, files js.Value) error {
+	if files.Type() != js.TypeObject {
+		return resource.Errorf("request needs a files object")
+	}
+	if err := os.RemoveAll(root); err != nil {
+		return resource.Errorf("cannot reset %s: %s", root, err)
+	}
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		return resource.Errorf("cannot create %s: %s", root, err)
 	}
 	keys := js.Global().Get("Object").Call("keys", files)
 	for i := 0; i < keys.Length(); i++ {
@@ -168,7 +229,7 @@ func writeSources(sourceRoot string, files js.Value) error {
 		if clean == "" || clean == "." || strings.HasPrefix(clean, "..") {
 			return resource.Errorf("invalid source path: %s", name)
 		}
-		full := filepath.Join(sourceRoot, filepath.FromSlash(clean))
+		full := filepath.Join(root, filepath.FromSlash(clean))
 		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
 			return resource.Errorf("cannot create directory for %s", name)
 		}
