@@ -3,12 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Defense in depth: scripts only from this origin (plus wasm), network
+       calls only to this origin and the four supported LLM providers. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://models.inference.ai.azure.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
   <title>TypeFerence Playground</title>
   <meta name="description" content="Compile typed AI-agent definitions to native artifacts, live in your browser. The real Go compiler, compiled to WebAssembly.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f46e5'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='17' font-weight='bold' fill='white' text-anchor='middle'%3ETf%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css">
   <script src="memfs.js"></script>
   <script src="wasm_exec.js"></script>
+  <script src="providers.js"></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -52,6 +56,7 @@
         <button data-tab="artifacts" class="active" role="tab">Artifacts</button>
         <button data-tab="graph" role="tab">Graph</button>
         <button data-tab="bundle" role="tab">Bundle</button>
+        <button data-tab="run" role="tab">Run</button>
       </nav>
       <div id="tab-artifacts" class="tab active">
         <aside id="artifact-list"></aside>
@@ -67,6 +72,31 @@
           <span class="hint">resolved composition: every field with its provenance</span>
         </div>
         <pre id="bundle-view"><code></code></pre>
+      </div>
+      <div id="tab-run" class="tab">
+        <div class="run-scroll">
+          <div class="run-config">
+            <div class="run-row">
+              <label class="control">Agent <select id="run-agent"></select></label>
+              <span class="hint">the compiled <code>AGENTS.md</code> becomes the system prompt</span>
+            </div>
+            <details id="run-system">
+              <summary>System prompt being sent</summary>
+              <pre id="run-system-view"></pre>
+            </details>
+            <textarea id="run-message" rows="3" placeholder="Message to send to the agent…" aria-label="Message"></textarea>
+            <div class="run-row">
+              <button id="run-btn">Run on enabled providers</button>
+              <label class="control checkbox" title="Off by default: keys otherwise live only in this page's memory">
+                <input type="checkbox" id="remember-keys"> Remember keys in this browser
+              </label>
+            </div>
+            <p class="run-privacy">Bring your own keys. Every request goes directly from your browser to the
+            provider you configure — this page has no backend, keys are never sent anywhere else, never stored
+            unless you opt in above, and never included in share links.</p>
+          </div>
+          <div id="provider-cards"></div>
+        </div>
       </div>
     </section>
   </main>

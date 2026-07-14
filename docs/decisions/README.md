@@ -19,3 +19,4 @@ Format: `NNNN-short-title.md` with sections **Status**, **Context**, **Decision*
 | [0008](0008-eval-harness-scope.md) | Behavioral eval harness: scope and design |
 | [0009](0009-behavioral-equivalence-harness.md) | BETH: the behavioral equivalence test harness |
 | [0010](0010-browser-playground.md) | Browser playground: the Go compiler as WebAssembly |
+| [0011](0011-playground-live-runs.md) | Playground equivalence console: no secrets in the browser |
