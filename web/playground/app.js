@@ -37,12 +37,6 @@ const els = {
   bundleAgent: $("bundle-agent"),
   bundleView: document.querySelector("#bundle-view code"),
   status: $("status"),
-  runAgent: $("run-agent"),
-  runSystemView: $("run-system-view"),
-  runMessage: $("run-message"),
-  runBtn: $("run-btn"),
-  rememberKeys: $("remember-keys"),
-  providerCards: $("provider-cards"),
 };
 
 /* ---------------------------------------------------------------- theme */
@@ -286,7 +280,7 @@ function compileNow() {
   renderArtifacts(result);
   renderGraph(result);
   renderBundle(result);
-  renderRun(result);
+  bethMarkStale(); // a packed BETH run no longer matches the edited source
 }
 
 /* ------------------------------------------------------------ artifacts */
@@ -460,174 +454,6 @@ function showBundle() {
   els.bundleView.innerHTML = agent ? highlightJSON(agent.bundle) : "";
 }
 
-/* ------------------------------------------------------------------ run */
-// Fire the compiled agent at real providers, side by side. Bring-your-own-
-// key: requests go straight from this page to the provider; see providers.js.
-
-const keyStore = new Map(); // provider name -> API key (page memory)
-let runAbort = null;
-let messageDirty = false;
-
-const DEFAULT_MESSAGES = {
-  starter: "Ticket #4812: a Classic-model widget arrived without the mounting bracket. Customer wants a refund. Summarize and propose the next action.",
-  helio: "Give me a status update on the payments repository ahead of the release cut.",
-  maintainer: "A contributor's PR changes canonical JSON escaping in the Go implementation only. What has to happen before it can merge?",
-};
-
-const agentLeaf = (id) => {
-  const noVersion = id.split("@")[0];
-  return noVersion.slice(noVersion.lastIndexOf("/") + 1);
-};
-
-function systemPromptFor(agentId) {
-  if (!state.result) return "";
-  return state.result.files[`neutral/${agentLeaf(agentId)}/AGENTS.md`] ?? "";
-}
-
-function renderRun(result) {
-  const emitted = (result.agents || []).filter((a) => a.emit);
-  const previous = els.runAgent.value;
-  els.runAgent.innerHTML = "";
-  for (const agent of emitted) {
-    const opt = document.createElement("option");
-    opt.value = agent.id;
-    opt.textContent = agent.id;
-    els.runAgent.appendChild(opt);
-  }
-  if (emitted.some((a) => a.id === previous)) els.runAgent.value = previous;
-  if (!messageDirty) {
-    els.runMessage.value = DEFAULT_MESSAGES[state.example] ?? "";
-  }
-  refreshRunSystem();
-}
-
-function refreshRunSystem() {
-  els.runSystemView.textContent = systemPromptFor(els.runAgent.value) || "(compile a source tree with at least one emitted agent)";
-}
-
-function loadStoredKeys() {
-  try {
-    if (localStorage.getItem("tf-remember-keys") !== "1") return;
-    els.rememberKeys.checked = true;
-    const stored = JSON.parse(localStorage.getItem("tf-keys") || "{}");
-    for (const [name, key] of Object.entries(stored)) keyStore.set(name, key);
-  } catch { /* corrupted storage is not worth surfacing */ }
-}
-
-function persistKeys() {
-  if (els.rememberKeys.checked) {
-    localStorage.setItem("tf-remember-keys", "1");
-    localStorage.setItem("tf-keys", JSON.stringify(Object.fromEntries(keyStore)));
-  } else {
-    localStorage.removeItem("tf-remember-keys");
-    localStorage.removeItem("tf-keys");
-  }
-}
-
-function initRun() {
-  loadStoredKeys();
-  for (const [name, provider] of Object.entries(PROVIDERS)) {
-    const card = document.createElement("div");
-    card.className = "provider-card disabled";
-    card.dataset.provider = name;
-    card.innerHTML = `
-      <div class="provider-head">
-        <input type="checkbox" aria-label="Enable ${provider.label}">
-        <span>${provider.label}</span>
-        <span class="latency"></span>
-      </div>
-      <div class="provider-body">
-        <div class="key-row">
-          <input type="password" class="key" placeholder="${provider.keyHint}" autocomplete="off" aria-label="${provider.label} API key">
-          <a href="${provider.keyUrl}" target="_blank" rel="noopener">get key</a>
-        </div>
-        <input type="text" class="model" list="models-${name}" value="${provider.defaultModel}" aria-label="${provider.label} model">
-        <datalist id="models-${name}"></datalist>
-      </div>
-      <div class="provider-response" aria-live="polite"></div>`;
-    const enable = card.querySelector(".provider-head input");
-    const keyInput = card.querySelector(".key");
-    if (keyStore.has(name)) {
-      keyInput.value = keyStore.get(name);
-      enable.checked = true;
-      card.classList.remove("disabled");
-    }
-    enable.addEventListener("change", () => card.classList.toggle("disabled", !enable.checked));
-    keyInput.addEventListener("change", async () => {
-      keyStore.set(name, keyInput.value.trim());
-      persistKeys();
-      if (!keyInput.value.trim()) return;
-      enable.checked = true;
-      card.classList.remove("disabled");
-      try {
-        const models = await provider.listModels(keyInput.value.trim());
-        card.querySelector(`#models-${name}`).innerHTML =
-          models.map((m) => `<option value="${escapeHTML(m)}">`).join("");
-      } catch { /* model list is a convenience; the free-text field still works */ }
-    });
-    els.providerCards.appendChild(card);
-  }
-  els.rememberKeys.addEventListener("change", persistKeys);
-  els.runAgent.addEventListener("change", refreshRunSystem);
-  els.runMessage.addEventListener("input", () => { messageDirty = true; });
-  els.runBtn.addEventListener("click", runAll);
-}
-
-async function runAll() {
-  if (runAbort) { // acting as a Stop button
-    runAbort.abort();
-    return;
-  }
-  const system = systemPromptFor(els.runAgent.value);
-  const message = els.runMessage.value.trim();
-  if (!system) return toast("Compile an emitted agent first");
-  if (!message) return toast("Write a message to send");
-
-  const jobs = [];
-  for (const card of els.providerCards.children) {
-    const name = card.dataset.provider;
-    if (!card.querySelector(".provider-head input").checked) continue;
-    const key = card.querySelector(".key").value.trim();
-    const model = card.querySelector(".model").value.trim();
-    const response = card.querySelector(".provider-response");
-    const latency = card.querySelector(".latency");
-    if (!key) {
-      response.classList.add("error");
-      response.textContent = "No API key configured.";
-      continue;
-    }
-    jobs.push({ provider: PROVIDERS[name], key, model, response, latency });
-  }
-  if (jobs.length === 0) return toast("Enable at least one provider with a key");
-
-  runAbort = new AbortController();
-  const { signal } = runAbort;
-  els.runBtn.textContent = "Stop";
-  await Promise.allSettled(jobs.map(async ({ provider, key, model, response, latency }) => {
-    response.classList.remove("error");
-    response.textContent = "";
-    latency.textContent = "…";
-    const started = performance.now();
-    try {
-      for await (const delta of provider.stream({ key, model, system, message, signal })) {
-        response.textContent += delta;
-        latency.textContent = `${((performance.now() - started) / 1000).toFixed(1)} s`;
-      }
-      latency.textContent = `${model} · ${((performance.now() - started) / 1000).toFixed(1)} s`;
-    } catch (err) {
-      response.classList.add("error");
-      let message = String(err.message || err);
-      if (err instanceof TypeError && provider.corsErrorHint) {
-        message += ` — ${provider.corsErrorHint}`;
-      }
-      response.textContent = signal.aborted ? "Stopped." : message;
-      latency.textContent = "";
-    }
-  }));
-  runAbort = null;
-  els.runBtn.textContent = "Run on enabled providers";
-}
-
 /* ----------------------------------------------------------------- tabs */
 
 function initTabs() {
@@ -654,7 +480,7 @@ function loadExample(name) {
   state.files = new Map(Object.entries(example.files));
   state.activeArtifact = null;
   state.activeAgent = null;
-  messageDirty = false;
+  bethReset(name);
   const paths = [...state.files.keys()].sort();
   openFile(paths.find((p) => p.includes("agent")) ?? paths[0]);
   scheduleCompile();
@@ -741,7 +567,7 @@ async function boot() {
   initEditor();
   initFilePane();
   initTabs();
-  initRun();
+  initBeth();
   els.share.addEventListener("click", shareLink);
 
   try {
