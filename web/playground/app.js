@@ -534,6 +534,7 @@ async function restoreFromHash() {
       els.exampleSelect.value = state.example;
     }
     state.files = new Map(Object.entries(payload.files));
+    bethReset(state.example);
     const paths = [...state.files.keys()].sort();
     openFile(paths.find((p) => p.includes("agent")) ?? paths[0]);
     return true;
