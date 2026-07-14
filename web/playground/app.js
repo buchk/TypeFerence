@@ -280,6 +280,7 @@ function compileNow() {
   renderArtifacts(result);
   renderGraph(result);
   renderBundle(result);
+  bethMarkStale(); // a packed BETH run no longer matches the edited source
 }
 
 /* ------------------------------------------------------------ artifacts */
@@ -479,6 +480,7 @@ function loadExample(name) {
   state.files = new Map(Object.entries(example.files));
   state.activeArtifact = null;
   state.activeAgent = null;
+  bethReset(name);
   const paths = [...state.files.keys()].sort();
   openFile(paths.find((p) => p.includes("agent")) ?? paths[0]);
   scheduleCompile();
@@ -565,6 +567,7 @@ async function boot() {
   initEditor();
   initFilePane();
   initTabs();
+  initBeth();
   els.share.addEventListener("click", shareLink);
 
   try {
