@@ -3,12 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Defense in depth: scripts only from this origin (plus wasm), and no
+       network destination other than this origin. The playground never sends
+       anything anywhere — there is nothing to configure and no key to paste
+       (ADR-0011). -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
   <title>TypeFerence Playground</title>
   <meta name="description" content="Compile typed AI-agent definitions to native artifacts, live in your browser. The real Go compiler, compiled to WebAssembly.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f46e5'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='17' font-weight='bold' fill='white' text-anchor='middle'%3ETf%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css">
   <script src="memfs.js"></script>
   <script src="wasm_exec.js"></script>
+  <script src="beth.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -52,6 +58,7 @@
         <button data-tab="artifacts" class="active" role="tab">Artifacts</button>
         <button data-tab="graph" role="tab">Graph</button>
         <button data-tab="bundle" role="tab">Bundle</button>
+        <button data-tab="beth" role="tab">Equivalence</button>
       </nav>
       <div id="tab-artifacts" class="tab active">
         <aside id="artifact-list"></aside>
@@ -67,6 +74,51 @@
           <span class="hint">resolved composition: every field with its provenance</span>
         </div>
         <pre id="bundle-view"><code></code></pre>
+      </div>
+      <div id="tab-beth" class="tab">
+        <div class="beth-scroll">
+          <p class="beth-intro"><b>BETH</b> — the Behavioral Equivalence Test Harness. Pack lays out one
+          cell per scenario × compiled surface; <em>you</em> are the operator: run each prompt in a real
+          host, paste the final response back, export the run, and judge it locally with your own keys in
+          your own terminal. This page never asks for a credential and never talks to any server. A
+          scorecard is one observation per surface, not a proof
+          (<a href="https://github.com/buchk/TypeFerence/blob/main/docs/decisions/0009-behavioral-equivalence-harness.md"
+          target="_blank" rel="noopener">ADR-0009</a>).</p>
+
+          <section class="beth-step">
+            <h3><span class="step-n">1</span> Pack scenarios × surfaces</h3>
+            <div id="beth-scenarios" class="hint"></div>
+            <div class="beth-row">
+              <button id="beth-pack-btn" class="beth-primary">Pack</button>
+              <span id="beth-pack-status" class="hint"></span>
+            </div>
+          </section>
+
+          <section class="beth-step" id="beth-step-collect" hidden>
+            <h3><span class="step-n">2</span> Collect — you are the operator</h3>
+            <p class="hint">For each cell: copy the prompt, submit it verbatim in a real host (ideally with
+            the cell's compiled workspace as the working directory — it is included in the export), and
+            paste the host's final response. Optionally record which host and model produced it.</p>
+            <div id="beth-cells"></div>
+          </section>
+
+          <section class="beth-step" id="beth-step-export" hidden>
+            <h3><span class="step-n">3</span> Export and score locally</h3>
+            <div class="beth-row">
+              <button id="beth-export-btn" class="beth-primary">Download run .tar.gz</button>
+              <span id="beth-export-status" class="hint"></span>
+            </div>
+            <pre id="beth-score-cmd" class="beth-cmd"></pre>
+          </section>
+
+          <section class="beth-step">
+            <h3><span class="step-n">4</span> Scorecard</h3>
+            <label class="beth-drop" id="beth-drop">Drop <code>scorecard.json</code> here, or click to choose
+              <input type="file" id="beth-scorecard-file" accept=".json,application/json" hidden>
+            </label>
+            <div id="beth-scorecard"></div>
+          </section>
+        </div>
       </div>
     </section>
   </main>
