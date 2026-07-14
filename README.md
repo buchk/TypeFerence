@@ -48,6 +48,27 @@ skills:
 
 Use profiles for reusable organizational, domain, or team defaults that should participate in composition without producing their own target bundle.
 
+## Try it in your browser
+
+The **[playground](https://buchk.github.io/TypeFerence/)** runs the real Go
+compiler — built for WebAssembly, internals untouched — entirely in your tab.
+Edit typed source, watch the compiled Codex/Copilot/Cursor/neutral artifacts,
+the embedding graph, and the diagnostics update live. The status-bar digest is
+the determinism guarantee made interactive: the Helio example reproduces the
+digest of this repository's committed `dist/` exactly, and the self-hosting
+example recompiles the repository's own root `AGENTS.md` byte for byte. There
+is no backend; nothing you type leaves the browser
+([ADR-0010](docs/decisions/0010-browser-playground.md)).
+
+The playground's **Equivalence** tab walks the full BETH loop (ADR-0009)
+without ever asking for a credential: it packs scenario × surface cells with
+the real `equivalence pack` code, you collect responses by copy/paste from
+real hosts (BETH's operator model), it exports the assembled run as a
+deterministic `.tar.gz`, you score locally — keys stay in your terminal — and
+dropping the resulting `scorecard.json` back onto the page renders adherence,
+agreement, and every divergence
+([ADR-0011](docs/decisions/0011-playground-live-runs.md)).
+
 ## Quick start
 
 Requires Go 1.24+ and nothing else. From clone to compiled artifacts:

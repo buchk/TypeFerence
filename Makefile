@@ -10,7 +10,7 @@ LDFLAGS := -s -w -X main.version=$(VERSION)
 BINDIR := bin
 
 .PHONY: all build build-go build-dotnet test test-go test-dotnet conformance \
-	selfhost selfhost-check fmt vet clean release-binaries
+	selfhost selfhost-check fmt vet clean release-binaries playground
 
 all: build test
 
@@ -55,6 +55,15 @@ fmt:
 vet:
 	cd go && $(GO) vet ./...
 	cd go && test -z "$$(gofmt -l .)"
+
+# Browser playground: the unmodified Go compiler built for js/wasm plus a
+# static, dependency-free UI. Everything lands in web/playground; serve that
+# directory with any static file server. wasm_exec.js is copied from the
+# building toolchain so it always matches the wasm binary's Go version.
+playground:
+	cd go && GOOS=js GOARCH=wasm $(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o ../web/playground/typeference.wasm ./cmd/typeference-wasm
+	cp "$$($(GO) env GOROOT)/lib/wasm/wasm_exec.js" web/playground/wasm_exec.js
+	cd go && $(GO) run ./cmd/playground-pack -root .. -out ../web/playground/examples.json
 
 clean:
 	rm -rf $(BINDIR)

@@ -31,6 +31,16 @@ First tagged release. Everything before this version was unversioned development
   files with expected-behavior rubrics, LLM-judged adherence scoring, and a
   dry-run default that emits exact request payloads with no network calls
   (ADR-0008). Starter corpus under `evals/`.
+- **Browser playground** under `web/playground` — the unmodified Go compiler
+  built for `js/wasm` against an in-memory filesystem, with a dependency-free
+  UI: live recompilation, artifact browser, embedding graph, resolved-bundle
+  view, and shareable links. Deployed to GitHub Pages on push to `main`; the
+  Helio example reproduces the committed `dist/` digest exactly (ADR-0010).
+  Its **Equivalence tab** is a BETH operator console: packs scenario × surface
+  cells in the browser with the real `equivalence pack` code, collects
+  responses by copy/paste, exports a deterministic run `.tar.gz` for local
+  scoring, and visualizes the resulting `scorecard.json` — no credential ever
+  touches the page (ADR-0011).
 - `typeference version` command in both implementations.
 - Architecture decision records under `docs/decisions/`.
 - Tag-driven release workflow shipping per-platform archives of the Go CLI with
