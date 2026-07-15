@@ -9,7 +9,7 @@ versioning. Tool versions (this file) are independent of the typed-resource
 TypeFerence is an experimental reference implementation; pre-1.0 versions make no
 compatibility promises between minor versions.
 
-## [0.0.3] - Unreleased
+## [0.0.3] - 2026-07-15
 
 First tagged release. Everything before this version was unversioned development.
 
