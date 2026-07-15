@@ -21,7 +21,7 @@ jobs:
       - run: dotnet src/TypeFerence.Cli/bin/Release/net10.0/typeference.dll build examples/helio --target all --out dist-ci-1 --emit-ard --publisher-domain helio.example
       - run: dotnet src/TypeFerence.Cli/bin/Release/net10.0/typeference.dll build examples/helio --target all --out dist-ci-2 --emit-ard --publisher-domain helio.example
       - run: diff -qr dist-ci-1 dist-ci-2
-      - run: pip install -r requirements-docs.txt
+      - run: pip install -r tools/requirements-docs.txt
       - run: python tools/render_whitepaper.py
       - run: cp output/pdf/typeference-whitepaper.pdf /tmp/typeference-whitepaper-first.pdf
       - run: python tools/render_whitepaper.py

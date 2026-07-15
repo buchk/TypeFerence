@@ -189,6 +189,7 @@ TypeFerence does not hold signing keys. An external signer can produce detached 
 - `go/` - independent Go implementation: compiler, target adapters, CLI, and eval harness.
 - `conformance/` - shared cross-implementation conformance fixtures (byte-identity contract).
 - `examples/helio/` - fictional cross-domain organization.
+- `web/playground/` - browser playground: the Go compiler built for `js/wasm`, plus the BETH operator console.
 - `agents/maintainer/` - this repository's maintainer agent, defined in TypeFerence.
 - `evals/` - behavioral eval scenarios and honest framing.
 - `docs/specification.md` - normative v3 behavior.
