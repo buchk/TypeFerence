@@ -9,6 +9,16 @@ versioning. Tool versions (this file) are independent of the typed-resource
 TypeFerence is an experimental reference implementation; pre-1.0 versions make no
 compatibility promises between minor versions.
 
+## [0.0.4] - 2026-07-15
+
+### Added
+
+- **CLI usage section** in `README.md` — a self-contained command reference
+  (`validate`, `build`, `inspect`, `diff`, `eval`, `equivalence pack`/`score`,
+  `version`) for anyone running the binary from a release archive rather than
+  a full clone; `README.md` ships in every release archive alongside the
+  binary.
+
 ## [0.0.3] - 2026-07-15
 
 First tagged release. Everything before this version was unversioned development.
