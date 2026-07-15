@@ -102,6 +102,41 @@ with a `SHA256SUMS` file — unpack one binary and put it on `PATH`; there is no
 installer to run. The release process is documented in
 [docs/release-checklist.md](docs/release-checklist.md).
 
+## Using the CLI
+
+If you downloaded a release archive instead of building from source, unpack
+`typeference` (`typeference.exe` on Windows) onto `PATH` and confirm it runs:
+
+```sh
+typeference version
+```
+
+`<source>` in every command below is a directory of your own typed agent
+definitions (`schemaVersion: 3` YAML, shaped like the example above) — clone
+this repository to point it at the bundled `examples/helio/` corpus instead.
+
+```text
+typeference validate <source> [--trust-config path]
+typeference build <source> [--target all|neutral|codex|copilot|cursor] [--out dist]
+    [--emit-ard --publisher-domain example.com] [--trust-config path]
+    [--trust-signatures signatures.json] [--allow-unsigned-trust]
+typeference inspect <agent-id> [--source path]
+typeference diff <source> --against <compiled-dir> [--target all]
+    [--emit-ard --publisher-domain example.com] [--trust-config path]
+    [--trust-signatures signatures.json] [--json] [--allow-unsigned-trust]
+typeference eval <source> --scenarios <file-or-dir> [--live] [--model id] [--out dir]
+typeference equivalence pack <source> --scenarios <file-or-dir> --out <run-dir>
+    [--target all|<name>[,<name>...]]
+typeference equivalence score <run-dir> [--live] [--model id]
+```
+
+`validate` checks composition and structural typing without writing anything.
+`build` compiles to native target artifacts. `diff` recompiles and byte-compares
+against an already-built directory — see [Quick start](#quick-start) above for
+what "No differences." means. `eval` and `equivalence` are covered in
+[Behavioral evals](#behavioral-evals) below; both default to a dry run that
+never makes a network call.
+
 ## Two implementations, one specification
 
 The C# implementation under `src/` is the reference implementation; the Go
