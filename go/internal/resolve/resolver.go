@@ -66,10 +66,13 @@ type ResolvedAgent struct {
 }
 
 // ResolvedContextRef is a context object an agent holds by id, with the
-// contextType it instantiates (ADR-0013).
+// contextType it instantiates and its materialized content (ADR-0013). Content
+// lets a target inline the held context, not merely reference it.
 type ResolvedContextRef struct {
 	ID          string
+	DisplayName string
 	ContextType string
+	Content     string
 }
 
 type interfaceContract struct {
@@ -841,7 +844,12 @@ func (r *Resolver) resolveContextObjects(contextRefs []string) []ResolvedContext
 	refs := []ResolvedContextRef{}
 	for _, id := range contextRefs {
 		if obj, ok := r.resources[id]; ok && obj.Kind == "context" {
-			refs = append(refs, ResolvedContextRef{ID: id, ContextType: obj.ContextType})
+			refs = append(refs, ResolvedContextRef{
+				ID:          id,
+				DisplayName: obj.DisplayName,
+				ContextType: obj.ContextType,
+				Content:     obj.Content,
+			})
 		}
 	}
 	sort.Slice(refs, func(i, j int) bool { return refs[i].ID < refs[j].ID })

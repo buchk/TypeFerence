@@ -281,6 +281,21 @@ func renderInstructions(agent *resolve.ResolvedAgent) string {
 		}
 		b.WriteString("\n")
 	}
+	// Held context objects are inlined so the compiled agent actually contains
+	// its context, not just a reference to it (ADR-0013).
+	if len(agent.ContextObjects) > 0 {
+		b.WriteString("## Context\n\n")
+		for _, ref := range agent.ContextObjects {
+			heading := ref.DisplayName
+			if strings.TrimSpace(heading) == "" {
+				heading = ref.ID
+			}
+			b.WriteString("### " + heading + "\n\n")
+			if content := strings.TrimSpace(ref.Content); content != "" {
+				b.WriteString(content + "\n\n")
+			}
+		}
+	}
 	b.WriteString("## Available skills\n\n")
 	for _, skill := range agent.Skills {
 		b.WriteString("- `" + skill.DispatchName + "`: " + skill.Description + "\n")

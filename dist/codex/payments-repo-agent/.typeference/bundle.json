@@ -26,7 +26,8 @@
   "context": [
     {
       "id": "helio/context/safety-policy@1.0.0",
-      "contextType": "helio/context-types/safety-policy@1.0.0"
+      "contextType": "helio/context-types/safety-policy@1.0.0",
+      "content": "# Safety policy\n\nAgents may prepare recommendations and drafts. They must not represent approval, transmit external messages, or make irreversible changes without explicit authority.\n"
     }
   ],
   "skills": [

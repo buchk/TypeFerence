@@ -43,6 +43,7 @@ func bundleValue(agent *resolve.ResolvedAgent) jsonx.Value {
 			context = append(context, jsonx.Obj{
 				{K: "id", V: jsonx.Str(ref.ID)},
 				{K: "contextType", V: jsonx.Str(ref.ContextType)},
+				{K: "content", V: jsonx.Str(ref.Content)},
 			})
 		}
 		obj = append(obj, jsonx.Member{K: "context", V: context})
