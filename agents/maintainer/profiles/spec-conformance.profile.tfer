@@ -1,3 +1,4 @@
+---
 schemaVersion: 3
 kind: profile
 id: typeference/profiles/spec-conformance@0.1.0
@@ -10,3 +11,4 @@ workingNorms:
   - Never silently diverge from the specification; fixing the specification is allowed, silent divergence is not.
 contextFiles:
   - context/spec-workflow.md
+---

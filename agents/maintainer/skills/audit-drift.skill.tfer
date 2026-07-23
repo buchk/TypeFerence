@@ -1,3 +1,4 @@
+---
 schemaVersion: 3
 kind: skill
 id: typeference/skills/audit-drift@0.1.0
@@ -17,3 +18,4 @@ contextFiles:
   - context/determinism.md
 inputSchema: '{"type":"object","additionalProperties":false}'
 outputSchema: '{"type":"object","properties":{"clean":{"type":"boolean"},"driftedFiles":{"type":"array","items":{"type":"string"}}},"required":["clean","driftedFiles"]}'
+---

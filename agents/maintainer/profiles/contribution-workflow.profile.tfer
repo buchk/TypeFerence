@@ -1,3 +1,4 @@
+---
 schemaVersion: 3
 kind: profile
 id: typeference/profiles/contribution-workflow@0.1.0
@@ -10,3 +11,4 @@ workingNorms:
   - Commit messages are conventional and written for a critical human reader.
 contextFiles:
   - context/contribution.md
+---

@@ -13,22 +13,22 @@
       "version": "1.0.0",
       "data": {
         "schemaVersion": 1,
-        "digest": "sha256:c42776752aef743bd24749eca2f06b0da9b27d51b9edfce13984e39e0aa565c2",
+        "digest": "sha256:df3209dbb54633dca014da23df2c3719471a7d62710c6e7b0327aea08d9c7313",
         "files": [
           {
-            "path": "agents/typeference-maintainer.agent.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: agent\nid: typeference/typeference-maintainer@0.1.0\ndisplayName: TypeFerence Maintainer\ndescription: The agent that maintains the TypeFerence repository, defined in TypeFerence\u0027s own terms and compiled into this repository\u0027s AGENTS.md.\nembeds:\n  - typeference/profiles/spec-conformance@0.1.0\n  - typeference/profiles/determinism-guardian@0.1.0\n  - typeference/profiles/trust-signing@0.1.0\n  - typeference/profiles/contribution-workflow@0.1.0\nslots:\n  repositoryMap: context/repository-map.md\ncontextFiles:\n  - context/repository-map.md\n"
+            "path": "agents/typeference-maintainer.agent.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: agent\nid: typeference/typeference-maintainer@0.1.0\ndisplayName: TypeFerence Maintainer\ndescription: The agent that maintains the TypeFerence repository, defined in TypeFerence\u0027s own terms and compiled into this repository\u0027s AGENTS.md.\nembeds:\n  - typeference/profiles/spec-conformance@0.1.0\n  - typeference/profiles/determinism-guardian@0.1.0\n  - typeference/profiles/trust-signing@0.1.0\n  - typeference/profiles/contribution-workflow@0.1.0\nslots:\n  repositoryMap: context/repository-map.md\ncontextFiles:\n  - context/repository-map.md\n---\n"
           },
           {
-            "path": "capabilities/audit-drift.capability.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: capability\nid: typeference/capabilities/audit-drift@0.1.0\ndisplayName: Audit Self-Host Drift\ndescription: Recompile the maintainer definition and report drift against the committed artifacts.\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022clean\u0022:{\u0022type\u0022:\u0022boolean\u0022},\u0022driftedFiles\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022clean\u0022,\u0022driftedFiles\u0022]}\u0027\n"
+            "path": "capabilities/audit-drift.capability.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: capability\nid: typeference/capabilities/audit-drift@0.1.0\ndisplayName: Audit Self-Host Drift\ndescription: Recompile the maintainer definition and report drift against the committed artifacts.\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022clean\u0022:{\u0022type\u0022:\u0022boolean\u0022},\u0022driftedFiles\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022clean\u0022,\u0022driftedFiles\u0022]}\u0027\n---\n"
           },
           {
-            "path": "capabilities/verify-conformance.capability.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: capability\nid: typeference/capabilities/verify-conformance@0.1.0\ndisplayName: Verify Conformance\ndescription: Run both implementations against the shared conformance suite and report agreement.\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022passed\u0022:{\u0022type\u0022:\u0022boolean\u0022},\u0022mismatches\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022passed\u0022,\u0022mismatches\u0022]}\u0027\n"
+            "path": "capabilities/verify-conformance.capability.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: capability\nid: typeference/capabilities/verify-conformance@0.1.0\ndisplayName: Verify Conformance\ndescription: Run both implementations against the shared conformance suite and report agreement.\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022passed\u0022:{\u0022type\u0022:\u0022boolean\u0022},\u0022mismatches\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022passed\u0022,\u0022mismatches\u0022]}\u0027\n---\n"
           },
           {
             "path": "context/contribution.md",
@@ -56,34 +56,34 @@
             "content": "# Trust model invariants\n\nThe trust model is declarative supply-chain metadata, specified in\n\u0060docs/specification.md\u0060 (\u0022Trust metadata compilation\u0022 and \u0022Trust Manifest\nsignatures\u0022). The invariants that must survive every change:\n\n- **The signature map lives outside the source root.** The source-package digest\n  covers every file under the source root; a signature stored inside would change\n  the digest embedded in the very payload being signed. Both implementations reject\n  a signature map path beneath the source root.\n- **Fail-closed stays fail-closed.** When \u0060signatureIntent.required\u0060 is true and no\n  signature is imported, publication fails. \u0060--allow-unsigned-trust\u0060 exists solely\n  to emit the payload for an external signer, and its output is visibly unsigned.\n- **TypeFerence never signs.** It imports externally produced compact detached JWS\n  strings, validates their shape, and never verifies cryptographic validity,\n  resolves keys, or dereferences any trust URI.\n- **Identities are ASCII** (punycode for internationalized authorities) so publisher\n  alignment does not depend on implementation-specific IDN handling.\n\nChanges that touch any of these need a specification amendment, an ADR, and\nconformance fixtures before implementation.\n"
           },
           {
-            "path": "profiles/contribution-workflow.profile.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: profile\nid: typeference/profiles/contribution-workflow@0.1.0\ndisplayName: Contribution Workflow\ndescription: How changes to this repository are made, reviewed, and recorded.\nworkingNorms:\n  - Every commit builds and passes both implementations\u0027 test suites and the shared conformance suite.\n  - Decisions with real tradeoffs are recorded as ADRs in docs/decisions before the change merges.\n  - Documentation must be accurate against the code at the commit that includes it; no fabricated adoption, benchmarks, or endorsements.\n  - Commit messages are conventional and written for a critical human reader.\ncontextFiles:\n  - context/contribution.md\n"
+            "path": "profiles/contribution-workflow.profile.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: profile\nid: typeference/profiles/contribution-workflow@0.1.0\ndisplayName: Contribution Workflow\ndescription: How changes to this repository are made, reviewed, and recorded.\nworkingNorms:\n  - Every commit builds and passes both implementations\u0027 test suites and the shared conformance suite.\n  - Decisions with real tradeoffs are recorded as ADRs in docs/decisions before the change merges.\n  - Documentation must be accurate against the code at the commit that includes it; no fabricated adoption, benchmarks, or endorsements.\n  - Commit messages are conventional and written for a critical human reader.\ncontextFiles:\n  - context/contribution.md\n---\n"
           },
           {
-            "path": "profiles/determinism-guardian.profile.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: profile\nid: typeference/profiles/determinism-guardian@0.1.0\ndisplayName: Determinism Guardian\ndescription: Any codegen change must preserve byte-identical output across both implementations.\nworkingNorms:\n  - Any change to code generation must keep the C# and Go implementations byte-identical, verified by the conformance suite before merge.\n  - Never weaken determinism, provenance, or fail-closed behavior to make a change easier.\n  - A conformance digest is regenerated only together with the specification change and ADR that justify it; never hand-edit a digest.\n  - Repeated builds from identical source must stay byte-identical on every platform.\ncontextFiles:\n  - context/determinism.md\nskills:\n  - ref: typeference/skills/verify-conformance@0.1.0\n  - ref: typeference/skills/audit-drift@0.1.0\n"
+            "path": "profiles/determinism-guardian.profile.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: profile\nid: typeference/profiles/determinism-guardian@0.1.0\ndisplayName: Determinism Guardian\ndescription: Any codegen change must preserve byte-identical output across both implementations.\nworkingNorms:\n  - Any change to code generation must keep the C# and Go implementations byte-identical, verified by the conformance suite before merge.\n  - Never weaken determinism, provenance, or fail-closed behavior to make a change easier.\n  - A conformance digest is regenerated only together with the specification change and ADR that justify it; never hand-edit a digest.\n  - Repeated builds from identical source must stay byte-identical on every platform.\ncontextFiles:\n  - context/determinism.md\nskills:\n  - ref: typeference/skills/verify-conformance@0.1.0\n  - ref: typeference/skills/audit-drift@0.1.0\n---\n"
           },
           {
-            "path": "profiles/spec-conformance.profile.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: profile\nid: typeference/profiles/spec-conformance@0.1.0\ndisplayName: Spec Conformance\ndescription: Semantic changes land in the specification first, then in both implementations, with conformance fixtures.\nworkingNorms:\n  - Semantic changes land in docs/specification.md before either implementation changes behavior.\n  - Where the specification and an implementation disagree, the specification wins; record the ruling in docs/decisions and cover it with a conformance fixture.\n  - Every canonicalization or composition ruling ships with a fixture under conformance/fixtures in the same change.\n  - Never silently diverge from the specification; fixing the specification is allowed, silent divergence is not.\ncontextFiles:\n  - context/spec-workflow.md\n"
+            "path": "profiles/spec-conformance.profile.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: profile\nid: typeference/profiles/spec-conformance@0.1.0\ndisplayName: Spec Conformance\ndescription: Semantic changes land in the specification first, then in both implementations, with conformance fixtures.\nworkingNorms:\n  - Semantic changes land in docs/specification.md before either implementation changes behavior.\n  - Where the specification and an implementation disagree, the specification wins; record the ruling in docs/decisions and cover it with a conformance fixture.\n  - Every canonicalization or composition ruling ships with a fixture under conformance/fixtures in the same change.\n  - Never silently diverge from the specification; fixing the specification is allowed, silent divergence is not.\ncontextFiles:\n  - context/spec-workflow.md\n---\n"
           },
           {
-            "path": "profiles/trust-signing.profile.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: profile\nid: typeference/profiles/trust-signing@0.1.0\ndisplayName: Trust and Signing\ndescription: Preserves the supply-chain trust model exactly as specified.\nworkingNorms:\n  - The signature map always resides outside the source root; moving it inside creates a digest/signature cycle and is forbidden.\n  - signatureIntent.required fails closed; the unsigned-staging option exists solely to emit payloads for an external signer.\n  - TypeFerence imports externally produced signatures; it never signs, never verifies cryptographic validity, and never resolves keys.\n  - Trust metadata is declarative; never dereference identity, attestation, or provenance URIs during compilation.\ncontextFiles:\n  - context/trust-model.md\n"
+            "path": "profiles/trust-signing.profile.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: profile\nid: typeference/profiles/trust-signing@0.1.0\ndisplayName: Trust and Signing\ndescription: Preserves the supply-chain trust model exactly as specified.\nworkingNorms:\n  - The signature map always resides outside the source root; moving it inside creates a digest/signature cycle and is forbidden.\n  - signatureIntent.required fails closed; the unsigned-staging option exists solely to emit payloads for an external signer.\n  - TypeFerence imports externally produced signatures; it never signs, never verifies cryptographic validity, and never resolves keys.\n  - Trust metadata is declarative; never dereference identity, attestation, or provenance URIs during compilation.\ncontextFiles:\n  - context/trust-model.md\n---\n"
           },
           {
-            "path": "skills/audit-drift.skill.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: skill\nid: typeference/skills/audit-drift@0.1.0\nbinds: typeference/capabilities/audit-drift@0.1.0\ndisplayName: Audit Self-Host Drift Skill\ndescription: Confirms the committed AGENTS.md and maintainer bundle are exact build artifacts of this definition.\ninstructions: |\n  Run \u0060typeference diff agents/maintainer --against dist-maintainer --target neutral\n  --emit-ard --publisher-domain typeference.example\u0060 from the repository root, then\n  byte-compare the repository-root AGENTS.md against\n  dist-maintainer/neutral/typeference-maintainer/AGENTS.md. Report clean=true only\n  when the diff exits 0 and the byte comparison matches. Any drift between the\n  definition and its committed artifacts is a broken build: regenerate with\n  \u0060make selfhost\u0060 and commit definition and artifacts together, or revert the\n  stray edit to the generated files.\ncontextFiles:\n  - context/determinism.md\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022clean\u0022:{\u0022type\u0022:\u0022boolean\u0022},\u0022driftedFiles\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022clean\u0022,\u0022driftedFiles\u0022]}\u0027\n"
+            "path": "skills/audit-drift.skill.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: skill\nid: typeference/skills/audit-drift@0.1.0\nbinds: typeference/capabilities/audit-drift@0.1.0\ndisplayName: Audit Self-Host Drift Skill\ndescription: Confirms the committed AGENTS.md and maintainer bundle are exact build artifacts of this definition.\ninstructions: |\n  Run \u0060typeference diff agents/maintainer --against dist-maintainer --target neutral\n  --emit-ard --publisher-domain typeference.example\u0060 from the repository root, then\n  byte-compare the repository-root AGENTS.md against\n  dist-maintainer/neutral/typeference-maintainer/AGENTS.md. Report clean=true only\n  when the diff exits 0 and the byte comparison matches. Any drift between the\n  definition and its committed artifacts is a broken build: regenerate with\n  \u0060make selfhost\u0060 and commit definition and artifacts together, or revert the\n  stray edit to the generated files.\ncontextFiles:\n  - context/determinism.md\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022clean\u0022:{\u0022type\u0022:\u0022boolean\u0022},\u0022driftedFiles\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022clean\u0022,\u0022driftedFiles\u0022]}\u0027\n---\n"
           },
           {
-            "path": "skills/verify-conformance.skill.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: skill\nid: typeference/skills/verify-conformance@0.1.0\nbinds: typeference/capabilities/verify-conformance@0.1.0\ndisplayName: Verify Conformance Skill\ndescription: Runs the shared conformance suite on both implementations and reports any digest disagreement.\ninstructions: |\n  Run \u0060go test ./conformance\u0060 from the go/ directory, then run\n  \u0060dotnet test TypeFerence.slnx --filter FullyQualifiedName~ConformanceSuiteTests\u0060\n  from the repository root (or \u0060make conformance\u0060 for both). Report passed=true\n  only when every fixture passes on both implementations. List each failing\n  fixture and target as a mismatch. Never resolve a mismatch by editing a\n  digest; find the diverging implementation or take the ruling to the\n  specification with an ADR and a new fixture.\ncontextFiles:\n  - context/determinism.md\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022passed\u0022:{\u0022type\u0022:\u0022boolean\u0022},\u0022mismatches\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022passed\u0022,\u0022mismatches\u0022]}\u0027\n"
+            "path": "skills/verify-conformance.skill.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: skill\nid: typeference/skills/verify-conformance@0.1.0\nbinds: typeference/capabilities/verify-conformance@0.1.0\ndisplayName: Verify Conformance Skill\ndescription: Runs the shared conformance suite on both implementations and reports any digest disagreement.\ninstructions: |\n  Run \u0060go test ./conformance\u0060 from the go/ directory, then run\n  \u0060dotnet test TypeFerence.slnx --filter FullyQualifiedName~ConformanceSuiteTests\u0060\n  from the repository root (or \u0060make conformance\u0060 for both). Report passed=true\n  only when every fixture passes on both implementations. List each failing\n  fixture and target as a mismatch. Never resolve a mismatch by editing a\n  digest; find the diverging implementation or take the ruling to the\n  specification with an ADR and a new fixture.\ncontextFiles:\n  - context/determinism.md\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022passed\u0022:{\u0022type\u0022:\u0022boolean\u0022},\u0022mismatches\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022passed\u0022,\u0022mismatches\u0022]}\u0027\n---\n"
           }
         ]
       },
@@ -136,7 +136,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:c42776752aef743bd24749eca2f06b0da9b27d51b9edfce13984e39e0aa565c2",
+        "sourceDigest": "sha256:df3209dbb54633dca014da23df2c3719471a7d62710c6e7b0327aea08d9c7313",
         "sourceIdentifier": "urn:air:typeference.example:typeference:source:maintainer",
         "target": "neutral"
       },
@@ -147,7 +147,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:typeference.example:typeference:source:maintainer",
-            "sourceDigest": "sha256:c42776752aef743bd24749eca2f06b0da9b27d51b9edfce13984e39e0aa565c2"
+            "sourceDigest": "sha256:df3209dbb54633dca014da23df2c3719471a7d62710c6e7b0327aea08d9c7313"
           }
         ]
       }

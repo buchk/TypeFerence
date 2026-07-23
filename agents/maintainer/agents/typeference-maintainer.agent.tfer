@@ -1,3 +1,4 @@
+---
 schemaVersion: 3
 kind: agent
 id: typeference/typeference-maintainer@0.1.0
@@ -12,3 +13,4 @@ slots:
   repositoryMap: context/repository-map.md
 contextFiles:
   - context/repository-map.md
+---

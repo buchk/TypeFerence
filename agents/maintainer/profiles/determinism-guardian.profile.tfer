@@ -1,3 +1,4 @@
+---
 schemaVersion: 3
 kind: profile
 id: typeference/profiles/determinism-guardian@0.1.0
@@ -13,3 +14,4 @@ contextFiles:
 skills:
   - ref: typeference/skills/verify-conformance@0.1.0
   - ref: typeference/skills/audit-drift@0.1.0
+---
