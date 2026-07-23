@@ -592,6 +592,7 @@
             "description": "Assemble an executive brief, requesting repository evidence when needed.",
             "inputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022topic\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022topic\u0022],\u0022additionalProperties\u0022:false}",
             "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022brief\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022openQuestions\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022brief\u0022,\u0022openQuestions\u0022]}",
+            "requiresTools": [],
             "instructionsTemplate": "Build a decision-oriented brief from the supplied topic and evidence.\nWhen repository status is material, request \u0060payments-repo-agent.repository-status\u0060 and incorporate its returned evidence with attribution.\n"
           },
           {
@@ -599,6 +600,7 @@
             "description": "Classify an inbound message and recommend an accountable next action.",
             "inputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022message\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022required\u0022:[\u0022message\u0022],\u0022additionalProperties\u0022:false}",
             "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022summary\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022urgency\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022owner\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022nextAction\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022required\u0022:[\u0022summary\u0022,\u0022urgency\u0022,\u0022owner\u0022,\u0022nextAction\u0022]}",
+            "requiresTools": [],
             "instructionsTemplate": "Read the message and identify its sender, intent, urgency, decision owner, and requested deadline.\nSeparate facts from assumptions. Return a concise recommendation; do not send a reply.\n"
           }
         ],
@@ -646,6 +648,9 @@
             "description": "Report payments-service health with contract and reconciliation evidence.",
             "inputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022focus\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022additionalProperties\u0022:false}",
             "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022risks\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022status\u0022,\u0022evidence\u0022,\u0022risks\u0022]}",
+            "requiresTools": [
+              "helio/tools/repository-signals@1.0.0"
+            ],
             "instructionsTemplate": "Apply the repository-status capability for the payments service and return\nattributed evidence for the calling agent \u2014 contract compatibility,\nreconciliation, and rollback readiness \u2014 with no user-facing framing. Do not\nreport the service healthy when any required financial-control signal is\nunavailable.\n",
             "variants": {
               "a2a": "Apply the repository-status capability for the payments service and return\nattributed evidence for the calling agent \u2014 contract compatibility,\nreconciliation, and rollback readiness \u2014 with no user-facing framing. Do not\nreport the service healthy when any required financial-control signal is\nunavailable.\n",

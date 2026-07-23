@@ -197,6 +197,9 @@ func writeArdCatalog(
 				{K: "description", V: jsonx.Str(skill.Description)},
 				{K: "inputSchema", V: jsonx.Str(skill.InputSchema)},
 				{K: "outputSchema", V: jsonx.Str(skill.OutputSchema)},
+				// The extern tools an invoker must provide to run this capability
+				// (ADR-0017): part of the complete invocation contract.
+				{K: "requiresTools", V: stringArr(skill.RequiresTools)},
 				// a2a is the default agent-to-agent rendering; every declared mode
 				// is also carried so a consumer can invoke in any surface (ADR-0012,
 				// ADR-0018).
