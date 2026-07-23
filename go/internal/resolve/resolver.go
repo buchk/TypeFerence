@@ -20,15 +20,17 @@ type ProvenanceEntry struct {
 
 // ResolvedSkill is a concrete skill after promotion and contract checks.
 type ResolvedSkill struct {
-	DispatchName     string
-	CapabilityID     string
-	ImplementationID string
-	Description      string
-	Instructions     string
-	InputSchema      string
-	OutputSchema     string
-	ContextFiles     []string
-	Provenance       []ProvenanceEntry
+	DispatchName         string
+	CapabilityID         string
+	ImplementationID     string
+	Description          string
+	Instructions         string
+	InputSchema          string
+	OutputSchema         string
+	ContextFiles         []string
+	RequiresContextTypes []string
+	RequiresTools        []string
+	Provenance           []ProvenanceEntry
 }
 
 // ResolvedAgent is a fully composed agent or profile.
@@ -43,6 +45,7 @@ type ResolvedAgent struct {
 	SlotKeys     []string // canonical order for Slots
 	WorkingNorms []string
 	ContextFiles []string
+	Context      []string
 	Skills       []ResolvedSkill
 	Provenance   []ProvenanceEntry
 }
@@ -82,6 +85,21 @@ func (r *Resolver) ResolveAll() ([]*ResolvedAgent, error) {
 	}
 	for _, id := range r.idsOfKind("interface") {
 		if _, err := r.resolveInterface(id, map[string]bool{}); err != nil {
+			return nil, err
+		}
+	}
+	for _, id := range r.idsOfKind("contextType") {
+		if _, err := r.contextTypeClosure(id, map[string]bool{}); err != nil {
+			return nil, err
+		}
+	}
+	for _, id := range r.idsOfKind("context") {
+		if _, err := r.contextTypeClosure(r.resources[id].ContextType, map[string]bool{}); err != nil {
+			return nil, resource.Errorf("%s: %s", id, err)
+		}
+	}
+	for _, id := range r.idsOfKind("tool") {
+		if err := r.validateTool(r.resources[id]); err != nil {
 			return nil, err
 		}
 	}
@@ -166,9 +184,15 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 	}
 	norms := distinct(concatNorms(embedded, current))
 	contexts := distinct(normalizeAll(concatContexts(embedded, current)))
+	contextRefs := distinct(concatContextRefs(embedded, current))
 	skills, skillDepths, err := r.mergeSkills(id, current, embedded, contexts)
 	if err != nil {
 		return nil, err
+	}
+	if current.Kind == "agent" {
+		if err := r.checkSkillDependencies(id, skills, contextRefs); err != nil {
+			return nil, err
+		}
 	}
 
 	satisfies := []string{}
@@ -238,6 +262,7 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 		SlotKeys:     slotKeys,
 		WorkingNorms: norms,
 		ContextFiles: contexts,
+		Context:      contextRefs,
 		Skills:       sortedSkills,
 		Provenance:   provenance,
 	}
@@ -403,13 +428,15 @@ func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded [
 			return nil, nil, err
 		}
 		result[capabilityID] = ResolvedSkill{
-			CapabilityID:     capabilityID,
-			ImplementationID: implementation.ID,
-			Description:      implementation.Description,
-			Instructions:     implementation.Instructions,
-			InputSchema:      inputSchema,
-			OutputSchema:     outputSchema,
-			ContextFiles:     distinct(append(append([]string{}, contexts...), normalizeAll(implementation.ContextFiles)...)),
+			CapabilityID:         capabilityID,
+			ImplementationID:     implementation.ID,
+			Description:          implementation.Description,
+			Instructions:         implementation.Instructions,
+			InputSchema:          inputSchema,
+			OutputSchema:         outputSchema,
+			ContextFiles:         distinct(append(append([]string{}, contexts...), normalizeAll(implementation.ContextFiles)...)),
+			RequiresContextTypes: append([]string{}, implementation.RequiresContextTypes...),
+			RequiresTools:        append([]string{}, implementation.RequiresTools...),
 			Provenance: []ProvenanceEntry{
 				{Field: "skill.capability", Source: capabilityID},
 				{Field: "skill.implementation", Source: implementation.ID},
@@ -498,6 +525,100 @@ func satisfiesContract(contract *interfaceContract, slots map[string]string, ski
 		}
 	}
 	return true
+}
+
+// contextTypeClosure returns the set of contextType ids a context object of the
+// given type satisfies: the type itself plus every type it transitively embeds
+// (refinement). A governedX that embeds X satisfies both (ADR-0013).
+func (r *Resolver) contextTypeClosure(id string, visiting map[string]bool) ([]string, error) {
+	ct, ok := r.resources[id]
+	if !ok || ct.Kind != "contextType" {
+		return nil, resource.Errorf("Missing contextType: %s", id)
+	}
+	if visiting[id] {
+		return nil, resource.Errorf("ContextType refinement cycle detected at %s", id)
+	}
+	visiting[id] = true
+	defer delete(visiting, id)
+	result := []string{id}
+	for _, embedID := range ct.Embeds {
+		base, err := r.contextTypeClosure(embedID, visiting)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, base...)
+	}
+	return distinct(result), nil
+}
+
+// providedContextTypes is the union of contextType closures over the context
+// objects an agent holds by id.
+func (r *Resolver) providedContextTypes(objectIDs []string) (map[string]bool, error) {
+	provided := map[string]bool{}
+	for _, objID := range objectIDs {
+		obj, ok := r.resources[objID]
+		if !ok || obj.Kind != "context" {
+			return nil, resource.Errorf("Missing context: %s", objID)
+		}
+		closure, err := r.contextTypeClosure(obj.ContextType, map[string]bool{})
+		if err != nil {
+			return nil, err
+		}
+		for _, t := range closure {
+			provided[t] = true
+		}
+	}
+	return provided, nil
+}
+
+// validateTool checks a tool declaration's interface schemas parse (ADR-0017).
+func (r *Resolver) validateTool(tool *resource.Document) error {
+	if _, err := canonicalJSON(tool.InputSchema); err != nil {
+		return resource.Errorf("%s: invalid tool inputSchema: %s", tool.ID, err)
+	}
+	if _, err := canonicalJSON(tool.OutputSchema); err != nil {
+		return resource.Errorf("%s: invalid tool outputSchema: %s", tool.ID, err)
+	}
+	return nil
+}
+
+// checkSkillDependencies verifies, at agent level, that every resolved skill's
+// required context types are provided by held context and its required tools are
+// declared (ADR-0013, ADR-0017).
+func (r *Resolver) checkSkillDependencies(agentID string, skills map[string]ResolvedSkill, contextRefs []string) error {
+	provided, err := r.providedContextTypes(contextRefs)
+	if err != nil {
+		return err
+	}
+	capabilityIDs := make([]string, 0, len(skills))
+	for capabilityID := range skills {
+		capabilityIDs = append(capabilityIDs, capabilityID)
+	}
+	sort.Strings(capabilityIDs)
+	for _, capabilityID := range capabilityIDs {
+		skill := skills[capabilityID]
+		for _, required := range skill.RequiresContextTypes {
+			if !provided[required] {
+				return resource.Errorf("%s: skill %s requires context type %s, which no held context provides",
+					agentID, skill.ImplementationID, required)
+			}
+		}
+		for _, toolID := range skill.RequiresTools {
+			if _, err := r.require(toolID, "tool"); err != nil {
+				return resource.Errorf("%s: skill %s requires tool %s, which is not declared",
+					agentID, skill.ImplementationID, toolID)
+			}
+		}
+	}
+	return nil
+}
+
+func concatContextRefs(embedded []*ResolvedAgent, current *resource.Document) []string {
+	values := []string{}
+	for _, component := range embedded {
+		values = append(values, component.Context...)
+	}
+	return append(values, current.Context...)
 }
 
 func (r *Resolver) require(id, kind string) (*resource.Document, error) {

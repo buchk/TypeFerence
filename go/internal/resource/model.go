@@ -32,6 +32,18 @@ type Document struct {
 	// Content is a `.tfer` markdown body materialized onto a resource: a
 	// skill's instructions or a context object's content (ADR-0013 format).
 	Content string
+	// RequiresContextTypes are contextType ids a skill needs; the holding
+	// agent must supply context satisfying each (ADR-0013).
+	RequiresContextTypes []string
+	// Context are context-object ids an agent or profile holds by reference
+	// rather than by path (ADR-0013 reference-by-id).
+	Context []string
+	// RequiresTools are tool ids a skill depends on; each must be declared and
+	// its interface shape-checked (ADR-0017).
+	RequiresTools []string
+	// Visibility is "internal" (default) or "exposed" for a capability
+	// (ADR-0015). Empty means internal.
+	Visibility string
 }
 
 // SkillBinding attaches a skill implementation (and optionally the capability

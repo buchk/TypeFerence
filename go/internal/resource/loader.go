@@ -157,6 +157,10 @@ func parseDocument(text string) (*Document, error) {
 		"outputSchema":         stringField(&doc.OutputSchema),
 		"contextType":          stringField(&doc.ContextType),
 		"schema":               stringField(&doc.Schema),
+		"requiresContextTypes": stringListField(&doc.RequiresContextTypes),
+		"context":              stringListField(&doc.Context),
+		"requiresTools":        stringListField(&doc.RequiresTools),
+		"visibility":           stringField(&doc.Visibility),
 	}); err != nil {
 		return nil, err
 	}
@@ -394,18 +398,18 @@ func validateDocumentShape(doc *Document, file string) error {
 		return Errorf("%s: schemaVersion must be 3", file)
 	}
 	switch doc.Kind {
-	case "agent", "profile", "interface", "capability", "skill", "context", "contextType":
+	case "agent", "profile", "interface", "capability", "skill", "context", "contextType", "tool":
 	default:
 		return Errorf("%s: unknown kind '%s'", file, doc.Kind)
 	}
 	if !resourceID.MatchString(doc.ID) {
 		return Errorf("%s: id must use lowercase namespace/name@semantic-version", file)
 	}
-	// capabilities, skills, and context objects do not embed; contextTypes may
-	// embed to refine other contextTypes (ADR-0013), and agents/profiles/
+	// capabilities, skills, context objects, and tools do not embed; contextTypes
+	// may embed to refine other contextTypes (ADR-0013), and agents/profiles/
 	// interfaces embed by design.
 	switch doc.Kind {
-	case "capability", "skill", "context":
+	case "capability", "skill", "context", "tool":
 		if len(doc.Embeds) != 0 {
 			return Errorf("%s: %ss cannot embed resources", file, doc.Kind)
 		}
@@ -428,6 +432,33 @@ func validateDocumentShape(doc *Document, file string) error {
 		}
 	} else if strings.TrimSpace(doc.Schema) != "" {
 		return Errorf("%s: only contextType resources declare a schema", file)
+	}
+	// requiresContextTypes / requiresTools are skill-only; context (holding by
+	// id) is agent/profile-only; visibility is capability-only.
+	if len(doc.RequiresContextTypes) != 0 && doc.Kind != "skill" {
+		return Errorf("%s: only skills declare requiresContextTypes", file)
+	}
+	if len(doc.RequiresTools) != 0 && doc.Kind != "skill" {
+		return Errorf("%s: only skills declare requiresTools", file)
+	}
+	if len(doc.Context) != 0 && doc.Kind != "agent" && doc.Kind != "profile" {
+		return Errorf("%s: only agents and profiles hold context by id", file)
+	}
+	refs := append([]string{}, doc.RequiresContextTypes...)
+	refs = append(refs, doc.RequiresTools...)
+	refs = append(refs, doc.Context...)
+	for _, ref := range refs {
+		if !resourceID.MatchString(ref) {
+			return Errorf("%s: reference '%s' must be a namespace/name@semantic-version id", file, ref)
+		}
+	}
+	if strings.TrimSpace(doc.Visibility) != "" {
+		if doc.Kind != "capability" {
+			return Errorf("%s: only capabilities declare visibility", file)
+		}
+		if doc.Visibility != "internal" && doc.Visibility != "exposed" {
+			return Errorf("%s: visibility must be 'internal' or 'exposed'", file)
+		}
 	}
 	if doc.Kind == "skill" && strings.TrimSpace(doc.Binds) == "" {
 		return Errorf("%s: skills must bind a capability", file)
