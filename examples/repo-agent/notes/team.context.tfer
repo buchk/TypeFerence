@@ -1,0 +1,12 @@
+---
+schemaVersion: 3
+kind: context
+id: acme/notes/team@1.0.0
+contextType: acme/context-types/governed-cast@1.0.0
+displayName: Team Roster
+---
+# Team
+
+- Dana — repository owner; approves releases.
+- Sam — on-call engineer; triages CI failures.
+- Priya — security reviewer; owns the release policy.

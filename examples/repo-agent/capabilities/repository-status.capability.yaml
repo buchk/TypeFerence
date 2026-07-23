@@ -1,0 +1,6 @@
+schemaVersion: 3
+kind: capability
+id: acme/capabilities/repository-status@1.0.0
+displayName: Repository Status
+description: Evidence-backed repository health summary.
+visibility: exposed

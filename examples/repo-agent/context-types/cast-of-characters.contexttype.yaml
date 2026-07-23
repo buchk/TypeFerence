@@ -1,0 +1,5 @@
+schemaVersion: 3
+kind: contextType
+id: acme/context-types/cast-of-characters@1.0.0
+displayName: Cast of Characters
+description: The people an agent must know — names, roles, relationships.

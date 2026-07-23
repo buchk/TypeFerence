@@ -1,0 +1,22 @@
+schemaVersion: 3
+kind: skill
+id: acme/skills/repository-status@1.0.0
+binds: acme/capabilities/repository-status@1.0.0
+displayName: Repository Status
+description: Summarize repository health, delivered per invocation surface.
+requiresTools:
+  - acme/tools/vault-reader@1.0.0
+requiresContextTypes:
+  - acme/context-types/cast-of-characters@1.0.0
+variants:
+  pipeline:
+    instructions: |
+      Emit strict JSON only. No prose. Never ask a clarifying question.
+      Mark every unavailable signal as an explicit null.
+  manual:
+    instructions: |
+      Explain the reasoning, surface risks conversationally, and offer the next
+      accountable action. Ask when a signal is ambiguous.
+  a2a:
+    instructions: |
+      Return attributed evidence for a calling agent. No user-facing framing.
