@@ -5,7 +5,10 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"slices"
@@ -40,6 +43,8 @@ func run(args []string) int {
 		code, err = inspect(args)
 	case "diff":
 		code, err = diff(args)
+	case "publish":
+		code, err = publish(args)
 	case "eval":
 		code, err = evalCommand(args)
 	case "equivalence":
@@ -203,6 +208,66 @@ func diff(args []string) (int, error) {
 		return 1, nil
 	}
 	return 0, nil
+}
+
+// publish registers a compiled ARD catalog with a registry. It is the
+// deployment edge, not the deterministic core (ADR-0018): registry lifecycle is
+// disclaimed by core semantics, so this is an optional, side-effecting verb.
+// Without --registry it is a dry run that only summarizes the catalog.
+func publish(args []string) (int, error) {
+	dir, err := requiredArg(args, 1, "ard directory")
+	if err != nil {
+		return 0, err
+	}
+	catalogPath := filepath.Join(dir, "ai-catalog.json")
+	data, readErr := os.ReadFile(catalogPath)
+	if readErr != nil {
+		return 0, resource.Errorf("No ai-catalog.json under %s; build with --emit-ard first", dir)
+	}
+	var catalog struct {
+		Entries []struct {
+			Identifier string `json:"identifier"`
+			Type       string `json:"type"`
+		} `json:"entries"`
+	}
+	if json.Unmarshal(data, &catalog) != nil {
+		return 0, resource.Errorf("Invalid ai-catalog.json: %s", catalogPath)
+	}
+	registry, err := option(args, "--registry")
+	if err != nil {
+		return 0, err
+	}
+	if registry == "" {
+		fmt.Printf("Dry run: %d catalog entries in %s (pass --registry <url> to publish)\n", len(catalog.Entries), catalogPath)
+		for _, e := range catalog.Entries {
+			fmt.Printf("  %s  %s\n", entryKind(e.Type), e.Identifier)
+		}
+		return 0, nil
+	}
+	resp, postErr := http.Post(registry, "application/json", bytes.NewReader(data))
+	if postErr != nil {
+		return 0, resource.Errorf("Publish failed: %s", postErr)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		return 1, resource.Errorf("Registry returned %s", resp.Status)
+	}
+	fmt.Printf("Published %d entries to %s (%s)\n", len(catalog.Entries), registry, resp.Status)
+	return 0, nil
+}
+
+// entryKind maps an ARD entry media type to a short label.
+func entryKind(mediaType string) string {
+	switch {
+	case strings.Contains(mediaType, "source-package"):
+		return "source "
+	case strings.Contains(mediaType, "target-bundle"):
+		return "bundle "
+	case strings.Contains(mediaType, "callable-card"):
+		return "callable"
+	default:
+		return "entry  "
+	}
 }
 
 func evalCommand(args []string) (int, error) {
@@ -385,6 +450,9 @@ Commands:
       [--emit-ard --publisher-domain example.com] [--trust-config path]
       [--trust-signatures signatures.json] [--json]
       [--allow-unsigned-trust]
+  typeference publish <ard-dir> [--registry <url>]
+      (deployment edge, not core: summarizes the compiled ARD catalog; with
+       --registry POSTs it to a registry. A dry run without --registry.)
   typeference eval <source> --scenarios <file-or-dir> [--live] [--model id] [--out dir]
       (dry run by default: validates scenarios and emits exact request
        payloads without calling any API; --live reads ANTHROPIC_API_KEY)
