@@ -169,6 +169,68 @@ func writeArdCatalog(
 		}
 	}
 
+	// Callable-resource cards: the fully-assembled invocation contract for each
+	// agent's exposed capabilities (ADR-0018). Emitted only when an agent
+	// exposes something, so agents with no exposed capability add no entry and
+	// their catalog is unchanged.
+	for _, agent := range agents {
+		exposed := agent.ExposedSkills()
+		if len(exposed) == 0 {
+			continue
+		}
+		slug := resolve.Leaf(agent.ID)
+		identifier := "urn:air:" + publisherDomain + ":typeference:callable:" + slug
+		version := agent.ID[strings.LastIndex(agent.ID, "@")+1:]
+
+		byName := map[string]resolve.ResolvedSkill{}
+		toolNames := make([]string, 0, len(exposed))
+		for _, skill := range exposed {
+			byName[skill.DispatchName] = skill
+			toolNames = append(toolNames, skill.DispatchName)
+		}
+		sort.Strings(toolNames)
+		tools := jsonx.Arr{}
+		for _, name := range toolNames {
+			skill := byName[name]
+			tools = append(tools, jsonx.Obj{
+				{K: "name", V: jsonx.Str(skill.DispatchName)},
+				{K: "description", V: jsonx.Str(skill.Description)},
+				{K: "inputSchema", V: jsonx.Str(skill.InputSchema)},
+				{K: "outputSchema", V: jsonx.Str(skill.OutputSchema)},
+				{K: "instructionsTemplate", V: jsonx.Str(skill.Instructions)},
+			})
+		}
+		manifest := jsonx.Obj{
+			{K: "identity", V: jsonx.Str("https://" + publisherDomain)},
+			{K: "identityType", V: jsonx.Str("https")},
+			{K: "provenance", V: jsonx.Arr{jsonx.Obj{
+				{K: "relation", V: jsonx.Str("derivedFrom")},
+				{K: "sourceId", V: jsonx.Str(sourceIdentifier)},
+				{K: "sourceDigest", V: jsonx.Str(sourceDigest)},
+			}}},
+		}
+		entries = append(entries, jsonx.Obj{
+			{K: "identifier", V: jsonx.Str(identifier)},
+			{K: "displayName", V: jsonx.Str(agent.DisplayName + " (callable)")},
+			{K: "type", V: jsonx.Str("application/vnd.typeference.callable-card+json")},
+			{K: "description", V: jsonx.Str("Callable resource card: exposed capabilities of " + agent.DisplayName + ".")},
+			{K: "capabilities", V: stringArr(toolNames)},
+			{K: "version", V: jsonx.Str(version)},
+			{K: "data", V: jsonx.Obj{
+				{K: "schemaVersion", V: jsonx.Num("1")},
+				{K: "agentId", V: jsonx.Str(agent.ID)},
+				{K: "tools", V: tools},
+			}},
+			{K: "metadata", V: jsonx.Obj{
+				{K: "generatedBy", V: jsonx.Str("TypeFerence")},
+				{K: "role", V: jsonx.Str("callable-resource")},
+				{K: "sourceDigest", V: jsonx.Str(sourceDigest)},
+				{K: "sourceIdentifier", V: jsonx.Str(sourceIdentifier)},
+			}},
+			{K: "trustManifest", V: manifest},
+		})
+	}
+
 	for _, key := range signatureKeys {
 		if !signedIdentifiers[key] {
 			return resource.Errorf("Trust signature identifier does not match a configured catalog entry: %s", key)
