@@ -24,10 +24,40 @@ func TestContextRequiredFieldPresent(t *testing.T) {
 	})
 	obj := doc("context", "t/notes/n@1.0.0", func(d *resource.Document) {
 		d.ContextType = "t/ct/cast@1.0.0"
-		d.ContextFields = map[string]string{"role": "owner"}
+		d.ContextFields = map[string]resource.FieldValue{"role": {Kind: "scalar", Scalar: "owner"}}
 	})
 	if _, err := New(docSet(ct, obj)).ResolveAll(); err != nil {
 		t.Fatalf("a present required field should validate: %v", err)
+	}
+}
+
+func TestContextFieldTypeMismatchRejected(t *testing.T) {
+	ct := doc("contextType", "t/ct/cast@1.0.0", func(d *resource.Document) {
+		d.Schema = `{"type":"object","properties":{"tags":{"type":"array"}}}`
+	})
+	obj := doc("context", "t/notes/n@1.0.0", func(d *resource.Document) {
+		d.ContextType = "t/ct/cast@1.0.0"
+		d.ContextFields = map[string]resource.FieldValue{"tags": {Kind: "scalar", Scalar: "not-an-array"}}
+	})
+	_, err := New(docSet(ct, obj)).ResolveAll()
+	if err == nil || !strings.Contains(err.Error(), "must be array") {
+		t.Fatalf("a scalar in an array-typed field must be rejected, got %v", err)
+	}
+}
+
+func TestContextFieldTypeMatchAccepted(t *testing.T) {
+	ct := doc("contextType", "t/ct/cast@1.0.0", func(d *resource.Document) {
+		d.Schema = `{"type":"object","properties":{"tags":{"type":"array"},"owner":{"type":"string"}}}`
+	})
+	obj := doc("context", "t/notes/n@1.0.0", func(d *resource.Document) {
+		d.ContextType = "t/ct/cast@1.0.0"
+		d.ContextFields = map[string]resource.FieldValue{
+			"tags":  {Kind: "sequence"},
+			"owner": {Kind: "scalar", Scalar: "Dana"},
+		}
+	})
+	if _, err := New(docSet(ct, obj)).ResolveAll(); err != nil {
+		t.Fatalf("matching field types should validate: %v", err)
 	}
 }
 

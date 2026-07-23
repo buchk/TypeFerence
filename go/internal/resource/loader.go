@@ -178,12 +178,15 @@ func parseDocument(text string) (*Document, error) {
 		return nil, err
 	}
 	if len(extraFields) > 0 {
-		doc.ContextFields = map[string]string{}
+		doc.ContextFields = map[string]FieldValue{}
 		for key, value := range extraFields {
-			if value.Kind == yaml.ScalarNode {
-				doc.ContextFields[key] = value.Value
-			} else {
-				doc.ContextFields[key] = ""
+			switch value.Kind {
+			case yaml.SequenceNode:
+				doc.ContextFields[key] = FieldValue{Kind: "sequence"}
+			case yaml.MappingNode:
+				doc.ContextFields[key] = FieldValue{Kind: "mapping"}
+			default:
+				doc.ContextFields[key] = FieldValue{Kind: "scalar", Scalar: value.Value}
 			}
 		}
 	}

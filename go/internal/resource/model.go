@@ -33,10 +33,9 @@ type Document struct {
 	// skill's instructions or a context object's content (ADR-0013 format).
 	Content string
 	// ContextFields holds a `kind: context` object's schema-typed frontmatter
-	// fields (those beyond the standard keys). Scalars keep their string value;
-	// sequences and mappings are recorded as present with an empty value. The
-	// declaring contextType's schema validates these (ADR-0013).
-	ContextFields map[string]string
+	// fields (those beyond the standard keys). The declaring contextType's schema
+	// validates their presence and type (ADR-0013).
+	ContextFields map[string]FieldValue
 	// RequiresContextTypes are contextType ids a skill needs; the holding
 	// agent must supply context satisfying each (ADR-0013).
 	RequiresContextTypes []string
@@ -67,6 +66,14 @@ type SkillBinding struct {
 	Capability *string
 	Sealed     bool
 	Required   bool
+}
+
+// FieldValue is a context object's frontmatter field: its structural Kind
+// ("scalar", "sequence", or "mapping") and, for scalars, the text value. Kind
+// lets the contextType schema check declared field types (ADR-0013).
+type FieldValue struct {
+	Kind   string
+	Scalar string
 }
 
 // Variant is a mode-specific rendering of a multimodal skill (ADR-0012). It

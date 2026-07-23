@@ -290,11 +290,11 @@ func TestContextObjectCollectsSchemaFields(t *testing.T) {
 		t.Fatal(err)
 	}
 	d := docs["t/notes/n@1.0.0"]
-	if d.ContextFields["role"] != "owner" {
+	if d.ContextFields["role"].Scalar != "owner" || d.ContextFields["role"].Kind != "scalar" {
 		t.Errorf("scalar field 'role' not collected: %v", d.ContextFields)
 	}
-	if _, ok := d.ContextFields["tags"]; !ok {
-		t.Errorf("sequence field 'tags' should be recorded as present")
+	if d.ContextFields["tags"].Kind != "sequence" {
+		t.Errorf("sequence field 'tags' should be recorded with sequence kind, got %v", d.ContextFields["tags"])
 	}
 }
 

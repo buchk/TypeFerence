@@ -192,15 +192,24 @@ func writeArdCatalog(
 		tools := jsonx.Arr{}
 		for _, name := range toolNames {
 			skill := byName[name]
-			tools = append(tools, jsonx.Obj{
+			tool := jsonx.Obj{
 				{K: "name", V: jsonx.Str(skill.DispatchName)},
 				{K: "description", V: jsonx.Str(skill.Description)},
 				{K: "inputSchema", V: jsonx.Str(skill.InputSchema)},
 				{K: "outputSchema", V: jsonx.Str(skill.OutputSchema)},
-				// A callable card is the agent-to-agent surface, so it renders the
-				// a2a variant when the skill declares one (ADR-0012, ADR-0018).
+				// a2a is the default agent-to-agent rendering; every declared mode
+				// is also carried so a consumer can invoke in any surface (ADR-0012,
+				// ADR-0018).
 				{K: "instructionsTemplate", V: jsonx.Str(skill.InstructionsFor("a2a"))},
-			})
+			}
+			if len(skill.Variants) > 0 {
+				variants := jsonx.Obj{}
+				for _, mode := range sortedModes(skill.Variants) {
+					variants = append(variants, jsonx.Member{K: mode, V: jsonx.Str(skill.Variants[mode])})
+				}
+				tool = append(tool, jsonx.Member{K: "variants", V: variants})
+			}
+			tools = append(tools, tool)
 		}
 		manifest := jsonx.Obj{
 			{K: "identity", V: jsonx.Str("https://" + publisherDomain)},
@@ -222,6 +231,9 @@ func writeArdCatalog(
 				{K: "schemaVersion", V: jsonx.Num("1")},
 				{K: "agentId", V: jsonx.Str(agent.ID)},
 				{K: "tools", V: tools},
+				// Held context travels with the card so an invoker has the agent's
+				// context, not only its tool schemas (ADR-0013, ADR-0018).
+				{K: "context", V: callableContext(agent.ContextObjects)},
 			}},
 			{K: "metadata", V: jsonx.Obj{
 				{K: "generatedBy", V: jsonx.Str("TypeFerence")},
@@ -355,6 +367,19 @@ func buildTrustManifest(
 		manifest.add("signature", jsonx.Str(signature))
 	}
 	return manifest.obj(), nil
+}
+
+// callableContext renders an agent's held context objects for a callable card.
+func callableContext(objs []resolve.ResolvedContextRef) jsonx.Value {
+	arr := jsonx.Arr{}
+	for _, ref := range objs {
+		arr = append(arr, jsonx.Obj{
+			{K: "id", V: jsonx.Str(ref.ID)},
+			{K: "contextType", V: jsonx.Str(ref.ContextType)},
+			{K: "content", V: jsonx.Str(ref.Content)},
+		})
+	}
+	return arr
 }
 
 func metadataValueJSON(value trust.MetadataValue) jsonx.Value {

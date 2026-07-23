@@ -635,51 +635,102 @@ func (r *Resolver) providedContextTypes(objectIDs []string) (map[string]bool, er
 	return provided, nil
 }
 
-// validateContextFields checks a context object carries every field its
-// contextType — and every type it refines — declares required (ADR-0013).
+// validateContextFields checks a context object against its contextType schema
+// (and every type it refines): required fields are present, and each declared
+// field's structural type matches (ADR-0013).
 func (r *Resolver) validateContextFields(obj *resource.Document) error {
 	closure, err := r.contextTypeClosure(obj.ContextType, map[string]bool{})
 	if err != nil {
 		return err
 	}
 	required := map[string]bool{}
+	propTypes := map[string]string{}
 	for _, ctID := range closure {
-		fields, err := requiredFields(r.resources[ctID].Schema)
+		req, types, err := parseContextSchema(r.resources[ctID].Schema)
 		if err != nil {
 			return resource.Errorf("%s: contextType %s has an invalid schema: %s", obj.ID, ctID, err)
 		}
-		for _, field := range fields {
+		for _, field := range req {
 			required[field] = true
 		}
+		for field, t := range types {
+			propTypes[field] = t
+		}
 	}
-	names := make([]string, 0, len(required))
-	for name := range required {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	for _, name := range names {
+	for _, name := range sortedStringSet(required) {
 		if _, ok := obj.ContextFields[name]; !ok {
 			return resource.Errorf("%s: missing required field %q declared by its contextType schema", obj.ID, name)
+		}
+	}
+	for _, name := range sortedStringMapKeys(propTypes) {
+		field, ok := obj.ContextFields[name]
+		if !ok {
+			continue // absent optional field; presence is handled above
+		}
+		if !kindMatchesType(field.Kind, propTypes[name]) {
+			return resource.Errorf("%s: field %q must be %s per its contextType schema, got a %s",
+				obj.ID, name, propTypes[name], field.Kind)
 		}
 	}
 	return nil
 }
 
-// requiredFields extracts the top-level "required" array from a JSON Schema
-// string. It only reads (never emits), so stdlib json is fine here. A schema
-// whose "required" is present but not a string array is an error rather than a
-// silently-empty result.
-func requiredFields(schema string) ([]string, error) {
+// parseContextSchema reads a JSON Schema's top-level "required" names and
+// property types. A malformed "required" or "properties" is an error rather
+// than a silently-empty result.
+func parseContextSchema(schema string) ([]string, map[string]string, error) {
 	if strings.TrimSpace(schema) == "" {
-		return nil, nil
+		return nil, nil, nil
 	}
 	var doc struct {
-		Required []string `json:"required"`
+		Required   []string `json:"required"`
+		Properties map[string]struct {
+			Type string `json:"type"`
+		} `json:"properties"`
 	}
 	if err := json.Unmarshal([]byte(schema), &doc); err != nil {
-		return nil, resource.Errorf("schema \"required\" must be an array of field names")
+		return nil, nil, resource.Errorf("\"required\" must be an array of field names and \"properties\" a type map")
 	}
-	return doc.Required, nil
+	types := map[string]string{}
+	for name, prop := range doc.Properties {
+		if prop.Type != "" {
+			types[name] = prop.Type
+		}
+	}
+	return doc.Required, types, nil
+}
+
+// kindMatchesType reports whether a field's structural kind satisfies a JSON
+// Schema type. Unknown/absent types are not enforced.
+func kindMatchesType(kind, schemaType string) bool {
+	switch schemaType {
+	case "array":
+		return kind == "sequence"
+	case "object":
+		return kind == "mapping"
+	case "string", "number", "integer", "boolean":
+		return kind == "scalar"
+	default:
+		return true
+	}
+}
+
+func sortedStringSet(m map[string]bool) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func sortedStringMapKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 // validateTool checks a tool declaration's interface schemas parse (ADR-0017).

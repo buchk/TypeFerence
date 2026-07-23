@@ -601,6 +601,13 @@
             "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022summary\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022urgency\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022owner\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022nextAction\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022required\u0022:[\u0022summary\u0022,\u0022urgency\u0022,\u0022owner\u0022,\u0022nextAction\u0022]}",
             "instructionsTemplate": "Read the message and identify its sender, intent, urgency, decision owner, and requested deadline.\nSeparate facts from assumptions. Return a concise recommendation; do not send a reply.\n"
           }
+        ],
+        "context": [
+          {
+            "id": "helio/context/safety-policy@1.0.0",
+            "contextType": "helio/context-types/safety-policy@1.0.0",
+            "content": "# Safety policy\n\nAgents may prepare recommendations and drafts. They must not represent approval, transmit external messages, or make irreversible changes without explicit authority.\n"
+          }
         ]
       },
       "metadata": {
@@ -639,7 +646,19 @@
             "description": "Report payments-service health with contract and reconciliation evidence.",
             "inputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022focus\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022additionalProperties\u0022:false}",
             "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022risks\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022status\u0022,\u0022evidence\u0022,\u0022risks\u0022]}",
-            "instructionsTemplate": "Apply the repository-status capability for the payments service and return\nattributed evidence for the calling agent \u2014 contract compatibility,\nreconciliation, and rollback readiness \u2014 with no user-facing framing. Do not\nreport the service healthy when any required financial-control signal is\nunavailable.\n"
+            "instructionsTemplate": "Apply the repository-status capability for the payments service and return\nattributed evidence for the calling agent \u2014 contract compatibility,\nreconciliation, and rollback readiness \u2014 with no user-facing framing. Do not\nreport the service healthy when any required financial-control signal is\nunavailable.\n",
+            "variants": {
+              "a2a": "Apply the repository-status capability for the payments service and return\nattributed evidence for the calling agent \u2014 contract compatibility,\nreconciliation, and rollback readiness \u2014 with no user-facing framing. Do not\nreport the service healthy when any required financial-control signal is\nunavailable.\n",
+              "manual": "Apply the repository-status capability for the payments service, then include\npayment-contract compatibility, reconciliation checks, and rollback readiness,\nsurfacing uncertainty conversationally. Do not report the service healthy when\nany required financial-control signal is unavailable.\n",
+              "pipeline": "Apply the repository-status capability for the payments service and emit only\nthe strict output object. Mark any unavailable financial-control signal as an\nexplicit null; do not report the service healthy when one is missing.\n"
+            }
+          }
+        ],
+        "context": [
+          {
+            "id": "helio/context/safety-policy@1.0.0",
+            "contextType": "helio/context-types/safety-policy@1.0.0",
+            "content": "# Safety policy\n\nAgents may prepare recommendations and drafts. They must not represent approval, transmit external messages, or make irreversible changes without explicit authority.\n"
           }
         ]
       },
