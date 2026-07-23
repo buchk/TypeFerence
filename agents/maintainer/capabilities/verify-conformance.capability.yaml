@@ -1,7 +1,0 @@
-schemaVersion: 3
-kind: capability
-id: typeference/capabilities/verify-conformance@0.1.0
-displayName: Verify Conformance
-description: Run both implementations against the shared conformance suite and report agreement.
-inputSchema: '{"type":"object","additionalProperties":false}'
-outputSchema: '{"type":"object","properties":{"passed":{"type":"boolean"},"mismatches":{"type":"array","items":{"type":"string"}}},"required":["passed","mismatches"]}'

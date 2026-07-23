@@ -9,6 +9,28 @@ versioning. Tool versions (this file) are independent of the typed-resource
 TypeFerence is an experimental reference implementation; pre-1.0 versions make no
 compatibility promises between minor versions.
 
+## [Unreleased]
+
+### Changed
+
+- **Go-only implementation** ([ADR-0014](docs/decisions/0014-go-only-implementation.md)).
+  The C# reference implementation was retired; the Go implementation is now the
+  sole implementation. The specification stays normative in principle. The
+  cross-implementation conformance suite becomes a single-implementation
+  golden-file determinism suite over the same fixtures — the determinism
+  guarantee is unchanged.
+
+### Added
+
+- **`.tfer` source format** and object-model constructs (ADRs 0012–0019):
+  invocation-mode skill variants, user-defined typed context (`contextType`
+  refinement, context held by id, `requiresContextTypes`), tools as extern
+  declarations (`requiresTools`), capability exposure/visibility, and sealing
+  (`sealed`/`required` bindings). All additive and opt-in.
+- **Language server** (`typeference-lsp`): authoring and composition
+  diagnostics, completion, go-to-definition, and document symbols for `.tfer`
+  and `.yaml` sources.
+
 ## [0.0.4] - 2026-07-15
 
 ### Added

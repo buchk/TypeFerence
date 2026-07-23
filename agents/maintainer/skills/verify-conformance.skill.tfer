@@ -1,0 +1,18 @@
+---
+schemaVersion: 3
+kind: skill
+id: typeference/skills/verify-conformance@0.1.0
+binds: typeference/capabilities/verify-conformance@0.1.0
+displayName: Verify Conformance Skill
+description: Runs the determinism suite and reports whether the compiler reproduces the committed digests.
+instructions: |
+  Run `go test ./conformance` from the go/ directory (or `make conformance`).
+  Report passed=true only when every fixture reproduces its committed digest.
+  List each failing fixture and target as a mismatch. Never resolve a mismatch
+  by editing a digest; find the compiler regression, or take the ruling to the
+  specification with an ADR and a regenerated fixture.
+contextFiles:
+  - context/determinism.md
+inputSchema: '{"type":"object","additionalProperties":false}'
+outputSchema: '{"type":"object","properties":{"passed":{"type":"boolean"},"mismatches":{"type":"array","items":{"type":"string"}}},"required":["passed","mismatches"]}'
+---

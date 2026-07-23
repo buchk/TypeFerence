@@ -1,0 +1,32 @@
+{
+  "protocolVersion": "0.3.0",
+  "name": "Helio Payments Repository Agent",
+  "description": "Specializes repository assistance for the fictional payments service.",
+  "version": "1.0.0",
+  "url": "https://helio.example/a2a/payments-repo-agent",
+  "preferredTransport": "JSONRPC",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false
+  },
+  "defaultInputModes": [
+    "application/json"
+  ],
+  "defaultOutputModes": [
+    "application/json"
+  ],
+  "provider": {
+    "organization": "helio.example",
+    "url": "https://helio.example"
+  },
+  "skills": [
+    {
+      "id": "payments-repo-agent.repository-status",
+      "name": "repository-status",
+      "description": "Report payments-service health with contract and reconciliation evidence.",
+      "tags": [
+        "typeference"
+      ]
+    }
+  ]
+}

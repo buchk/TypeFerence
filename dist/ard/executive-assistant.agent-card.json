@@ -1,0 +1,40 @@
+{
+  "protocolVersion": "0.3.0",
+  "name": "Helio Executive Assistant",
+  "description": "Coordinates an executive\u0027s correspondence, briefings, and cross-agent requests.",
+  "version": "1.0.0",
+  "url": "https://helio.example/a2a/executive-assistant",
+  "preferredTransport": "JSONRPC",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false
+  },
+  "defaultInputModes": [
+    "application/json"
+  ],
+  "defaultOutputModes": [
+    "application/json"
+  ],
+  "provider": {
+    "organization": "helio.example",
+    "url": "https://helio.example"
+  },
+  "skills": [
+    {
+      "id": "executive-assistant.prepare-brief",
+      "name": "prepare-brief",
+      "description": "Assemble an executive brief, requesting repository evidence when needed.",
+      "tags": [
+        "typeference"
+      ]
+    },
+    {
+      "id": "executive-assistant.triage-message",
+      "name": "triage-message",
+      "description": "Classify an inbound message and recommend an accountable next action.",
+      "tags": [
+        "typeference"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+---
+schemaVersion: 3
+kind: interface
+id: helio/interfaces/correspondent@1.0.0
+displayName: Correspondent
+description: Contract for agents that assess and route communications.
+requiresSlots:
+  - principal
+requiresCapabilities:
+  - helio/capabilities/triage-message@1.0.0
+---

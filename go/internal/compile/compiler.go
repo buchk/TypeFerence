@@ -170,6 +170,9 @@ func Build(source, output string, targets []Target, ard *ArdPublicationOptions) 
 			configuration, signatures, signatureKeys, ard.AllowUnsignedTrust, &written); err != nil {
 			return nil, err
 		}
+		if err := writeDiscoveryCards(ardRoot, agents, ard.PublisherDomain, &written); err != nil {
+			return nil, err
+		}
 	}
 	sort.Strings(written)
 	return written, nil
@@ -200,7 +203,9 @@ func writeTarget(target Target, root string, agent *resolve.ResolvedAgent, writt
 	slug := resolve.Leaf(agent.ID)
 	switch target {
 	case Neutral:
-		if err := writeFile(filepath.Join(root, slug, "AGENTS.md"), renderInstructions(agent), written); err != nil {
+		// Canonical bundle: an index doc plus a SKILL.md per skill, fanning out
+		// one SKILL.<mode>.md per variant (ADR-0012).
+		if err := writeFile(filepath.Join(root, slug, "AGENTS.md"), renderInstructions(agent, false, ""), written); err != nil {
 			return err
 		}
 		if err := writeFile(filepath.Join(root, slug, "bundle.json"), bundleJSON(agent)+"\n", written); err != nil {
@@ -210,16 +215,18 @@ func writeTarget(target Target, root string, agent *resolve.ResolvedAgent, writt
 			return err
 		}
 		for _, skill := range agent.Skills {
-			if err := writeFile(filepath.Join(root, slug, "skills", skillSlug(skill), "SKILL.md"), renderSkill(skill), written); err != nil {
+			if err := writeSkillFiles(filepath.Join(root, slug, "skills", skillSlug(skill)), skill, "", true, written); err != nil {
 				return err
 			}
 		}
 	case Codex:
-		if err := writeFile(filepath.Join(root, slug, "AGENTS.md"), renderInstructions(agent), written); err != nil {
+		// Interactive coding surface: an index doc plus one SKILL.md rendering the
+		// manual variant.
+		if err := writeFile(filepath.Join(root, slug, "AGENTS.md"), renderInstructions(agent, false, ""), written); err != nil {
 			return err
 		}
 		for _, skill := range agent.Skills {
-			if err := writeFile(filepath.Join(root, slug, ".agents", "skills", skillSlug(skill), "SKILL.md"), renderSkill(skill), written); err != nil {
+			if err := writeSkillFiles(filepath.Join(root, slug, ".agents", "skills", skillSlug(skill)), skill, variantForTarget(target), false, written); err != nil {
 				return err
 			}
 		}
@@ -231,10 +238,12 @@ func writeTarget(target Target, root string, agent *resolve.ResolvedAgent, writt
 			return err
 		}
 	case Copilot:
-		if err := writeFile(filepath.Join(root, slug, ".github", "copilot-instructions.md"), renderInstructions(agent), written); err != nil {
+		// No per-skill file: instructions are inlined in the manual variant.
+		instructions := renderInstructions(agent, true, variantForTarget(target))
+		if err := writeFile(filepath.Join(root, slug, ".github", "copilot-instructions.md"), instructions, written); err != nil {
 			return err
 		}
-		agentMD := "---\nname: " + slug + "\ndescription: " + escapeYAML(agent.Description) + "\n---\n\n" + renderInstructions(agent)
+		agentMD := "---\nname: " + slug + "\ndescription: " + escapeYAML(agent.Description) + "\n---\n\n" + instructions
 		if err := writeFile(filepath.Join(root, slug, ".github", "agents", slug+".agent.md"), agentMD, written); err != nil {
 			return err
 		}
@@ -242,10 +251,11 @@ func writeTarget(target Target, root string, agent *resolve.ResolvedAgent, writt
 			return err
 		}
 	case Cursor:
-		if err := writeFile(filepath.Join(root, slug, "AGENTS.md"), renderInstructions(agent), written); err != nil {
+		instructions := renderInstructions(agent, true, variantForTarget(target))
+		if err := writeFile(filepath.Join(root, slug, "AGENTS.md"), instructions, written); err != nil {
 			return err
 		}
-		rule := "---\ndescription: " + escapeYAML(agent.Description) + "\nglobs:\nalwaysApply: true\n---\n\n" + renderInstructions(agent)
+		rule := "---\ndescription: " + escapeYAML(agent.Description) + "\nglobs:\nalwaysApply: true\n---\n\n" + instructions
 		if err := writeFile(filepath.Join(root, slug, ".cursor", "rules", slug+".mdc"), rule, written); err != nil {
 			return err
 		}
@@ -256,7 +266,40 @@ func writeTarget(target Target, root string, agent *resolve.ResolvedAgent, writt
 	return nil
 }
 
-func renderInstructions(agent *resolve.ResolvedAgent) string {
+// variantForTarget is the invocation-mode variant a target renders for a
+// multimodal skill: interactive/human surfaces get "manual"; the neutral
+// (canonical) bundle keeps the default and fans every variant out (ADR-0012).
+func variantForTarget(t Target) string {
+	switch t {
+	case Copilot, Cursor, Codex:
+		return "manual"
+	default:
+		return ""
+	}
+}
+
+// writeSkillFiles writes a skill's SKILL.md (rendered in the given variant, or
+// the default when variant is empty) and, when fanout is set, one SKILL.<mode>.md
+// per variant (ADR-0012). Shared by every target that emits per-skill files.
+func writeSkillFiles(dir string, skill resolve.ResolvedSkill, variant string, fanout bool, written *[]string) error {
+	primary := skill.Instructions
+	if variant != "" {
+		primary = skill.InstructionsFor(variant)
+	}
+	if err := writeFile(filepath.Join(dir, "SKILL.md"), renderSkillWith(skill, primary), written); err != nil {
+		return err
+	}
+	if fanout {
+		for _, mode := range sortedModes(skill.Variants) {
+			if err := writeFile(filepath.Join(dir, "SKILL."+mode+".md"), renderSkillWith(skill, skill.Variants[mode]), written); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func renderInstructions(agent *resolve.ResolvedAgent, inlineInstructions bool, variant string) string {
 	var b strings.Builder
 	b.WriteString("# " + agent.DisplayName + "\n\n" + agent.Description + "\n\n")
 	if len(agent.WorkingNorms) > 0 {
@@ -273,22 +316,55 @@ func renderInstructions(agent *resolve.ResolvedAgent) string {
 		}
 		b.WriteString("\n")
 	}
+	// Held context objects are inlined so the compiled agent actually contains
+	// its context, not just a reference to it (ADR-0013).
+	if len(agent.ContextObjects) > 0 {
+		b.WriteString("## Context\n\n")
+		for _, ref := range agent.ContextObjects {
+			heading := ref.DisplayName
+			if strings.TrimSpace(heading) == "" {
+				heading = ref.ID
+			}
+			b.WriteString("### " + heading + "\n\n")
+			if content := strings.TrimSpace(ref.Content); content != "" {
+				b.WriteString(content + "\n\n")
+			}
+		}
+	}
 	b.WriteString("## Available skills\n\n")
 	for _, skill := range agent.Skills {
 		b.WriteString("- `" + skill.DispatchName + "`: " + skill.Description + "\n")
+		// Targets with no separate SKILL.md inline the instructions here, in the
+		// surface's variant, so those agents actually receive skill behavior
+		// rather than just a name (ADR-0012).
+		if inlineInstructions {
+			b.WriteString("\n" + strings.TrimSpace(skill.InstructionsFor(variant)) + "\n\n")
+		}
 	}
 	b.WriteString("\n")
 	return b.String()
 }
 
-func renderSkill(skill resolve.ResolvedSkill) string {
+// renderSkillWith renders a skill's SKILL.md using the given instructions, so a
+// per-variant file can carry that mode's rendering (ADR-0012).
+func renderSkillWith(skill resolve.ResolvedSkill, instructions string) string {
 	lines := make([]string, len(skill.ContextFiles))
 	for i, file := range skill.ContextFiles {
 		lines[i] = "- `" + file + "`"
 	}
 	return "---\nname: " + skillSlug(skill) + "\ndescription: " + escapeYAML(skill.Description) + "\n---\n\n" +
-		strings.TrimSpace(skill.Instructions) + "\n\n## Context loaded on invocation\n\n" +
+		strings.TrimSpace(instructions) + "\n\n## Context loaded on invocation\n\n" +
 		strings.Join(lines, "\n") + "\n"
+}
+
+// sortedModes returns a variant map's mode names in canonical order.
+func sortedModes(variants map[string]string) []string {
+	modes := make([]string, 0, len(variants))
+	for mode := range variants {
+		modes = append(modes, mode)
+	}
+	sort.Strings(modes)
+	return modes
 }
 
 func skillSlug(skill resolve.ResolvedSkill) string { return resolve.Leaf(skill.CapabilityID) }

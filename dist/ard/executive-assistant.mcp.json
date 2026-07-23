@@ -1,0 +1,100 @@
+{
+  "tools": [
+    {
+      "name": "executive-assistant.prepare-brief",
+      "description": "Assemble an executive brief, requesting repository evidence when needed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "topic"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "brief": {
+            "type": "string"
+          },
+          "openQuestions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "brief",
+          "openQuestions"
+        ]
+      },
+      "x-typeference": {
+        "instructionsTemplate": "Build a decision-oriented brief from the supplied topic and evidence.\nWhen repository status is material, request \u0060payments-repo-agent.repository-status\u0060 and incorporate its returned evidence with attribution.\n",
+        "requiresTools": []
+      }
+    },
+    {
+      "name": "executive-assistant.triage-message",
+      "description": "Classify an inbound message and recommend an accountable next action.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string"
+          },
+          "urgency": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "nextAction": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "summary",
+          "urgency",
+          "owner",
+          "nextAction"
+        ]
+      },
+      "x-typeference": {
+        "instructionsTemplate": "Read the message and identify its sender, intent, urgency, decision owner, and requested deadline.\nSeparate facts from assumptions. Return a concise recommendation; do not send a reply.\n",
+        "requiresTools": []
+      }
+    }
+  ],
+  "x-typeference": {
+    "context": [
+      {
+        "id": "helio/context/safety-policy@1.0.0",
+        "contextType": "helio/context-types/safety-policy@1.0.0",
+        "content": "# Safety policy\n\nAgents may prepare recommendations and drafts. They must not represent approval, transmit external messages, or make irreversible changes without explicit authority.\n"
+      }
+    ]
+  }
+}

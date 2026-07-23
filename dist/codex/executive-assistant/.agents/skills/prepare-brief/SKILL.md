@@ -9,6 +9,5 @@ When repository status is material, request `payments-repo-agent.repository-stat
 ## Context loaded on invocation
 
 - `context/organization.md`
-- `context/safety-policy.md`
 - `context/principal.md`
 - `context/executive-rhythm.md`

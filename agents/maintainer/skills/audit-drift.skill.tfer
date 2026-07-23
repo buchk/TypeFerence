@@ -1,0 +1,21 @@
+---
+schemaVersion: 3
+kind: skill
+id: typeference/skills/audit-drift@0.1.0
+binds: typeference/capabilities/audit-drift@0.1.0
+displayName: Audit Self-Host Drift Skill
+description: Confirms the committed AGENTS.md and maintainer bundle are exact build artifacts of this definition.
+instructions: |
+  Run `typeference diff agents/maintainer --against dist-maintainer --target neutral
+  --emit-ard --publisher-domain typeference.example` from the repository root, then
+  byte-compare the repository-root AGENTS.md against
+  dist-maintainer/neutral/typeference-maintainer/AGENTS.md. Report clean=true only
+  when the diff exits 0 and the byte comparison matches. Any drift between the
+  definition and its committed artifacts is a broken build: regenerate with
+  `make selfhost` and commit definition and artifacts together, or revert the
+  stray edit to the generated files.
+contextFiles:
+  - context/determinism.md
+inputSchema: '{"type":"object","additionalProperties":false}'
+outputSchema: '{"type":"object","properties":{"clean":{"type":"boolean"},"driftedFiles":{"type":"array","items":{"type":"string"}}},"required":["clean","driftedFiles"]}'
+---

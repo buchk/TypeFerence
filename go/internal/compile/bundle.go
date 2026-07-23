@@ -1,6 +1,8 @@
 package compile
 
 import (
+	"sort"
+
 	"github.com/buchk/TypeFerence/go/internal/jsonx"
 	"github.com/buchk/TypeFerence/go/internal/resolve"
 )
@@ -22,7 +24,7 @@ func bundleValue(agent *resolve.ResolvedAgent) jsonx.Value {
 	for _, skill := range agent.Skills {
 		skills = append(skills, skillValue(skill))
 	}
-	return jsonx.Obj{
+	obj := jsonx.Obj{
 		{K: "id", V: jsonx.Str(agent.ID)},
 		{K: "displayName", V: jsonx.Str(agent.DisplayName)},
 		{K: "description", V: jsonx.Str(agent.Description)},
@@ -32,13 +34,27 @@ func bundleValue(agent *resolve.ResolvedAgent) jsonx.Value {
 		{K: "slots", V: slots},
 		{K: "workingNorms", V: stringArr(agent.WorkingNorms)},
 		{K: "contextFiles", V: stringArr(agent.ContextFiles)},
-		{K: "skills", V: skills},
-		{K: "provenance", V: provenanceValue(agent.Provenance)},
 	}
+	// Typed context held by id. Absent when the agent holds none, so bundles
+	// that predate reference-by-id context are unchanged (ADR-0013).
+	if len(agent.ContextObjects) > 0 {
+		context := jsonx.Arr{}
+		for _, ref := range agent.ContextObjects {
+			context = append(context, jsonx.Obj{
+				{K: "id", V: jsonx.Str(ref.ID)},
+				{K: "contextType", V: jsonx.Str(ref.ContextType)},
+				{K: "content", V: jsonx.Str(ref.Content)},
+			})
+		}
+		obj = append(obj, jsonx.Member{K: "context", V: context})
+	}
+	obj = append(obj, jsonx.Member{K: "skills", V: skills})
+	obj = append(obj, jsonx.Member{K: "provenance", V: provenanceValue(agent.Provenance)})
+	return obj
 }
 
 func skillValue(skill resolve.ResolvedSkill) jsonx.Value {
-	return jsonx.Obj{
+	obj := jsonx.Obj{
 		{K: "dispatchName", V: jsonx.Str(skill.DispatchName)},
 		{K: "capabilityId", V: jsonx.Str(skill.CapabilityID)},
 		{K: "implementationId", V: jsonx.Str(skill.ImplementationID)},
@@ -47,8 +63,23 @@ func skillValue(skill resolve.ResolvedSkill) jsonx.Value {
 		{K: "inputSchema", V: jsonx.Str(skill.InputSchema)},
 		{K: "outputSchema", V: jsonx.Str(skill.OutputSchema)},
 		{K: "contextFiles", V: stringArr(skill.ContextFiles)},
-		{K: "provenance", V: provenanceValue(skill.Provenance)},
 	}
+	// A multimodal skill also emits its per-mode renderings. This member is
+	// absent for unimodal skills, so their bundle output is unchanged (ADR-0012).
+	if len(skill.Variants) > 0 {
+		modes := make([]string, 0, len(skill.Variants))
+		for mode := range skill.Variants {
+			modes = append(modes, mode)
+		}
+		sort.Strings(modes)
+		variants := jsonx.Obj{}
+		for _, mode := range modes {
+			variants = append(variants, jsonx.Member{K: mode, V: jsonx.Str(skill.Variants[mode])})
+		}
+		obj = append(obj, jsonx.Member{K: "variants", V: variants})
+	}
+	obj = append(obj, jsonx.Member{K: "provenance", V: provenanceValue(skill.Provenance)})
+	return obj
 }
 
 // provenanceJSON renders the canonical indented provenance.json.

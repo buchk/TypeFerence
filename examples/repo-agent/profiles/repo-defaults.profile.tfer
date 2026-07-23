@@ -1,0 +1,10 @@
+---
+schemaVersion: 3
+kind: profile
+id: acme/profiles/repo-defaults@1.0.0
+displayName: Repository Defaults
+description: Shared repository behavior; the status skill is sealed against override.
+skills:
+  - ref: acme/skills/repository-status@1.0.0
+    sealed: true
+---

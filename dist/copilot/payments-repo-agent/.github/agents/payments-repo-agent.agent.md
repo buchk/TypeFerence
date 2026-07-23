@@ -17,9 +17,22 @@ Specializes repository assistance for the fictional payments service.
 
 - `organization`: `context/organization.md`
 - `repository`: `context/repository.md`
-- `safetyPolicy`: `context/safety-policy.md`
+
+## Context
+
+### Helio Safety Policy
+
+# Safety policy
+
+Agents may prepare recommendations and drafts. They must not represent approval, transmit external messages, or make irreversible changes without explicit authority.
 
 ## Available skills
 
 - `payments-repo-agent.repository-status`: Report payments-service health with contract and reconciliation evidence.
+
+Apply the repository-status capability for the payments service, then include
+payment-contract compatibility, reconciliation checks, and rollback readiness,
+surfacing uncertainty conversationally. Do not report the service healthy when
+any required financial-control signal is unavailable.
+
 

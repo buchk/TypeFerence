@@ -6,8 +6,8 @@ signatures"). The invariants that must survive every change:
 
 - **The signature map lives outside the source root.** The source-package digest
   covers every file under the source root; a signature stored inside would change
-  the digest embedded in the very payload being signed. Both implementations reject
-  a signature map path beneath the source root.
+  the digest embedded in the very payload being signed. The compiler rejects a
+  signature map path beneath the source root.
 - **Fail-closed stays fail-closed.** When `signatureIntent.required` is true and no
   signature is imported, publication fails. `--allow-unsigned-trust` exists solely
   to emit the payload for an external signer, and its output is visibly unsigned.

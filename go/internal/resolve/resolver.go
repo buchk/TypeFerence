@@ -5,6 +5,7 @@
 package resolve
 
 import (
+	"encoding/json"
 	"sort"
 	"strings"
 
@@ -20,31 +21,58 @@ type ProvenanceEntry struct {
 
 // ResolvedSkill is a concrete skill after promotion and contract checks.
 type ResolvedSkill struct {
-	DispatchName     string
-	CapabilityID     string
-	ImplementationID string
-	Description      string
-	Instructions     string
-	InputSchema      string
-	OutputSchema     string
-	ContextFiles     []string
-	Provenance       []ProvenanceEntry
+	DispatchName         string
+	CapabilityID         string
+	ImplementationID     string
+	Description          string
+	Instructions         string
+	InputSchema          string
+	OutputSchema         string
+	ContextFiles         []string
+	RequiresContextTypes []string
+	RequiresTools        []string
+	// Exposed is true when the bound capability's visibility is "exposed":
+	// part of the agent's public callable surface, eligible for a callable
+	// card (ADR-0015). Rides the skill, so promotion carries it automatically.
+	Exposed bool
+	// Sealed marks a binding an embedder may not override or rebind; Required
+	// marks it mandatory (ADR-0016). Both ride the skill through promotion.
+	Sealed   bool
+	Required bool
+	// Variants maps mode name to that mode's instructions for a multimodal
+	// skill (ADR-0012); nil for a unimodal skill. Instructions above holds the
+	// default (neutral) variant's rendering.
+	Variants   map[string]string
+	Provenance []ProvenanceEntry
 }
 
 // ResolvedAgent is a fully composed agent or profile.
 type ResolvedAgent struct {
-	ID           string
-	DisplayName  string
-	Description  string
-	Emit         bool
-	Embeds       []string
-	Satisfies    []string
-	Slots        map[string]string
-	SlotKeys     []string // canonical order for Slots
-	WorkingNorms []string
-	ContextFiles []string
-	Skills       []ResolvedSkill
-	Provenance   []ProvenanceEntry
+	ID                  string
+	DisplayName         string
+	Description         string
+	Emit                bool
+	Embeds              []string
+	Satisfies           []string
+	Slots               map[string]string
+	SlotKeys            []string // canonical order for Slots
+	WorkingNorms        []string
+	ContextFiles        []string
+	Context             []string
+	ContextObjects      []ResolvedContextRef
+	AllowedContextTypes []string
+	Skills              []ResolvedSkill
+	Provenance          []ProvenanceEntry
+}
+
+// ResolvedContextRef is a context object an agent holds by id, with the
+// contextType it instantiates and its materialized content (ADR-0013). Content
+// lets a target inline the held context, not merely reference it.
+type ResolvedContextRef struct {
+	ID          string
+	DisplayName string
+	ContextType string
+	Content     string
 }
 
 type interfaceContract struct {
@@ -82,6 +110,25 @@ func (r *Resolver) ResolveAll() ([]*ResolvedAgent, error) {
 	}
 	for _, id := range r.idsOfKind("interface") {
 		if _, err := r.resolveInterface(id, map[string]bool{}); err != nil {
+			return nil, err
+		}
+	}
+	for _, id := range r.idsOfKind("contextType") {
+		if _, err := r.contextTypeClosure(id, map[string]bool{}); err != nil {
+			return nil, err
+		}
+	}
+	for _, id := range r.idsOfKind("context") {
+		obj := r.resources[id]
+		if _, err := r.contextTypeClosure(obj.ContextType, map[string]bool{}); err != nil {
+			return nil, resource.Errorf("%s: %s", id, err)
+		}
+		if err := r.validateContextFields(obj); err != nil {
+			return nil, err
+		}
+	}
+	for _, id := range r.idsOfKind("tool") {
+		if err := r.validateTool(r.resources[id]); err != nil {
 			return nil, err
 		}
 	}
@@ -166,9 +213,19 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 	}
 	norms := distinct(concatNorms(embedded, current))
 	contexts := distinct(normalizeAll(concatContexts(embedded, current)))
+	contextRefs := distinct(concatContextRefs(embedded, current))
+	allowedContextTypes := intersectAllowLists(embedded, current)
 	skills, skillDepths, err := r.mergeSkills(id, current, embedded, contexts)
 	if err != nil {
 		return nil, err
+	}
+	if current.Kind == "agent" {
+		if err := r.checkSkillDependencies(id, skills, contextRefs); err != nil {
+			return nil, err
+		}
+		if err := r.checkAllowedContext(id, contextRefs, allowedContextTypes); err != nil {
+			return nil, err
+		}
 	}
 
 	satisfies := []string{}
@@ -228,18 +285,21 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 	}
 
 	resolved := &ResolvedAgent{
-		ID:           id,
-		DisplayName:  displayName,
-		Description:  current.Description,
-		Emit:         current.Emit,
-		Embeds:       append([]string{}, current.Embeds...),
-		Satisfies:    satisfies,
-		Slots:        slots,
-		SlotKeys:     slotKeys,
-		WorkingNorms: norms,
-		ContextFiles: contexts,
-		Skills:       sortedSkills,
-		Provenance:   provenance,
+		ID:                  id,
+		DisplayName:         displayName,
+		Description:         current.Description,
+		Emit:                current.Emit,
+		Embeds:              append([]string{}, current.Embeds...),
+		Satisfies:           satisfies,
+		Slots:               slots,
+		SlotKeys:            slotKeys,
+		WorkingNorms:        norms,
+		ContextFiles:        contexts,
+		Context:             contextRefs,
+		ContextObjects:      r.resolveContextObjects(contextRefs),
+		AllowedContextTypes: allowedContextTypes,
+		Skills:              sortedSkills,
+		Provenance:          provenance,
 	}
 	r.slotDepths[id] = slotDepths
 	r.skillDepths[id] = skillDepths
@@ -346,6 +406,9 @@ func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded [
 
 	result := map[string]ResolvedSkill{}
 	depths := map[string]int{}
+	// sealedBy records the embedded component that sealed a capability, so a
+	// shallower or local binding overriding it is a compile error (ADR-0016).
+	sealedBy := map[string]string{}
 	for _, capabilityID := range order {
 		group := candidates[capabilityID]
 		minDepth := group[0].depth
@@ -371,6 +434,18 @@ func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded [
 		}
 		result[capabilityID] = nearest[0].skill
 		depths[capabilityID] = minDepth
+		// A sealed candidate may not be overridden by a shallower binding: the
+		// chosen (nearest) skill must be the sealed one itself.
+		for _, c := range group {
+			if c.skill.Sealed {
+				sealedBy[capabilityID] = c.agent
+				if result[capabilityID].ImplementationID != c.skill.ImplementationID {
+					return nil, nil, resource.Errorf(
+						"%s: capability '%s' is sealed by %s and cannot be overridden",
+						id, capabilityID, c.agent)
+				}
+			}
+		}
 	}
 
 	for _, binding := range current.Skills {
@@ -381,6 +456,11 @@ func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded [
 		capabilityID, err := r.resolveCapabilityID(binding, id)
 		if err != nil {
 			return nil, nil, err
+		}
+		if source, sealed := sealedBy[capabilityID]; sealed {
+			return nil, nil, resource.Errorf(
+				"%s: capability '%s' is sealed by %s and cannot be rebound",
+				id, capabilityID, source)
 		}
 		capability, err := r.require(capabilityID, "capability")
 		if err != nil {
@@ -402,14 +482,25 @@ func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded [
 		if err != nil {
 			return nil, nil, err
 		}
+		instructions := implementation.Instructions
+		defaultInstructions, variants := resolveVariants(implementation.Variants)
+		if variants != nil {
+			instructions = defaultInstructions
+		}
 		result[capabilityID] = ResolvedSkill{
-			CapabilityID:     capabilityID,
-			ImplementationID: implementation.ID,
-			Description:      implementation.Description,
-			Instructions:     implementation.Instructions,
-			InputSchema:      inputSchema,
-			OutputSchema:     outputSchema,
-			ContextFiles:     distinct(append(append([]string{}, contexts...), normalizeAll(implementation.ContextFiles)...)),
+			CapabilityID:         capabilityID,
+			ImplementationID:     implementation.ID,
+			Description:          implementation.Description,
+			Instructions:         instructions,
+			Variants:             variants,
+			InputSchema:          inputSchema,
+			OutputSchema:         outputSchema,
+			ContextFiles:         distinct(append(append([]string{}, contexts...), normalizeAll(implementation.ContextFiles)...)),
+			RequiresContextTypes: aggregateContextRequirements(implementation),
+			RequiresTools:        aggregateToolRequirements(implementation),
+			Exposed:              capability.Visibility == "exposed",
+			Sealed:               binding.Sealed,
+			Required:             binding.Required,
 			Provenance: []ProvenanceEntry{
 				{Field: "skill.capability", Source: capabilityID},
 				{Field: "skill.implementation", Source: implementation.ID},
@@ -500,6 +591,336 @@ func satisfiesContract(contract *interfaceContract, slots map[string]string, ski
 	return true
 }
 
+// contextTypeClosure returns the set of contextType ids a context object of the
+// given type satisfies: the type itself plus every type it transitively embeds
+// (refinement). A governedX that embeds X satisfies both (ADR-0013).
+func (r *Resolver) contextTypeClosure(id string, visiting map[string]bool) ([]string, error) {
+	ct, ok := r.resources[id]
+	if !ok || ct.Kind != "contextType" {
+		return nil, resource.Errorf("Missing contextType: %s", id)
+	}
+	if visiting[id] {
+		return nil, resource.Errorf("ContextType refinement cycle detected at %s", id)
+	}
+	visiting[id] = true
+	defer delete(visiting, id)
+	result := []string{id}
+	for _, embedID := range ct.Embeds {
+		base, err := r.contextTypeClosure(embedID, visiting)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, base...)
+	}
+	return distinct(result), nil
+}
+
+// providedContextTypes is the union of contextType closures over the context
+// objects an agent holds by id.
+func (r *Resolver) providedContextTypes(objectIDs []string) (map[string]bool, error) {
+	provided := map[string]bool{}
+	for _, objID := range objectIDs {
+		obj, ok := r.resources[objID]
+		if !ok || obj.Kind != "context" {
+			return nil, resource.Errorf("Missing context: %s", objID)
+		}
+		closure, err := r.contextTypeClosure(obj.ContextType, map[string]bool{})
+		if err != nil {
+			return nil, err
+		}
+		for _, t := range closure {
+			provided[t] = true
+		}
+	}
+	return provided, nil
+}
+
+// validateContextFields checks a context object against its contextType schema
+// (and every type it refines): required fields are present, and each declared
+// field's structural type matches (ADR-0013).
+func (r *Resolver) validateContextFields(obj *resource.Document) error {
+	closure, err := r.contextTypeClosure(obj.ContextType, map[string]bool{})
+	if err != nil {
+		return err
+	}
+	required := map[string]bool{}
+	propTypes := map[string]string{}
+	for _, ctID := range closure {
+		req, types, err := parseContextSchema(r.resources[ctID].Schema)
+		if err != nil {
+			return resource.Errorf("%s: contextType %s has an invalid schema: %s", obj.ID, ctID, err)
+		}
+		for _, field := range req {
+			required[field] = true
+		}
+		for field, t := range types {
+			propTypes[field] = t
+		}
+	}
+	for _, name := range sortedStringSet(required) {
+		if _, ok := obj.ContextFields[name]; !ok {
+			return resource.Errorf("%s: missing required field %q declared by its contextType schema", obj.ID, name)
+		}
+	}
+	for _, name := range sortedStringMapKeys(propTypes) {
+		field, ok := obj.ContextFields[name]
+		if !ok {
+			continue // absent optional field; presence is handled above
+		}
+		if !kindMatchesType(field.Kind, propTypes[name]) {
+			return resource.Errorf("%s: field %q must be %s per its contextType schema, got a %s",
+				obj.ID, name, propTypes[name], field.Kind)
+		}
+	}
+	return nil
+}
+
+// parseContextSchema reads a JSON Schema's top-level "required" names and
+// property types. A malformed "required" or "properties" is an error rather
+// than a silently-empty result.
+func parseContextSchema(schema string) ([]string, map[string]string, error) {
+	if strings.TrimSpace(schema) == "" {
+		return nil, nil, nil
+	}
+	var doc struct {
+		Required   []string `json:"required"`
+		Properties map[string]struct {
+			Type string `json:"type"`
+		} `json:"properties"`
+	}
+	if err := json.Unmarshal([]byte(schema), &doc); err != nil {
+		return nil, nil, resource.Errorf("\"required\" must be an array of field names and \"properties\" a type map")
+	}
+	types := map[string]string{}
+	for name, prop := range doc.Properties {
+		if prop.Type != "" {
+			types[name] = prop.Type
+		}
+	}
+	return doc.Required, types, nil
+}
+
+// kindMatchesType reports whether a field's structural kind satisfies a JSON
+// Schema type. Unknown/absent types are not enforced.
+func kindMatchesType(kind, schemaType string) bool {
+	switch schemaType {
+	case "array":
+		return kind == "sequence"
+	case "object":
+		return kind == "mapping"
+	case "string", "number", "integer", "boolean":
+		return kind == "scalar"
+	default:
+		return true
+	}
+}
+
+func sortedStringSet(m map[string]bool) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func sortedStringMapKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+// validateTool checks a tool declaration's interface schemas parse (ADR-0017).
+func (r *Resolver) validateTool(tool *resource.Document) error {
+	if _, err := canonicalJSON(tool.InputSchema); err != nil {
+		return resource.Errorf("%s: invalid tool inputSchema: %s", tool.ID, err)
+	}
+	if _, err := canonicalJSON(tool.OutputSchema); err != nil {
+		return resource.Errorf("%s: invalid tool outputSchema: %s", tool.ID, err)
+	}
+	return nil
+}
+
+// checkSkillDependencies verifies, at agent level, that every resolved skill's
+// required context types are provided by held context and its required tools are
+// declared (ADR-0013, ADR-0017).
+func (r *Resolver) checkSkillDependencies(agentID string, skills map[string]ResolvedSkill, contextRefs []string) error {
+	provided, err := r.providedContextTypes(contextRefs)
+	if err != nil {
+		return err
+	}
+	capabilityIDs := make([]string, 0, len(skills))
+	for capabilityID := range skills {
+		capabilityIDs = append(capabilityIDs, capabilityID)
+	}
+	sort.Strings(capabilityIDs)
+	for _, capabilityID := range capabilityIDs {
+		skill := skills[capabilityID]
+		for _, required := range skill.RequiresContextTypes {
+			if !provided[required] {
+				return resource.Errorf("%s: skill %s requires context type %s, which no held context provides",
+					agentID, skill.ImplementationID, required)
+			}
+		}
+		for _, toolID := range skill.RequiresTools {
+			if _, err := r.require(toolID, "tool"); err != nil {
+				return resource.Errorf("%s: skill %s requires tool %s, which is not declared",
+					agentID, skill.ImplementationID, toolID)
+			}
+		}
+	}
+	return nil
+}
+
+// resolveVariants turns authored variants into a mode->instructions map and
+// selects the default (neutral) rendering. The default preference is
+// pipeline > manual > a2a, falling back to the alphabetically-first mode; a
+// target adapter may later select a surface-appropriate variant (ADR-0012).
+func resolveVariants(v map[string]resource.Variant) (string, map[string]string) {
+	if len(v) == 0 {
+		return "", nil
+	}
+	resolved := map[string]string{}
+	names := make([]string, 0, len(v))
+	for name := range v {
+		resolved[name] = v[name].Instructions
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, pref := range []string{"pipeline", "manual", "a2a"} {
+		if ins, ok := resolved[pref]; ok {
+			return ins, resolved
+		}
+	}
+	return resolved[names[0]], resolved
+}
+
+// aggregateContextRequirements unions a skill's context-type requirements with
+// every variant's, since a multimodal skill emits all of its variants and the
+// agent must satisfy each (ADR-0012 per-variant narrowing; ADR-0013).
+func aggregateContextRequirements(impl *resource.Document) []string {
+	reqs := append([]string{}, impl.RequiresContextTypes...)
+	for _, mode := range sortedKeys(impl.Variants) {
+		reqs = append(reqs, impl.Variants[mode].RequiresContextTypes...)
+	}
+	return distinct(reqs)
+}
+
+func aggregateToolRequirements(impl *resource.Document) []string {
+	reqs := append([]string{}, impl.RequiresTools...)
+	for _, mode := range sortedKeys(impl.Variants) {
+		reqs = append(reqs, impl.Variants[mode].RequiresTools...)
+	}
+	return distinct(reqs)
+}
+
+func sortedKeys(m map[string]resource.Variant) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+// intersectAllowLists computes the effective allowedContextTypes for a
+// component: the intersection of every non-empty allow-list among itself and
+// its embedded components (empty result means unrestricted; ADR-0013).
+func intersectAllowLists(embedded []*ResolvedAgent, current *resource.Document) []string {
+	lists := [][]string{}
+	for _, c := range embedded {
+		if len(c.AllowedContextTypes) > 0 {
+			lists = append(lists, c.AllowedContextTypes)
+		}
+	}
+	if len(current.AllowedContextTypes) > 0 {
+		lists = append(lists, current.AllowedContextTypes)
+	}
+	if len(lists) == 0 {
+		return nil
+	}
+	result := append([]string{}, lists[0]...)
+	for _, l := range lists[1:] {
+		set := map[string]bool{}
+		for _, x := range l {
+			set[x] = true
+		}
+		filtered := result[:0:0]
+		for _, x := range result {
+			if set[x] {
+				filtered = append(filtered, x)
+			}
+		}
+		result = filtered
+	}
+	return distinct(result)
+}
+
+// checkAllowedContext verifies each held context object satisfies at least one
+// allowed contextType (through its refinement closure). Unrestricted when the
+// effective allow-list is empty (ADR-0013).
+func (r *Resolver) checkAllowedContext(agentID string, contextRefs, allowed []string) error {
+	if len(allowed) == 0 {
+		return nil
+	}
+	allowSet := map[string]bool{}
+	for _, a := range allowed {
+		allowSet[a] = true
+	}
+	for _, objID := range contextRefs {
+		obj, ok := r.resources[objID]
+		if !ok || obj.Kind != "context" {
+			continue // existence is checked in providedContextTypes
+		}
+		closure, err := r.contextTypeClosure(obj.ContextType, map[string]bool{})
+		if err != nil {
+			return err
+		}
+		permitted := false
+		for _, t := range closure {
+			if allowSet[t] {
+				permitted = true
+				break
+			}
+		}
+		if !permitted {
+			return resource.Errorf("%s: held context %s (type %s) is not among the allowed context types",
+				agentID, objID, obj.ContextType)
+		}
+	}
+	return nil
+}
+
+// resolveContextObjects turns held context ids into (id, contextType) refs,
+// sorted by id for deterministic emission. Ids that do not resolve to a context
+// object are skipped (agent-level checks surface missing context elsewhere).
+func (r *Resolver) resolveContextObjects(contextRefs []string) []ResolvedContextRef {
+	refs := []ResolvedContextRef{}
+	for _, id := range contextRefs {
+		if obj, ok := r.resources[id]; ok && obj.Kind == "context" {
+			refs = append(refs, ResolvedContextRef{
+				ID:          id,
+				DisplayName: obj.DisplayName,
+				ContextType: obj.ContextType,
+				Content:     obj.Content,
+			})
+		}
+	}
+	sort.Slice(refs, func(i, j int) bool { return refs[i].ID < refs[j].ID })
+	return refs
+}
+
+func concatContextRefs(embedded []*ResolvedAgent, current *resource.Document) []string {
+	values := []string{}
+	for _, component := range embedded {
+		values = append(values, component.Context...)
+	}
+	return append(values, current.Context...)
+}
+
 func (r *Resolver) require(id, kind string) (*resource.Document, error) {
 	doc, ok := r.resources[id]
 	if !ok || doc.Kind != kind {
@@ -563,6 +984,30 @@ func ensureImplementsCapability(capability, implementation *resource.Document, a
 func withDispatch(skill ResolvedSkill, agentID string) ResolvedSkill {
 	skill.DispatchName = Leaf(agentID) + "." + Leaf(skill.CapabilityID)
 	return skill
+}
+
+// InstructionsFor returns the instructions for an invocation mode: the variant's
+// rendering when this is a multimodal skill that declares the mode, otherwise the
+// default Instructions (ADR-0012). Lets a surface pick its face — e.g. a callable
+// card selects the a2a variant.
+func (s ResolvedSkill) InstructionsFor(mode string) string {
+	if ins, ok := s.Variants[mode]; ok {
+		return ins
+	}
+	return s.Instructions
+}
+
+// ExposedSkills returns the resolved skills whose capability is exposed, in
+// dispatch order: the agent's public callable surface (ADR-0015). A callable
+// card (ADR-0018) is emitted from exactly these, not from every skill.
+func (a *ResolvedAgent) ExposedSkills() []ResolvedSkill {
+	out := []ResolvedSkill{}
+	for _, s := range a.Skills {
+		if s.Exposed {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 // Leaf extracts the unversioned name segment of a resource id

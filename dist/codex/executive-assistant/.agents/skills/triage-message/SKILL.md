@@ -9,5 +9,4 @@ Separate facts from assumptions. Return a concise recommendation; do not send a 
 ## Context loaded on invocation
 
 - `context/organization.md`
-- `context/safety-policy.md`
 - `context/principal.md`
