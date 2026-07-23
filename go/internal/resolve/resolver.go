@@ -36,8 +36,12 @@ type ResolvedSkill struct {
 	Exposed bool
 	// Sealed marks a binding an embedder may not override or rebind; Required
 	// marks it mandatory (ADR-0016). Both ride the skill through promotion.
-	Sealed     bool
-	Required   bool
+	Sealed   bool
+	Required bool
+	// Variants maps mode name to that mode's instructions for a multimodal
+	// skill (ADR-0012); nil for a unimodal skill. Instructions above holds the
+	// default (neutral) variant's rendering.
+	Variants   map[string]string
 	Provenance []ProvenanceEntry
 }
 
@@ -455,11 +459,17 @@ func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded [
 		if err != nil {
 			return nil, nil, err
 		}
+		instructions := implementation.Instructions
+		defaultInstructions, variants := resolveVariants(implementation.Variants)
+		if variants != nil {
+			instructions = defaultInstructions
+		}
 		result[capabilityID] = ResolvedSkill{
 			CapabilityID:         capabilityID,
 			ImplementationID:     implementation.ID,
 			Description:          implementation.Description,
-			Instructions:         implementation.Instructions,
+			Instructions:         instructions,
+			Variants:             variants,
 			InputSchema:          inputSchema,
 			OutputSchema:         outputSchema,
 			ContextFiles:         distinct(append(append([]string{}, contexts...), normalizeAll(implementation.ContextFiles)...)),
@@ -642,6 +652,29 @@ func (r *Resolver) checkSkillDependencies(agentID string, skills map[string]Reso
 		}
 	}
 	return nil
+}
+
+// resolveVariants turns authored variants into a mode->instructions map and
+// selects the default (neutral) rendering. The default preference is
+// pipeline > manual > a2a, falling back to the alphabetically-first mode; a
+// target adapter may later select a surface-appropriate variant (ADR-0012).
+func resolveVariants(v map[string]resource.Variant) (string, map[string]string) {
+	if len(v) == 0 {
+		return "", nil
+	}
+	resolved := map[string]string{}
+	names := make([]string, 0, len(v))
+	for name := range v {
+		resolved[name] = v[name].Instructions
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, pref := range []string{"pipeline", "manual", "a2a"} {
+		if ins, ok := resolved[pref]; ok {
+			return ins, resolved
+		}
+	}
+	return resolved[names[0]], resolved
 }
 
 func concatContextRefs(embedded []*ResolvedAgent, current *resource.Document) []string {

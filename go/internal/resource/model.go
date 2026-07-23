@@ -44,6 +44,10 @@ type Document struct {
 	// Visibility is "internal" (default) or "exposed" for a capability
 	// (ADR-0015). Empty means internal.
 	Visibility string
+	// Variants holds mode-specific renderings for a multimodal skill
+	// (ADR-0012): mode name -> variant. A skill declares either Instructions
+	// or Variants, never both.
+	Variants map[string]Variant
 }
 
 // SkillBinding attaches a skill implementation (and optionally the capability
@@ -54,6 +58,12 @@ type SkillBinding struct {
 	Capability *string
 	Sealed     bool
 	Required   bool
+}
+
+// Variant is a mode-specific rendering of a multimodal skill (ADR-0012). It
+// varies instructions only; the capability contract (schemas) is invariant.
+type Variant struct {
+	Instructions string
 }
 
 // NewDocument returns a Document carrying the spec-defined defaults.

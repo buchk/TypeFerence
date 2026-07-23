@@ -1,6 +1,8 @@
 package compile
 
 import (
+	"sort"
+
 	"github.com/buchk/TypeFerence/go/internal/jsonx"
 	"github.com/buchk/TypeFerence/go/internal/resolve"
 )
@@ -38,7 +40,7 @@ func bundleValue(agent *resolve.ResolvedAgent) jsonx.Value {
 }
 
 func skillValue(skill resolve.ResolvedSkill) jsonx.Value {
-	return jsonx.Obj{
+	obj := jsonx.Obj{
 		{K: "dispatchName", V: jsonx.Str(skill.DispatchName)},
 		{K: "capabilityId", V: jsonx.Str(skill.CapabilityID)},
 		{K: "implementationId", V: jsonx.Str(skill.ImplementationID)},
@@ -47,8 +49,23 @@ func skillValue(skill resolve.ResolvedSkill) jsonx.Value {
 		{K: "inputSchema", V: jsonx.Str(skill.InputSchema)},
 		{K: "outputSchema", V: jsonx.Str(skill.OutputSchema)},
 		{K: "contextFiles", V: stringArr(skill.ContextFiles)},
-		{K: "provenance", V: provenanceValue(skill.Provenance)},
 	}
+	// A multimodal skill also emits its per-mode renderings. This member is
+	// absent for unimodal skills, so their bundle output is unchanged (ADR-0012).
+	if len(skill.Variants) > 0 {
+		modes := make([]string, 0, len(skill.Variants))
+		for mode := range skill.Variants {
+			modes = append(modes, mode)
+		}
+		sort.Strings(modes)
+		variants := jsonx.Obj{}
+		for _, mode := range modes {
+			variants = append(variants, jsonx.Member{K: mode, V: jsonx.Str(skill.Variants[mode])})
+		}
+		obj = append(obj, jsonx.Member{K: "variants", V: variants})
+	}
+	obj = append(obj, jsonx.Member{K: "provenance", V: provenanceValue(skill.Provenance)})
+	return obj
 }
 
 // provenanceJSON renders the canonical indented provenance.json.

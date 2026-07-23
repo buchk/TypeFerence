@@ -161,6 +161,7 @@ func parseDocument(text string) (*Document, error) {
 		"context":              stringListField(&doc.Context),
 		"requiresTools":        stringListField(&doc.RequiresTools),
 		"visibility":           stringField(&doc.Visibility),
+		"variants":             variantsField(&doc.Variants),
 	}); err != nil {
 		return nil, err
 	}
@@ -202,6 +203,9 @@ func applyBody(doc *Document, body, file string) error {
 	case "skill":
 		if strings.TrimSpace(body) == "" {
 			return nil
+		}
+		if len(doc.Variants) != 0 {
+			return Errorf("%s: a multimodal skill has no single body; put instructions inside each variant", file)
 		}
 		if strings.TrimSpace(doc.Instructions) != "" {
 			return Errorf("%s: a .tfer skill sets instructions in both the body and frontmatter; use one", file)
@@ -339,6 +343,30 @@ func stringMapField(target *map[string]string) fieldDecoder {
 	}
 }
 
+func variantsField(target *map[string]Variant) fieldDecoder {
+	return func(node *yaml.Node) error {
+		if node.Kind != yaml.MappingNode {
+			return Errorf("expected a mapping")
+		}
+		m := map[string]Variant{}
+		for i := 0; i+1 < len(node.Content); i += 2 {
+			key := resolveAlias(node.Content[i])
+			if key.Kind != yaml.ScalarNode {
+				return Errorf("mapping keys must be scalars")
+			}
+			var v Variant
+			if err := decodeMapping(resolveAlias(node.Content[i+1]), map[string]fieldDecoder{
+				"instructions": stringField(&v.Instructions),
+			}); err != nil {
+				return err
+			}
+			m[key.Value] = v
+		}
+		*target = m
+		return nil
+	}
+}
+
 func skillsField(target *[]SkillBinding) fieldDecoder {
 	return func(node *yaml.Node) error {
 		if node.Kind != yaml.SequenceNode {
@@ -460,6 +488,22 @@ func validateDocumentShape(doc *Document, file string) error {
 		}
 		if doc.Visibility != "internal" && doc.Visibility != "exposed" {
 			return Errorf("%s: visibility must be 'internal' or 'exposed'", file)
+		}
+	}
+	if len(doc.Variants) != 0 {
+		if doc.Kind != "skill" {
+			return Errorf("%s: only skills declare variants", file)
+		}
+		if strings.TrimSpace(doc.Instructions) != "" {
+			return Errorf("%s: a skill declares either instructions or variants, not both", file)
+		}
+		for mode, v := range doc.Variants {
+			if !slotName.MatchString(mode) {
+				return Errorf("%s: variant mode '%s' must be an ASCII identifier", file, mode)
+			}
+			if strings.TrimSpace(v.Instructions) == "" {
+				return Errorf("%s: variant '%s' must set instructions", file, mode)
+			}
 		}
 	}
 	if doc.Kind == "skill" && strings.TrimSpace(doc.Binds) == "" {
