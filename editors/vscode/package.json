@@ -1,0 +1,47 @@
+{
+  "name": "typeference",
+  "displayName": "TypeFerence",
+  "description": "Language support for TypeFerence .tfer sources — diagnostics, completion, go-to-definition, and symbols via typeference-lsp.",
+  "version": "0.0.1",
+  "publisher": "buchk",
+  "license": "Apache-2.0",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "activationEvents": [
+    "onLanguage:tfer"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "tfer",
+        "aliases": [
+          "TypeFerence",
+          "tfer"
+        ],
+        "extensions": [
+          ".tfer"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "tfer",
+        "scopeName": "source.tfer",
+        "path": "./syntaxes/tfer.tmLanguage.json"
+      }
+    ]
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.75.0"
+  }
+}
