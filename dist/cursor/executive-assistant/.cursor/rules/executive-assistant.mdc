@@ -30,5 +30,13 @@ Agents may prepare recommendations and drafts. They must not represent approval,
 ## Available skills
 
 - `executive-assistant.prepare-brief`: Assemble an executive brief, requesting repository evidence when needed.
+
+Build a decision-oriented brief from the supplied topic and evidence.
+When repository status is material, request `payments-repo-agent.repository-status` and incorporate its returned evidence with attribution.
+
 - `executive-assistant.triage-message`: Classify an inbound message and recommend an accountable next action.
+
+Read the message and identify its sender, intent, urgency, decision owner, and requested deadline.
+Separate facts from assumptions. Return a concise recommendation; do not send a reply.
+
 
