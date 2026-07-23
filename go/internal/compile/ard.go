@@ -36,6 +36,19 @@ func writeArdCatalog(
 		return resource.Errorf("Source directory not found: %s", source)
 	}
 	sourceName := urnSegment(filepath.Base(strings.TrimRight(sourceAbs, `\/`)))
+	sourceVersion := "1.0.0"
+	project, projErr := resource.LoadProject(source)
+	if projErr != nil {
+		return projErr
+	}
+	if project != nil {
+		if strings.TrimSpace(project.Name) != "" {
+			sourceName = urnSegment(project.Name)
+		}
+		if strings.TrimSpace(project.Version) != "" {
+			sourceVersion = project.Version
+		}
+	}
 	sourceIdentifier := "urn:air:" + publisherDomain + ":typeference:source:" + sourceName
 	sourceHash, err := HashDirectory(source)
 	if err != nil {
@@ -55,7 +68,7 @@ func writeArdCatalog(
 		{K: "displayName", V: jsonx.Str("TypeFerence source package: " + sourceName)},
 		{K: "type", V: jsonx.Str("application/vnd.typeference.source-package+json")},
 		{K: "description", V: jsonx.Str("Canonical typed source package for validation, audit, and reproducible compilation.")},
-		{K: "version", V: jsonx.Str("1.0.0")},
+		{K: "version", V: jsonx.Str(sourceVersion)},
 		{K: "data", V: jsonx.Obj{
 			{K: "schemaVersion", V: jsonx.Num("1")},
 			{K: "digest", V: jsonx.Str(sourceDigest)},
@@ -169,50 +182,21 @@ func writeArdCatalog(
 		}
 	}
 
-	// Callable-resource cards: the fully-assembled invocation contract for each
-	// agent's exposed capabilities (ADR-0018). Emitted only when an agent
-	// exposes something, so agents with no exposed capability add no entry and
-	// their catalog is unchanged.
+	// Discovery entries: for each agent that exposes a capability, an A2A Agent
+	// Card and an MCP server, both in the official media types a registry
+	// indexes, embedding the resource as `data` (value-or-reference honored).
+	// There is no proprietary catalog entry — the catalog is pure discovery; the
+	// fulfillment (instruction templates, held context) rides the MCP manifest's
+	// x-typeference extension, i.e. the deployable server artifact (ADR-0018).
 	for _, agent := range agents {
-		exposed := agent.ExposedSkills()
-		if len(exposed) == 0 {
+		if len(agent.ExposedSkills()) == 0 {
 			continue
 		}
 		slug := resolve.Leaf(agent.ID)
-		identifier := "urn:air:" + publisherDomain + ":typeference:callable:" + slug
 		version := agent.ID[strings.LastIndex(agent.ID, "@")+1:]
-
-		byName := map[string]resolve.ResolvedSkill{}
-		toolNames := make([]string, 0, len(exposed))
-		for _, skill := range exposed {
-			byName[skill.DispatchName] = skill
-			toolNames = append(toolNames, skill.DispatchName)
-		}
-		sort.Strings(toolNames)
-		tools := jsonx.Arr{}
-		for _, name := range toolNames {
-			skill := byName[name]
-			tool := jsonx.Obj{
-				{K: "name", V: jsonx.Str(skill.DispatchName)},
-				{K: "description", V: jsonx.Str(skill.Description)},
-				{K: "inputSchema", V: jsonx.Str(skill.InputSchema)},
-				{K: "outputSchema", V: jsonx.Str(skill.OutputSchema)},
-				// The extern tools an invoker must provide to run this capability
-				// (ADR-0017): part of the complete invocation contract.
-				{K: "requiresTools", V: stringArr(skill.RequiresTools)},
-				// a2a is the default agent-to-agent rendering; every declared mode
-				// is also carried so a consumer can invoke in any surface (ADR-0012,
-				// ADR-0018).
-				{K: "instructionsTemplate", V: jsonx.Str(skill.InstructionsFor("a2a"))},
-			}
-			if len(skill.Variants) > 0 {
-				variants := jsonx.Obj{}
-				for _, mode := range sortedModes(skill.Variants) {
-					variants = append(variants, jsonx.Member{K: mode, V: jsonx.Str(skill.Variants[mode])})
-				}
-				tool = append(tool, jsonx.Member{K: "variants", V: variants})
-			}
-			tools = append(tools, tool)
+		names := []string{}
+		for _, skill := range exposedInOrder(agent) {
+			names = append(names, skill.DispatchName)
 		}
 		manifest := jsonx.Obj{
 			{K: "identity", V: jsonx.Str("https://" + publisherDomain)},
@@ -223,33 +207,6 @@ func writeArdCatalog(
 				{K: "sourceDigest", V: jsonx.Str(sourceDigest)},
 			}}},
 		}
-		entries = append(entries, jsonx.Obj{
-			{K: "identifier", V: jsonx.Str(identifier)},
-			{K: "displayName", V: jsonx.Str(agent.DisplayName + " (callable)")},
-			{K: "type", V: jsonx.Str("application/vnd.typeference.callable-card+json")},
-			{K: "description", V: jsonx.Str("Callable resource card: exposed capabilities of " + agent.DisplayName + ".")},
-			{K: "capabilities", V: stringArr(toolNames)},
-			{K: "version", V: jsonx.Str(version)},
-			{K: "data", V: jsonx.Obj{
-				{K: "schemaVersion", V: jsonx.Num("1")},
-				{K: "agentId", V: jsonx.Str(agent.ID)},
-				{K: "tools", V: tools},
-				// Held context travels with the card so an invoker has the agent's
-				// context, not only its tool schemas (ADR-0013, ADR-0018).
-				{K: "context", V: callableContext(agent.ContextObjects)},
-			}},
-			{K: "metadata", V: jsonx.Obj{
-				{K: "generatedBy", V: jsonx.Str("TypeFerence")},
-				{K: "role", V: jsonx.Str("callable-resource")},
-				{K: "sourceDigest", V: jsonx.Str(sourceDigest)},
-				{K: "sourceIdentifier", V: jsonx.Str(sourceIdentifier)},
-			}},
-			{K: "trustManifest", V: manifest},
-		})
-		// ARD-conformant entries in the official media types a registry indexes
-		// (an A2A agent card and an MCP server), embedding the resource as `data`
-		// so value-or-reference is honored. These sit alongside the richer
-		// (proprietary) callable card above (ADR-0018).
 		meta := jsonx.Obj{
 			{K: "generatedBy", V: jsonx.Str("TypeFerence")},
 			{K: "sourceDigest", V: jsonx.Str(sourceDigest)},
@@ -260,7 +217,7 @@ func writeArdCatalog(
 			{K: "displayName", V: jsonx.Str(agent.DisplayName + " (A2A agent card)")},
 			{K: "type", V: jsonx.Str("application/a2a-agent-card+json")},
 			{K: "description", V: jsonx.Str("A2A Agent Card for " + agent.DisplayName + ".")},
-			{K: "capabilities", V: stringArr(toolNames)},
+			{K: "capabilities", V: stringArr(names)},
 			{K: "version", V: jsonx.Str(version)},
 			{K: "data", V: a2aCardValue(agent, publisherDomain)},
 			{K: "metadata", V: meta},
@@ -271,9 +228,9 @@ func writeArdCatalog(
 			{K: "displayName", V: jsonx.Str(agent.DisplayName + " (MCP tools)")},
 			{K: "type", V: jsonx.Str("application/mcp-server+json")},
 			{K: "description", V: jsonx.Str("MCP tool manifest for " + agent.DisplayName + ".")},
-			{K: "capabilities", V: stringArr(toolNames)},
+			{K: "capabilities", V: stringArr(names)},
 			{K: "version", V: jsonx.Str(version)},
-			{K: "data", V: jsonx.Obj{{K: "tools", V: mcpToolsValue(agent)}}},
+			{K: "data", V: mcpManifestValue(agent)},
 			{K: "metadata", V: meta},
 			{K: "trustManifest", V: manifest},
 		})
@@ -422,8 +379,7 @@ func writeDiscoveryCards(ardRoot string, agents []*resolve.ResolvedAgent, publis
 		if err := writeFile(filepath.Join(ardRoot, slug+".agent-card.json"), jsonx.Indented(a2aCardValue(agent, publisherDomain))+"\n", written); err != nil {
 			return err
 		}
-		mcp := jsonx.Obj{{K: "tools", V: mcpToolsValue(agent)}}
-		if err := writeFile(filepath.Join(ardRoot, slug+".mcp.json"), jsonx.Indented(mcp)+"\n", written); err != nil {
+		if err := writeFile(filepath.Join(ardRoot, slug+".mcp.json"), jsonx.Indented(mcpManifestValue(agent))+"\n", written); err != nil {
 			return err
 		}
 	}
@@ -472,16 +428,45 @@ func a2aCardValue(agent *resolve.ResolvedAgent, publisherDomain string) jsonx.Ob
 	}
 }
 
+// mcpManifestValue builds a full MCP tool manifest for an agent: standard MCP
+// tools plus a top-level x-typeference extension carrying the agent's held
+// context. Generic MCP clients read the standard fields and ignore x-*; a
+// TypeFerence-aware server also uses the extension to fulfill calls.
+func mcpManifestValue(agent *resolve.ResolvedAgent) jsonx.Obj {
+	manifest := jsonx.Obj{{K: "tools", V: mcpToolsValue(agent)}}
+	if len(agent.ContextObjects) > 0 {
+		manifest = append(manifest, jsonx.Member{K: "x-typeference", V: jsonx.Obj{
+			{K: "context", V: callableContext(agent.ContextObjects)},
+		}})
+	}
+	return manifest
+}
+
 // mcpToolsValue builds the MCP tool array (modelcontextprotocol.io) for an
-// agent's exposed capabilities, with schemas as JSON Schema objects.
+// agent's exposed capabilities, with schemas as JSON Schema objects. Each tool
+// carries an x-typeference extension with the fulfillment a server needs — the
+// a2a instructions template, every declared variant, and required tools — which
+// generic MCP clients ignore.
 func mcpToolsValue(agent *resolve.ResolvedAgent) jsonx.Arr {
 	tools := jsonx.Arr{}
 	for _, skill := range exposedInOrder(agent) {
+		ext := jsonx.Obj{
+			{K: "instructionsTemplate", V: jsonx.Str(skill.InstructionsFor("a2a"))},
+			{K: "requiresTools", V: stringArr(skill.RequiresTools)},
+		}
+		if len(skill.Variants) > 0 {
+			variants := jsonx.Obj{}
+			for _, mode := range sortedModes(skill.Variants) {
+				variants = append(variants, jsonx.Member{K: mode, V: jsonx.Str(skill.Variants[mode])})
+			}
+			ext = append(ext, jsonx.Member{K: "variants", V: variants})
+		}
 		tools = append(tools, jsonx.Obj{
 			{K: "name", V: jsonx.Str(skill.DispatchName)},
 			{K: "description", V: jsonx.Str(skill.Description)},
 			{K: "inputSchema", V: schemaObject(skill.InputSchema)},
 			{K: "outputSchema", V: schemaObject(skill.OutputSchema)},
+			{K: "x-typeference", V: ext},
 		})
 	}
 	return tools

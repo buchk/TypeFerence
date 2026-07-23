@@ -39,22 +39,17 @@ func buildCatalog(t *testing.T, exposed bool) string {
 	return string(raw)
 }
 
-func TestCallableCardEmittedForExposedCapability(t *testing.T) {
+func TestCatalogHasNoProprietaryCard(t *testing.T) {
 	catalog := buildCatalog(t, true)
-	if !strings.Contains(catalog, "callable-card") {
-		t.Error("expected a callable-resource card for an exposed capability")
-	}
-	if !strings.Contains(catalog, "typeference:callable:agent") {
-		t.Error("expected the callable card identifier")
-	}
-	if !strings.Contains(catalog, "instructionsTemplate") {
-		t.Error("expected the card to carry the instruction-package template")
+	if strings.Contains(catalog, "callable-card") || strings.Contains(catalog, "typeference:callable:") {
+		t.Error("the ai-catalog.json must carry no proprietary callable card; discovery is standard-typed")
 	}
 }
 
-func TestNoCallableCardWithoutExposure(t *testing.T) {
-	catalog := buildCatalog(t, false)
-	if strings.Contains(catalog, "callable-card") {
-		t.Error("an internal-only capability must not emit a callable card")
+func TestCatalogUsesStandardDiscoveryTypes(t *testing.T) {
+	// jsonx escapes the '+' in a media type, so match without the "+json" suffix.
+	catalog := buildCatalog(t, true)
+	if !strings.Contains(catalog, "application/a2a-agent-card") || !strings.Contains(catalog, "application/mcp-server") {
+		t.Error("an exposed agent should produce standard A2A and MCP catalog entries")
 	}
 }

@@ -37,7 +37,10 @@ func Load(sourceDir string, trustConfigPath string) (map[string]*Document, error
 	if info, statErr := os.Stat(root); statErr != nil || !info.IsDir() {
 		return nil, Errorf("Source directory not found: %s", root)
 	}
-	excluded := []string{filepath.Join(root, "typeference.trust.yaml")}
+	excluded := []string{
+		filepath.Join(root, "typeference.trust.yaml"),
+		filepath.Join(root, ProjectManifestFile),
+	}
 	if trustConfigPath != "" {
 		if full, absErr := filepath.Abs(trustConfigPath); absErr == nil {
 			excluded = append(excluded, full)

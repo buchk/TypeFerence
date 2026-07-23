@@ -36,7 +36,27 @@
           "evidence",
           "risks"
         ]
+      },
+      "x-typeference": {
+        "instructionsTemplate": "Apply the repository-status capability for the payments service and return\nattributed evidence for the calling agent \u2014 contract compatibility,\nreconciliation, and rollback readiness \u2014 with no user-facing framing. Do not\nreport the service healthy when any required financial-control signal is\nunavailable.\n",
+        "requiresTools": [
+          "helio/tools/repository-signals@1.0.0"
+        ],
+        "variants": {
+          "a2a": "Apply the repository-status capability for the payments service and return\nattributed evidence for the calling agent \u2014 contract compatibility,\nreconciliation, and rollback readiness \u2014 with no user-facing framing. Do not\nreport the service healthy when any required financial-control signal is\nunavailable.\n",
+          "manual": "Apply the repository-status capability for the payments service, then include\npayment-contract compatibility, reconciliation checks, and rollback readiness,\nsurfacing uncertainty conversationally. Do not report the service healthy when\nany required financial-control signal is unavailable.\n",
+          "pipeline": "Apply the repository-status capability for the payments service and emit only\nthe strict output object. Mark any unavailable financial-control signal as an\nexplicit null; do not report the service healthy when one is missing.\n"
+        }
       }
     }
-  ]
+  ],
+  "x-typeference": {
+    "context": [
+      {
+        "id": "helio/context/safety-policy@1.0.0",
+        "contextType": "helio/context-types/safety-policy@1.0.0",
+        "content": "# Safety policy\n\nAgents may prepare recommendations and drafts. They must not represent approval, transmit external messages, or make irreversible changes without explicit authority.\n"
+      }
+    ]
+  }
 }

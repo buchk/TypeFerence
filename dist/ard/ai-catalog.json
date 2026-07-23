@@ -13,7 +13,7 @@
       "version": "1.0.0",
       "data": {
         "schemaVersion": 1,
-        "digest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1",
+        "digest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
         "files": [
           {
             "path": "agents/executive-assistant.agent.tfer",
@@ -124,6 +124,11 @@
             "path": "tools/repository-signals.tool.tfer",
             "mediaType": "text/plain",
             "content": "---\nschemaVersion: 3\nkind: tool\nid: helio/tools/repository-signals@1.0.0\ndisplayName: Repository Signals\ndescription: \u003E-\n  Reads version-control and test signals for a repository at runtime. TypeFerence\n  declares this extern; the deployer implements the body (ADR-0017, Door B).\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022repository\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022required\u0022:[\u0022repository\u0022],\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022branch\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022tests\u0022:{\u0022type\u0022:\u0022string\u0022}}}\u0027\n---\n"
+          },
+          {
+            "path": "typeference.yaml",
+            "mediaType": "application/yaml",
+            "content": "schemaVersion: 1\nname: helio\nversion: 1.0.0\npublisher: helio.example\n"
           }
         ]
       },
@@ -176,7 +181,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1",
+        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "neutral"
       },
@@ -187,7 +192,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1"
+            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
           }
         ]
       }
@@ -245,7 +250,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1",
+        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "neutral"
       },
@@ -256,7 +261,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1"
+            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
           }
         ]
       }
@@ -305,7 +310,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1",
+        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "codex"
       },
@@ -316,7 +321,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1"
+            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
           }
         ]
       }
@@ -359,7 +364,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1",
+        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "codex"
       },
@@ -370,7 +375,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1"
+            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
           }
         ]
       }
@@ -409,7 +414,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1",
+        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "copilot"
       },
@@ -420,7 +425,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1"
+            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
           }
         ]
       }
@@ -458,7 +463,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1",
+        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "copilot"
       },
@@ -469,7 +474,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1"
+            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
           }
         ]
       }
@@ -508,7 +513,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1",
+        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "cursor"
       },
@@ -519,7 +524,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1"
+            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
           }
         ]
       }
@@ -557,7 +562,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1",
+        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "cursor"
       },
@@ -568,64 +573,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1"
-          }
-        ]
-      }
-    },
-    {
-      "identifier": "urn:air:helio.example:typeference:callable:executive-assistant",
-      "displayName": "Helio Executive Assistant (callable)",
-      "type": "application/vnd.typeference.callable-card\u002Bjson",
-      "description": "Callable resource card: exposed capabilities of Helio Executive Assistant.",
-      "capabilities": [
-        "executive-assistant.prepare-brief",
-        "executive-assistant.triage-message"
-      ],
-      "version": "1.0.0",
-      "data": {
-        "schemaVersion": 1,
-        "agentId": "helio/executive-assistant@1.0.0",
-        "tools": [
-          {
-            "name": "executive-assistant.prepare-brief",
-            "description": "Assemble an executive brief, requesting repository evidence when needed.",
-            "inputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022topic\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022topic\u0022],\u0022additionalProperties\u0022:false}",
-            "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022brief\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022openQuestions\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022brief\u0022,\u0022openQuestions\u0022]}",
-            "requiresTools": [],
-            "instructionsTemplate": "Build a decision-oriented brief from the supplied topic and evidence.\nWhen repository status is material, request \u0060payments-repo-agent.repository-status\u0060 and incorporate its returned evidence with attribution.\n"
-          },
-          {
-            "name": "executive-assistant.triage-message",
-            "description": "Classify an inbound message and recommend an accountable next action.",
-            "inputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022message\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022required\u0022:[\u0022message\u0022],\u0022additionalProperties\u0022:false}",
-            "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022summary\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022urgency\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022owner\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022nextAction\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022required\u0022:[\u0022summary\u0022,\u0022urgency\u0022,\u0022owner\u0022,\u0022nextAction\u0022]}",
-            "requiresTools": [],
-            "instructionsTemplate": "Read the message and identify its sender, intent, urgency, decision owner, and requested deadline.\nSeparate facts from assumptions. Return a concise recommendation; do not send a reply.\n"
-          }
-        ],
-        "context": [
-          {
-            "id": "helio/context/safety-policy@1.0.0",
-            "contextType": "helio/context-types/safety-policy@1.0.0",
-            "content": "# Safety policy\n\nAgents may prepare recommendations and drafts. They must not represent approval, transmit external messages, or make irreversible changes without explicit authority.\n"
-          }
-        ]
-      },
-      "metadata": {
-        "generatedBy": "TypeFerence",
-        "role": "callable-resource",
-        "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1",
-        "sourceIdentifier": "urn:air:helio.example:typeference:source:helio"
-      },
-      "trustManifest": {
-        "identity": "https://helio.example",
-        "identityType": "https",
-        "provenance": [
-          {
-            "relation": "derivedFrom",
-            "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1"
+            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
           }
         ]
       }
@@ -682,7 +630,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1",
+        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio"
       },
       "trustManifest": {
@@ -692,7 +640,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1"
+            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
           }
         ]
       }
@@ -747,6 +695,10 @@
                 "brief",
                 "openQuestions"
               ]
+            },
+            "x-typeference": {
+              "instructionsTemplate": "Build a decision-oriented brief from the supplied topic and evidence.\nWhen repository status is material, request \u0060payments-repo-agent.repository-status\u0060 and incorporate its returned evidence with attribution.\n",
+              "requiresTools": []
             }
           },
           {
@@ -786,68 +738,26 @@
                 "owner",
                 "nextAction"
               ]
-            }
-          }
-        ]
-      },
-      "metadata": {
-        "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1",
-        "sourceIdentifier": "urn:air:helio.example:typeference:source:helio"
-      },
-      "trustManifest": {
-        "identity": "https://helio.example",
-        "identityType": "https",
-        "provenance": [
-          {
-            "relation": "derivedFrom",
-            "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1"
-          }
-        ]
-      }
-    },
-    {
-      "identifier": "urn:air:helio.example:typeference:callable:payments-repo-agent",
-      "displayName": "Helio Payments Repository Agent (callable)",
-      "type": "application/vnd.typeference.callable-card\u002Bjson",
-      "description": "Callable resource card: exposed capabilities of Helio Payments Repository Agent.",
-      "capabilities": [
-        "payments-repo-agent.repository-status"
-      ],
-      "version": "1.0.0",
-      "data": {
-        "schemaVersion": 1,
-        "agentId": "helio/payments-repo-agent@1.0.0",
-        "tools": [
-          {
-            "name": "payments-repo-agent.repository-status",
-            "description": "Report payments-service health with contract and reconciliation evidence.",
-            "inputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022focus\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022additionalProperties\u0022:false}",
-            "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022risks\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022status\u0022,\u0022evidence\u0022,\u0022risks\u0022]}",
-            "requiresTools": [
-              "helio/tools/repository-signals@1.0.0"
-            ],
-            "instructionsTemplate": "Apply the repository-status capability for the payments service and return\nattributed evidence for the calling agent \u2014 contract compatibility,\nreconciliation, and rollback readiness \u2014 with no user-facing framing. Do not\nreport the service healthy when any required financial-control signal is\nunavailable.\n",
-            "variants": {
-              "a2a": "Apply the repository-status capability for the payments service and return\nattributed evidence for the calling agent \u2014 contract compatibility,\nreconciliation, and rollback readiness \u2014 with no user-facing framing. Do not\nreport the service healthy when any required financial-control signal is\nunavailable.\n",
-              "manual": "Apply the repository-status capability for the payments service, then include\npayment-contract compatibility, reconciliation checks, and rollback readiness,\nsurfacing uncertainty conversationally. Do not report the service healthy when\nany required financial-control signal is unavailable.\n",
-              "pipeline": "Apply the repository-status capability for the payments service and emit only\nthe strict output object. Mark any unavailable financial-control signal as an\nexplicit null; do not report the service healthy when one is missing.\n"
+            },
+            "x-typeference": {
+              "instructionsTemplate": "Read the message and identify its sender, intent, urgency, decision owner, and requested deadline.\nSeparate facts from assumptions. Return a concise recommendation; do not send a reply.\n",
+              "requiresTools": []
             }
           }
         ],
-        "context": [
-          {
-            "id": "helio/context/safety-policy@1.0.0",
-            "contextType": "helio/context-types/safety-policy@1.0.0",
-            "content": "# Safety policy\n\nAgents may prepare recommendations and drafts. They must not represent approval, transmit external messages, or make irreversible changes without explicit authority.\n"
-          }
-        ]
+        "x-typeference": {
+          "context": [
+            {
+              "id": "helio/context/safety-policy@1.0.0",
+              "contextType": "helio/context-types/safety-policy@1.0.0",
+              "content": "# Safety policy\n\nAgents may prepare recommendations and drafts. They must not represent approval, transmit external messages, or make irreversible changes without explicit authority.\n"
+            }
+          ]
+        }
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "role": "callable-resource",
-        "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1",
+        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio"
       },
       "trustManifest": {
@@ -857,7 +767,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1"
+            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
           }
         ]
       }
@@ -905,7 +815,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1",
+        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio"
       },
       "trustManifest": {
@@ -915,7 +825,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1"
+            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
           }
         ]
       }
@@ -967,13 +877,33 @@
                 "evidence",
                 "risks"
               ]
+            },
+            "x-typeference": {
+              "instructionsTemplate": "Apply the repository-status capability for the payments service and return\nattributed evidence for the calling agent \u2014 contract compatibility,\nreconciliation, and rollback readiness \u2014 with no user-facing framing. Do not\nreport the service healthy when any required financial-control signal is\nunavailable.\n",
+              "requiresTools": [
+                "helio/tools/repository-signals@1.0.0"
+              ],
+              "variants": {
+                "a2a": "Apply the repository-status capability for the payments service and return\nattributed evidence for the calling agent \u2014 contract compatibility,\nreconciliation, and rollback readiness \u2014 with no user-facing framing. Do not\nreport the service healthy when any required financial-control signal is\nunavailable.\n",
+                "manual": "Apply the repository-status capability for the payments service, then include\npayment-contract compatibility, reconciliation checks, and rollback readiness,\nsurfacing uncertainty conversationally. Do not report the service healthy when\nany required financial-control signal is unavailable.\n",
+                "pipeline": "Apply the repository-status capability for the payments service and emit only\nthe strict output object. Mark any unavailable financial-control signal as an\nexplicit null; do not report the service healthy when one is missing.\n"
+              }
             }
           }
-        ]
+        ],
+        "x-typeference": {
+          "context": [
+            {
+              "id": "helio/context/safety-policy@1.0.0",
+              "contextType": "helio/context-types/safety-policy@1.0.0",
+              "content": "# Safety policy\n\nAgents may prepare recommendations and drafts. They must not represent approval, transmit external messages, or make irreversible changes without explicit authority.\n"
+            }
+          ]
+        }
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1",
+        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio"
       },
       "trustManifest": {
@@ -983,7 +913,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1"
+            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
           }
         ]
       }

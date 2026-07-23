@@ -95,7 +95,7 @@ func build(args []string) (int, error) {
 	} else if v != "" {
 		target = v
 	}
-	ard, err := ardOptions(args)
+	ard, err := ardOptions(args, source)
 	if err != nil {
 		return 0, err
 	}
@@ -162,7 +162,7 @@ func diff(args []string) (int, error) {
 	}
 	defer os.RemoveAll(temp)
 
-	ard, err := ardOptions(args)
+	ard, err := ardOptions(args, source)
 	if err != nil {
 		return 0, err
 	}
@@ -259,12 +259,14 @@ func publish(args []string) (int, error) {
 // entryKind maps an ARD entry media type to a short label.
 func entryKind(mediaType string) string {
 	switch {
+	case strings.Contains(mediaType, "a2a-agent-card"):
+		return "a2a    "
+	case strings.Contains(mediaType, "mcp-server"):
+		return "mcp    "
 	case strings.Contains(mediaType, "source-package"):
 		return "source "
 	case strings.Contains(mediaType, "target-bundle"):
 		return "bundle "
-	case strings.Contains(mediaType, "callable-card"):
-		return "callable"
 	default:
 		return "entry  "
 	}
@@ -371,7 +373,7 @@ func stringArr(values []string) jsonx.Arr {
 	return arr
 }
 
-func ardOptions(args []string) (*compile.ArdPublicationOptions, error) {
+func ardOptions(args []string, source string) (*compile.ArdPublicationOptions, error) {
 	publisherDomain, err := option(args, "--publisher-domain")
 	if err != nil {
 		return nil, err
@@ -386,8 +388,21 @@ func ardOptions(args []string) (*compile.ArdPublicationOptions, error) {
 	}
 	allowUnsignedTrust := slices.Contains(args, "--allow-unsigned-trust")
 	emitArd := slices.Contains(args, "--emit-ard")
+	// A project manifest (typeference.yaml) with a publisher makes ARD emission
+	// the default and supplies the publisher domain, so `compile -> pushable
+	// ai-catalog.json` needs no flags (ADR-0018).
+	project, projErr := resource.LoadProject(source)
+	if projErr != nil {
+		return nil, projErr
+	}
+	if project != nil && strings.TrimSpace(project.Publisher) != "" {
+		emitArd = true
+		if publisherDomain == "" {
+			publisherDomain = project.Publisher
+		}
+	}
 	if emitArd && publisherDomain == "" {
-		return nil, resource.Errorf("--emit-ard requires --publisher-domain")
+		return nil, resource.Errorf("--emit-ard requires --publisher-domain (or a `publisher` in typeference.yaml)")
 	}
 	if !emitArd && publisherDomain != "" {
 		return nil, resource.Errorf("--publisher-domain requires --emit-ard")
