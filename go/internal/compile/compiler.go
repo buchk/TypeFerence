@@ -210,8 +210,16 @@ func writeTarget(target Target, root string, agent *resolve.ResolvedAgent, writt
 			return err
 		}
 		for _, skill := range agent.Skills {
-			if err := writeFile(filepath.Join(root, slug, "skills", skillSlug(skill), "SKILL.md"), renderSkill(skill), written); err != nil {
+			dir := filepath.Join(root, slug, "skills", skillSlug(skill))
+			if err := writeFile(filepath.Join(dir, "SKILL.md"), renderSkill(skill), written); err != nil {
 				return err
+			}
+			// A multimodal skill also fans out one SKILL.<mode>.md per variant
+			// (ADR-0012). Absent for unimodal skills, so their output is unchanged.
+			for _, mode := range sortedModes(skill.Variants) {
+				if err := writeFile(filepath.Join(dir, "SKILL."+mode+".md"), renderSkillWith(skill, skill.Variants[mode]), written); err != nil {
+					return err
+				}
 			}
 		}
 	case Codex:
@@ -282,13 +290,29 @@ func renderInstructions(agent *resolve.ResolvedAgent) string {
 }
 
 func renderSkill(skill resolve.ResolvedSkill) string {
+	return renderSkillWith(skill, skill.Instructions)
+}
+
+// renderSkillWith renders a skill's SKILL.md using the given instructions, so a
+// per-variant file can carry that mode's rendering (ADR-0012).
+func renderSkillWith(skill resolve.ResolvedSkill, instructions string) string {
 	lines := make([]string, len(skill.ContextFiles))
 	for i, file := range skill.ContextFiles {
 		lines[i] = "- `" + file + "`"
 	}
 	return "---\nname: " + skillSlug(skill) + "\ndescription: " + escapeYAML(skill.Description) + "\n---\n\n" +
-		strings.TrimSpace(skill.Instructions) + "\n\n## Context loaded on invocation\n\n" +
+		strings.TrimSpace(instructions) + "\n\n## Context loaded on invocation\n\n" +
 		strings.Join(lines, "\n") + "\n"
+}
+
+// sortedModes returns a variant map's mode names in canonical order.
+func sortedModes(variants map[string]string) []string {
+	modes := make([]string, 0, len(variants))
+	for mode := range variants {
+		modes = append(modes, mode)
+	}
+	sort.Strings(modes)
+	return modes
 }
 
 func skillSlug(skill resolve.ResolvedSkill) string { return resolve.Leaf(skill.CapabilityID) }
