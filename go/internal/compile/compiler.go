@@ -170,6 +170,9 @@ func Build(source, output string, targets []Target, ard *ArdPublicationOptions) 
 			configuration, signatures, signatureKeys, ard.AllowUnsignedTrust, &written); err != nil {
 			return nil, err
 		}
+		if err := writeDiscoveryCards(ardRoot, agents, ard.PublisherDomain, &written); err != nil {
+			return nil, err
+		}
 	}
 	sort.Strings(written)
 	return written, nil

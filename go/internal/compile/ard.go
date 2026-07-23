@@ -372,6 +372,83 @@ func buildTrustManifest(
 	return manifest.obj(), nil
 }
 
+// writeDiscoveryCards emits, per agent that exposes a capability, two artifacts
+// in shapes external tooling actually consumes (ADR-0018):
+//
+//   - <slug>.agent-card.json — an A2A Agent Card (a2a-protocol.org), the unit an
+//     agent finder discovers. TypeFerence is definition-layer, so the required
+//     service-endpoint `url` is templated by convention (https://<domain>/a2a/
+//     <slug>); the deployer serves the A2A endpoint there or overrides it.
+//   - <slug>.mcp.json — an MCP tool manifest (modelcontextprotocol.io), directly
+//     loadable by an MCP server; each exposed capability becomes an MCP tool with
+//     its input/output schemas as JSON Schema objects.
+func writeDiscoveryCards(ardRoot string, agents []*resolve.ResolvedAgent, publisherDomain string, written *[]string) error {
+	for _, agent := range agents {
+		exposed := agent.ExposedSkills()
+		if len(exposed) == 0 {
+			continue
+		}
+		sort.Slice(exposed, func(i, j int) bool { return exposed[i].DispatchName < exposed[j].DispatchName })
+		slug := resolve.Leaf(agent.ID)
+		version := agent.ID[strings.LastIndex(agent.ID, "@")+1:]
+
+		a2aSkills := jsonx.Arr{}
+		mcpTools := jsonx.Arr{}
+		for _, skill := range exposed {
+			a2aSkills = append(a2aSkills, jsonx.Obj{
+				{K: "id", V: jsonx.Str(skill.DispatchName)},
+				{K: "name", V: jsonx.Str(resolve.Leaf(skill.CapabilityID))},
+				{K: "description", V: jsonx.Str(skill.Description)},
+				{K: "tags", V: jsonx.Arr{jsonx.Str("typeference")}},
+			})
+			mcpTools = append(mcpTools, jsonx.Obj{
+				{K: "name", V: jsonx.Str(skill.DispatchName)},
+				{K: "description", V: jsonx.Str(skill.Description)},
+				{K: "inputSchema", V: schemaObject(skill.InputSchema)},
+				{K: "outputSchema", V: schemaObject(skill.OutputSchema)},
+			})
+		}
+
+		card := jsonx.Obj{
+			{K: "protocolVersion", V: jsonx.Str("0.3.0")},
+			{K: "name", V: jsonx.Str(agent.DisplayName)},
+			{K: "description", V: jsonx.Str(agent.Description)},
+			{K: "version", V: jsonx.Str(version)},
+			{K: "url", V: jsonx.Str("https://" + publisherDomain + "/a2a/" + slug)},
+			{K: "preferredTransport", V: jsonx.Str("JSONRPC")},
+			{K: "capabilities", V: jsonx.Obj{
+				{K: "streaming", V: jsonx.Bool(false)},
+				{K: "pushNotifications", V: jsonx.Bool(false)},
+			}},
+			{K: "defaultInputModes", V: jsonx.Arr{jsonx.Str("application/json")}},
+			{K: "defaultOutputModes", V: jsonx.Arr{jsonx.Str("application/json")}},
+			{K: "provider", V: jsonx.Obj{
+				{K: "organization", V: jsonx.Str(publisherDomain)},
+				{K: "url", V: jsonx.Str("https://" + publisherDomain)},
+			}},
+			{K: "skills", V: a2aSkills},
+		}
+		if err := writeFile(filepath.Join(ardRoot, slug+".agent-card.json"), jsonx.Indented(card)+"\n", written); err != nil {
+			return err
+		}
+		mcp := jsonx.Obj{{K: "tools", V: mcpTools}}
+		if err := writeFile(filepath.Join(ardRoot, slug+".mcp.json"), jsonx.Indented(mcp)+"\n", written); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// schemaObject parses a capability's JSON Schema string into an object so it can
+// be embedded (MCP requires inputSchema to be a JSON Schema object, not a
+// string); a malformed schema falls back to an open object.
+func schemaObject(schema string) jsonx.Value {
+	if v, err := jsonx.Parse(schema); err == nil {
+		return v
+	}
+	return jsonx.Obj{{K: "type", V: jsonx.Str("object")}}
+}
+
 // callableContext renders an agent's held context objects for a callable card.
 func callableContext(objs []resolve.ResolvedContextRef) jsonx.Value {
 	arr := jsonx.Arr{}

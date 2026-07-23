@@ -1,0 +1,83 @@
+{
+  "tools": [
+    {
+      "name": "executive-assistant.prepare-brief",
+      "description": "Assemble an executive brief, requesting repository evidence when needed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "topic"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "brief": {
+            "type": "string"
+          },
+          "openQuestions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "brief",
+          "openQuestions"
+        ]
+      }
+    },
+    {
+      "name": "executive-assistant.triage-message",
+      "description": "Classify an inbound message and recommend an accountable next action.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string"
+          },
+          "urgency": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "nextAction": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "summary",
+          "urgency",
+          "owner",
+          "nextAction"
+        ]
+      }
+    }
+  ]
+}

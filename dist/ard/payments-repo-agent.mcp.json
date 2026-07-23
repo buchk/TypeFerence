@@ -1,0 +1,42 @@
+{
+  "tools": [
+    {
+      "name": "payments-repo-agent.repository-status",
+      "description": "Report payments-service health with contract and reconciliation evidence.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "focus": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "risks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "status",
+          "evidence",
+          "risks"
+        ]
+      }
+    }
+  ]
+}
