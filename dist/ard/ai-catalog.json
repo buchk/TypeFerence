@@ -631,6 +631,183 @@
       }
     },
     {
+      "identifier": "urn:air:helio.example:typeference:a2a:executive-assistant",
+      "displayName": "Helio Executive Assistant (A2A agent card)",
+      "type": "application/a2a-agent-card\u002Bjson",
+      "description": "A2A Agent Card for Helio Executive Assistant.",
+      "capabilities": [
+        "executive-assistant.prepare-brief",
+        "executive-assistant.triage-message"
+      ],
+      "version": "1.0.0",
+      "data": {
+        "protocolVersion": "0.3.0",
+        "name": "Helio Executive Assistant",
+        "description": "Coordinates an executive\u0027s correspondence, briefings, and cross-agent requests.",
+        "version": "1.0.0",
+        "url": "https://helio.example/a2a/executive-assistant",
+        "preferredTransport": "JSONRPC",
+        "capabilities": {
+          "streaming": false,
+          "pushNotifications": false
+        },
+        "defaultInputModes": [
+          "application/json"
+        ],
+        "defaultOutputModes": [
+          "application/json"
+        ],
+        "provider": {
+          "organization": "helio.example",
+          "url": "https://helio.example"
+        },
+        "skills": [
+          {
+            "id": "executive-assistant.prepare-brief",
+            "name": "prepare-brief",
+            "description": "Assemble an executive brief, requesting repository evidence when needed.",
+            "tags": [
+              "typeference"
+            ]
+          },
+          {
+            "id": "executive-assistant.triage-message",
+            "name": "triage-message",
+            "description": "Classify an inbound message and recommend an accountable next action.",
+            "tags": [
+              "typeference"
+            ]
+          }
+        ]
+      },
+      "metadata": {
+        "generatedBy": "TypeFerence",
+        "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1",
+        "sourceIdentifier": "urn:air:helio.example:typeference:source:helio"
+      },
+      "trustManifest": {
+        "identity": "https://helio.example",
+        "identityType": "https",
+        "provenance": [
+          {
+            "relation": "derivedFrom",
+            "sourceId": "urn:air:helio.example:typeference:source:helio",
+            "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1"
+          }
+        ]
+      }
+    },
+    {
+      "identifier": "urn:air:helio.example:typeference:mcp:executive-assistant",
+      "displayName": "Helio Executive Assistant (MCP tools)",
+      "type": "application/mcp-server\u002Bjson",
+      "description": "MCP tool manifest for Helio Executive Assistant.",
+      "capabilities": [
+        "executive-assistant.prepare-brief",
+        "executive-assistant.triage-message"
+      ],
+      "version": "1.0.0",
+      "data": {
+        "tools": [
+          {
+            "name": "executive-assistant.prepare-brief",
+            "description": "Assemble an executive brief, requesting repository evidence when needed.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "topic": {
+                  "type": "string"
+                },
+                "evidence": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "topic"
+              ],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "brief": {
+                  "type": "string"
+                },
+                "openQuestions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "brief",
+                "openQuestions"
+              ]
+            }
+          },
+          {
+            "name": "executive-assistant.triage-message",
+            "description": "Classify an inbound message and recommend an accountable next action.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "summary": {
+                  "type": "string"
+                },
+                "urgency": {
+                  "type": "string"
+                },
+                "owner": {
+                  "type": "string"
+                },
+                "nextAction": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "summary",
+                "urgency",
+                "owner",
+                "nextAction"
+              ]
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "generatedBy": "TypeFerence",
+        "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1",
+        "sourceIdentifier": "urn:air:helio.example:typeference:source:helio"
+      },
+      "trustManifest": {
+        "identity": "https://helio.example",
+        "identityType": "https",
+        "provenance": [
+          {
+            "relation": "derivedFrom",
+            "sourceId": "urn:air:helio.example:typeference:source:helio",
+            "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1"
+          }
+        ]
+      }
+    },
+    {
       "identifier": "urn:air:helio.example:typeference:callable:payments-repo-agent",
       "displayName": "Helio Payments Repository Agent (callable)",
       "type": "application/vnd.typeference.callable-card\u002Bjson",
@@ -670,6 +847,132 @@
       "metadata": {
         "generatedBy": "TypeFerence",
         "role": "callable-resource",
+        "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1",
+        "sourceIdentifier": "urn:air:helio.example:typeference:source:helio"
+      },
+      "trustManifest": {
+        "identity": "https://helio.example",
+        "identityType": "https",
+        "provenance": [
+          {
+            "relation": "derivedFrom",
+            "sourceId": "urn:air:helio.example:typeference:source:helio",
+            "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1"
+          }
+        ]
+      }
+    },
+    {
+      "identifier": "urn:air:helio.example:typeference:a2a:payments-repo-agent",
+      "displayName": "Helio Payments Repository Agent (A2A agent card)",
+      "type": "application/a2a-agent-card\u002Bjson",
+      "description": "A2A Agent Card for Helio Payments Repository Agent.",
+      "capabilities": [
+        "payments-repo-agent.repository-status"
+      ],
+      "version": "1.0.0",
+      "data": {
+        "protocolVersion": "0.3.0",
+        "name": "Helio Payments Repository Agent",
+        "description": "Specializes repository assistance for the fictional payments service.",
+        "version": "1.0.0",
+        "url": "https://helio.example/a2a/payments-repo-agent",
+        "preferredTransport": "JSONRPC",
+        "capabilities": {
+          "streaming": false,
+          "pushNotifications": false
+        },
+        "defaultInputModes": [
+          "application/json"
+        ],
+        "defaultOutputModes": [
+          "application/json"
+        ],
+        "provider": {
+          "organization": "helio.example",
+          "url": "https://helio.example"
+        },
+        "skills": [
+          {
+            "id": "payments-repo-agent.repository-status",
+            "name": "repository-status",
+            "description": "Report payments-service health with contract and reconciliation evidence.",
+            "tags": [
+              "typeference"
+            ]
+          }
+        ]
+      },
+      "metadata": {
+        "generatedBy": "TypeFerence",
+        "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1",
+        "sourceIdentifier": "urn:air:helio.example:typeference:source:helio"
+      },
+      "trustManifest": {
+        "identity": "https://helio.example",
+        "identityType": "https",
+        "provenance": [
+          {
+            "relation": "derivedFrom",
+            "sourceId": "urn:air:helio.example:typeference:source:helio",
+            "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1"
+          }
+        ]
+      }
+    },
+    {
+      "identifier": "urn:air:helio.example:typeference:mcp:payments-repo-agent",
+      "displayName": "Helio Payments Repository Agent (MCP tools)",
+      "type": "application/mcp-server\u002Bjson",
+      "description": "MCP tool manifest for Helio Payments Repository Agent.",
+      "capabilities": [
+        "payments-repo-agent.repository-status"
+      ],
+      "version": "1.0.0",
+      "data": {
+        "tools": [
+          {
+            "name": "payments-repo-agent.repository-status",
+            "description": "Report payments-service health with contract and reconciliation evidence.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "focus": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string"
+                },
+                "evidence": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "risks": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "status",
+                "evidence",
+                "risks"
+              ]
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "generatedBy": "TypeFerence",
         "sourceDigest": "sha256:9b7797cfb9401741cf639a2b33ebfe87166a88dd0c93ca988b03436c348a82f1",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio"
       },

@@ -67,6 +67,31 @@ func TestA2ACardAndMCPManifestEmitted(t *testing.T) {
 	}
 }
 
+func TestCatalogHasOfficialTypedEntries(t *testing.T) {
+	ard := buildDiscovery(t, true)
+	var catalog struct {
+		Entries []struct {
+			Type string `json:"type"`
+		} `json:"entries"`
+	}
+	raw, err := os.ReadFile(filepath.Join(ard, "ai-catalog.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, &catalog); err != nil {
+		t.Fatal(err)
+	}
+	types := map[string]bool{}
+	for _, e := range catalog.Entries {
+		types[e.Type] = true
+	}
+	for _, want := range []string{"application/a2a-agent-card+json", "application/mcp-server+json"} {
+		if !types[want] {
+			t.Errorf("ai-catalog.json is missing an official %q entry a registry would index", want)
+		}
+	}
+}
+
 func TestNoDiscoveryCardsWithoutExposure(t *testing.T) {
 	ard := buildDiscovery(t, false)
 	if _, err := os.Stat(filepath.Join(ard, "agent.agent-card.json")); err == nil {

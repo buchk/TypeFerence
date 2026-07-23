@@ -246,6 +246,37 @@ func writeArdCatalog(
 			}},
 			{K: "trustManifest", V: manifest},
 		})
+		// ARD-conformant entries in the official media types a registry indexes
+		// (an A2A agent card and an MCP server), embedding the resource as `data`
+		// so value-or-reference is honored. These sit alongside the richer
+		// (proprietary) callable card above (ADR-0018).
+		meta := jsonx.Obj{
+			{K: "generatedBy", V: jsonx.Str("TypeFerence")},
+			{K: "sourceDigest", V: jsonx.Str(sourceDigest)},
+			{K: "sourceIdentifier", V: jsonx.Str(sourceIdentifier)},
+		}
+		entries = append(entries, jsonx.Obj{
+			{K: "identifier", V: jsonx.Str("urn:air:" + publisherDomain + ":typeference:a2a:" + slug)},
+			{K: "displayName", V: jsonx.Str(agent.DisplayName + " (A2A agent card)")},
+			{K: "type", V: jsonx.Str("application/a2a-agent-card+json")},
+			{K: "description", V: jsonx.Str("A2A Agent Card for " + agent.DisplayName + ".")},
+			{K: "capabilities", V: stringArr(toolNames)},
+			{K: "version", V: jsonx.Str(version)},
+			{K: "data", V: a2aCardValue(agent, publisherDomain)},
+			{K: "metadata", V: meta},
+			{K: "trustManifest", V: manifest},
+		})
+		entries = append(entries, jsonx.Obj{
+			{K: "identifier", V: jsonx.Str("urn:air:" + publisherDomain + ":typeference:mcp:" + slug)},
+			{K: "displayName", V: jsonx.Str(agent.DisplayName + " (MCP tools)")},
+			{K: "type", V: jsonx.Str("application/mcp-server+json")},
+			{K: "description", V: jsonx.Str("MCP tool manifest for " + agent.DisplayName + ".")},
+			{K: "capabilities", V: stringArr(toolNames)},
+			{K: "version", V: jsonx.Str(version)},
+			{K: "data", V: jsonx.Obj{{K: "tools", V: mcpToolsValue(agent)}}},
+			{K: "metadata", V: meta},
+			{K: "trustManifest", V: manifest},
+		})
 	}
 
 	for _, key := range signatureKeys {
@@ -384,59 +415,76 @@ func buildTrustManifest(
 //     its input/output schemas as JSON Schema objects.
 func writeDiscoveryCards(ardRoot string, agents []*resolve.ResolvedAgent, publisherDomain string, written *[]string) error {
 	for _, agent := range agents {
-		exposed := agent.ExposedSkills()
-		if len(exposed) == 0 {
+		if len(agent.ExposedSkills()) == 0 {
 			continue
 		}
-		sort.Slice(exposed, func(i, j int) bool { return exposed[i].DispatchName < exposed[j].DispatchName })
 		slug := resolve.Leaf(agent.ID)
-		version := agent.ID[strings.LastIndex(agent.ID, "@")+1:]
-
-		a2aSkills := jsonx.Arr{}
-		mcpTools := jsonx.Arr{}
-		for _, skill := range exposed {
-			a2aSkills = append(a2aSkills, jsonx.Obj{
-				{K: "id", V: jsonx.Str(skill.DispatchName)},
-				{K: "name", V: jsonx.Str(resolve.Leaf(skill.CapabilityID))},
-				{K: "description", V: jsonx.Str(skill.Description)},
-				{K: "tags", V: jsonx.Arr{jsonx.Str("typeference")}},
-			})
-			mcpTools = append(mcpTools, jsonx.Obj{
-				{K: "name", V: jsonx.Str(skill.DispatchName)},
-				{K: "description", V: jsonx.Str(skill.Description)},
-				{K: "inputSchema", V: schemaObject(skill.InputSchema)},
-				{K: "outputSchema", V: schemaObject(skill.OutputSchema)},
-			})
-		}
-
-		card := jsonx.Obj{
-			{K: "protocolVersion", V: jsonx.Str("0.3.0")},
-			{K: "name", V: jsonx.Str(agent.DisplayName)},
-			{K: "description", V: jsonx.Str(agent.Description)},
-			{K: "version", V: jsonx.Str(version)},
-			{K: "url", V: jsonx.Str("https://" + publisherDomain + "/a2a/" + slug)},
-			{K: "preferredTransport", V: jsonx.Str("JSONRPC")},
-			{K: "capabilities", V: jsonx.Obj{
-				{K: "streaming", V: jsonx.Bool(false)},
-				{K: "pushNotifications", V: jsonx.Bool(false)},
-			}},
-			{K: "defaultInputModes", V: jsonx.Arr{jsonx.Str("application/json")}},
-			{K: "defaultOutputModes", V: jsonx.Arr{jsonx.Str("application/json")}},
-			{K: "provider", V: jsonx.Obj{
-				{K: "organization", V: jsonx.Str(publisherDomain)},
-				{K: "url", V: jsonx.Str("https://" + publisherDomain)},
-			}},
-			{K: "skills", V: a2aSkills},
-		}
-		if err := writeFile(filepath.Join(ardRoot, slug+".agent-card.json"), jsonx.Indented(card)+"\n", written); err != nil {
+		if err := writeFile(filepath.Join(ardRoot, slug+".agent-card.json"), jsonx.Indented(a2aCardValue(agent, publisherDomain))+"\n", written); err != nil {
 			return err
 		}
-		mcp := jsonx.Obj{{K: "tools", V: mcpTools}}
+		mcp := jsonx.Obj{{K: "tools", V: mcpToolsValue(agent)}}
 		if err := writeFile(filepath.Join(ardRoot, slug+".mcp.json"), jsonx.Indented(mcp)+"\n", written); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// exposedInOrder returns an agent's exposed skills sorted by dispatch name.
+func exposedInOrder(agent *resolve.ResolvedAgent) []resolve.ResolvedSkill {
+	exposed := agent.ExposedSkills()
+	sort.Slice(exposed, func(i, j int) bool { return exposed[i].DispatchName < exposed[j].DispatchName })
+	return exposed
+}
+
+// a2aCardValue builds an A2A Agent Card (a2a-protocol.org) for an agent's
+// exposed capabilities. The required service-endpoint url is templated by
+// convention since TypeFerence is definition-layer.
+func a2aCardValue(agent *resolve.ResolvedAgent, publisherDomain string) jsonx.Obj {
+	slug := resolve.Leaf(agent.ID)
+	skills := jsonx.Arr{}
+	for _, skill := range exposedInOrder(agent) {
+		skills = append(skills, jsonx.Obj{
+			{K: "id", V: jsonx.Str(skill.DispatchName)},
+			{K: "name", V: jsonx.Str(resolve.Leaf(skill.CapabilityID))},
+			{K: "description", V: jsonx.Str(skill.Description)},
+			{K: "tags", V: jsonx.Arr{jsonx.Str("typeference")}},
+		})
+	}
+	return jsonx.Obj{
+		{K: "protocolVersion", V: jsonx.Str("0.3.0")},
+		{K: "name", V: jsonx.Str(agent.DisplayName)},
+		{K: "description", V: jsonx.Str(agent.Description)},
+		{K: "version", V: jsonx.Str(agent.ID[strings.LastIndex(agent.ID, "@")+1:])},
+		{K: "url", V: jsonx.Str("https://" + publisherDomain + "/a2a/" + slug)},
+		{K: "preferredTransport", V: jsonx.Str("JSONRPC")},
+		{K: "capabilities", V: jsonx.Obj{
+			{K: "streaming", V: jsonx.Bool(false)},
+			{K: "pushNotifications", V: jsonx.Bool(false)},
+		}},
+		{K: "defaultInputModes", V: jsonx.Arr{jsonx.Str("application/json")}},
+		{K: "defaultOutputModes", V: jsonx.Arr{jsonx.Str("application/json")}},
+		{K: "provider", V: jsonx.Obj{
+			{K: "organization", V: jsonx.Str(publisherDomain)},
+			{K: "url", V: jsonx.Str("https://" + publisherDomain)},
+		}},
+		{K: "skills", V: skills},
+	}
+}
+
+// mcpToolsValue builds the MCP tool array (modelcontextprotocol.io) for an
+// agent's exposed capabilities, with schemas as JSON Schema objects.
+func mcpToolsValue(agent *resolve.ResolvedAgent) jsonx.Arr {
+	tools := jsonx.Arr{}
+	for _, skill := range exposedInOrder(agent) {
+		tools = append(tools, jsonx.Obj{
+			{K: "name", V: jsonx.Str(skill.DispatchName)},
+			{K: "description", V: jsonx.Str(skill.Description)},
+			{K: "inputSchema", V: schemaObject(skill.InputSchema)},
+			{K: "outputSchema", V: schemaObject(skill.OutputSchema)},
+		})
+	}
+	return tools
 }
 
 // schemaObject parses a capability's JSON Schema string into an object so it can
