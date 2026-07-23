@@ -644,7 +644,11 @@ func (r *Resolver) validateContextFields(obj *resource.Document) error {
 	}
 	required := map[string]bool{}
 	for _, ctID := range closure {
-		for _, field := range requiredFields(r.resources[ctID].Schema) {
+		fields, err := requiredFields(r.resources[ctID].Schema)
+		if err != nil {
+			return resource.Errorf("%s: contextType %s has an invalid schema: %s", obj.ID, ctID, err)
+		}
+		for _, field := range fields {
 			required[field] = true
 		}
 	}
@@ -662,18 +666,20 @@ func (r *Resolver) validateContextFields(obj *resource.Document) error {
 }
 
 // requiredFields extracts the top-level "required" array from a JSON Schema
-// string. It only reads (never emits), so stdlib json is fine here.
-func requiredFields(schema string) []string {
+// string. It only reads (never emits), so stdlib json is fine here. A schema
+// whose "required" is present but not a string array is an error rather than a
+// silently-empty result.
+func requiredFields(schema string) ([]string, error) {
 	if strings.TrimSpace(schema) == "" {
-		return nil
+		return nil, nil
 	}
 	var doc struct {
 		Required []string `json:"required"`
 	}
 	if err := json.Unmarshal([]byte(schema), &doc); err != nil {
-		return nil
+		return nil, resource.Errorf("schema \"required\" must be an array of field names")
 	}
-	return doc.Required
+	return doc.Required, nil
 }
 
 // validateTool checks a tool declaration's interface schemas parse (ADR-0017).

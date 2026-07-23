@@ -14,3 +14,5 @@ web/playground/examples.json
 
 # Codex remote attachment scratch
 .codex-remote-attachments/
+go/typeference-wasm
+*.wasm

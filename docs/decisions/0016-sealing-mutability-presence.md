@@ -60,7 +60,10 @@ is that one team's control survives another team's mix-in intact.
 - Some compositions become **illegal, by design**: two profiles that seal the same
   capability to *different* skills cannot be embedded together (a hard error that
   surfaces a real governance conflict). A sealed diamond (the same sealed member
-  reached by two paths) is fine — one member, no conflict.
+  reached by two paths) is conceptually fine — one member, no conflict — but note
+  the resolver's pre-existing same-depth promotion check currently rejects *any*
+  equal-depth diamond (sealed or not) with an ambiguity error before sealing is
+  considered; lifting that limitation is separate work.
 - Three orthogonal axes now exist: visibility (ADR-0015), mutability, presence — all
   permissive by default, every lock opt-in.
 

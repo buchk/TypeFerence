@@ -470,7 +470,10 @@ func pathToURI(path string) string {
 	if runtime.GOOS == "windows" && len(p) >= 2 && p[1] == ':' {
 		p = "/" + p
 	}
-	return "file://" + p
+	// url.URL.String() percent-encodes the path, so spaces and other reserved
+	// characters produce a valid file URI.
+	u := url.URL{Scheme: "file", Path: p}
+	return u.String()
 }
 
 // uriToPath converts a file:// URI to a local filesystem path, handling the
