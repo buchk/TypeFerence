@@ -30,7 +30,11 @@ type ResolvedSkill struct {
 	ContextFiles         []string
 	RequiresContextTypes []string
 	RequiresTools        []string
-	Provenance           []ProvenanceEntry
+	// Exposed is true when the bound capability's visibility is "exposed":
+	// part of the agent's public callable surface, eligible for a callable
+	// card (ADR-0015). Rides the skill, so promotion carries it automatically.
+	Exposed    bool
+	Provenance []ProvenanceEntry
 }
 
 // ResolvedAgent is a fully composed agent or profile.
@@ -437,6 +441,7 @@ func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded [
 			ContextFiles:         distinct(append(append([]string{}, contexts...), normalizeAll(implementation.ContextFiles)...)),
 			RequiresContextTypes: append([]string{}, implementation.RequiresContextTypes...),
 			RequiresTools:        append([]string{}, implementation.RequiresTools...),
+			Exposed:              capability.Visibility == "exposed",
 			Provenance: []ProvenanceEntry{
 				{Field: "skill.capability", Source: capabilityID},
 				{Field: "skill.implementation", Source: implementation.ID},
@@ -684,6 +689,19 @@ func ensureImplementsCapability(capability, implementation *resource.Document, a
 func withDispatch(skill ResolvedSkill, agentID string) ResolvedSkill {
 	skill.DispatchName = Leaf(agentID) + "." + Leaf(skill.CapabilityID)
 	return skill
+}
+
+// ExposedSkills returns the resolved skills whose capability is exposed, in
+// dispatch order: the agent's public callable surface (ADR-0015). A callable
+// card (ADR-0018) is emitted from exactly these, not from every skill.
+func (a *ResolvedAgent) ExposedSkills() []ResolvedSkill {
+	out := []ResolvedSkill{}
+	for _, s := range a.Skills {
+		if s.Exposed {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 // Leaf extracts the unversioned name segment of a resource id
