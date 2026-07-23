@@ -1,3 +1,4 @@
+---
 schemaVersion: 3
 kind: interface
 id: helio/interfaces/correspondent@1.0.0
@@ -7,3 +8,4 @@ requiresSlots:
   - principal
 requiresCapabilities:
   - helio/capabilities/triage-message@1.0.0
+---

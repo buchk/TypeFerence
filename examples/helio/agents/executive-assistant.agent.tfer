@@ -1,3 +1,4 @@
+---
 schemaVersion: 3
 kind: agent
 id: helio/executive-assistant@1.0.0
@@ -9,3 +10,4 @@ contextFiles:
   - context/executive-rhythm.md
 skills:
   - ref: helio/skills/prepare-brief@1.0.0
+---

@@ -1,3 +1,4 @@
+---
 schemaVersion: 3
 kind: interface
 id: helio/interfaces/repository-observer@1.0.0
@@ -7,3 +8,4 @@ requiresSlots:
   - repository
 requiresCapabilities:
   - helio/capabilities/repository-status@1.0.0
+---

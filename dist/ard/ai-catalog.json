@@ -13,32 +13,32 @@
       "version": "1.0.0",
       "data": {
         "schemaVersion": 1,
-        "digest": "sha256:70270ce0b55dd8c489246a0cffcd64b76f87b4f99e2815ce471ffc7c7dc79d26",
+        "digest": "sha256:7f6ac1d4966fb40af24b5bdb466696c212721acae5847554534dc6c475bbbfcf",
         "files": [
           {
-            "path": "agents/executive-assistant.agent.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: agent\nid: helio/executive-assistant@1.0.0\ndisplayName: Helio Executive Assistant\ndescription: Coordinates an executive\u0027s correspondence, briefings, and cross-agent requests.\nembeds:\n  - helio/profiles/person-defaults@1.0.0\ncontextFiles:\n  - context/executive-rhythm.md\nskills:\n  - ref: helio/skills/prepare-brief@1.0.0\n"
+            "path": "agents/executive-assistant.agent.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: agent\nid: helio/executive-assistant@1.0.0\ndisplayName: Helio Executive Assistant\ndescription: Coordinates an executive\u0027s correspondence, briefings, and cross-agent requests.\nembeds:\n  - helio/profiles/person-defaults@1.0.0\ncontextFiles:\n  - context/executive-rhythm.md\nskills:\n  - ref: helio/skills/prepare-brief@1.0.0\n---\n"
           },
           {
-            "path": "agents/payments-repo-agent.agent.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: agent\nid: helio/payments-repo-agent@1.0.0\ndisplayName: Helio Payments Repository Agent\ndescription: Specializes repository assistance for the fictional payments service.\nembeds:\n  - helio/profiles/repository-defaults@1.0.0\ncontextFiles:\n  - context/payments-service.md\nskills:\n  - ref: helio/skills/payments-repository-status@1.0.0\n    capability: helio/capabilities/repository-status@1.0.0\n"
+            "path": "agents/payments-repo-agent.agent.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: agent\nid: helio/payments-repo-agent@1.0.0\ndisplayName: Helio Payments Repository Agent\ndescription: Specializes repository assistance for the fictional payments service.\nembeds:\n  - helio/profiles/repository-defaults@1.0.0\ncontextFiles:\n  - context/payments-service.md\nskills:\n  - ref: helio/skills/payments-repository-status@1.0.0\n    capability: helio/capabilities/repository-status@1.0.0\n---\n"
           },
           {
-            "path": "capabilities/prepare-brief.capability.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: capability\nid: helio/capabilities/prepare-brief@1.0.0\ndisplayName: Prepare Brief\ndescription: Capability slot for assembling decision-oriented executive briefs.\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022topic\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022topic\u0022],\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022brief\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022openQuestions\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022brief\u0022,\u0022openQuestions\u0022]}\u0027\n"
+            "path": "capabilities/prepare-brief.capability.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: capability\nid: helio/capabilities/prepare-brief@1.0.0\ndisplayName: Prepare Brief\ndescription: Capability slot for assembling decision-oriented executive briefs.\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022topic\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022topic\u0022],\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022brief\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022openQuestions\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022brief\u0022,\u0022openQuestions\u0022]}\u0027\n---\n"
           },
           {
-            "path": "capabilities/repository-status.capability.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: capability\nid: helio/capabilities/repository-status@1.0.0\ndisplayName: Repository Status\ndescription: Capability slot for evidence-backed repository health summaries.\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022focus\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022risks\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022status\u0022,\u0022evidence\u0022,\u0022risks\u0022]}\u0027\n"
+            "path": "capabilities/repository-status.capability.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: capability\nid: helio/capabilities/repository-status@1.0.0\ndisplayName: Repository Status\ndescription: Capability slot for evidence-backed repository health summaries.\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022focus\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022risks\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022status\u0022,\u0022evidence\u0022,\u0022risks\u0022]}\u0027\n---\n"
           },
           {
-            "path": "capabilities/triage-message.capability.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: capability\nid: helio/capabilities/triage-message@1.0.0\ndisplayName: Triage Message\ndescription: Capability slot for classifying inbound messages and selecting accountable next actions.\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022message\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022required\u0022:[\u0022message\u0022],\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022summary\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022urgency\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022owner\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022nextAction\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022required\u0022:[\u0022summary\u0022,\u0022urgency\u0022,\u0022owner\u0022,\u0022nextAction\u0022]}\u0027\n"
+            "path": "capabilities/triage-message.capability.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: capability\nid: helio/capabilities/triage-message@1.0.0\ndisplayName: Triage Message\ndescription: Capability slot for classifying inbound messages and selecting accountable next actions.\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022message\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022required\u0022:[\u0022message\u0022],\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022summary\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022urgency\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022owner\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022nextAction\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022required\u0022:[\u0022summary\u0022,\u0022urgency\u0022,\u0022owner\u0022,\u0022nextAction\u0022]}\u0027\n---\n"
           },
           {
             "path": "context/executive-rhythm.md",
@@ -71,49 +71,49 @@
             "content": "# Safety policy\n\nAgents may prepare recommendations and drafts. They must not represent approval, transmit external messages, or make irreversible changes without explicit authority.\n"
           },
           {
-            "path": "interfaces/correspondent.interface.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: interface\nid: helio/interfaces/correspondent@1.0.0\ndisplayName: Correspondent\ndescription: Contract for agents that assess and route communications.\nrequiresSlots:\n  - principal\nrequiresCapabilities:\n  - helio/capabilities/triage-message@1.0.0\n"
+            "path": "interfaces/correspondent.interface.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: interface\nid: helio/interfaces/correspondent@1.0.0\ndisplayName: Correspondent\ndescription: Contract for agents that assess and route communications.\nrequiresSlots:\n  - principal\nrequiresCapabilities:\n  - helio/capabilities/triage-message@1.0.0\n---\n"
           },
           {
-            "path": "interfaces/repository-observer.interface.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: interface\nid: helio/interfaces/repository-observer@1.0.0\ndisplayName: Repository Observer\ndescription: Contract for agents that can report evidence-backed repository status.\nrequiresSlots:\n  - repository\nrequiresCapabilities:\n  - helio/capabilities/repository-status@1.0.0\n"
+            "path": "interfaces/repository-observer.interface.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: interface\nid: helio/interfaces/repository-observer@1.0.0\ndisplayName: Repository Observer\ndescription: Contract for agents that can report evidence-backed repository status.\nrequiresSlots:\n  - repository\nrequiresCapabilities:\n  - helio/capabilities/repository-status@1.0.0\n---\n"
           },
           {
-            "path": "profiles/enterprise-defaults.profile.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: profile\nid: helio/profiles/enterprise-defaults@1.0.0\ndisplayName: Helio Enterprise Defaults\ndescription: Shared organizational governance for every Helio resource.\nslots:\n  organization: context/organization.md\n  safetyPolicy: context/safety-policy.md\nworkingNorms:\n  - Preserve a clear audit trail for material decisions.\n  - State uncertainty and route work to an accountable owner when authority is unclear.\ncontextFiles:\n  - context/organization.md\n  - context/safety-policy.md\n"
+            "path": "profiles/enterprise-defaults.profile.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: profile\nid: helio/profiles/enterprise-defaults@1.0.0\ndisplayName: Helio Enterprise Defaults\ndescription: Shared organizational governance for every Helio resource.\nslots:\n  organization: context/organization.md\n  safetyPolicy: context/safety-policy.md\nworkingNorms:\n  - Preserve a clear audit trail for material decisions.\n  - State uncertainty and route work to an accountable owner when authority is unclear.\ncontextFiles:\n  - context/organization.md\n  - context/safety-policy.md\n---\n"
           },
           {
-            "path": "profiles/person-defaults.profile.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: profile\nid: helio/profiles/person-defaults@1.0.0\ndisplayName: Helio Person Defaults\ndescription: Reusable behavior for respectful inbound and outbound assistance for a person.\nembeds:\n  - helio/profiles/enterprise-defaults@1.0.0\nslots:\n  principal: context/principal.md\nworkingNorms:\n  - Distinguish drafts from messages approved for delivery.\ncontextFiles:\n  - context/principal.md\nskills:\n  - ref: helio/skills/triage-message@1.0.0\n"
+            "path": "profiles/person-defaults.profile.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: profile\nid: helio/profiles/person-defaults@1.0.0\ndisplayName: Helio Person Defaults\ndescription: Reusable behavior for respectful inbound and outbound assistance for a person.\nembeds:\n  - helio/profiles/enterprise-defaults@1.0.0\nslots:\n  principal: context/principal.md\nworkingNorms:\n  - Distinguish drafts from messages approved for delivery.\ncontextFiles:\n  - context/principal.md\nskills:\n  - ref: helio/skills/triage-message@1.0.0\n---\n"
           },
           {
-            "path": "profiles/repository-defaults.profile.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: profile\nid: helio/profiles/repository-defaults@1.0.0\ndisplayName: Helio Repository Defaults\ndescription: Reusable delivery practices for software repository assistance.\nembeds:\n  - helio/profiles/enterprise-defaults@1.0.0\nslots:\n  repository: context/repository.md\nworkingNorms:\n  - Prefer evidence from tests, diffs, and version control over recollection.\ncontextFiles:\n  - context/repository.md\nskills:\n  - ref: helio/skills/repository-status@1.0.0\n"
+            "path": "profiles/repository-defaults.profile.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: profile\nid: helio/profiles/repository-defaults@1.0.0\ndisplayName: Helio Repository Defaults\ndescription: Reusable delivery practices for software repository assistance.\nembeds:\n  - helio/profiles/enterprise-defaults@1.0.0\nslots:\n  repository: context/repository.md\nworkingNorms:\n  - Prefer evidence from tests, diffs, and version control over recollection.\ncontextFiles:\n  - context/repository.md\nskills:\n  - ref: helio/skills/repository-status@1.0.0\n---\n"
           },
           {
-            "path": "skills/payments-repository-status.skill.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: skill\nid: helio/skills/payments-repository-status@1.0.0\nbinds: helio/capabilities/repository-status@1.0.0\ndisplayName: Payments Repository Status\ndescription: Report payments-service health with contract and reconciliation evidence.\ncontextFiles:\n  - context/payments-service.md\ninstructions: |\n  Apply the repository-status capability, then include payment-contract compatibility, reconciliation checks, and rollback readiness.\n  Do not report the service healthy when any required financial-control signal is unavailable.\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022focus\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022risks\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022status\u0022,\u0022evidence\u0022,\u0022risks\u0022]}\u0027\n"
+            "path": "skills/payments-repository-status.skill.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: skill\nid: helio/skills/payments-repository-status@1.0.0\nbinds: helio/capabilities/repository-status@1.0.0\ndisplayName: Payments Repository Status\ndescription: Report payments-service health with contract and reconciliation evidence.\ncontextFiles:\n  - context/payments-service.md\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022focus\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022risks\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022status\u0022,\u0022evidence\u0022,\u0022risks\u0022]}\u0027\n---\nApply the repository-status capability, then include payment-contract compatibility, reconciliation checks, and rollback readiness.\nDo not report the service healthy when any required financial-control signal is unavailable.\n"
           },
           {
-            "path": "skills/prepare-brief.skill.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: skill\nid: helio/skills/prepare-brief@1.0.0\nbinds: helio/capabilities/prepare-brief@1.0.0\ndisplayName: Prepare Brief\ndescription: Assemble an executive brief, requesting repository evidence when needed.\ncontextFiles:\n  - context/executive-rhythm.md\ninstructions: |\n  Build a decision-oriented brief from the supplied topic and evidence.\n  When repository status is material, request \u0060payments-repo-agent.repository-status\u0060 and incorporate its returned evidence with attribution.\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022topic\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022topic\u0022],\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022brief\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022openQuestions\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022brief\u0022,\u0022openQuestions\u0022]}\u0027\n"
+            "path": "skills/prepare-brief.skill.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: skill\nid: helio/skills/prepare-brief@1.0.0\nbinds: helio/capabilities/prepare-brief@1.0.0\ndisplayName: Prepare Brief\ndescription: Assemble an executive brief, requesting repository evidence when needed.\ncontextFiles:\n  - context/executive-rhythm.md\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022topic\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022topic\u0022],\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022brief\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022openQuestions\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022brief\u0022,\u0022openQuestions\u0022]}\u0027\n---\nBuild a decision-oriented brief from the supplied topic and evidence.\nWhen repository status is material, request \u0060payments-repo-agent.repository-status\u0060 and incorporate its returned evidence with attribution.\n"
           },
           {
-            "path": "skills/repository-status.skill.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: skill\nid: helio/skills/repository-status@1.0.0\nbinds: helio/capabilities/repository-status@1.0.0\ndisplayName: Repository Status\ndescription: Summarize repository health using current version-control and test evidence.\ninstructions: |\n  Inspect the requested repository signals. Report branch state, recent material changes, test evidence, risks, and the next accountable action.\n  Mark any unavailable signal explicitly instead of inferring success.\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022focus\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022risks\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022status\u0022,\u0022evidence\u0022,\u0022risks\u0022]}\u0027\n"
+            "path": "skills/repository-status.skill.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: skill\nid: helio/skills/repository-status@1.0.0\nbinds: helio/capabilities/repository-status@1.0.0\ndisplayName: Repository Status\ndescription: Summarize repository health using current version-control and test evidence.\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022focus\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022risks\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022status\u0022,\u0022evidence\u0022,\u0022risks\u0022]}\u0027\n---\nInspect the requested repository signals. Report branch state, recent material changes, test evidence, risks, and the next accountable action.\nMark any unavailable signal explicitly instead of inferring success.\n"
           },
           {
-            "path": "skills/triage-message.skill.yaml",
-            "mediaType": "application/yaml",
-            "content": "schemaVersion: 3\nkind: skill\nid: helio/skills/triage-message@1.0.0\nbinds: helio/capabilities/triage-message@1.0.0\ndisplayName: Triage Message\ndescription: Classify an inbound message and recommend an accountable next action.\ninstructions: |\n  Read the message and identify its sender, intent, urgency, decision owner, and requested deadline.\n  Separate facts from assumptions. Return a concise recommendation; do not send a reply.\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022message\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022required\u0022:[\u0022message\u0022],\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022summary\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022urgency\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022owner\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022nextAction\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022required\u0022:[\u0022summary\u0022,\u0022urgency\u0022,\u0022owner\u0022,\u0022nextAction\u0022]}\u0027\n"
+            "path": "skills/triage-message.skill.tfer",
+            "mediaType": "text/plain",
+            "content": "---\nschemaVersion: 3\nkind: skill\nid: helio/skills/triage-message@1.0.0\nbinds: helio/capabilities/triage-message@1.0.0\ndisplayName: Triage Message\ndescription: Classify an inbound message and recommend an accountable next action.\ninputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022message\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022required\u0022:[\u0022message\u0022],\u0022additionalProperties\u0022:false}\u0027\noutputSchema: \u0027{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022summary\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022urgency\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022owner\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022nextAction\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022required\u0022:[\u0022summary\u0022,\u0022urgency\u0022,\u0022owner\u0022,\u0022nextAction\u0022]}\u0027\n---\nRead the message and identify its sender, intent, urgency, decision owner, and requested deadline.\nSeparate facts from assumptions. Return a concise recommendation; do not send a reply.\n"
           }
         ]
       },
@@ -166,7 +166,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:70270ce0b55dd8c489246a0cffcd64b76f87b4f99e2815ce471ffc7c7dc79d26",
+        "sourceDigest": "sha256:7f6ac1d4966fb40af24b5bdb466696c212721acae5847554534dc6c475bbbfcf",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "neutral"
       },
@@ -177,7 +177,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:70270ce0b55dd8c489246a0cffcd64b76f87b4f99e2815ce471ffc7c7dc79d26"
+            "sourceDigest": "sha256:7f6ac1d4966fb40af24b5bdb466696c212721acae5847554534dc6c475bbbfcf"
           }
         ]
       }
@@ -220,7 +220,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:70270ce0b55dd8c489246a0cffcd64b76f87b4f99e2815ce471ffc7c7dc79d26",
+        "sourceDigest": "sha256:7f6ac1d4966fb40af24b5bdb466696c212721acae5847554534dc6c475bbbfcf",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "neutral"
       },
@@ -231,7 +231,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:70270ce0b55dd8c489246a0cffcd64b76f87b4f99e2815ce471ffc7c7dc79d26"
+            "sourceDigest": "sha256:7f6ac1d4966fb40af24b5bdb466696c212721acae5847554534dc6c475bbbfcf"
           }
         ]
       }
@@ -280,7 +280,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:70270ce0b55dd8c489246a0cffcd64b76f87b4f99e2815ce471ffc7c7dc79d26",
+        "sourceDigest": "sha256:7f6ac1d4966fb40af24b5bdb466696c212721acae5847554534dc6c475bbbfcf",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "codex"
       },
@@ -291,7 +291,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:70270ce0b55dd8c489246a0cffcd64b76f87b4f99e2815ce471ffc7c7dc79d26"
+            "sourceDigest": "sha256:7f6ac1d4966fb40af24b5bdb466696c212721acae5847554534dc6c475bbbfcf"
           }
         ]
       }
@@ -334,7 +334,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:70270ce0b55dd8c489246a0cffcd64b76f87b4f99e2815ce471ffc7c7dc79d26",
+        "sourceDigest": "sha256:7f6ac1d4966fb40af24b5bdb466696c212721acae5847554534dc6c475bbbfcf",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "codex"
       },
@@ -345,7 +345,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:70270ce0b55dd8c489246a0cffcd64b76f87b4f99e2815ce471ffc7c7dc79d26"
+            "sourceDigest": "sha256:7f6ac1d4966fb40af24b5bdb466696c212721acae5847554534dc6c475bbbfcf"
           }
         ]
       }
@@ -384,7 +384,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:70270ce0b55dd8c489246a0cffcd64b76f87b4f99e2815ce471ffc7c7dc79d26",
+        "sourceDigest": "sha256:7f6ac1d4966fb40af24b5bdb466696c212721acae5847554534dc6c475bbbfcf",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "copilot"
       },
@@ -395,7 +395,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:70270ce0b55dd8c489246a0cffcd64b76f87b4f99e2815ce471ffc7c7dc79d26"
+            "sourceDigest": "sha256:7f6ac1d4966fb40af24b5bdb466696c212721acae5847554534dc6c475bbbfcf"
           }
         ]
       }
@@ -433,7 +433,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:70270ce0b55dd8c489246a0cffcd64b76f87b4f99e2815ce471ffc7c7dc79d26",
+        "sourceDigest": "sha256:7f6ac1d4966fb40af24b5bdb466696c212721acae5847554534dc6c475bbbfcf",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "copilot"
       },
@@ -444,7 +444,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:70270ce0b55dd8c489246a0cffcd64b76f87b4f99e2815ce471ffc7c7dc79d26"
+            "sourceDigest": "sha256:7f6ac1d4966fb40af24b5bdb466696c212721acae5847554534dc6c475bbbfcf"
           }
         ]
       }
@@ -483,7 +483,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:70270ce0b55dd8c489246a0cffcd64b76f87b4f99e2815ce471ffc7c7dc79d26",
+        "sourceDigest": "sha256:7f6ac1d4966fb40af24b5bdb466696c212721acae5847554534dc6c475bbbfcf",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "cursor"
       },
@@ -494,7 +494,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:70270ce0b55dd8c489246a0cffcd64b76f87b4f99e2815ce471ffc7c7dc79d26"
+            "sourceDigest": "sha256:7f6ac1d4966fb40af24b5bdb466696c212721acae5847554534dc6c475bbbfcf"
           }
         ]
       }
@@ -532,7 +532,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:70270ce0b55dd8c489246a0cffcd64b76f87b4f99e2815ce471ffc7c7dc79d26",
+        "sourceDigest": "sha256:7f6ac1d4966fb40af24b5bdb466696c212721acae5847554534dc6c475bbbfcf",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "cursor"
       },
@@ -543,7 +543,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:70270ce0b55dd8c489246a0cffcd64b76f87b4f99e2815ce471ffc7c7dc79d26"
+            "sourceDigest": "sha256:7f6ac1d4966fb40af24b5bdb466696c212721acae5847554534dc6c475bbbfcf"
           }
         ]
       }

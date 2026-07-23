@@ -1,3 +1,4 @@
+---
 schemaVersion: 3
 kind: capability
 id: helio/capabilities/triage-message@1.0.0
@@ -5,3 +6,4 @@ displayName: Triage Message
 description: Capability slot for classifying inbound messages and selecting accountable next actions.
 inputSchema: '{"type":"object","properties":{"message":{"type":"string"}},"required":["message"],"additionalProperties":false}'
 outputSchema: '{"type":"object","properties":{"summary":{"type":"string"},"urgency":{"type":"string"},"owner":{"type":"string"},"nextAction":{"type":"string"}},"required":["summary","urgency","owner","nextAction"]}'
+---

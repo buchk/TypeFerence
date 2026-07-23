@@ -1,3 +1,4 @@
+---
 schemaVersion: 3
 kind: agent
 id: helio/payments-repo-agent@1.0.0
@@ -10,3 +11,4 @@ contextFiles:
 skills:
   - ref: helio/skills/payments-repository-status@1.0.0
     capability: helio/capabilities/repository-status@1.0.0
+---
