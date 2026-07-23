@@ -38,6 +38,10 @@ type Document struct {
 	// Context are context-object ids an agent or profile holds by reference
 	// rather than by path (ADR-0013 reference-by-id).
 	Context []string
+	// AllowedContextTypes whitelists the contextType ids a component (and
+	// anything embedding it) may hold; empty means unrestricted. Intersects
+	// through embeds — the most restrictive ancestor wins (ADR-0013).
+	AllowedContextTypes []string
 	// RequiresTools are tool ids a skill depends on; each must be declared and
 	// its interface shape-checked (ADR-0017).
 	RequiresTools []string
@@ -61,9 +65,12 @@ type SkillBinding struct {
 }
 
 // Variant is a mode-specific rendering of a multimodal skill (ADR-0012). It
-// varies instructions only; the capability contract (schemas) is invariant.
+// varies instructions and may narrow requirements; the capability contract
+// (schemas) is invariant.
 type Variant struct {
-	Instructions string
+	Instructions         string
+	RequiresContextTypes []string
+	RequiresTools        []string
 }
 
 // NewDocument returns a Document carrying the spec-defined defaults.

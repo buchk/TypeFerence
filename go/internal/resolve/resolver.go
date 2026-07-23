@@ -47,19 +47,20 @@ type ResolvedSkill struct {
 
 // ResolvedAgent is a fully composed agent or profile.
 type ResolvedAgent struct {
-	ID           string
-	DisplayName  string
-	Description  string
-	Emit         bool
-	Embeds       []string
-	Satisfies    []string
-	Slots        map[string]string
-	SlotKeys     []string // canonical order for Slots
-	WorkingNorms []string
-	ContextFiles []string
-	Context      []string
-	Skills       []ResolvedSkill
-	Provenance   []ProvenanceEntry
+	ID                  string
+	DisplayName         string
+	Description         string
+	Emit                bool
+	Embeds              []string
+	Satisfies           []string
+	Slots               map[string]string
+	SlotKeys            []string // canonical order for Slots
+	WorkingNorms        []string
+	ContextFiles        []string
+	Context             []string
+	AllowedContextTypes []string
+	Skills              []ResolvedSkill
+	Provenance          []ProvenanceEntry
 }
 
 type interfaceContract struct {
@@ -197,12 +198,16 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 	norms := distinct(concatNorms(embedded, current))
 	contexts := distinct(normalizeAll(concatContexts(embedded, current)))
 	contextRefs := distinct(concatContextRefs(embedded, current))
+	allowedContextTypes := intersectAllowLists(embedded, current)
 	skills, skillDepths, err := r.mergeSkills(id, current, embedded, contexts)
 	if err != nil {
 		return nil, err
 	}
 	if current.Kind == "agent" {
 		if err := r.checkSkillDependencies(id, skills, contextRefs); err != nil {
+			return nil, err
+		}
+		if err := r.checkAllowedContext(id, contextRefs, allowedContextTypes); err != nil {
 			return nil, err
 		}
 	}
@@ -264,19 +269,20 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 	}
 
 	resolved := &ResolvedAgent{
-		ID:           id,
-		DisplayName:  displayName,
-		Description:  current.Description,
-		Emit:         current.Emit,
-		Embeds:       append([]string{}, current.Embeds...),
-		Satisfies:    satisfies,
-		Slots:        slots,
-		SlotKeys:     slotKeys,
-		WorkingNorms: norms,
-		ContextFiles: contexts,
-		Context:      contextRefs,
-		Skills:       sortedSkills,
-		Provenance:   provenance,
+		ID:                  id,
+		DisplayName:         displayName,
+		Description:         current.Description,
+		Emit:                current.Emit,
+		Embeds:              append([]string{}, current.Embeds...),
+		Satisfies:           satisfies,
+		Slots:               slots,
+		SlotKeys:            slotKeys,
+		WorkingNorms:        norms,
+		ContextFiles:        contexts,
+		Context:             contextRefs,
+		AllowedContextTypes: allowedContextTypes,
+		Skills:              sortedSkills,
+		Provenance:          provenance,
 	}
 	r.slotDepths[id] = slotDepths
 	r.skillDepths[id] = skillDepths
@@ -473,8 +479,8 @@ func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded [
 			InputSchema:          inputSchema,
 			OutputSchema:         outputSchema,
 			ContextFiles:         distinct(append(append([]string{}, contexts...), normalizeAll(implementation.ContextFiles)...)),
-			RequiresContextTypes: append([]string{}, implementation.RequiresContextTypes...),
-			RequiresTools:        append([]string{}, implementation.RequiresTools...),
+			RequiresContextTypes: aggregateContextRequirements(implementation),
+			RequiresTools:        aggregateToolRequirements(implementation),
 			Exposed:              capability.Visibility == "exposed",
 			Sealed:               binding.Sealed,
 			Required:             binding.Required,
@@ -675,6 +681,102 @@ func resolveVariants(v map[string]resource.Variant) (string, map[string]string) 
 		}
 	}
 	return resolved[names[0]], resolved
+}
+
+// aggregateContextRequirements unions a skill's context-type requirements with
+// every variant's, since a multimodal skill emits all of its variants and the
+// agent must satisfy each (ADR-0012 per-variant narrowing; ADR-0013).
+func aggregateContextRequirements(impl *resource.Document) []string {
+	reqs := append([]string{}, impl.RequiresContextTypes...)
+	for _, mode := range sortedKeys(impl.Variants) {
+		reqs = append(reqs, impl.Variants[mode].RequiresContextTypes...)
+	}
+	return distinct(reqs)
+}
+
+func aggregateToolRequirements(impl *resource.Document) []string {
+	reqs := append([]string{}, impl.RequiresTools...)
+	for _, mode := range sortedKeys(impl.Variants) {
+		reqs = append(reqs, impl.Variants[mode].RequiresTools...)
+	}
+	return distinct(reqs)
+}
+
+func sortedKeys(m map[string]resource.Variant) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+// intersectAllowLists computes the effective allowedContextTypes for a
+// component: the intersection of every non-empty allow-list among itself and
+// its embedded components (empty result means unrestricted; ADR-0013).
+func intersectAllowLists(embedded []*ResolvedAgent, current *resource.Document) []string {
+	lists := [][]string{}
+	for _, c := range embedded {
+		if len(c.AllowedContextTypes) > 0 {
+			lists = append(lists, c.AllowedContextTypes)
+		}
+	}
+	if len(current.AllowedContextTypes) > 0 {
+		lists = append(lists, current.AllowedContextTypes)
+	}
+	if len(lists) == 0 {
+		return nil
+	}
+	result := append([]string{}, lists[0]...)
+	for _, l := range lists[1:] {
+		set := map[string]bool{}
+		for _, x := range l {
+			set[x] = true
+		}
+		filtered := result[:0:0]
+		for _, x := range result {
+			if set[x] {
+				filtered = append(filtered, x)
+			}
+		}
+		result = filtered
+	}
+	return distinct(result)
+}
+
+// checkAllowedContext verifies each held context object satisfies at least one
+// allowed contextType (through its refinement closure). Unrestricted when the
+// effective allow-list is empty (ADR-0013).
+func (r *Resolver) checkAllowedContext(agentID string, contextRefs, allowed []string) error {
+	if len(allowed) == 0 {
+		return nil
+	}
+	allowSet := map[string]bool{}
+	for _, a := range allowed {
+		allowSet[a] = true
+	}
+	for _, objID := range contextRefs {
+		obj, ok := r.resources[objID]
+		if !ok || obj.Kind != "context" {
+			continue // existence is checked in providedContextTypes
+		}
+		closure, err := r.contextTypeClosure(obj.ContextType, map[string]bool{})
+		if err != nil {
+			return err
+		}
+		permitted := false
+		for _, t := range closure {
+			if allowSet[t] {
+				permitted = true
+				break
+			}
+		}
+		if !permitted {
+			return resource.Errorf("%s: held context %s (type %s) is not among the allowed context types",
+				agentID, objID, obj.ContextType)
+		}
+	}
+	return nil
 }
 
 func concatContextRefs(embedded []*ResolvedAgent, current *resource.Document) []string {

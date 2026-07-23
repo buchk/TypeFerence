@@ -162,6 +162,7 @@ func parseDocument(text string) (*Document, error) {
 		"requiresTools":        stringListField(&doc.RequiresTools),
 		"visibility":           stringField(&doc.Visibility),
 		"variants":             variantsField(&doc.Variants),
+		"allowedContextTypes":  stringListField(&doc.AllowedContextTypes),
 	}); err != nil {
 		return nil, err
 	}
@@ -356,7 +357,9 @@ func variantsField(target *map[string]Variant) fieldDecoder {
 			}
 			var v Variant
 			if err := decodeMapping(resolveAlias(node.Content[i+1]), map[string]fieldDecoder{
-				"instructions": stringField(&v.Instructions),
+				"instructions":         stringField(&v.Instructions),
+				"requiresContextTypes": stringListField(&v.RequiresContextTypes),
+				"requiresTools":        stringListField(&v.RequiresTools),
 			}); err != nil {
 				return err
 			}
@@ -474,9 +477,17 @@ func validateDocumentShape(doc *Document, file string) error {
 	if len(doc.Context) != 0 && doc.Kind != "agent" && doc.Kind != "profile" {
 		return Errorf("%s: only agents and profiles hold context by id", file)
 	}
+	if len(doc.AllowedContextTypes) != 0 && doc.Kind != "agent" && doc.Kind != "profile" {
+		return Errorf("%s: only agents and profiles declare allowedContextTypes", file)
+	}
 	refs := append([]string{}, doc.RequiresContextTypes...)
 	refs = append(refs, doc.RequiresTools...)
 	refs = append(refs, doc.Context...)
+	refs = append(refs, doc.AllowedContextTypes...)
+	for _, v := range doc.Variants {
+		refs = append(refs, v.RequiresContextTypes...)
+		refs = append(refs, v.RequiresTools...)
+	}
 	for _, ref := range refs {
 		if !resourceID.MatchString(ref) {
 			return Errorf("%s: reference '%s' must be a namespace/name@semantic-version id", file, ref)
