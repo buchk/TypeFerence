@@ -47,10 +47,13 @@ type Document struct {
 }
 
 // SkillBinding attaches a skill implementation (and optionally the capability
-// it must satisfy) to an agent or profile.
+// it must satisfy) to an agent or profile. Sealed marks the binding as
+// non-overridable by embedders; Required marks it mandatory (ADR-0016).
 type SkillBinding struct {
 	Ref        string
 	Capability *string
+	Sealed     bool
+	Required   bool
 }
 
 // NewDocument returns a Document carrying the spec-defined defaults.

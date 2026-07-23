@@ -33,7 +33,11 @@ type ResolvedSkill struct {
 	// Exposed is true when the bound capability's visibility is "exposed":
 	// part of the agent's public callable surface, eligible for a callable
 	// card (ADR-0015). Rides the skill, so promotion carries it automatically.
-	Exposed    bool
+	Exposed bool
+	// Sealed marks a binding an embedder may not override or rebind; Required
+	// marks it mandatory (ADR-0016). Both ride the skill through promotion.
+	Sealed     bool
+	Required   bool
 	Provenance []ProvenanceEntry
 }
 
@@ -375,6 +379,9 @@ func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded [
 
 	result := map[string]ResolvedSkill{}
 	depths := map[string]int{}
+	// sealedBy records the embedded component that sealed a capability, so a
+	// shallower or local binding overriding it is a compile error (ADR-0016).
+	sealedBy := map[string]string{}
 	for _, capabilityID := range order {
 		group := candidates[capabilityID]
 		minDepth := group[0].depth
@@ -400,6 +407,18 @@ func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded [
 		}
 		result[capabilityID] = nearest[0].skill
 		depths[capabilityID] = minDepth
+		// A sealed candidate may not be overridden by a shallower binding: the
+		// chosen (nearest) skill must be the sealed one itself.
+		for _, c := range group {
+			if c.skill.Sealed {
+				sealedBy[capabilityID] = c.agent
+				if result[capabilityID].ImplementationID != c.skill.ImplementationID {
+					return nil, nil, resource.Errorf(
+						"%s: capability '%s' is sealed by %s and cannot be overridden",
+						id, capabilityID, c.agent)
+				}
+			}
+		}
 	}
 
 	for _, binding := range current.Skills {
@@ -410,6 +429,11 @@ func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded [
 		capabilityID, err := r.resolveCapabilityID(binding, id)
 		if err != nil {
 			return nil, nil, err
+		}
+		if source, sealed := sealedBy[capabilityID]; sealed {
+			return nil, nil, resource.Errorf(
+				"%s: capability '%s' is sealed by %s and cannot be rebound",
+				id, capabilityID, source)
 		}
 		capability, err := r.require(capabilityID, "capability")
 		if err != nil {
@@ -442,6 +466,8 @@ func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded [
 			RequiresContextTypes: append([]string{}, implementation.RequiresContextTypes...),
 			RequiresTools:        append([]string{}, implementation.RequiresTools...),
 			Exposed:              capability.Visibility == "exposed",
+			Sealed:               binding.Sealed,
+			Required:             binding.Required,
 			Provenance: []ProvenanceEntry{
 				{Field: "skill.capability", Source: capabilityID},
 				{Field: "skill.implementation", Source: implementation.ID},

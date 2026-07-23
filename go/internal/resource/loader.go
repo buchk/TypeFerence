@@ -355,6 +355,8 @@ func skillsField(target *[]SkillBinding) fieldDecoder {
 					hasCapability = true
 					return scalarString(n, &capability)
 				},
+				"sealed":   boolField(&binding.Sealed),
+				"required": boolField(&binding.Required),
 			})
 			if err != nil {
 				return err
