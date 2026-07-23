@@ -394,9 +394,9 @@ func (s *Server) handleDocumentSymbol(raw json.RawMessage) any {
 	}
 	// SymbolKind 5 = Class; a resource is the closest analogue.
 	return []map[string]any{{
-		"name": name,
-		"kind": 5,
-		"range": rng{Start: position{0, 0}, End: position{0, 0}},
+		"name":           name,
+		"kind":           5,
+		"range":          rng{Start: position{0, 0}, End: position{0, 0}},
 		"selectionRange": rng{Start: position{0, 0}, End: position{0, 0}},
 	}}
 }
