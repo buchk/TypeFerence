@@ -18,7 +18,7 @@
     "Where the specification and an implementation disagree, the specification wins; record the ruling in docs/decisions and cover it with a conformance fixture.",
     "Every canonicalization or composition ruling ships with a fixture under conformance/fixtures in the same change.",
     "Never silently diverge from the specification; fixing the specification is allowed, silent divergence is not.",
-    "Any change to code generation must keep the C# and Go implementations byte-identical, verified by the conformance suite before merge.",
+    "Any change to code generation must reproduce the committed digests, verified by the determinism suite before merge.",
     "Never weaken determinism, provenance, or fail-closed behavior to make a change easier.",
     "A conformance digest is regenerated only together with the specification change and ADR that justify it; never hand-edit a digest.",
     "Repeated builds from identical source must stay byte-identical on every platform.",
@@ -26,7 +26,7 @@
     "signatureIntent.required fails closed; the unsigned-staging option exists solely to emit payloads for an external signer.",
     "TypeFerence imports externally produced signatures; it never signs, never verifies cryptographic validity, and never resolves keys.",
     "Trust metadata is declarative; never dereference identity, attestation, or provenance URIs during compilation.",
-    "Every commit builds and passes both implementations\u0027 test suites and the shared conformance suite.",
+    "Every commit builds and passes the test suite and the determinism suite.",
     "Decisions with real tradeoffs are recorded as ADRs in docs/decisions before the change merges.",
     "Documentation must be accurate against the code at the commit that includes it; no fabricated adoption, benchmarks, or endorsements.",
     "Commit messages are conventional and written for a critical human reader."
@@ -65,8 +65,8 @@
       "dispatchName": "typeference-maintainer.verify-conformance",
       "capabilityId": "typeference/capabilities/verify-conformance@0.1.0",
       "implementationId": "typeference/skills/verify-conformance@0.1.0",
-      "description": "Runs the shared conformance suite on both implementations and reports any digest disagreement.",
-      "instructions": "Run \u0060go test ./conformance\u0060 from the go/ directory, then run\n\u0060dotnet test TypeFerence.slnx --filter FullyQualifiedName~ConformanceSuiteTests\u0060\nfrom the repository root (or \u0060make conformance\u0060 for both). Report passed=true\nonly when every fixture passes on both implementations. List each failing\nfixture and target as a mismatch. Never resolve a mismatch by editing a\ndigest; find the diverging implementation or take the ruling to the\nspecification with an ADR and a new fixture.\n",
+      "description": "Runs the determinism suite and reports whether the compiler reproduces the committed digests.",
+      "instructions": "Run \u0060go test ./conformance\u0060 from the go/ directory (or \u0060make conformance\u0060).\nReport passed=true only when every fixture reproduces its committed digest.\nList each failing fixture and target as a mismatch. Never resolve a mismatch\nby editing a digest; find the compiler regression, or take the ruling to the\nspecification with an ADR and a regenerated fixture.\n",
       "inputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022additionalProperties\u0022:false}",
       "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022passed\u0022:{\u0022type\u0022:\u0022boolean\u0022},\u0022mismatches\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022passed\u0022,\u0022mismatches\u0022]}",
       "contextFiles": [

@@ -2,9 +2,8 @@
 
 - Work on feature branches; never rewrite published history; never tag or publish a
   release outside the checklist in `docs/release-checklist.md`.
-- Before any commit: `dotnet test TypeFerence.slnx`, `go test ./...` (from `go/`),
-  and the conformance suite (`make conformance`) all pass. A commit that breaks any
-  of them does not land.
+- Before any commit: `go test ./...` (from `go/`) and the determinism suite
+  (`make conformance`) both pass. A commit that breaks either does not land.
 - Design decisions with real tradeoffs — spec semantics, canonical bytes, trust
   model, dependencies — are recorded in `docs/decisions/` as numbered ADRs in the
   same change.

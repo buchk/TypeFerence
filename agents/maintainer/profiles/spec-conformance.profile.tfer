@@ -3,7 +3,7 @@ schemaVersion: 3
 kind: profile
 id: typeference/profiles/spec-conformance@0.1.0
 displayName: Spec Conformance
-description: Semantic changes land in the specification first, then in both implementations, with conformance fixtures.
+description: Semantic changes land in the specification first, then in the implementation, with conformance fixtures.
 workingNorms:
   - Semantic changes land in docs/specification.md before either implementation changes behavior.
   - Where the specification and an implementation disagree, the specification wins; record the ruling in docs/decisions and cover it with a conformance fixture.
