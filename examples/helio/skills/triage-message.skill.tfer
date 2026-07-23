@@ -5,6 +5,8 @@ id: helio/skills/triage-message@1.0.0
 binds: helio/capabilities/triage-message@1.0.0
 displayName: Triage Message
 description: Classify an inbound message and recommend an accountable next action.
+requiresContextTypes:
+  - helio/context-types/safety-policy@1.0.0
 inputSchema: '{"type":"object","properties":{"message":{"type":"string"}},"required":["message"],"additionalProperties":false}'
 outputSchema: '{"type":"object","properties":{"summary":{"type":"string"},"urgency":{"type":"string"},"owner":{"type":"string"},"nextAction":{"type":"string"}},"required":["summary","urgency","owner","nextAction"]}'
 ---

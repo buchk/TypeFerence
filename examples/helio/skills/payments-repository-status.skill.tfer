@@ -7,8 +7,27 @@ displayName: Payments Repository Status
 description: Report payments-service health with contract and reconciliation evidence.
 contextFiles:
   - context/payments-service.md
+requiresTools:
+  - helio/tools/repository-signals@1.0.0
 inputSchema: '{"type":"object","properties":{"focus":{"type":"string"}},"additionalProperties":false}'
 outputSchema: '{"type":"object","properties":{"status":{"type":"string"},"evidence":{"type":"array","items":{"type":"string"}},"risks":{"type":"array","items":{"type":"string"}}},"required":["status","evidence","risks"]}'
+variants:
+  pipeline:
+    instructions: |
+      Apply the repository-status capability for the payments service and emit only
+      the strict output object. Mark any unavailable financial-control signal as an
+      explicit null; do not report the service healthy when one is missing.
+  manual:
+    instructions: |
+      Apply the repository-status capability for the payments service, then include
+      payment-contract compatibility, reconciliation checks, and rollback readiness,
+      surfacing uncertainty conversationally. Do not report the service healthy when
+      any required financial-control signal is unavailable.
+  a2a:
+    instructions: |
+      Apply the repository-status capability for the payments service and return
+      attributed evidence for the calling agent — contract compatibility,
+      reconciliation, and rollback readiness — with no user-facing framing. Do not
+      report the service healthy when any required financial-control signal is
+      unavailable.
 ---
-Apply the repository-status capability, then include payment-contract compatibility, reconciliation checks, and rollback readiness.
-Do not report the service healthy when any required financial-control signal is unavailable.

@@ -17,7 +17,6 @@ Coordinates an executive's correspondence, briefings, and cross-agent requests.
 
 - `organization`: `context/organization.md`
 - `principal`: `context/principal.md`
-- `safetyPolicy`: `context/safety-policy.md`
 
 ## Available skills
 

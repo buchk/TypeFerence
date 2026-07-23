@@ -12,7 +12,6 @@ Specializes repository assistance for the fictional payments service.
 
 - `organization`: `context/organization.md`
 - `repository`: `context/repository.md`
-- `safetyPolicy`: `context/safety-policy.md`
 
 ## Available skills
 

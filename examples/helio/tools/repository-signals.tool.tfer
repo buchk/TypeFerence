@@ -1,0 +1,11 @@
+---
+schemaVersion: 3
+kind: tool
+id: helio/tools/repository-signals@1.0.0
+displayName: Repository Signals
+description: >-
+  Reads version-control and test signals for a repository at runtime. TypeFerence
+  declares this extern; the deployer implements the body (ADR-0017, Door B).
+inputSchema: '{"type":"object","properties":{"repository":{"type":"string"}},"required":["repository"],"additionalProperties":false}'
+outputSchema: '{"type":"object","properties":{"branch":{"type":"string"},"tests":{"type":"string"}}}'
+---

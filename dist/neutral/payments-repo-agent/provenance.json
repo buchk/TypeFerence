@@ -4,19 +4,11 @@
     "source": "helio/profiles/enterprise-defaults@1.0.0"
   },
   {
-    "field": "slots.safetyPolicy",
-    "source": "helio/profiles/enterprise-defaults@1.0.0"
-  },
-  {
     "field": "workingNorms",
     "source": "helio/profiles/enterprise-defaults@1.0.0"
   },
   {
     "field": "workingNorms",
-    "source": "helio/profiles/enterprise-defaults@1.0.0"
-  },
-  {
-    "field": "contextFiles",
     "source": "helio/profiles/enterprise-defaults@1.0.0"
   },
   {

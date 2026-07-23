@@ -6,11 +6,11 @@ displayName: Helio Enterprise Defaults
 description: Shared organizational governance for every Helio resource.
 slots:
   organization: context/organization.md
-  safetyPolicy: context/safety-policy.md
 workingNorms:
   - Preserve a clear audit trail for material decisions.
   - State uncertainty and route work to an accountable owner when authority is unclear.
 contextFiles:
   - context/organization.md
-  - context/safety-policy.md
+context:
+  - helio/context/safety-policy@1.0.0
 ---

@@ -11,8 +11,7 @@
   ],
   "slots": {
     "organization": "context/organization.md",
-    "principal": "context/principal.md",
-    "safetyPolicy": "context/safety-policy.md"
+    "principal": "context/principal.md"
   },
   "workingNorms": [
     "Preserve a clear audit trail for material decisions.",
@@ -21,9 +20,14 @@
   ],
   "contextFiles": [
     "context/organization.md",
-    "context/safety-policy.md",
     "context/principal.md",
     "context/executive-rhythm.md"
+  ],
+  "context": [
+    {
+      "id": "helio/context/safety-policy@1.0.0",
+      "contextType": "helio/context-types/safety-policy@1.0.0"
+    }
   ],
   "skills": [
     {
@@ -36,7 +40,6 @@
       "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022brief\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022openQuestions\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022brief\u0022,\u0022openQuestions\u0022]}",
       "contextFiles": [
         "context/organization.md",
-        "context/safety-policy.md",
         "context/principal.md",
         "context/executive-rhythm.md"
       ],
@@ -61,7 +64,6 @@
       "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022summary\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022urgency\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022owner\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022nextAction\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022required\u0022:[\u0022summary\u0022,\u0022urgency\u0022,\u0022owner\u0022,\u0022nextAction\u0022]}",
       "contextFiles": [
         "context/organization.md",
-        "context/safety-policy.md",
         "context/principal.md"
       ],
       "provenance": [
@@ -82,19 +84,11 @@
       "source": "helio/profiles/enterprise-defaults@1.0.0"
     },
     {
-      "field": "slots.safetyPolicy",
-      "source": "helio/profiles/enterprise-defaults@1.0.0"
-    },
-    {
       "field": "workingNorms",
       "source": "helio/profiles/enterprise-defaults@1.0.0"
     },
     {
       "field": "workingNorms",
-      "source": "helio/profiles/enterprise-defaults@1.0.0"
-    },
-    {
-      "field": "contextFiles",
       "source": "helio/profiles/enterprise-defaults@1.0.0"
     },
     {

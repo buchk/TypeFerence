@@ -1,0 +1,8 @@
+---
+schemaVersion: 3
+kind: contextType
+id: helio/context-types/safety-policy@1.0.0
+displayName: Safety Policy
+description: An organizational safety policy governing what an agent may do without explicit authority.
+schema: '{"type":"object","required":["authority"],"properties":{"authority":{"type":"string"}}}'
+---
