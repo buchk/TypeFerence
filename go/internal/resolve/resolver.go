@@ -750,6 +750,17 @@ func withDispatch(skill ResolvedSkill, agentID string) ResolvedSkill {
 	return skill
 }
 
+// InstructionsFor returns the instructions for an invocation mode: the variant's
+// rendering when this is a multimodal skill that declares the mode, otherwise the
+// default Instructions (ADR-0012). Lets a surface pick its face — e.g. a callable
+// card selects the a2a variant.
+func (s ResolvedSkill) InstructionsFor(mode string) string {
+	if ins, ok := s.Variants[mode]; ok {
+		return ins
+	}
+	return s.Instructions
+}
+
 // ExposedSkills returns the resolved skills whose capability is exposed, in
 // dispatch order: the agent's public callable surface (ADR-0015). A callable
 // card (ADR-0018) is emitted from exactly these, not from every skill.

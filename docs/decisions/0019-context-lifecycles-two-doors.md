@@ -1,6 +1,6 @@
 # 0019 — Context lifecycles: the two doors
 
-**Status:** Proposed (2026-07-22)
+**Status:** Accepted (2026-07-23)
 
 ## Context
 

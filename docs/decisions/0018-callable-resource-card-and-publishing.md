@@ -1,6 +1,6 @@
 # 0018 — Callable-resource card and publishing
 
-**Status:** Proposed (2026-07-22)
+**Status:** Accepted (2026-07-23)
 
 ## Context
 

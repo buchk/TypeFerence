@@ -43,6 +43,23 @@ func TestVariantsDefaultFallsBackAlphabetically(t *testing.T) {
 	}
 }
 
+func TestInstructionsForSelectsVariantOrDefault(t *testing.T) {
+	s := ResolvedSkill{
+		Instructions: "default",
+		Variants:     map[string]string{"a2a": "attributed", "manual": "explain"},
+	}
+	if got := s.InstructionsFor("a2a"); got != "attributed" {
+		t.Errorf("InstructionsFor(a2a) = %q, want attributed", got)
+	}
+	if got := s.InstructionsFor("nope"); got != "default" {
+		t.Errorf("InstructionsFor(missing mode) should fall back to default, got %q", got)
+	}
+	uni := ResolvedSkill{Instructions: "only"}
+	if got := uni.InstructionsFor("a2a"); got != "only" {
+		t.Errorf("unimodal InstructionsFor should return Instructions, got %q", got)
+	}
+}
+
 func TestUnimodalSkillHasNoVariants(t *testing.T) {
 	set := baseSkillAgent(func(s *resource.Document) { s.Instructions = "just do it" }, nil)
 	agent, err := New(set).Resolve("t/agent@1.0.0")

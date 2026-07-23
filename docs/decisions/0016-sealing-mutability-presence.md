@@ -1,6 +1,6 @@
 # 0016 — Sealing: mutability and presence
 
-**Status:** Proposed (2026-07-22)
+**Status:** Accepted (2026-07-23)
 
 ## Context
 

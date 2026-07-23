@@ -1,6 +1,6 @@
 # 0013 — User-defined typed context
 
-**Status:** Proposed (2026-07-22)
+**Status:** Accepted (2026-07-23)
 
 ## Context
 

@@ -197,7 +197,9 @@ func writeArdCatalog(
 				{K: "description", V: jsonx.Str(skill.Description)},
 				{K: "inputSchema", V: jsonx.Str(skill.InputSchema)},
 				{K: "outputSchema", V: jsonx.Str(skill.OutputSchema)},
-				{K: "instructionsTemplate", V: jsonx.Str(skill.Instructions)},
+				// A callable card is the agent-to-agent surface, so it renders the
+				// a2a variant when the skill declares one (ADR-0012, ADR-0018).
+				{K: "instructionsTemplate", V: jsonx.Str(skill.InstructionsFor("a2a"))},
 			})
 		}
 		manifest := jsonx.Obj{

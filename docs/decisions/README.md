@@ -20,11 +20,11 @@ Format: `NNNN-short-title.md` with sections **Status**, **Context**, **Decision*
 | [0009](0009-behavioral-equivalence-harness.md) | BETH: the behavioral equivalence test harness |
 | [0010](0010-browser-playground.md) | Browser playground: the Go compiler as WebAssembly |
 | [0011](0011-playground-live-runs.md) | Playground equivalence console: no secrets in the browser |
-| [0012](0012-invocation-mode-skill-variants.md) | Invocation-mode skill variants (Proposed) |
-| [0013](0013-user-defined-typed-context.md) | User-defined typed context (Proposed) |
+| [0012](0012-invocation-mode-skill-variants.md) | Invocation-mode skill variants (Accepted) |
+| [0013](0013-user-defined-typed-context.md) | User-defined typed context (Accepted) |
 | [0014](0014-go-only-implementation.md) | Go-only implementation; the spec is the open invitation (Accepted) |
-| [0015](0015-exposure-and-visibility.md) | Exposure and visibility (Proposed) |
-| [0016](0016-sealing-mutability-presence.md) | Sealing: mutability and presence (Proposed) |
-| [0017](0017-tools-as-extern.md) | Tools as extern declarations (Proposed) |
-| [0018](0018-callable-resource-card-and-publishing.md) | Callable-resource card and publishing (Proposed) |
-| [0019](0019-context-lifecycles-two-doors.md) | Context lifecycles: the two doors (Proposed) |
+| [0015](0015-exposure-and-visibility.md) | Exposure and visibility (Accepted) |
+| [0016](0016-sealing-mutability-presence.md) | Sealing: mutability and presence (Accepted) |
+| [0017](0017-tools-as-extern.md) | Tools as extern declarations (Accepted) |
+| [0018](0018-callable-resource-card-and-publishing.md) | Callable-resource card and publishing (Accepted) |
+| [0019](0019-context-lifecycles-two-doors.md) | Context lifecycles: the two doors (Accepted) |

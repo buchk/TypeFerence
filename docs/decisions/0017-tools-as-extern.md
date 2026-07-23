@@ -1,6 +1,6 @@
 # 0017 — Tools as extern declarations
 
-**Status:** Proposed (2026-07-22)
+**Status:** Accepted (2026-07-23)
 
 ## Context
 
