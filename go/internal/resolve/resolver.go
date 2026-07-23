@@ -59,9 +59,17 @@ type ResolvedAgent struct {
 	WorkingNorms        []string
 	ContextFiles        []string
 	Context             []string
+	ContextObjects      []ResolvedContextRef
 	AllowedContextTypes []string
 	Skills              []ResolvedSkill
 	Provenance          []ProvenanceEntry
+}
+
+// ResolvedContextRef is a context object an agent holds by id, with the
+// contextType it instantiates (ADR-0013).
+type ResolvedContextRef struct {
+	ID          string
+	ContextType string
 }
 
 type interfaceContract struct {
@@ -285,6 +293,7 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 		WorkingNorms:        norms,
 		ContextFiles:        contexts,
 		Context:             contextRefs,
+		ContextObjects:      r.resolveContextObjects(contextRefs),
 		AllowedContextTypes: allowedContextTypes,
 		Skills:              sortedSkills,
 		Provenance:          provenance,
@@ -823,6 +832,20 @@ func (r *Resolver) checkAllowedContext(agentID string, contextRefs, allowed []st
 		}
 	}
 	return nil
+}
+
+// resolveContextObjects turns held context ids into (id, contextType) refs,
+// sorted by id for deterministic emission. Ids that do not resolve to a context
+// object are skipped (agent-level checks surface missing context elsewhere).
+func (r *Resolver) resolveContextObjects(contextRefs []string) []ResolvedContextRef {
+	refs := []ResolvedContextRef{}
+	for _, id := range contextRefs {
+		if obj, ok := r.resources[id]; ok && obj.Kind == "context" {
+			refs = append(refs, ResolvedContextRef{ID: id, ContextType: obj.ContextType})
+		}
+	}
+	sort.Slice(refs, func(i, j int) bool { return refs[i].ID < refs[j].ID })
+	return refs
 }
 
 func concatContextRefs(embedded []*ResolvedAgent, current *resource.Document) []string {

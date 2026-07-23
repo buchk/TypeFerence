@@ -24,7 +24,7 @@ func bundleValue(agent *resolve.ResolvedAgent) jsonx.Value {
 	for _, skill := range agent.Skills {
 		skills = append(skills, skillValue(skill))
 	}
-	return jsonx.Obj{
+	obj := jsonx.Obj{
 		{K: "id", V: jsonx.Str(agent.ID)},
 		{K: "displayName", V: jsonx.Str(agent.DisplayName)},
 		{K: "description", V: jsonx.Str(agent.Description)},
@@ -34,9 +34,22 @@ func bundleValue(agent *resolve.ResolvedAgent) jsonx.Value {
 		{K: "slots", V: slots},
 		{K: "workingNorms", V: stringArr(agent.WorkingNorms)},
 		{K: "contextFiles", V: stringArr(agent.ContextFiles)},
-		{K: "skills", V: skills},
-		{K: "provenance", V: provenanceValue(agent.Provenance)},
 	}
+	// Typed context held by id. Absent when the agent holds none, so bundles
+	// that predate reference-by-id context are unchanged (ADR-0013).
+	if len(agent.ContextObjects) > 0 {
+		context := jsonx.Arr{}
+		for _, ref := range agent.ContextObjects {
+			context = append(context, jsonx.Obj{
+				{K: "id", V: jsonx.Str(ref.ID)},
+				{K: "contextType", V: jsonx.Str(ref.ContextType)},
+			})
+		}
+		obj = append(obj, jsonx.Member{K: "context", V: context})
+	}
+	obj = append(obj, jsonx.Member{K: "skills", V: skills})
+	obj = append(obj, jsonx.Member{K: "provenance", V: provenanceValue(agent.Provenance)})
+	return obj
 }
 
 func skillValue(skill resolve.ResolvedSkill) jsonx.Value {
