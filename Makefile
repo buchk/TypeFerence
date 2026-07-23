@@ -9,16 +9,20 @@ GOFLAGS := -trimpath
 LDFLAGS := -s -w -X main.version=$(VERSION)
 BINDIR := bin
 
-.PHONY: all build build-go build-dotnet test test-go test-dotnet conformance \
+.PHONY: all build build-go build-lsp build-dotnet test test-go test-dotnet conformance \
 	selfhost selfhost-check fmt vet clean release-binaries playground
 
 all: build test
 
-build: build-go build-dotnet
+build: build-go build-lsp build-dotnet
 
 # Single static binary, no runtime dependencies.
 build-go:
 	cd go && CGO_ENABLED=0 $(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o ../$(BINDIR)/typeference$(shell $(GO) env GOEXE) ./cmd/typeference
+
+# Language server for .tfer/.yaml authoring diagnostics (internal/lsp).
+build-lsp:
+	cd go && CGO_ENABLED=0 $(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o ../$(BINDIR)/typeference-lsp$(shell $(GO) env GOEXE) ./cmd/typeference-lsp
 
 build-dotnet:
 	$(DOTNET) build TypeFerence.slnx

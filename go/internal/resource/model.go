@@ -23,6 +23,15 @@ type Document struct {
 	Instructions         string
 	InputSchema          string
 	OutputSchema         string
+	// ContextType is the id of the contextType a `kind: context` object
+	// instantiates (ADR-0013).
+	ContextType string
+	// Schema is an optional JSON Schema over a `kind: contextType`'s
+	// frontmatter (ADR-0013).
+	Schema string
+	// Content is a `.tfer` markdown body materialized onto a resource: a
+	// skill's instructions or a context object's content (ADR-0013 format).
+	Content string
 }
 
 // SkillBinding attaches a skill implementation (and optionally the capability

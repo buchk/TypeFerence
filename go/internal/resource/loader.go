@@ -48,7 +48,8 @@ func Load(sourceDir string, trustConfigPath string) (map[string]*Document, error
 		if err != nil {
 			return err
 		}
-		if d.IsDir() || !strings.HasSuffix(d.Name(), ".yaml") {
+		name := d.Name()
+		if d.IsDir() || (!strings.HasSuffix(name, ".yaml") && !strings.HasSuffix(name, ".tfer")) {
 			return nil
 		}
 		for _, ex := range excluded {
@@ -70,12 +71,27 @@ func Load(sourceDir string, trustConfigPath string) (map[string]*Document, error
 		if readErr != nil {
 			return nil, Errorf("%s: %s", file, readErr)
 		}
-		doc, parseErr := parseDocument(stripBOM(string(raw)))
+		text := stripBOM(string(raw))
+		isTfer := strings.HasSuffix(file, ".tfer")
+		var body string
+		if isTfer {
+			frontmatter, tferBody, splitErr := splitFrontmatter(text)
+			if splitErr != nil {
+				return nil, Errorf("%s: %s", file, splitErr)
+			}
+			text, body = frontmatter, tferBody
+		}
+		doc, parseErr := parseDocument(text)
 		if parseErr != nil {
 			return nil, Errorf("%s: invalid YAML resource: %s", file, parseErr)
 		}
 		if doc == nil {
 			return nil, Errorf("Empty resource: %s", file)
+		}
+		if isTfer {
+			if err := applyBody(doc, body, file); err != nil {
+				return nil, err
+			}
 		}
 		if err := validateShape(doc, file, root); err != nil {
 			return nil, err
@@ -139,10 +155,62 @@ func parseDocument(text string) (*Document, error) {
 		"instructions":         stringField(&doc.Instructions),
 		"inputSchema":          stringField(&doc.InputSchema),
 		"outputSchema":         stringField(&doc.OutputSchema),
+		"contextType":          stringField(&doc.ContextType),
+		"schema":               stringField(&doc.Schema),
 	}); err != nil {
 		return nil, err
 	}
 	return doc, nil
+}
+
+// splitFrontmatter separates a .tfer file into its YAML frontmatter and its
+// verbatim markdown body. The file MUST begin with a `---` fence line; the
+// frontmatter runs to the next `---` fence line and the body is everything
+// after it, preserved byte-for-byte (ADR-0013 format: typed head, prose tail).
+func splitFrontmatter(text string) (frontmatter, body string, err error) {
+	nl := strings.IndexByte(text, '\n')
+	if nl < 0 || strings.TrimRight(text[:nl], "\r") != "---" {
+		return "", "", Errorf("a .tfer file must begin with a '---' frontmatter fence")
+	}
+	rest := text[nl+1:]
+	for idx := 0; ; {
+		lineEnd := strings.IndexByte(rest[idx:], '\n')
+		if lineEnd < 0 {
+			if strings.TrimRight(rest[idx:], "\r") == "---" {
+				return rest[:idx], "", nil
+			}
+			return "", "", Errorf("a .tfer file is missing its closing '---' frontmatter fence")
+		}
+		line := rest[idx : idx+lineEnd]
+		next := idx + lineEnd + 1
+		if strings.TrimRight(line, "\r") == "---" {
+			return rest[:idx], rest[next:], nil
+		}
+		idx = next
+	}
+}
+
+// applyBody materializes a .tfer markdown body onto the resource: a skill's
+// instructions or a context object's content. Kinds without a body field
+// reject a non-empty body (ADR-0013 format; ADR-0012 for the multimodal note).
+func applyBody(doc *Document, body, file string) error {
+	switch doc.Kind {
+	case "skill":
+		if strings.TrimSpace(body) == "" {
+			return nil
+		}
+		if strings.TrimSpace(doc.Instructions) != "" {
+			return Errorf("%s: a .tfer skill sets instructions in both the body and frontmatter; use one", file)
+		}
+		doc.Instructions = body
+	case "context":
+		doc.Content = body
+	default:
+		if strings.TrimSpace(body) != "" {
+			return Errorf("%s: a %s resource has no body field; put content in frontmatter", file, doc.Kind)
+		}
+	}
+	return nil
 }
 
 type fieldDecoder func(*yaml.Node) error
@@ -298,19 +366,68 @@ func skillsField(target *[]SkillBinding) fieldDecoder {
 }
 
 func validateShape(doc *Document, file, root string) error {
+	if err := validateDocumentShape(doc, file); err != nil {
+		return err
+	}
+	var referenced []string
+	referenced = append(referenced, doc.ContextFiles...)
+	for _, key := range SortedKeys(doc.Slots) {
+		referenced = append(referenced, doc.Slots[key])
+	}
+	for _, relative := range referenced {
+		full := filepath.Join(root, filepath.FromSlash(relative))
+		if !strings.HasPrefix(full, root+string(filepath.Separator)) {
+			return Errorf("%s: path escapes source root: %s", file, relative)
+		}
+		if info, err := os.Stat(full); err != nil || info.IsDir() {
+			return Errorf("%s: referenced file does not exist: %s", file, relative)
+		}
+	}
+	return nil
+}
+
+// validateDocumentShape validates a single resource in isolation: every rule
+// except the composition-level checks that require the whole source tree
+// (referenced-file existence). CheckDocument reuses it for the language server.
+func validateDocumentShape(doc *Document, file string) error {
 	if doc.SchemaVersion != 3 {
 		return Errorf("%s: schemaVersion must be 3", file)
 	}
 	switch doc.Kind {
-	case "agent", "profile", "interface", "capability", "skill":
+	case "agent", "profile", "interface", "capability", "skill", "context", "contextType":
 	default:
 		return Errorf("%s: unknown kind '%s'", file, doc.Kind)
 	}
 	if !resourceID.MatchString(doc.ID) {
 		return Errorf("%s: id must use lowercase namespace/name@semantic-version", file)
 	}
-	if (doc.Kind == "capability" || doc.Kind == "skill") && len(doc.Embeds) != 0 {
-		return Errorf("%s: %ss cannot embed resources", file, doc.Kind)
+	// capabilities, skills, and context objects do not embed; contextTypes may
+	// embed to refine other contextTypes (ADR-0013), and agents/profiles/
+	// interfaces embed by design.
+	switch doc.Kind {
+	case "capability", "skill", "context":
+		if len(doc.Embeds) != 0 {
+			return Errorf("%s: %ss cannot embed resources", file, doc.Kind)
+		}
+	}
+	if doc.Kind == "context" {
+		if strings.TrimSpace(doc.ContextType) == "" {
+			return Errorf("%s: a context resource must declare a contextType", file)
+		}
+		if !resourceID.MatchString(doc.ContextType) {
+			return Errorf("%s: contextType must reference a contextType id", file)
+		}
+	} else if strings.TrimSpace(doc.ContextType) != "" {
+		return Errorf("%s: only context resources declare a contextType", file)
+	}
+	if doc.Kind == "contextType" {
+		if strings.TrimSpace(doc.Schema) != "" {
+			if err := validateJSON(doc.Schema, file, "schema"); err != nil {
+				return err
+			}
+		}
+	} else if strings.TrimSpace(doc.Schema) != "" {
+		return Errorf("%s: only contextType resources declare a schema", file)
 	}
 	if doc.Kind == "skill" && strings.TrimSpace(doc.Binds) == "" {
 		return Errorf("%s: skills must bind a capability", file)
@@ -327,24 +444,39 @@ func validateShape(doc *Document, file, root string) error {
 			return Errorf("%s: slot name '%s' must be an ASCII identifier matching [A-Za-z0-9][A-Za-z0-9._-]*", file, name)
 		}
 	}
-	var referenced []string
-	referenced = append(referenced, doc.ContextFiles...)
-	for _, key := range SortedKeys(doc.Slots) {
-		referenced = append(referenced, doc.Slots[key])
-	}
-	for _, relative := range referenced {
-		full := filepath.Join(root, filepath.FromSlash(relative))
-		if !strings.HasPrefix(full, root+string(filepath.Separator)) {
-			return Errorf("%s: path escapes source root: %s", file, relative)
-		}
-		if info, err := os.Stat(full); err != nil || info.IsDir() {
-			return Errorf("%s: referenced file does not exist: %s", file, relative)
-		}
-	}
 	if err := validateJSON(doc.InputSchema, file, "inputSchema"); err != nil {
 		return err
 	}
 	return validateJSON(doc.OutputSchema, file, "outputSchema")
+}
+
+// CheckDocument parses one resource from its path and content and validates its
+// shape in isolation, without composition-level checks that need the whole
+// source tree. It is the diagnostic entrypoint used by the language server.
+func CheckDocument(path, content string) error {
+	text := stripBOM(content)
+	isTfer := strings.HasSuffix(path, ".tfer")
+	var body string
+	if isTfer {
+		frontmatter, tferBody, err := splitFrontmatter(text)
+		if err != nil {
+			return err
+		}
+		text, body = frontmatter, tferBody
+	}
+	doc, err := parseDocument(text)
+	if err != nil {
+		return Errorf("invalid YAML resource: %s", err)
+	}
+	if doc == nil {
+		return Errorf("empty resource")
+	}
+	if isTfer {
+		if err := applyBody(doc, body, filepath.Base(path)); err != nil {
+			return err
+		}
+	}
+	return validateDocumentShape(doc, filepath.Base(path))
 }
 
 func validateJSON(value, file, field string) error {

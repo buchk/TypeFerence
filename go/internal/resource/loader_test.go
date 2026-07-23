@@ -176,3 +176,122 @@ func TestUnknownKindRejected(t *testing.T) {
 		t.Fatalf("expected kind error, got %v", err)
 	}
 }
+
+const tferSkill = `---
+schemaVersion: 3
+kind: skill
+id: t/skills/s@1.0.0
+binds: t/capabilities/c@1.0.0
+---
+Inspect the requested signals and report status, evidence, and risk.
+`
+
+func TestTferSkillBodyBecomesInstructions(t *testing.T) {
+	root := writeSource(t, map[string]string{"s.tfer": tferSkill})
+	docs, err := Load(root, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := docs["t/skills/s@1.0.0"]
+	if doc == nil {
+		t.Fatal("skill not loaded")
+	}
+	want := "Inspect the requested signals and report status, evidence, and risk.\n"
+	if doc.Instructions != want {
+		t.Errorf("body did not become instructions verbatim: got %q want %q", doc.Instructions, want)
+	}
+}
+
+func TestTferInstructionsInBothBodyAndFrontmatterRejected(t *testing.T) {
+	dual := strings.Replace(tferSkill, "binds: t/capabilities/c@1.0.0\n",
+		"binds: t/capabilities/c@1.0.0\ninstructions: from frontmatter\n", 1)
+	root := writeSource(t, map[string]string{"s.tfer": dual})
+	_, err := Load(root, "")
+	if err == nil || !strings.Contains(err.Error(), "both the body and frontmatter") {
+		t.Fatalf("expected dual-instructions error, got %v", err)
+	}
+}
+
+func TestTferMissingOpeningFenceRejected(t *testing.T) {
+	root := writeSource(t, map[string]string{"s.tfer": "schemaVersion: 3\nkind: skill\nid: t/skills/s@1.0.0\nbinds: t/capabilities/c@1.0.0\n"})
+	_, err := Load(root, "")
+	if err == nil || !strings.Contains(err.Error(), "must begin with a '---' frontmatter fence") {
+		t.Fatalf("expected opening-fence error, got %v", err)
+	}
+}
+
+func TestTferMissingClosingFenceRejected(t *testing.T) {
+	root := writeSource(t, map[string]string{"s.tfer": "---\nschemaVersion: 3\nkind: skill\nid: t/skills/s@1.0.0\nbinds: t/capabilities/c@1.0.0\n"})
+	_, err := Load(root, "")
+	if err == nil || !strings.Contains(err.Error(), "missing its closing '---' frontmatter fence") {
+		t.Fatalf("expected closing-fence error, got %v", err)
+	}
+}
+
+func TestTferContextObjectLoads(t *testing.T) {
+	ctxType := `---
+schemaVersion: 3
+kind: contextType
+id: t/context-types/cast@1.0.0
+displayName: Cast of Characters
+schema: '{"type":"object","properties":{"role":{"type":"string"}}}'
+---
+`
+	ctxObj := `---
+schemaVersion: 3
+kind: context
+id: t/notes/principal@1.0.0
+contextType: t/context-types/cast@1.0.0
+---
+The principal prefers short decision briefs.
+`
+	root := writeSource(t, map[string]string{"cast.tfer": ctxType, "principal.tfer": ctxObj})
+	docs, err := Load(root, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ct := docs["t/context-types/cast@1.0.0"]
+	if ct == nil || ct.Kind != "contextType" {
+		t.Fatal("contextType not loaded")
+	}
+	obj := docs["t/notes/principal@1.0.0"]
+	if obj == nil {
+		t.Fatal("context object not loaded")
+	}
+	if obj.ContextType != "t/context-types/cast@1.0.0" {
+		t.Errorf("context object lost its contextType: %q", obj.ContextType)
+	}
+	if obj.Content != "The principal prefers short decision briefs.\n" {
+		t.Errorf("context body did not become content: %q", obj.Content)
+	}
+}
+
+func TestTferContextRequiresContextType(t *testing.T) {
+	root := writeSource(t, map[string]string{"n.tfer": "---\nschemaVersion: 3\nkind: context\nid: t/notes/n@1.0.0\n---\nbody\n"})
+	_, err := Load(root, "")
+	if err == nil || !strings.Contains(err.Error(), "must declare a contextType") {
+		t.Fatalf("expected missing-contextType error, got %v", err)
+	}
+}
+
+func TestTferBodyOnBodylessKindRejected(t *testing.T) {
+	root := writeSource(t, map[string]string{"a.tfer": "---\nschemaVersion: 3\nkind: agent\nid: t/agent@1.0.0\n---\nstray body\n"})
+	_, err := Load(root, "")
+	if err == nil || !strings.Contains(err.Error(), "has no body field") {
+		t.Fatalf("expected bodyless-kind error, got %v", err)
+	}
+}
+
+func TestYamlAndTferInteroperate(t *testing.T) {
+	root := writeSource(t, map[string]string{
+		"agent.yaml": minimalAgent,
+		"skill.tfer": tferSkill,
+	})
+	docs, err := Load(root, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if docs["t/agent@1.0.0"] == nil || docs["t/skills/s@1.0.0"] == nil {
+		t.Fatalf("expected both .yaml and .tfer resources, got %d", len(docs))
+	}
+}
