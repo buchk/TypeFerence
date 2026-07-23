@@ -1,6 +1,6 @@
 # 0014 — Go-only implementation; the spec is the open invitation
 
-**Status:** Proposed (2026-07-22)
+**Status:** Accepted (2026-07-23)
 
 Supersedes the dual-implementation commitments in ADR-0003, ADR-0004, and
 ADR-0005 (the canonicalization rulings and the fixture corpus survive; the

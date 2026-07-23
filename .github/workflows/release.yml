@@ -15,20 +15,16 @@ permissions:
   contents: write
 
 jobs:
-  # Nothing ships unless both implementations, the shared conformance suite,
-  # and the self-host drift gate are green at the tagged commit.
+  # Nothing ships unless the test suite, the determinism suite, and the
+  # self-host drift gate are green at the tagged commit.
   verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 10.0.x
       - uses: actions/setup-go@v5
         with:
           go-version: stable
           cache-dependency-path: go/go.sum
-      - run: dotnet test TypeFerence.slnx
       - run: go test ./...
         working-directory: go
       - name: Self-host drift gate
