@@ -1,3 +1,4 @@
+---
 schemaVersion: 3
 kind: tool
 id: acme/tools/vault-reader@1.0.0
@@ -6,3 +7,4 @@ description: >-
   Reads notes from a knowledge vault at runtime. TypeFerence declares this
   extern (its interface and, later, its auth/scope shape); the body is
   implemented by the deployer (ADR-0017, ADR-0019 Door B).
+---

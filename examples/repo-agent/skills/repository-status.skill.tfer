@@ -1,3 +1,4 @@
+---
 schemaVersion: 3
 kind: skill
 id: acme/skills/repository-status@1.0.0
@@ -20,3 +21,4 @@ variants:
   a2a:
     instructions: |
       Return attributed evidence for a calling agent. No user-facing framing.
+---

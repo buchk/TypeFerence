@@ -1,3 +1,4 @@
+---
 schemaVersion: 3
 kind: profile
 id: acme/profiles/repo-defaults@1.0.0
@@ -6,3 +7,4 @@ description: Shared repository behavior; the status skill is sealed against over
 skills:
   - ref: acme/skills/repository-status@1.0.0
     sealed: true
+---
