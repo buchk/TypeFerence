@@ -26,6 +26,10 @@ What each piece demonstrates:
   embeds `cast-of-characters` (refinement). The skill `requiresContextTypes:
   [cast-of-characters]`; the agent holds `notes/team` — a `governed-cast` — and
   a governed cast *is a* cast, so the requirement is satisfied structurally.
+- **Schema-directed fields (ADR-0013).** `governed-cast` declares a `schema`
+  requiring an `owner` field; `notes/team` carries `owner: Dana` in its
+  frontmatter. Remove it and the build fails with a missing-required-field
+  error — required fields accumulate across the refinement closure.
 - **Sealing (ADR-0016).** `profiles/repo-defaults` binds the status skill
   `sealed: true`. An agent embedding the profile may extend around it but cannot
   override or rebind the sealed capability.

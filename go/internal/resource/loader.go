@@ -137,6 +137,17 @@ func parseDocument(text string) (*Document, error) {
 		return nil, Errorf("expected a single YAML document")
 	}
 	doc := NewDocument()
+	// A context object may carry schema-typed frontmatter fields beyond the
+	// standard keys; every other kind stays strict (unknown key => error).
+	kind := scanKind(&node)
+	extraFields := map[string]*yaml.Node{}
+	unknown := func(key string, value *yaml.Node) error {
+		if kind == "context" {
+			extraFields[key] = value
+			return nil
+		}
+		return Errorf("property '%s' not found", key)
+	}
 	if err := decodeMapping(&node, map[string]fieldDecoder{
 		"schemaVersion":        intField(&doc.SchemaVersion),
 		"kind":                 stringField(&doc.Kind),
@@ -163,10 +174,42 @@ func parseDocument(text string) (*Document, error) {
 		"visibility":           stringField(&doc.Visibility),
 		"variants":             variantsField(&doc.Variants),
 		"allowedContextTypes":  stringListField(&doc.AllowedContextTypes),
-	}); err != nil {
+	}, unknown); err != nil {
 		return nil, err
 	}
+	if len(extraFields) > 0 {
+		doc.ContextFields = map[string]string{}
+		for key, value := range extraFields {
+			if value.Kind == yaml.ScalarNode {
+				doc.ContextFields[key] = value.Value
+			} else {
+				doc.ContextFields[key] = ""
+			}
+		}
+	}
 	return doc, nil
+}
+
+// scanKind reads the top-level `kind` scalar without a full decode, so the
+// decoder can decide whether unknown frontmatter keys are context fields or an
+// error.
+func scanKind(node *yaml.Node) string {
+	n := resolveAlias(node)
+	if n.Kind == yaml.DocumentNode && len(n.Content) == 1 {
+		n = resolveAlias(n.Content[0])
+	}
+	if n.Kind != yaml.MappingNode {
+		return ""
+	}
+	for i := 0; i+1 < len(n.Content); i += 2 {
+		key := resolveAlias(n.Content[i])
+		if key.Kind == yaml.ScalarNode && key.Value == "kind" {
+			if v := resolveAlias(n.Content[i+1]); v.Kind == yaml.ScalarNode {
+				return v.Value
+			}
+		}
+	}
+	return ""
 }
 
 // splitFrontmatter separates a .tfer file into its YAML frontmatter and its
@@ -231,7 +274,9 @@ func resolveAlias(node *yaml.Node) *yaml.Node {
 	return node
 }
 
-func decodeMapping(node *yaml.Node, fields map[string]fieldDecoder) error {
+// decodeMapping decodes a mapping node against a field table. Unknown keys go
+// to the optional unknown handler; when it is nil an unknown key is an error.
+func decodeMapping(node *yaml.Node, fields map[string]fieldDecoder, unknown func(string, *yaml.Node) error) error {
 	node = resolveAlias(node)
 	if node.Kind == yaml.DocumentNode && len(node.Content) == 1 {
 		node = resolveAlias(node.Content[0])
@@ -246,6 +291,12 @@ func decodeMapping(node *yaml.Node, fields map[string]fieldDecoder) error {
 		}
 		decoder, known := fields[key.Value]
 		if !known {
+			if unknown != nil {
+				if err := unknown(key.Value, resolveAlias(node.Content[i+1])); err != nil {
+					return err
+				}
+				continue
+			}
 			return Errorf("property '%s' not found", key.Value)
 		}
 		if err := decoder(resolveAlias(node.Content[i+1])); err != nil {
@@ -360,7 +411,7 @@ func variantsField(target *map[string]Variant) fieldDecoder {
 				"instructions":         stringField(&v.Instructions),
 				"requiresContextTypes": stringListField(&v.RequiresContextTypes),
 				"requiresTools":        stringListField(&v.RequiresTools),
-			}); err != nil {
+			}, nil); err != nil {
 				return err
 			}
 			m[key.Value] = v
@@ -388,7 +439,7 @@ func skillsField(target *[]SkillBinding) fieldDecoder {
 				},
 				"sealed":   boolField(&binding.Sealed),
 				"required": boolField(&binding.Required),
-			})
+			}, nil)
 			if err != nil {
 				return err
 			}

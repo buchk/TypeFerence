@@ -32,6 +32,11 @@ type Document struct {
 	// Content is a `.tfer` markdown body materialized onto a resource: a
 	// skill's instructions or a context object's content (ADR-0013 format).
 	Content string
+	// ContextFields holds a `kind: context` object's schema-typed frontmatter
+	// fields (those beyond the standard keys). Scalars keep their string value;
+	// sequences and mappings are recorded as present with an empty value. The
+	// declaring contextType's schema validates these (ADR-0013).
+	ContextFields map[string]string
 	// RequiresContextTypes are contextType ids a skill needs; the holding
 	// agent must supply context satisfying each (ADR-0013).
 	RequiresContextTypes []string

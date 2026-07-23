@@ -282,6 +282,33 @@ func TestTferBodyOnBodylessKindRejected(t *testing.T) {
 	}
 }
 
+func TestContextObjectCollectsSchemaFields(t *testing.T) {
+	src := "schemaVersion: 3\nkind: context\nid: t/notes/n@1.0.0\ncontextType: t/ct/cast@1.0.0\nrole: owner\ntags:\n  - a\n"
+	root := writeSource(t, map[string]string{"n.yaml": src})
+	docs, err := Load(root, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := docs["t/notes/n@1.0.0"]
+	if d.ContextFields["role"] != "owner" {
+		t.Errorf("scalar field 'role' not collected: %v", d.ContextFields)
+	}
+	if _, ok := d.ContextFields["tags"]; !ok {
+		t.Errorf("sequence field 'tags' should be recorded as present")
+	}
+}
+
+func TestNonContextStillRejectsUnknownFields(t *testing.T) {
+	// The context-field collection must not weaken strictness for other kinds.
+	root := writeSource(t, map[string]string{
+		"cap.yaml": "schemaVersion: 3\nkind: capability\nid: t/cap/c@1.0.0\nrole: owner\n",
+	})
+	_, err := Load(root, "")
+	if err == nil || !strings.Contains(err.Error(), "'role'") {
+		t.Fatalf("a capability with an unknown field must still error, got %v", err)
+	}
+}
+
 func TestYamlAndTferInteroperate(t *testing.T) {
 	root := writeSource(t, map[string]string{
 		"agent.yaml": minimalAgent,

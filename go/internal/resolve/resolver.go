@@ -5,6 +5,7 @@
 package resolve
 
 import (
+	"encoding/json"
 	"sort"
 	"strings"
 
@@ -107,8 +108,12 @@ func (r *Resolver) ResolveAll() ([]*ResolvedAgent, error) {
 		}
 	}
 	for _, id := range r.idsOfKind("context") {
-		if _, err := r.contextTypeClosure(r.resources[id].ContextType, map[string]bool{}); err != nil {
+		obj := r.resources[id]
+		if _, err := r.contextTypeClosure(obj.ContextType, map[string]bool{}); err != nil {
 			return nil, resource.Errorf("%s: %s", id, err)
+		}
+		if err := r.validateContextFields(obj); err != nil {
+			return nil, err
 		}
 	}
 	for _, id := range r.idsOfKind("tool") {
@@ -616,6 +621,47 @@ func (r *Resolver) providedContextTypes(objectIDs []string) (map[string]bool, er
 		}
 	}
 	return provided, nil
+}
+
+// validateContextFields checks a context object carries every field its
+// contextType — and every type it refines — declares required (ADR-0013).
+func (r *Resolver) validateContextFields(obj *resource.Document) error {
+	closure, err := r.contextTypeClosure(obj.ContextType, map[string]bool{})
+	if err != nil {
+		return err
+	}
+	required := map[string]bool{}
+	for _, ctID := range closure {
+		for _, field := range requiredFields(r.resources[ctID].Schema) {
+			required[field] = true
+		}
+	}
+	names := make([]string, 0, len(required))
+	for name := range required {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		if _, ok := obj.ContextFields[name]; !ok {
+			return resource.Errorf("%s: missing required field %q declared by its contextType schema", obj.ID, name)
+		}
+	}
+	return nil
+}
+
+// requiredFields extracts the top-level "required" array from a JSON Schema
+// string. It only reads (never emits), so stdlib json is fine here.
+func requiredFields(schema string) []string {
+	if strings.TrimSpace(schema) == "" {
+		return nil
+	}
+	var doc struct {
+		Required []string `json:"required"`
+	}
+	if err := json.Unmarshal([]byte(schema), &doc); err != nil {
+		return nil
+	}
+	return doc.Required
 }
 
 // validateTool checks a tool declaration's interface schemas parse (ADR-0017).
