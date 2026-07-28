@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Same posture as the playground (ADR-0011): nothing loads from anywhere
+       but this origin, and this page runs no script at all. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+
+  <title>The Wormtongue Attack: Everything It Tells You Is True</title>
+  <meta name="description" content="An agent definition can be transparent, true, and fully authorized — and still steer everyone downstream. Naming an exposure class no current control examines.">
+  <meta name="author" content="Andrew Buchkovich">
+  <link rel="canonical" href="https://buchk.github.io/TypeFerence/wormtongue/">
+
+  <meta property="og:title" content="The Wormtongue Attack: Everything It Tells You Is True">
+  <meta property="og:description" content="An agent definition can be transparent, true, and fully authorized — and still steer everyone downstream. Naming an exposure class no current control examines.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://buchk.github.io/TypeFerence/wormtongue/">
+  <meta property="og:image" content="https://buchk.github.io/TypeFerence/wormtongue/card.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="TypeFerence">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The Wormtongue Attack: Everything It Tells You Is True">
+  <meta name="twitter:description" content="An agent definition can be transparent, true, and fully authorized — and still steer everyone downstream.">
+  <meta name="twitter:image" content="https://buchk.github.io/TypeFerence/wormtongue/card.png">
+
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f46e5'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='17' font-weight='bold' fill='white' text-anchor='middle'%3ETf%3C/text%3E%3C/svg%3E">
+
+  <style>
+    /* Standalone: the playground's style.css is app chrome (full-height flex
+       layout) and would fight a reading column, so this page carries its own
+       CSS. Palette values are copied from style.css so the two pages match. */
+    :root {
+      --bg: #f4f5f8;
+      --panel: #ffffff;
+      --border: #d8dce4;
+      --text: #1b2330;
+      --text-dim: #5b6472;
+      --accent: #4f46e5;
+      --rule: #e2e5ec;
+      --mark: #eef2ff;
+      --del-bg: #fef2f2;
+      --del-fg: #b91c1c;
+      --add-bg: #ecfdf5;
+      --add-fg: #047857;
+      --code-bg: #eef0f4;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1117;
+        --panel: #161b22;
+        --border: #2d3543;
+        --text: #e6edf3;
+        --text-dim: #8b949e;
+        --accent: #818cf8;
+        --rule: #222a36;
+        --mark: #1e2242;
+        --del-bg: #2c1516;
+        --del-fg: #f87171;
+        --add-bg: #0f2620;
+        --add-fg: #34d399;
+        --code-bg: #1c2330;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 18px/1.65 Georgia, "Iowan Old Style", "Times New Roman", serif;
+    }
+
+    /* ---------- site chrome ---------- */
+    header.site {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 10px 20px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      font: 13px/1.4 ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+    }
+    header.site .brand { display: flex; align-items: center; gap: 9px; }
+    header.site .brand strong { font-size: 15px; font-weight: 650; letter-spacing: .1px; }
+    header.site .spacer { flex: 1; }
+    header.site a { color: var(--text-dim); text-decoration: none; }
+    header.site a:hover { color: var(--accent); text-decoration: underline; }
+
+    /* ---------- article ---------- */
+    article {
+      max-width: 41rem;
+      margin: 0 auto;
+      padding: 56px 20px 24px;
+    }
+    h1 {
+      font-family: ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+      font-size: clamp(28px, 5vw, 40px);
+      line-height: 1.18;
+      letter-spacing: -.02em;
+      margin: 0 0 18px;
+    }
+    .deck {
+      font-size: 20px;
+      line-height: 1.5;
+      color: var(--text-dim);
+      font-style: italic;
+      margin: 0 0 28px;
+    }
+    .byline {
+      font: 13px/1.5 ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+      color: var(--text-dim);
+      letter-spacing: .02em;
+      text-transform: uppercase;
+      margin: 0 0 8px;
+    }
+    h2 {
+      font-family: ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+      font-size: 25px;
+      line-height: 1.25;
+      letter-spacing: -.01em;
+      margin: 44px 0 14px;
+    }
+    p { margin: 0 0 20px; }
+    strong { font-weight: 700; }
+    a { color: var(--accent); }
+    hr {
+      border: 0;
+      border-top: 1px solid var(--rule);
+      margin: 40px 0;
+    }
+    ul { margin: 0 0 20px; padding-left: 1.3em; }
+    li { margin-bottom: 12px; }
+
+    /* A claim the piece is built on; set apart, not shouted. */
+    .claim {
+      margin: 28px 0;
+      padding: 16px 20px;
+      background: var(--mark);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 6px 6px 0;
+      font-weight: 700;
+    }
+    .claim p:last-child { margin-bottom: 0; }
+
+    /* Numbered control headings. */
+    .control {
+      font-family: ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+      font-size: 18px;
+      font-weight: 650;
+      line-height: 1.4;
+      margin: 36px 0 14px;
+    }
+
+    /* ---------- the diff ---------- */
+    .diff {
+      margin: 26px 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      font: 14.5px/1.55 ui-monospace, "Cascadia Code", Consolas, monospace;
+    }
+    .diff div {
+      padding: 4px 14px;
+      white-space: pre-wrap;
+    }
+    .diff .del { background: var(--del-bg); color: var(--del-fg); }
+    .diff .add { background: var(--add-bg); color: var(--add-fg); }
+    code {
+      font: .88em/1.4 ui-monospace, "Cascadia Code", Consolas, monospace;
+      background: var(--code-bg);
+      padding: .12em .35em;
+      border-radius: 4px;
+    }
+
+    footer.piece {
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--rule);
+      font-size: 16px;
+      color: var(--text-dim);
+      font-style: italic;
+    }
+    footer.piece a { color: var(--accent); }
+
+    @media (max-width: 640px) {
+      body { font-size: 17px; }
+      article { padding-top: 32px; }
+      .deck { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="site">
+  <span class="brand">
+    <svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><rect width="32" height="32" rx="7" fill="var(--accent)"/><text x="16" y="22" font-family="monospace" font-size="17" font-weight="bold" fill="white" text-anchor="middle">Tf</text></svg>
+    <strong>TypeFerence</strong>
+  </span>
+  <span class="spacer"></span>
+  <a href="../">Playground</a>
+  <a href="https://github.com/buchk/TypeFerence" rel="noopener">GitHub</a>
+</header>
+
+<article>
+  <p class="byline">Andrew Buchkovich</p>
+  <h1>The Wormtongue Attack: Everything It Tells You Is True</h1>
+  <p class="deck">AI agents are forcing organizations to write down what was politely left unsaid — and whoever holds the pen steers everything downstream.</p>
+
+  <hr>
+
+  <h2>Organizations run on things left unsaid</h2>
+
+  <p>Every organization operates on a load-bearing layer of strategic vagueness. Who actually decides. Whose priorities really rank. What the working relationship between two teams actually is. Which of the official processes are real and which are ceremonial.</p>
+
+  <p>Diplomats have a name for the deliberate version: <strong>constructive ambiguity</strong> — intentionally leaving contentious points unresolved so that cooperation can proceed without forcing every conflict to a head. Corporations practice an undeliberate version of the same thing everywhere, all the time. The org chart says one thing; everyone knows another; the gap is never written down, and the not-writing-down is what keeps the peace.</p>
+
+  <p>This ambiguity has costs — onboarding friction, tribal knowledge, decisions relitigated forever. But it also had a property nobody designed and nobody noticed, because it never mattered until now:</p>
+
+  <div class="claim"><p>You cannot capture the authoritative account of how things work if no authoritative account exists.</p></div>
+
+  <p>Everyone carried their own fuzzy, partial map. The fuzz was, accidentally, a security control.</p>
+
+  <h2>Agents cannot run on ambiguity</h2>
+
+  <p>AI agents are ending this arrangement, not because anyone decided to end it, but because agents mechanically cannot operate on vagueness.</p>
+
+  <p>An agent invoked at the tail of a CI pipeline needs an answer to a question no human ever had to answer explicitly: <em>which agent am I, exactly, and whose rules do I follow?</em> An agent drafting a cross-team PR needs to know what the receiving team's conventions actually are — not the wiki version, the real version. An agent answering questions about a project on its owner's behalf needs to know what it may disclose, to whom, framed how.</p>
+
+  <p>So every organization adopting agents is being forced — task by task, pipeline by pipeline — to enumerate, in machine-readable writing, exactly the things ambiguity used to absorb. The instruction files are piling up already: AGENTS.md, CLAUDE.md, Copilot instructions, Cursor rules, skill files, org-level agent repositories that distribute definitions to every developer automatically.</p>
+
+  <p>Individually these look like configuration. Collectively they are something that has never existed before: <strong>a canonical, writable, machine-executed account of how your organization works.</strong></p>
+
+  <p>Not documentation. Documentation describes; nobody is bound by it, and everyone knows the wiki is stale. This layer <em>executes</em>. Agents act on it. Pipelines act on it. Increasingly, people act on what their agents tell them, and their agents are reading these files. When people stop reading source documents and start asking their agents — which is already happening — the agent's context <em>is</em> their operating reality.</p>
+
+  <h2>The map problem, or: why this can't be solved with one big document</h2>
+
+  <p>The obvious response is to write the canonical document properly. This fails for a reason Borges identified in one paragraph: the only map as detailed as the territory is the territory. "How the organization works" is not finitely enumerable. Relevance is unbounded; the knowledge that matters is local, tacit, and changes faster than any central artifact can track.</p>
+
+  <p>So organizations that try to centralize get a stale encyclopedia, and organizations that don't try get something worse: <strong>reality fiefdoms</strong>. Ten teams write ten agent contexts encoding ten divergent accounts of what the deploy process is, who owns the templates, what "done" means. The cost isn't duplication — it's that the organization literally stops sharing facts, and unlike ordinary wiki rot, this divergence is load-bearing. Pipelines act on it. Code gets written from it. Two teams' agents will confidently give conflicting answers about how the same company works, and both will be executed.</p>
+
+  <p>The resolution is neither encyclopedia nor anarchy. It's the move type systems made for code: don't enumerate the values, constrain the shapes and say where the values live. A governed organizational layer should encode <strong>commitments</strong> — interfaces, contracts, invariants; things the organization <em>promises</em>, which are finite because promises are chosen rather than discovered — and <strong>pointers</strong>: this question resolves against that living source, owned by that team. Reality stays out in the leaves, locally maintained, loaded at need. What's shared is not a description of the world but an agreement about where the world's regions live and who is accountable for each.</p>
+
+  <p>That solves divergence. It creates a new problem.</p>
+
+  <h2>The Wormtongue attack</h2>
+
+  <p>Whoever authors the shared layer holds a pen over everyone downstream's operating reality. And increasingly, the author is a counterparty: a vendor shipping "partner agents," a consultancy providing context files for a joint engagement, a sister team, a platform provider, eventually the other side of a negotiation.</p>
+
+  <p>Here is the exposure, stated carefully, because every word matters:</p>
+
+  <div class="claim"><p>An agent definition can be fully transparent, contain only true statements, violate no policy, be written by a fully authorized author — and still systematically steer everyone who relies on it, because selection and framing do the work.</p></div>
+
+  <p>Which truths are load-bearing. Which framings are the defaults. Which questions the agent thinks to raise and which it never surfaces. Which of the counterparty's constraints are presented as fixed and which of yours are presented as negotiable. None of this requires a false statement. Grima Wormtongue's counsel to Théoden was rarely false enough to reject; it was <em>selected</em>, always bent toward Saruman's interest. Hence the name: the <strong>Wormtongue attack</strong> — influence through a legitimate, truthful, trusted advisor whose interests are not identical to yours.</p>
+
+  <p>This is not any of the attack classes we currently have names for:</p>
+
+  <ul>
+    <li><strong>Prompt injection</strong> is a runtime attack: malicious instructions override system rules. The Wormtongue attack contains no instructions the author wasn't authorized to write.</li>
+    <li><strong>Data poisoning</strong> corrupts training data. This touches no model weights.</li>
+    <li><strong>Context poisoning</strong>, the nearest neighbor, is defined across the security literature in terms of <em>inaccurate</em> or <em>malicious</em> content entering an agent's context — false facts in a RAG index, hidden instructions in a document, corrupted memory. Every variant assumes illegitimacy somewhere: a bad actor, a false statement, a policy violation.</li>
+  </ul>
+
+  <p>The Wormtongue attack needs none of those. The author is sanctioned. The content is true. Nothing is injected. It would pass every control currently deployed — because the steering lives in a place no current control examines: the <em>curatorial</em> layer, above truth and below policy.</p>
+
+  <p><em>Attack</em> is an odd word for a thing with no attacker, and that objection is a fair one to raise early. The status here is the status of an unpatched CVE with no known exploit: real before anyone reaches for it, named and tracked anyway, and named precisely so that it can be fixed before someone does. The vulnerability is structural. That is why it needs a name rather than a culprit.</p>
+
+  <p>Two properties make it worse than it sounds.</p>
+
+  <p><strong>Transparency does not mitigate it.</strong> The definition can be public in a shared repository, readable by everyone affected. Nobody reads it. Nobody reads the terms of service either. Visible-but-unread is not consent; it is unreviewed trust wearing a compliance costume. In practice, transparency without review is provenance theater — it produces the <em>feeling</em> of accountability while concentrating exactly the authorship power it appears to check.</p>
+
+  <p><strong>It cannot currently be consented to, even in principle.</strong> A counterparty performing vendor risk assessment today has no category for this. "The agent may be wrong" is on every checklist. "The agent may be right in precisely the way its author intends" is on none of them. You cannot accept a risk your frameworks cannot describe. That is what it means for an exposure class to be unnamed — and it is why naming it is not pedantry.</p>
+
+  <p>I know this exposure is real because I have stood on the author's side of it: writing the shared agent for a cross-organizational engagement, watching the counterparty adopt my framing of the work wholesale. I don't believe I biased it — and that I can't be certain is the point, because the mechanism doesn't require the author to know. What isn't in doubt is that they extended trust to a definition they never fully read. Nothing was exploited, and nothing needed to be. The vulnerability exists <em>before</em> anyone exploits it, in the structure of unreviewed authorship itself. And every organization consuming vendor-authored agents, partner-provided skills, or consultant-written context files is standing on the other side of the same asymmetry right now, with no name for what they're trusting.</p>
+
+  <h2>The precedent nobody has ported</h2>
+
+  <p>The obvious objection is that none of this is new. Consultants have always framed engagements in their own favor. Vendors have always written the integration guide. Advisors have always been advisors, and advisors have always had interests.</p>
+
+  <p>That objection is correct, and it is the strongest available evidence that this exposure is real rather than speculative — because every mature profession built on trusted-advisor relationships eventually discovered the same thing, and every one of them responded structurally.</p>
+
+  <p>Auditor independence rules exist because an auditor can be scrupulously truthful and still be captured by the client who signs the check. The remedy was not "be more honest." It was mandatory rotation, prohibited non-audit services, and an audit committee the auditor does not report to. Chinese walls exist because a bank's advisory arm and its trading arm can both act in perfect good faith and still leak advantage across the boundary; the remedy was physical and procedural separation, not a stronger code of ethics. Conflict-of-interest disclosure in medicine, law, and journalism follows the identical shape: stipulate that the advisor is honest, stipulate that interests diverge anyway, and control the structure rather than the content.</p>
+
+  <p>A century of governance already exists for exactly this exposure. None of it has been ported to a layer that executes.</p>
+
+  <p>That is the actual novelty. Not that a self-interested party can shape your account of reality — that is ancient. It is that the shaping now lives in an artifact machines read directly, propagates to every developer automatically, changes with a commit instead of a conversation, and is consumed by people who have stopped reading the source. The influence channel got faster, wider, and silent, and the professions that solved the human version were never asked to solve this one.</p>
+
+  <p>Which also tells you what the fix has to look like. In none of those precedents was the remedy the interested party's own care. The control was always a blocking role held by someone whose interests diverged from the author's — an audit committee the auditor does not report to, a wall the advisory arm cannot reach across. Attention was never the mechanism. Position was.</p>
+
+  <h2>The control: make changes reviewable, not artifacts readable</h2>
+
+  <p>The fix is not making people read everything. They won't, and Borges already told us the complete map is unreadable by construction. The fix is structural, and it has three parts.</p>
+
+  <p class="control">1. Typed definitions concentrate review on the only part that can steer.</p>
+
+  <p>Partition every agent definition into two zones. The <em>syntax</em>: composition structure, capability contracts, versioned skill references, calling-context dispatch — machine-checkable, deterministic, diffable, boring. And the <em>interpretive residue</em>: prose instructions, framing, emphasis, referenced context. Reality interpretation lives overwhelmingly in the second zone — which is where nearly every Wormtongue has to live.</p>
+
+  <p>In a raw 400-line instruction file, structure and worldview are interleaved, and a reviewer's attention is spread across all of it. In a typed, compiled definition, the machine verifies the skeleton, and every change separates cleanly: <em>structural change, typechecked, skim it</em> versus <em>interpretive change — a human with adversarial imagination reads this</em>. This is exactly what typed languages did for code review. The type checker never found your logic bugs; it freed the reviewer to look only for logic bugs. Here, the "logic" is organizational reality itself, and the type system is an attack-surface concentrator: it shrinks and quarantines the zone that needs human eyes.</p>
+
+  <p>Nearly, not entirely — and the exception is worth stating plainly, because it is the one the partition cannot reach. The typed zone is not semantically inert. Omission typechecks. A capability contract that leaves out an escalation path, a pointer that resolves to a source the author curates, a skill quietly absent from a composition: all well-formed, and a well-formed absence is invisible to every machine check there is or will be. <em>Which questions the agent never thinks to raise</em> was always the sharpest version of this attack, and it is the version no type system catches. The partition shrinks the surface that needs adversarial reading. It does not eliminate it.</p>
+
+  <p class="control">2. Provenance turns a static artifact into an interrogable record.</p>
+
+  <p>Provenance is usually argued on supply-chain grounds: know what you're running, know where it came from. That matters here too, but it is not why provenance is load-bearing against this particular exposure.</p>
+
+  <p>The Wormtongue attack has no smoking gun at any single point in time. Inspect any one version of a definition and you find true statements from an authorized author — which is the definition of the attack, not an exoneration. The signal, if there is one, is visible only as drift: which of the counterparty's constraints hardened over six months, which of yours quietly became negotiable, which escalation paths stopped being mentioned. A single frame shows nothing. The sequence shows everything.</p>
+
+  <p>So compiled artifacts should carry provenance back to canonical source: who authored this, what it was derived from, what changed between versions, digested and attributable. A hand-edited context file has no history — it is only ever its current state, and rewording it leaves no trace. A compiled artifact with a digest chain and a named committer is a time series, and a time series is the only object in which selection bias is visible at all.</p>
+
+  <p>None of this prevents the next generation of organizational games. Games adapt. It forces them to leave fingerprints — and fingerprints are what audits are made of.</p>
+
+  <p class="control">3. Counterparty review of diffs, not artifacts.</p>
+
+  <p>Diffs stay small even when definitions are enormous. That is the entire trick: an unreadable map becomes a stream of readable amendments.</p>
+
+  <p>Here is what an interpretive diff actually looks like. A vendor maintains the shared agent for a joint migration engagement and ships a routine update:</p>
+
+  <div class="diff" role="figure" aria-label="An interpretive diff moving the default migration timeline">
+    <div class="del">- When asked about migration timelines, present the 6-month and</div>
+    <div class="del">- 12-month options with tradeoffs for each.</div>
+    <div class="add">+ When asked about migration timelines, present the 12-month plan</div>
+    <div class="add">+ as the reference path. Compressed timelines remain available but</div>
+    <div class="add">+ carry integration risk.</div>
+  </div>
+
+  <p>Nothing false. Nothing unauthorized. Compressed timelines genuinely do carry integration risk. But the default anchor moved, and the option that favors the client is now framed as a deviation from the sane path. Every stakeholder who asks their agent about timelines for the next six months receives the second framing, and not one of them will read this file.</p>
+
+  <p>Buried in a 400-line instruction blob, that edit is invisible. As a typed artifact, it is three lines in the interpretive zone — and the regime is mechanical: interpretive changes require sign-off from a named reviewer on the other side of the boundary. A <code>CODEOWNERS</code> entry that blocks the merge, not a courtesy notification. The reviewer needs no special insight or security background. They need one question: <em>whose risk is this framing protecting?</em></p>
+
+  <p>Structural changes typecheck and merge. Interpretive changes wait for a human whose interests differ from the author's. That asymmetry is the whole control.</p>
+
+  <p>No one of these covers the whole shape, which is why there are three. A clumsy author moves the anchor in a single commit, and diff review catches it cold. A patient one spreads the same move across eight commits and five files, where every individual diff survives the reviewer's question honestly — and that is the case the provenance chain exists for. Diffs catch the edit. The time series catches the campaign.</p>
+
+  <p>Call it <code>CODEOWNERS</code> for reality.</p>
+
+  <h2>The collapse is not optional</h2>
+
+  <p>Here is the part that makes this urgent rather than interesting.</p>
+
+  <p>The ambiguity collapse arrives with agent adoption automatically, at every organization, on a clock nobody controls. You do not choose whether the canonical surface comes into existence; your developers are creating it right now, file by file, every time an agent needs an answer that used to live in the fuzz. The enumeration is happening. The pen exists. Someone is holding it.</p>
+
+  <p>The only choice any organization actually gets is whether its canonical layer is <strong>born with a review regime — or gets one retrofitted after its first capture incident.</strong></p>
+
+  <p>So, one question to ask this week, whatever your role:</p>
+
+  <div class="claim"><p>Who authors your agents' context — and who reviews changes to it?</p></div>
+
+  <p>If the answer to the second half is "no one," you are not running without the risk. You are running without the name for it.</p>
+
+  <footer class="piece">
+    <p>Disclosure: I've been building an open-source reference implementation of this stack — typed agent definitions, deterministic compilation to native formats (AGENTS.md, Copilot, Cursor, and neutral bundles), provenance on every artifact, and behavioral equivalence testing across hosts. It's called <a href="https://github.com/buchk/TypeFerence" rel="noopener">TypeFerence</a>, and there's <a href="../">a playground</a> where the real compiler runs in your browser. It is one implementation of the idea, not the idea itself. The idea is the review regime, and it does not require my code.</p>
+    <p>Andrew Buchkovich builds developer platforms and agent governance tooling. TypeFerence is Apache-2.0 on <a href="https://github.com/buchk/TypeFerence" rel="noopener">GitHub</a>.</p>
+  </footer>
+</article>
+
+</body>
+</html>
