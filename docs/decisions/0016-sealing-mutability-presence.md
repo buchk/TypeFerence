@@ -30,9 +30,28 @@ is that one team's control survives another team's mix-in intact.
    (compile error); *remove/suppress it* (compile error).
 
 3. **`required` modifier (presence axis: `optional` default / `required`).** A
-   required capability must be present after composition and cannot be dropped.
-   `sealed + required` is a mandatory control: must be carried *and* cannot be
-   modified.
+   required capability must be *bound* in every concrete agent that carries the
+   mandate. Because embedding only ever promotes — nothing in the model can drop
+   a binding — "cannot be dropped" is not where this axis earns its keep. The
+   operation it governs is the opposite one: **a mandate may be declared without
+   a fulfillment.** A binding that omits `ref` and names a `capability` is an
+   **abstract requirement**: the profile demands the capability, an embedder
+   supplies it. A ref-less binding is meaningless unless `required`, so that
+   combination is rejected rather than silently ignored.
+
+   Enforcement is asymmetric by kind, which is what makes profiles abstract:
+   a **profile** MAY carry unfulfilled requirements; an **agent** is concrete and
+   MUST bind every capability mandated by itself or anything it embeds, or
+   composition fails. Requirements propagate through intermediate profiles.
+
+   `required` is *presence only*: overriding a required-but-open capability is
+   legal, since the capability is still present. What fills it is `sealed`'s
+   concern. `sealed + required` is therefore the mandatory control: must be
+   carried *and* cannot be modified.
+
+   This is the demand side of the type system, which nothing else supplied:
+   `satisfies` is inferred structurally, so interfaces only *observe* whether a
+   capability is present. `required` is the only primitive that can *require* it.
 
 4. **Open-by-default, enablement-first.** Everything is `open` unless explicitly
    `sealed`. The people who need sealing (governance authors) are exactly the ones
@@ -66,6 +85,13 @@ is that one team's control survives another team's mix-in intact.
   considered; lifting that limitation is separate work.
 - Three orthogonal axes now exist: visibility (ADR-0015), mutability, presence — all
   permissive by default, every lock opt-in.
+- Profiles gain an abstract-base-class shape: a governance profile can hand down an
+  obligation ("every agent must bind an audit control") without dictating the
+  implementation, which `sealed` alone cannot express — sealing protects a control
+  you supply, `required` demands one you do not.
+- Modifier state is emitted into bundles when a lock is engaged (absent means the
+  axis is at its permissive default), so `inspect` can show it and `diff` can flag
+  an `open -> sealed` or `optional -> required` transition.
 
 ## Alternatives considered
 

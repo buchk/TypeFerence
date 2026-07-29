@@ -322,3 +322,39 @@ func TestYamlAndTferInteroperate(t *testing.T) {
 		t.Fatalf("expected both .yaml and .tfer resources, got %d", len(docs))
 	}
 }
+
+func TestBindingWithoutRefOrCapabilityRejected(t *testing.T) {
+	root := writeSource(t, map[string]string{
+		"agent.yaml": minimalAgent + "skills:\n  - sealed: true\n",
+	})
+	_, err := Load(root, "")
+	if err == nil || !strings.Contains(err.Error(), "must set 'ref'") {
+		t.Fatalf("expected binding shape error, got %v", err)
+	}
+}
+
+func TestAbstractRequirementMustBeRequired(t *testing.T) {
+	// A ref-less binding that mandates nothing is inert; reject it rather than
+	// silently accepting a declaration with no effect (ADR-0016).
+	root := writeSource(t, map[string]string{
+		"agent.yaml": minimalAgent + "skills:\n  - capability: t/cap/c@1.0.0\n",
+	})
+	_, err := Load(root, "")
+	if err == nil || !strings.Contains(err.Error(), "must set 'required: true'") {
+		t.Fatalf("expected inert-requirement error, got %v", err)
+	}
+}
+
+func TestAbstractRequirementAccepted(t *testing.T) {
+	root := writeSource(t, map[string]string{
+		"agent.yaml": minimalAgent + "skills:\n  - capability: t/cap/c@1.0.0\n    required: true\n",
+	})
+	docs, err := Load(root, "")
+	if err != nil {
+		t.Fatalf("an abstract requirement is a valid binding: %v", err)
+	}
+	binding := docs["t/agent@1.0.0"].Skills[0]
+	if binding.Ref != "" || !binding.Required || *binding.Capability != "t/cap/c@1.0.0" {
+		t.Errorf("unexpected parsed binding: %+v", binding)
+	}
+}

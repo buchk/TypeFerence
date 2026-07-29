@@ -74,7 +74,12 @@ func Load(sourceDir string, trustConfigPath string) (map[string]*Document, error
 		if readErr != nil {
 			return nil, Errorf("%s: %s", file, readErr)
 		}
-		text := stripBOM(string(raw))
+		// Normalize CRLF to LF before parsing. A .tfer body is carried verbatim
+		// into artifacts, so without this the compiled output would depend on the
+		// checkout's line-ending configuration rather than on the source — the
+		// determinism contract is byte-identical output for identical source
+		// (ADR-0014). Mirrors compile.readTextFile.
+		text := stripBOM(strings.ReplaceAll(string(raw), "\r\n", "\n"))
 		isTfer := strings.HasSuffix(file, ".tfer")
 		var body string
 		if isTfer {
@@ -536,6 +541,23 @@ func validateDocumentShape(doc *Document, file string) error {
 	}
 	if len(doc.AllowedContextTypes) != 0 && doc.Kind != "agent" && doc.Kind != "profile" {
 		return Errorf("%s: only agents and profiles declare allowedContextTypes", file)
+	}
+	// A binding names its implementation with "ref". Omitting "ref" declares an
+	// abstract requirement instead: a capability an embedder must bind. That is
+	// meaningful only when mandated, so it must be required (ADR-0016).
+	for _, binding := range doc.Skills {
+		if strings.TrimSpace(binding.Ref) != "" {
+			continue
+		}
+		if binding.Capability == nil || strings.TrimSpace(*binding.Capability) == "" {
+			return Errorf("%s: a skill binding must set 'ref', or name a 'capability' to declare an abstract requirement", file)
+		}
+		if !binding.Required {
+			return Errorf("%s: abstract requirement on capability '%s' must set 'required: true'; an unbound optional capability has no effect", file, *binding.Capability)
+		}
+		if !resourceID.MatchString(*binding.Capability) {
+			return Errorf("%s: reference '%s' must be a namespace/name@semantic-version id", file, *binding.Capability)
+		}
 	}
 	refs := append([]string{}, doc.RequiresContextTypes...)
 	refs = append(refs, doc.RequiresTools...)

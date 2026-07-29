@@ -62,7 +62,11 @@ type ResolvedAgent struct {
 	ContextObjects      []ResolvedContextRef
 	AllowedContextTypes []string
 	Skills              []ResolvedSkill
-	Provenance          []ProvenanceEntry
+	// RequiredCapabilities are the capability ids mandated by this component or
+	// anything it embeds. A profile may carry ones it does not bind (an abstract
+	// requirement); a resolved agent never can (ADR-0016).
+	RequiredCapabilities []string
+	Provenance           []ProvenanceEntry
 }
 
 // ResolvedContextRef is a context object an agent holds by id, with the
@@ -219,7 +223,23 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 	if err != nil {
 		return nil, err
 	}
+	requiredCapabilities, requiredBy, err := r.mergeRequired(id, current, embedded)
+	if err != nil {
+		return nil, err
+	}
+	// A mandated capability is mandatory wherever it is carried, however it came
+	// to be bound, so the flag reflects the requirement rather than the binding
+	// that happened to satisfy it (ADR-0016).
+	for capabilityID := range requiredBy {
+		if skill, bound := skills[capabilityID]; bound && !skill.Required {
+			skill.Required = true
+			skills[capabilityID] = skill
+		}
+	}
 	if current.Kind == "agent" {
+		if err := checkRequiredCapabilities(id, requiredBy, skills); err != nil {
+			return nil, err
+		}
 		if err := r.checkSkillDependencies(id, skills, contextRefs); err != nil {
 			return nil, err
 		}
@@ -285,21 +305,22 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 	}
 
 	resolved := &ResolvedAgent{
-		ID:                  id,
-		DisplayName:         displayName,
-		Description:         current.Description,
-		Emit:                current.Emit,
-		Embeds:              append([]string{}, current.Embeds...),
-		Satisfies:           satisfies,
-		Slots:               slots,
-		SlotKeys:            slotKeys,
-		WorkingNorms:        norms,
-		ContextFiles:        contexts,
-		Context:             contextRefs,
-		ContextObjects:      r.resolveContextObjects(contextRefs),
-		AllowedContextTypes: allowedContextTypes,
-		Skills:              sortedSkills,
-		Provenance:          provenance,
+		ID:                   id,
+		DisplayName:          displayName,
+		Description:          current.Description,
+		Emit:                 current.Emit,
+		Embeds:               append([]string{}, current.Embeds...),
+		Satisfies:            satisfies,
+		Slots:                slots,
+		SlotKeys:             slotKeys,
+		WorkingNorms:         norms,
+		ContextFiles:         contexts,
+		Context:              contextRefs,
+		ContextObjects:       r.resolveContextObjects(contextRefs),
+		AllowedContextTypes:  allowedContextTypes,
+		Skills:               sortedSkills,
+		RequiredCapabilities: requiredCapabilities,
+		Provenance:           provenance,
 	}
 	r.slotDepths[id] = slotDepths
 	r.skillDepths[id] = skillDepths
@@ -379,6 +400,12 @@ type skillCandidate struct {
 func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded []*ResolvedAgent, contexts []string) (map[string]ResolvedSkill, map[string]int, error) {
 	localCapabilities := map[string]bool{}
 	for _, binding := range current.Skills {
+		// An abstract requirement is not a local binding: it neither resolves
+		// promotion ambiguity nor conflicts with a concrete binding of the same
+		// capability alongside it (mandate and fulfil in one place is legal).
+		if isBlank(binding.Ref) {
+			continue
+		}
 		capabilityID, err := r.resolveCapabilityID(binding, id)
 		if err != nil {
 			return nil, nil, err
@@ -449,6 +476,11 @@ func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded [
 	}
 
 	for _, binding := range current.Skills {
+		// An abstract requirement fulfills nothing; it only mandates that some
+		// component bind the capability. Presence is checked after the merge.
+		if isBlank(binding.Ref) {
+			continue
+		}
 		implementation, err := r.require(binding.Ref, "skill")
 		if err != nil {
 			return nil, nil, err
@@ -509,6 +541,61 @@ func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded [
 		depths[capabilityID] = 0
 	}
 	return result, depths, nil
+}
+
+// mergeRequired computes the capability ids mandated for this component: those
+// its embedded components mandate, plus those it marks required itself. A
+// binding may mandate a capability without fulfilling it (no ref), which is how
+// a profile demands a control its embedders must supply (ADR-0016). Returns the
+// canonical id list and a capability -> mandating component map for diagnostics.
+func (r *Resolver) mergeRequired(id string, current *resource.Document, embedded []*ResolvedAgent) ([]string, map[string]string, error) {
+	requiredBy := map[string]string{}
+	for _, component := range embedded {
+		for _, capabilityID := range component.RequiredCapabilities {
+			if _, seen := requiredBy[capabilityID]; !seen {
+				requiredBy[capabilityID] = component.ID
+			}
+		}
+	}
+	for _, binding := range current.Skills {
+		if !binding.Required {
+			continue
+		}
+		capabilityID := ""
+		if isBlank(binding.Ref) {
+			capabilityID = *binding.Capability
+		} else {
+			resolved, err := r.resolveCapabilityID(binding, id)
+			if err != nil {
+				return nil, nil, err
+			}
+			capabilityID = resolved
+		}
+		if _, err := r.require(capabilityID, "capability"); err != nil {
+			return nil, nil, err
+		}
+		requiredBy[capabilityID] = id
+	}
+	return sortedStringMapKeys(requiredBy), requiredBy, nil
+}
+
+// checkRequiredCapabilities verifies every mandated capability is bound after
+// composition. A profile MAY carry unfulfilled requirements — that is precisely
+// what makes it abstract — but an agent is concrete and must satisfy them all.
+// Presence is the axis: what binds the capability is sealing's concern, not this
+// check's (ADR-0016).
+func checkRequiredCapabilities(agentID string, requiredBy map[string]string, skills map[string]ResolvedSkill) error {
+	for _, capabilityID := range sortedStringMapKeys(requiredBy) {
+		if _, bound := skills[capabilityID]; bound {
+			continue
+		}
+		if source := requiredBy[capabilityID]; source != agentID {
+			return resource.Errorf("%s: capability '%s' is required by %s, but no skill binds it; bind it on %s",
+				agentID, capabilityID, source, agentID)
+		}
+		return resource.Errorf("%s: capability '%s' is required, but no skill binds it", agentID, capabilityID)
+	}
+	return nil
 }
 
 func (r *Resolver) resolveCapabilityID(binding resource.SkillBinding, agent string) (string, error) {

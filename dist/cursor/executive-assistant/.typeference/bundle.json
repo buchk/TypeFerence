@@ -67,6 +67,7 @@
         "context/organization.md",
         "context/principal.md"
       ],
+      "sealed": true,
       "provenance": [
         {
           "field": "skill.capability",

@@ -78,6 +78,15 @@ func skillValue(skill resolve.ResolvedSkill) jsonx.Value {
 		}
 		obj = append(obj, jsonx.Member{K: "variants", V: variants})
 	}
+	// Modifier state is emitted only when a lock is engaged, so permissive
+	// bindings are unchanged. Absent means the axis is at its default — open,
+	// optional — which is what lets diff flag open -> sealed (ADR-0016).
+	if skill.Sealed {
+		obj = append(obj, jsonx.Member{K: "sealed", V: jsonx.Bool(true)})
+	}
+	if skill.Required {
+		obj = append(obj, jsonx.Member{K: "required", V: jsonx.Bool(true)})
+	}
 	obj = append(obj, jsonx.Member{K: "provenance", V: provenanceValue(skill.Provenance)})
 	return obj
 }
