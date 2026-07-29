@@ -1,147 +1,426 @@
 # TypeFerence Draft Specification
 
-Status: experimental reference draft, July 2026. Typed resources use `schemaVersion: 3`; this document is not a claim of ecosystem-standard or production-stable status.
+Status: experimental reference draft, July 2026. Typed resources use
+`schemaVersion: 4`; project manifests use `schemaVersion: 2`. Version 4 is a
+deliberate closure of the source language. Unsupported fields and schema versions
+are errors rather than extension points.
 
-## Scope and non-goals
+## Purpose and pipeline
 
-TypeFerence defines structural composition and deterministic compilation of agent instructions, capability contracts, skill implementations, and context references. It does not define an inference runtime, guarantee equivalent behavior across models or hosts, establish publisher trust, or provide resource discovery.
+TypeFerence defines a closed, deterministic source language for composing agent
+definitions and compiling them into coherent target artifacts. It separates four
+operations:
 
-Agentic Resource Discovery (ARD) can advertise compiled TypeFerence outputs. ARD identifies and locates artifacts; TypeFerence produces target-specific artifacts before publication. Invocation remains the responsibility of MCP, A2A, OpenAPI, or a host-native mechanism.
+1. **restore** resolves declared source-package dependencies into a locked local
+   package tree;
+2. **build** resolves typed resources and emits deterministic, unlinked target
+   packages without network access or deployment state;
+3. **link** validates external deployment bindings and materializes runnable
+   host-native configuration;
+4. **publish/run** performs environment-specific side effects outside the
+   deterministic language core.
 
-TypeFerence does not define ARD registry lifecycle, release policy, deprecation, deployment instance metadata, dependency manifests, auth feasibility hints, access or monetization policy, install-time consent envelopes, registry federation, DID resolution rules, relay addressing, search filters, registry APIs, or ARD governance. If ARD standardizes any of those fields, TypeFerence MAY preserve them as publication metadata, but they MUST NOT participate in TypeFerence embedding, composition, skill dispatch, or target compilation semantics.
+The output of each earlier phase is complete input to the next. Build never
+implicitly restores. Link may fulfill declared runtime imports, but MUST NOT
+change instructions, contracts, context values, composition, selected
+implementations, or source identity.
 
-## Resource identity
+TypeFerence does not define an inference runtime, package registry server, secret
+manager, model credentials, external tool implementation, or deployment
+orchestrator.
 
-A source tree contains YAML documents with `schemaVersion: 3`, a `kind`, and an `id`. IDs use `namespace/name@semantic-version`. Supported kinds are `agent`, `profile`, `interface`, `capability`, and `skill`.
+## Identity and addressing
 
-## Agents and profiles
+**Identity is source; address is deployment.** Resource IDs, package IDs,
+versions, publisher identity, dependency declarations, and the lock graph are
+source. Endpoints, commands, credentials, environment variables, host paths,
+registry addresses, and runtime process details are deployment.
 
-An agent is an identity-bearing unit that MAY produce target artifacts. A profile is a reusable composition unit for organizational, domain, or team defaults. Agents MAY embed profiles or agents. Profiles MAY embed profiles but MUST NOT embed agents. Embedding promotes the embedded resources' slots, norms, contexts, and capability bindings into the embedding resource. An embedding graph MUST NOT contain a cycle. No universal root is required.
+Deployment metadata MUST NOT occur in a source manifest and MUST NOT participate
+in resource embedding, composition, skill dispatch, target compilation, source
+package identity, or unlinked target identity. Feed URLs and credentials likewise
+identify where bytes can be retrieved, not what those bytes mean, and MUST NOT
+appear in a lockfile or source digest.
 
-Profiles participate in composition and validation but do not produce target bundles. This lets users start with `kind: agent` while platform teams define reusable profiles underneath.
+## Project manifest
+
+A source root MAY contain `typeference.yaml`:
+
+```yaml
+schemaVersion: 2
+name: marathon/payments-agents
+version: 1.0.0
+publisher: marathon.example
+dependencies:
+  marathon/enterprise-foundations: 3.1.0
+```
+
+`name`, `version`, and every dependency version are required when the manifest is
+present. Versions are exact semantic versions in version 4; range solving is not
+defined. Dependency names use the resource namespace grammar. `publisher` is
+optional stable publication identity. Unknown fields, deployment fields, feed
+addresses, and credentials are errors.
+
+## Resource identity and kinds
+
+A compilation unit contains UTF-8 YAML or frontmatter-plus-body documents with
+`schemaVersion: 4`, a `kind`, and an `id`. IDs use
+`namespace/name@semantic-version`. Supported kinds are:
+
+- `agent`: a concrete, target-emitting composition;
+- `profile`: a reusable, possibly abstract composition;
+- `interface`: a structural contract over slots and capabilities;
+- `capability`: a stable public method contract;
+- `skill`: a model-fulfilled capability implementation;
+- `tool`: a declared runtime import fulfilled at link time;
+- `contextType`: a named structural type for context values;
+- `context`: a compile-time value of a context type.
+
+All references are exact resource IDs. A reference resolves either to a document
+in the root package or to an export in the committed dependency graph. Searching
+feeds, selecting a similarly named resource, or allowing a local resource to
+shadow a dependency is forbidden.
+
+## Composition
+
+Agents MAY embed profiles or agents. Profiles MAY embed profiles but MUST NOT
+embed agents. An embedding graph MUST NOT contain a cycle.
 
 Resolution proceeds from embedded resources toward the embedding resource:
 
-1. Display name and description belong to the declaring resource and are not promoted.
-2. Slots are promoted by name. The shallowest declaration wins; conflicting declarations at the same depth are ambiguous unless the embedding resource declares that slot locally.
-3. Norms and context paths append in embedding order and deduplicate in first-seen order.
-4. Capability bindings are promoted by capability ID. The shallowest implementation wins; conflicting implementations at the same depth are ambiguous unless the embedding resource binds that capability locally.
-5. Interfaces are computed structurally from the final promoted member set.
+1. Display name and description belong to their declaring resource.
+2. Slots promote by name. The shallowest declaration wins; different
+   declarations at the same depth are ambiguous unless declared locally.
+3. Norms and held context IDs append in embedding order and deduplicate in
+   first-seen order.
+4. Capability bindings promote by capability ID. The shallowest compatible
+   implementation wins; different implementations at the same depth are
+   ambiguous unless bound locally.
+5. Allow-lists intersect. A disjoint intersection is an explicit empty set, not
+   an unrestricted set.
+6. Every contribution records source-resource provenance.
 
-Every resolved contribution records its source resource in provenance.
+Profiles may retain abstract required capability bindings. Agents are concrete
+and MUST fulfill every promoted requirement.
 
-## Interfaces
+## Interfaces, capabilities, skills, and bindings
 
-Interfaces are contracts only. They MAY require slot names and capability IDs, and MAY embed other interfaces. They MUST NOT provide implementation. Every agent whose resolved slots and capability bindings contain all requirements satisfies the interface implicitly; agents do not declare `implements`. Interface embedding MUST NOT contain a cycle.
+Interfaces MAY require slot names and capability IDs and MAY embed interfaces.
+They provide no implementation. Satisfaction is inferred from the resolved
+member set.
 
-## Capabilities and skill implementations
+A capability defines canonical JSON `inputSchema` and `outputSchema`. A skill
+declares `binds: <capability-id>` and MUST preserve those schemas byte-for-byte
+after canonicalization. Its instructions provide the model implementation.
 
-A capability defines a stable semantic method slot and its public JSON input/output schemas. It has no instructions and no runtime context.
+Bindings have independent presence and mutability axes:
 
-A skill defines instructions, conditional context references, and JSON input/output schemas. Every skill MUST declare `binds: <capability-id>`. A skill implementation MUST preserve the bound capability's canonical input and output schemas. It MAY change instructions, description, and conditional context.
-
-An agent's or profile's `skills` list binds skill implementations into that resource's resolved method set. If a binding omits `capability`, the capability is inferred from the referenced skill's `binds` field. If it names `capability`, that value MUST match the referenced skill's `binds` field. The outer dispatch name resolves the capability to the nearest compatible skill implementation while the embedded resource retains its own namespace.
-
-## Dispatch
-
-Concrete skills are exposed as `agent-name.skill-name`. Tool names are unique within the TypeFerence MCP server. A call validates required and unknown top-level properties, then returns an invocation package:
-
-```json
-{
-  "agentId": "helio/payments-repo-agent@1.0.0",
-  "skillId": "helio/skills/payments-repository-status@1.0.0",
-  "dispatchName": "payments-repo-agent.repository-status",
-  "arguments": { "focus": "release" },
-  "instructions": "...",
-  "contextReferences": ["context/payments-service.md"],
-  "targetHints": { "codex": ".agents/skills" },
-  "provenance": []
-}
+```yaml
+skills:
+  - capability: acme/capabilities/audit@1.0.0
+    required: true
+  - capability: acme/capabilities/safety@1.0.0
+    ref: acme/skills/safety@1.0.0
+    required: true
+    sealed: true
 ```
 
-Hosts execute the package. The v1 server does not call an LLM.
+A binding without `ref` MUST be `required: true` and MUST NOT be sealed. Sealing
+protects a supplied implementation; it cannot protect an absent one. Therefore
+`required: true, sealed: true` without `ref` is a compile error. A concrete
+required-and-sealed binding is valid. Rebinding or suppressing a promoted sealed
+binding is an error.
 
-## Deterministic compilation
+## Invocation modes
 
-Compilers MUST normalize paths to forward slashes, use LF newlines, omit timestamps, and sort resources by stable ID. Repeated builds from identical source MUST be byte-identical, and independent conforming implementations MUST produce byte-identical artifacts from identical source (see the conformance suite under `conformance/`).
+A skill declares either `instructions` or `variants`, never both. Base
+requirements apply to every mode; variant requirements are additive:
 
-### Canonical text and ordering
+```yaml
+kind: skill
+requiresTools: [acme/tools/repository@1.0.0]
+variants:
+  manual:
+    instructions: Explain the evidence.
+  pipeline:
+    instructions: Emit strict JSON.
+    requiresTools: [acme/tools/build-signals@1.0.0]
+```
 
-- All source and artifact files are UTF-8 text. Implementations MUST ignore a leading byte-order mark when reading and MUST write artifacts as UTF-8 without a byte-order mark. Behavior on invalid UTF-8 input is unspecified; implementations MAY reject it.
-- Wherever this specification requires sorting or deduplicating strings, the ordering is lexicographic by Unicode code point (equivalently: by UTF-8 byte sequence). Implementations MUST NOT use UTF-16 code-unit order, culture-aware collation, or case folding. To keep the divergent encodings' orderings observably identical, canonical key spaces are restricted to ASCII: resource IDs (already ASCII by grammar), slot names, and trust metadata keys MUST match `^[A-Za-z0-9][A-Za-z0-9._-]*$`, and trust identity URIs MUST be ASCII (internationalized authorities MUST be pre-encoded as punycode).
-- Emitted artifact files always end with LF-terminated content exactly as specified per artifact; no implementation-chosen trailing whitespace is permitted.
+For mode `m`, effective requirements are `base ∪ variant[m]`. Compilation MUST
+preserve the mapping and MUST NOT flatten all variants into one universal
+requirement set. A target build may carry every mode. Link selects or validates
+the modes requested by deployment and fails if any selected mode's requirements
+are unfulfilled. A target adapter MAY declare a default mode, but MUST diagnose a
+missing default rather than silently substitute another mode.
 
-### Canonical JSON serialization
+Variants may change instructions and add context/tool requirements. They MUST NOT
+change the bound capability or its schemas.
 
-JSON artifacts (`bundle.json`, `provenance.json`, `ai-catalog.json`) are serialized as follows:
+## Native context type language
 
-- **Member order.** Objects serialize their members in the canonical order defined per artifact shape (for `bundle.json`: `id`, `displayName`, `description`, `emit`, `embeds`, `satisfies`, `slots`, `workingNorms`, `contextFiles`, `skills`, `provenance`; skills: `dispatchName`, `capabilityId`, `implementationId`, `description`, `instructions`, `inputSchema`, `outputSchema`, `contextFiles`, `provenance`; provenance entries: `field`, `source`). Map-like objects (slots, trust manifests, trust metadata) serialize keys in canonical string order as defined above. Member order is not alphabetical unless stated.
-- **Layout.** Indented artifacts use two-space indentation, `": "` after keys, one member or element per line, `[]` and `{}` for empty collections, and LF line endings, followed by one trailing LF at end of file. Canonical embedded JSON (schema strings) uses the compact layout with no whitespace.
-- **String escaping.** ASCII characters 0x20–0x7E are emitted literally except `"` `&` `'` `+` `<` `>` `` ` `` and `\`. Backspace, tab, line feed, form feed, and carriage return use the two-character escapes `\b` `\t` `\n` `\f` `\r`; backslash is `\\`. Every other character — remaining control characters and all code points above 0x7E — is escaped as `\uXXXX` with uppercase hexadecimal digits, using UTF-16 surrogate pairs for supplementary-plane code points.
-- **Numbers.** JSON number tokens carried through canonicalization (for example inside capability schemas) are preserved byte-for-byte as authored; implementations MUST NOT reformat `1.0` as `1` or normalize exponent notation.
-- **Schema canonicalization.** A JSON schema's canonical form is its compact serialization under the rules above, preserving authored member order, duplicate keys, and number tokens. Schema equality (capability contract preservation) is byte equality of canonical forms.
+Context types use the TypeFerence type language, not embedded JSON Schema:
 
-The neutral target emits `AGENTS.md`, `bundle.json`, `provenance.json`, and skill folders. Codex, GitHub Copilot, and Cursor adapters emit their native instruction and skill/rule locations. Target-specific outputs MAY add native metadata. An adapter MUST represent each portable resolved field or emit a diagnostic when the target cannot represent it; this requirement does not imply equivalent model behavior.
+```yaml
+schemaVersion: 4
+kind: contextType
+id: acme/context-types/team@1.0.0
+fields:
+  owner:
+    type: string
+    required: true
+  participants:
+    type:
+      list: string
+    required: true
+  governed:
+    type: boolean
+    default: false
+  attributes:
+    type:
+      map: string
+body:
+  type: text
+  required: false
+```
 
-Behavioral equivalence across hosts is a long-term conformance objective, not a v1 compiler guarantee. Claims of equivalence MUST be supported by target-specific evaluations over declared scenarios and acceptance criteria.
+Version 4 supports `string`, `text`, `boolean`, `integer`, `number`, `list<T>`,
+`map<T>`, and exact references to named context types. A field may be `required`
+and may declare a type-correct scalar or collection `default`. Unknown
+constructors and unsupported constraints such as unions, `oneOf`, regular
+expressions, arbitrary `$ref`, or open properties are errors.
 
-## ARD publication
+A context instance declares its type and values:
 
-ARD publication is an optional post-compilation operation. It MUST NOT be modeled as a peer compilation target. This section tracks the ARD v0.9 draft proposal (see `docs/ard-alignment.md` for the review baseline); draft evolution MAY require corresponding changes in a future TypeFerence schema version.
+```yaml
+schemaVersion: 4
+kind: context
+id: acme/context/payments-team@1.0.0
+contextType: acme/context-types/team@1.0.0
+values:
+  owner: payments-platform
+  participants: [Ari, Sam]
+---
+Stable prose carried as the typed body.
+```
 
-When requested, the reference compiler emits:
+Values are parsed schema-directed; YAML implicit scalar typing MUST NOT decide
+their meaning. Missing required fields, unknown fields, wrong shapes, and invalid
+named-type references are errors. Defaults are materialized before hashing and
+emission. Resolved artifacts preserve the complete canonical value object and
+body, so any semantic context change changes target bytes.
 
-1. One canonical source-package catalog entry containing the complete TypeFerence source tree and its SHA-256 digest.
-2. One target-bundle entry for every concrete agent and selected compilation target.
-3. `derivedFrom` provenance from each target bundle to the canonical source identifier and digest.
+Context types MAY embed other context types to refine them. Field redeclaration
+must preserve the original type and may only strengthen optional to required.
+A context satisfies its declared type and every embedded base type.
 
-The v1 package media types are experimental `application/vnd.typeference.source-package+json` and `application/vnd.typeference.target-bundle+json`. A target bundle contains the exact generated files and names its intended runtime. ARD discovery does not install those files or make one target's format executable by another target. Directly callable services SHOULD instead be published using their native MCP, A2A, OpenAPI, or successor artifact card after deployment.
+Agents and profiles hold context by resource ID using `context`. Skills require
+types using `requiresContextTypes`. `allowedContextTypes` is a closed whitelist;
+omitting it means unrestricted and specifying `[]` means no context is allowed.
+Allow-lists intersect through composition without treating the empty result as
+unrestricted.
 
-TypeFerence-generated catalog entries intentionally omit ARD-owned lifecycle, deployment, dependency, install-safety, federation, and registry-search metadata unless supplied as external publication metadata. TypeFerence source versions describe authoring resources; they do not imply discovery-time availability, migration windows, deprecation state, supported regions, credential requirements, commercial terms, or registry federation consent.
+`contextFiles` does not exist in version 4. Raw prose is represented honestly as
+a context type with a required `text` body. Slot values that carry context MUST
+reference context resource IDs, never filesystem paths. All referenced files and
+resources MUST be explicit members of the source package and resolve beneath its
+root.
 
-### Trust metadata compilation
+JSON Schema MAY be emitted as a target interoperability projection of a native
+context type. It is not accepted as the source language and never controls
+TypeFerence validation semantics.
 
-TypeFerence targets the draft AI Catalog Trust Manifest as published at <https://ai-catalog.io/>. Draft evolution MAY require corresponding changes in a future TypeFerence schema version.
+## Tools as runtime imports
 
-A source root MAY contain `typeference.trust.yaml`. The file is part of the canonical source package and its digest, but it is not a typed agent resource and does not participate in embedding or behavioral resolution. A different trust configuration beneath the source root MAY be selected explicitly. Trust metadata is publication configuration: native target bundles remain usable without ARD.
+A `tool` is an extern declaration: a versioned runtime import with canonical
+input/output schemas and optional non-secret requirement metadata. It contains no
+implementation, command, endpoint, environment-specific scope, or credential
+value.
 
-The trust configuration has `schemaVersion: 1` and MAY contain `source` and `bundles` profiles. At least one profile is required. A source profile requires a literal `identity`. A bundles profile requires an `identityTemplate` containing both `{agent}` and `{target}`; `{publisher}` and `{version}` are also supported. Each profile MAY contain:
+A skill or variant lists exact tool IDs in `requiresTools`. Build verifies that
+each declaration exists, is a `tool`, and is structurally valid. It does not
+pretend the runtime implementation exists. Link binds each effective required
+tool to one compatible provider in the deployment file and fails closed if
+missing or incompatible.
 
-- `identityType`
-- an AI Catalog `trustSchema`
-- AI Catalog `attestations`
-- additional AI Catalog `provenance` links
-- arbitrary JSON-compatible `metadata`
-- `signatureIntent` containing an algorithm, key reference, and optional required flag
+The vocabulary is intentionally separate:
 
-TypeFerence MUST preserve its generated `derivedFrom` link as the first provenance link for every target bundle. Configured links follow it in source order. It MUST add a deterministic target artifact digest to `com.github.buchk.typeference.artifactDigest` in Trust Manifest metadata. The digest is covered when the Trust Manifest is externally signed.
+- capability: exported semantic contract;
+- skill: model implementation of a capability;
+- tool: imported runtime callable used by a skill.
 
-Trust metadata is declarative. TypeFerence MUST NOT dereference identity, attestation, policy, provenance, or key URIs; issue compliance claims; infer a SLSA level; claim that runtime governance executed; or treat referenced TRACE-style runtime evidence as deployment state. A referenced attestation asserts only that the publisher supplied that reference.
+An MCP projection may map capabilities and tools to MCP wire-level tools, but
+that transport projection does not collapse the source-language categories.
 
-Identity and URI syntax, known publisher-domain bindings, attestation shape, digest encoding, template placeholders, and metadata keys MUST be validated locally. Identity schemes remain open, but known `did`, `spiffe`, and `https` scheme/type contradictions MUST be rejected. Digests MUST be lowercase SHA-256, SHA-384, or SHA-512 values in `algorithm:hex` form.
+## Packages, restore, and lockfiles
 
-### Artifact digest algorithm
+`typeference pack` emits one canonical source package (`.tferpkg`) containing:
 
-`typeference-directory-v1` hashes a text artifact directory as follows:
+- package name and exact version;
+- exact dependency declarations;
+- sorted exported resource IDs;
+- sorted canonical source paths and normalized UTF-8 contents;
+- a `sha256:` package digest.
 
-1. Enumerate files recursively and sort their forward-slash relative paths in canonical string order (Unicode code point order; see Deterministic compilation). Sorting platform-native paths is non-conforming: platform separators (`\` vs `/`) order differently against other characters, which makes the digest platform-dependent.
-2. For each file, append its forward-slash relative path, one NUL byte, its UTF-8 text content with any leading byte-order mark removed and CRLF normalized to LF, and one NUL byte.
-3. SHA-256 hash the UTF-8 encoding of the resulting sequence and encode it as lowercase hexadecimal with a `sha256:` prefix.
+The package envelope is canonical JSON. Paths use `/`, may not be absolute,
+contain `..`, or collide after normalization. Files are LF-normalized and BOM-free.
+No archive timestamp, host path, feed address, credential, deployment value,
+generated target, or VCS data is permitted.
 
-The v1 package formats contain text files only. A future binary package format MUST define a different digest scheme rather than silently changing this algorithm.
+`typeference restore` reads the manifest, resolves the exact dependency graph from
+configured routes, verifies every package digest, rejects cycles/conflicts, writes
+`typeference.lock`, and materializes the complete graph beneath
+`obj/typeference/packages`. `restore --locked` MUST reject any manifest/lock
+disagreement and MUST NOT rewrite the lock. `typeference update <package>` is the
+explicit operation that rewrites selected lock entries.
 
-### Trust Manifest signatures
+The canonical lockfile records root manifest identity, package name/version,
+digest, exports, and dependency edges in deterministic order. It MUST NOT contain
+feed URLs, credentials, cache paths, retrieval timestamps, or mutable tags.
 
-The AI Catalog `signature` member is reserved for a compact detached JWS over the RFC 8785 JCS-canonicalized Trust Manifest after removing `signature`. TypeFerence MUST NOT place placeholders in this field.
+Feed configuration is external. Implementations SHOULD support scoped routes and
+MAY implement filesystem, generic HTTP/JFrog Generic, and Azure Artifacts
+transports. Routes select one feed for a namespace; implementations MUST NOT
+search every configured feed. Credentials are environment/helper references and
+never source.
 
-TypeFerence MAY import externally created detached JWS strings from a JSON object keyed by generated catalog identifier. It validates compact detached form but does not verify cryptographic validity or resolve keys. Unknown identifiers MUST be rejected. When `signatureIntent.required` is true, publication MUST fail unless the entry has an imported signature. An explicit unsigned-staging option MAY bypass this check solely to emit the payload for an external signer. Signing intent is emitted under `com.github.buchk.typeference.signatureIntent` with invariant `status: external`; whether signing is fulfilled is represented solely by the standard `signature` member. This metadata MUST NOT change when a signature is injected, because it is part of the signed payload.
+Build reads only the source root, lockfile, and a supplied materialized package
+directory. It verifies locked digests and performs no network access. Missing,
+undeclared, conflicting, or corrupt dependencies are errors.
 
-The signature map MUST reside outside the source root. This prevents a cycle in which adding a signature changes the source-package digest embedded in the content being signed. Repeated builds from identical source, trust configuration, and signature map MUST be byte-identical.
+## Source membership and digests
 
-## Diff contract
+The source digest hashes an explicit resource set, never an arbitrary recursive
+directory after output has been written. It includes:
 
-`typeference diff` compiles to temporary storage and compares relative paths and content. Exit code `0` means identical, `1` means changed, and `2` means validation or execution failed.
+- the project manifest and lockfile when present;
+- every root resource and context source file accepted by the loader;
+- explicitly selected trust configuration;
+- referenced source assets defined by a future schema version.
 
-## Security
+It excludes `.git`, `dist`, `bin`, `obj`, restored packages, deployment files,
+feed configuration, signature maps, generated artifacts, and unreferenced files.
+Build MUST reject an output directory nested inside the source root unless the
+output path is in a normatively excluded generated directory.
 
-All source references MUST resolve beneath the source root and MUST exist. MCP stdio logging MUST avoid stdout. Tool annotations and generated instructions are descriptive, not authorization. Hosts remain responsible for access control and user approval.
+`typeference-resource-set-v1` sorts normalized source-relative paths by UTF-8 byte
+order and hashes, for each file, `path`, NUL, normalized content, NUL using
+SHA-256. Target provenance records the root source digest, the ordered locked
+dependency digests, and compiler/adapter version.
+
+`typeference-directory-v1` remains the target-directory digest: recursively sort
+forward-slash paths, then hash `path`, NUL, normalized text, NUL. It applies only
+to already-defined artifact directories, not source identity.
+
+## Build targets
+
+Build emits deterministic **unlinked** packages for neutral, Codex, GitHub
+Copilot, and Cursor targets. Each adapter MUST represent every portable resolved
+field or emit a diagnostic. Host-native active runtime configuration is not a
+build artifact.
+
+An unlinked target contains instructions, skills, native rules, bundle metadata,
+mode requirements, tool imports, complete compiled context values, provenance,
+and a link-requirements manifest. It MUST NOT contain invented endpoints,
+commands, unresolved `${TOKEN}` text in active configuration, or environment
+defaults.
+
+## Deployment files and link
+
+Deployment is supplied explicitly outside the source package:
+
+```yaml
+schemaVersion: 1
+environment: staging
+artifacts:
+  marathon/agents/payments@1.0.0:
+    modes: [manual, a2a]
+providers:
+  payments-tools:
+    kind: mcp
+    transport: stdio
+    command: payments-mcp-server
+    args: [--bundle, "{bundle}"]
+    environment:
+      PAYMENTS_TOKEN:
+        fromEnvironment: PAYMENTS_TOKEN
+toolBindings:
+  marathon/tools/repository-signals@1.0.0:
+    provider: payments-tools
+    remoteName: repository_signals
+agentEndpoints:
+  marathon/agents/payments@1.0.0:
+    a2aUrl: https://agents.example/payments
+```
+
+The deployment schema is closed. Commands and arguments are distinct string
+values. Environment entries are references (`fromEnvironment` or a future
+typed secret-provider reference), never secret values. URLs MUST be absolute
+HTTPS URLs unless a transport-specific local-development option explicitly
+allows otherwise.
+
+`typeference link <built-target> --deployment <file> --out <dir>`:
+
+1. verifies the unlinked target digest;
+2. selects the artifact modes;
+3. validates every effective tool import and endpoint requirement;
+4. structurally serializes host-native configuration;
+5. records deployment-file and materialized-artifact digests separately.
+
+For Codex, local stdio MCP bindings materialize `.codex/config.toml` using TOML
+string escaping; HTTP bindings use the native URL shape. Build never emits an
+active Codex MCP server entry. Equivalent target-native materialization applies
+to other adapters. Hand-concatenating unescaped deployment values is forbidden.
+
+The same source and unlinked target linked for staging and production MUST retain
+identical source and unlinked-target digests. Only the linked artifact and
+deployment provenance may differ.
+
+## ARD and callable publication
+
+ARD publication consumes build and optional link artifacts. Source-package and
+unlinked-target entries are deterministic. A2A Agent Cards, MCP server cards, and
+other callable publications require an explicitly linked endpoint/provider;
+TypeFerence MUST NOT invent an address from publisher identity.
+
+Publisher identity may participate in stable URNs and trust identity. Endpoint
+addresses do not. Publication remains an explicit edge operation and may perform
+network I/O only when requested.
+
+## Trust metadata
+
+A source root MAY contain `typeference.trust.yaml` or select one explicitly. Trust
+metadata is declarative and participates in source-package publication, not
+behavioral resolution. TypeFerence MUST NOT dereference identity, attestation,
+provenance, policy, or key URIs; sign; verify cryptographic validity; or resolve
+keys.
+
+Externally produced compact detached JWS strings MAY be imported from a signature
+map outside the source root. Unknown identifiers are errors.
+`signatureIntent.required` fails closed unless an explicit unsigned-staging option
+is used solely to emit payloads for an external signer. The signature map MUST
+remain outside the source root to avoid a digest/signature cycle.
+
+## Canonicalization
+
+All accepted text is UTF-8, BOM-free after loading, LF-normalized, and emitted with
+one final LF when its artifact shape requires text termination. Paths use `/`.
+Stable string ordering is lexicographic by UTF-8 bytes. Resource IDs, mode names,
+slot names, field names, and metadata keys use restricted ASCII grammars.
+
+Canonical JSON preserves schema number tokens and authored schema member order,
+uses defined artifact member order, two-space indentation for files, compact form
+for embedded schemas, and deterministic escaping. Map-like objects sort keys.
+Repeated restore, build, pack, and link operations over identical respective
+inputs MUST be byte-identical on every platform.
+
+## Diff and security
+
+`typeference diff` compares relative paths and normalized content. Exit code `0`
+means identical, `1` changed, and `2` validation/execution failure.
+
+References MUST resolve beneath an authorized package root. Package extraction
+MUST prevent path traversal and overwrite outside its materialization directory.
+Logs MUST avoid secrets and MCP stdio stdout. Tool annotations and generated
+instructions are descriptive, not authorization; hosts remain responsible for
+access control and user approval.
