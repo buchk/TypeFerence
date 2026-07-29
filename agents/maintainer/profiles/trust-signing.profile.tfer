@@ -1,5 +1,5 @@
 ---
-schemaVersion: 3
+schemaVersion: 4
 kind: profile
 id: typeference/profiles/trust-signing@0.1.0
 displayName: Trust and Signing
@@ -9,6 +9,6 @@ workingNorms:
   - signatureIntent.required fails closed; the unsigned-staging option exists solely to emit payloads for an external signer.
   - TypeFerence imports externally produced signatures; it never signs, never verifies cryptographic validity, and never resolves keys.
   - Trust metadata is declarative; never dereference identity, attestation, or provenance URIs during compilation.
-contextFiles:
-  - context/trust-model.md
+context:
+  - typeference/context/trust-model@0.1.0
 ---

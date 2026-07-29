@@ -8,7 +8,7 @@ TypeFerence contributors - July 2026
 
 Organizations are teaching AI assistants the same business rules repeatedly: once for a coding agent, again for an executive assistant, again for each repository, and again for every vendor-specific Markdown format. The result is semantic drift hidden inside apparently simple files.
 
-TypeFerence treats agent definitions as typed source code. Organizations define reusable profiles, structurally satisfied interfaces, versioned capabilities, and skill implementations, then combine behavior through Go-like embedding. A deterministic compiler resolves those definitions and emits native artifacts for Codex, GitHub Copilot, Cursor, neutral Agent Markdown, and MCP. The central result is not merely portability. It is coherent reuse of domain decisions across people, repositories, tools, and time. Behavioral equivalence across hosts is the long-term objective; v3 supplies a typed baseline from which equivalence can be evaluated rather than claiming it has already been achieved.
+TypeFerence treats agent definitions as typed source code. Organizations define reusable profiles, structurally satisfied interfaces, versioned capabilities, and skill implementations, then combine behavior through Go-like embedding. A deterministic compiler resolves those definitions and emits unlinked native artifacts for Codex, GitHub Copilot, Cursor, and neutral Agent Markdown. Runtime MCP/A2A configuration is linked from explicit deployment bindings rather than invented during compilation. The central result is not merely portability. It is coherent reuse of domain decisions across people, repositories, tools, and time. Behavioral equivalence across hosts is the long-term objective; v4 supplies a closed typed baseline from which equivalence can be evaluated rather than claiming it has already been achieved.
 
 ## 1. The coherence problem
 
@@ -18,7 +18,7 @@ This is the answer to "why not just write `AGENTS.md` directly?" Direct instruct
 
 The underlying problem is repeated domain modeling. Each local agent solves identity, capability, context selection, and governance again. Vendor portability is one visible symptom; duplicated organizational reasoning is the larger cost.
 
-TypeFerence introduces a canonical typed layer above runtime Markdown. Source definitions are small. Skills conditionally reference context. Compilation is deterministic. The generated artifacts remain ordinary files that existing tools understand.
+TypeFerence introduces a canonical typed layer above runtime Markdown. Source definitions are small. Context is a first-class typed value, skills declare the context types and runtime tools they require, and compilation is deterministic. The generated artifacts remain ordinary files that existing tools understand.
 
 ## 2. Composition over ancestry
 
@@ -44,7 +44,7 @@ The compiler parses resources, validates references, resolves profile and agent 
 
 ![Compiler pipeline](assets/compiler-pipeline.svg)
 
-The neutral output includes resolved instructions, bundles, skill packages, and provenance. Codex receives `AGENTS.md`, open skill folders, and MCP configuration. Copilot receives repository instructions and agent profiles. Cursor receives `AGENTS.md` and project rules. Adapters may use native capabilities without forcing every platform into a lowest-common-denominator file, and must surface diagnostics when a target cannot represent a portable field.
+The neutral output includes resolved instructions, bundles, skill packages, link requirements, and provenance. Codex receives `AGENTS.md` and open skill folders; its active MCP configuration is emitted only by the deployment linker. Copilot receives repository instructions and agent profiles. Cursor receives `AGENTS.md` and project rules. Adapters may use native capabilities without forcing every platform into a lowest-common-denominator file, and must surface diagnostics when a target cannot represent a portable field.
 
 Stable sorting, normalized paths, LF newlines, canonical JSON, and the absence of timestamps make builds byte-for-byte reproducible. A source change therefore yields a reviewable artifact diff.
 
@@ -58,25 +58,25 @@ TypeFerence occupies the preceding layer. It resolves one governed source defini
 
 ARD can tell a client that a Copilot agent artifact exists; it does not transform that artifact into Cursor rules. TypeFerence performs the target transformation. Discovery interoperability, definition portability, and behavioral equivalence are separate properties.
 
-The publication unit is therefore a matrix. A publisher may advertise one canonical TypeFerence source package for audit and rebuilding, plus separately versioned Codex, Copilot, Cursor, neutral, MCP, or future target variants. Every compiled entry points back to the canonical source identifier and digest. Consumers normally select a prebuilt artifact for their runtime rather than compiling untrusted source during invocation.
+The publication unit is therefore a matrix. A publisher may advertise one canonical TypeFerence source package for audit and rebuilding, plus separately versioned Codex, Copilot, Cursor, neutral, or future target variants and explicitly linked callable publications. Every compiled entry points back to the canonical source identifier and digest. Consumers normally select a prebuilt artifact for their runtime rather than compiling untrusted source during invocation.
 
 Static host configurations are installable artifacts, not remotely callable agents. An ARD entry can carry or locate the bundle, but a target-aware consumer still has to install it. A deployed MCP or A2A service can instead be advertised using its native server or agent card and invoked through that protocol. The prototype's TypeFerence package media types are experimental until a broader packaging contract exists.
 
-## 6. Skills, context, and dispatch
+## 6. Skills, context, and runtime imports
 
-Large prompts are not required. A skill contains a concise description for discovery, its focused instructions, input/output schemas, and only the context references needed when invoked. The host receives an invocation package and loads that context at execution time.
+A context value is declared by ID against a small native context type and compiled into artifacts with provenance. There is no raw file-path escape hatch. A skill contains focused instructions and canonical input/output schemas, and declares the context types and external tools it needs. Base requirements apply to every invocation mode; variant requirements remain attached to their mode.
 
-MCP provides the runtime object boundary. Each concrete method is exposed as `agent-name.skill-name`. Calling `payments-repo-agent.repository-status` resolves the repository-status capability to the payments implementation, validates arguments, and returns instructions, context references, target hints, and provenance.
+Tools are runtime imports rather than hopeful names. Build verifies declarations and preserves imports in link requirements. Link selects modes and binds each effective import to an explicit provider such as an MCP stdio process or HTTPS server. TypeFerence never implements or executes the tool body.
 
-![Dispatch](assets/dispatch.svg)
+![Runtime import binding](assets/dispatch.svg)
 
-TypeFerence intentionally does not select a model or execute an agent turn. It compiles and dispatches coherent definitions; the host remains responsible for inference, permissions, and user interaction.
+TypeFerence intentionally does not select a model, execute an agent turn, or dispatch a tool call. It compiles coherent definitions and links declared imports to explicit deployment providers; the host remains responsible for inference, permissions, execution, and user interaction.
 
 ## 7. Agents beyond repositories
 
 Engineering teams are plausible early adopters because their work is already versioned and reviewable, but the model is not repository-specific. The Helio example includes generic person and repository profiles, an executive assistant, and a specialized payments repository agent.
 
-The executive assistant can prepare a decision brief. When repository evidence is material, its skill requests the specialized repository-status method. The repository-facing agent returns an invocation package grounded in its own domain context. The person profile contributes communication behavior without duplicating repository knowledge.
+The executive assistant can prepare a decision brief. When repository evidence is material, its skill imports the specialized repository-status method as a tool. Deployment binds that import to the repository-facing agent's MCP provider, which returns evidence grounded in its own domain context. The person profile contributes communication behavior without duplicating repository knowledge.
 
 ![Cross-agent interaction](assets/cross-agent.svg)
 
@@ -84,7 +84,7 @@ This arrangement preserves distinct responsibilities. The executive assistant ow
 
 ## 8. Diff as governance
 
-Traditional infrastructure tools made declarative diffs operationally important. TypeFerence applies the useful portion of that idea without coupling compilation to deployment. Its lifecycle is author, validate, resolve, compile, diff, and publish.
+Traditional infrastructure tools made declarative diffs operationally important. TypeFerence applies the useful portion of that idea while keeping identity separate from address. Its lifecycle is author, restore, validate, build, diff, link, and publish/run.
 
 A change to an enterprise norm can be compiled across every concrete agent. Reviewers can inspect exactly which target artifacts changed. Provenance answers why a line exists and which embedded profile, agent, or skill supplied it. Capability validation prevents an apparently harmless specialization from silently changing what callers may send or expect.
 
@@ -92,9 +92,9 @@ This enables governance through normal software practices: pull requests, determ
 
 ## 9. Boundaries and future work
 
-The reference prototype does not manage deployment state, host models, or grant authority. It validates top-level JSON arguments but is not a complete JSON Schema engine. Target adapters demonstrate native shapes and should evolve alongside their platforms.
+The reference prototype consumes explicit deployment bindings but does not deploy services, manage host models, store secrets, or grant authority. The native context type language is deliberately smaller than JSON Schema. Target adapters demonstrate native shapes and should evolve alongside their platforms.
 
-Promising extensions include native ARD cards for deployed MCP and A2A targets, signed compiled bundles, richer schema validation, semantic diff summaries, policy linting, remote MCP transport, and conformance suites for third-party adapters.
+Promising extensions include linked ARD cards for additional deployed MCP targets, signed compiled bundles, semantic diff summaries, policy linting, version-range solving, and conformance suites for third-party adapters.
 
 The important boundary should remain: portable mechanics in TypeFerence, behavioral authority in the organization, and execution authority in the host.
 

@@ -1,5 +1,5 @@
 ---
-schemaVersion: 3
+schemaVersion: 4
 kind: skill
 id: typeference/skills/audit-drift@0.1.0
 binds: typeference/capabilities/audit-drift@0.1.0
@@ -14,8 +14,8 @@ instructions: |
   definition and its committed artifacts is a broken build: regenerate with
   `make selfhost` and commit definition and artifacts together, or revert the
   stray edit to the generated files.
-contextFiles:
-  - context/determinism.md
+requiresContextTypes:
+  - typeference/context-types/determinism@0.1.0
 inputSchema: '{"type":"object","additionalProperties":false}'
 outputSchema: '{"type":"object","properties":{"clean":{"type":"boolean"},"driftedFiles":{"type":"array","items":{"type":"string"}}},"required":["clean","driftedFiles"]}'
 ---

@@ -1,0 +1,4 @@
+{
+  "description": "Disjoint context allow-lists compose to an explicit deny-all policy and fail closed.",
+  "expect": "error"
+}

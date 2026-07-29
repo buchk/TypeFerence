@@ -7,90 +7,53 @@ import (
 	"testing"
 )
 
-// buildWithManifest compiles a minimal exposed agent, optionally with a project
-// manifest declaring a deployment endpoint, and returns the ard output dir.
-func buildWithManifest(t *testing.T, manifest string) (ardDir, codexDir string) {
+func writeSrc(t *testing.T, root, name, content string) {
 	t.Helper()
-	src := t.TempDir()
-	writeSrc(t, src, "cap.yaml", "schemaVersion: 3\nkind: capability\nid: acme/cap/c@1.0.0\nvisibility: exposed\n")
-	writeSrc(t, src, "skill.yaml", "schemaVersion: 3\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/cap/c@1.0.0\ninstructions: do it\n")
-	writeSrc(t, src, "agent.yaml", "schemaVersion: 3\nkind: agent\nid: acme/agent@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n")
-	if manifest != "" {
-		writeSrc(t, src, "typeference.yaml", manifest)
-	}
-	out := t.TempDir()
-	targets, err := ParseTargets("codex")
-	if err != nil {
+	if err := os.WriteFile(filepath.Join(root, name), []byte(content), 0o644); err != nil {
 		t.Fatal(err)
-	}
-	if _, err := Build(src, out, targets, &ArdPublicationOptions{PublisherDomain: "acme.example"}); err != nil {
-		t.Fatal(err)
-	}
-	return filepath.Join(out, "ard"), filepath.Join(out, "codex", "agent")
-}
-
-func TestNoA2ACardWithoutDeclaredEndpoint(t *testing.T) {
-	// The compiler must not invent a service endpoint: an A2A card is a live
-	// routing claim that a registry indexes and a picker follows.
-	ard, _ := buildWithManifest(t, "")
-	if _, err := os.Stat(filepath.Join(ard, "agent.agent-card.json")); !os.IsNotExist(err) {
-		t.Error("an A2A card must not be emitted without a declared deployment endpoint")
-	}
-	catalog, err := os.ReadFile(filepath.Join(ard, "ai-catalog.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if strings.Contains(string(catalog), "a2a-agent-card") {
-		t.Error("the catalog must not carry an A2A entry without a declared endpoint")
-	}
-	// The MCP manifest asserts no endpoint, so it is still emitted.
-	if _, err := os.Stat(filepath.Join(ard, "agent.mcp.json")); err != nil {
-		t.Error("the MCP tool manifest claims no endpoint and should still be emitted")
 	}
 }
 
-func TestDeclaredEndpointIsUsedVerbatim(t *testing.T) {
-	ard, _ := buildWithManifest(t,
-		"schemaVersion: 1\nname: acme\nversion: 1.0.0\ndeployment:\n  a2aBaseUrl: https://runtime.acme.example/agents/\n")
-	raw, err := os.ReadFile(filepath.Join(ard, "agent.agent-card.json"))
-	if err != nil {
+func TestBuildIsUnlinked(t *testing.T) {
+	source := t.TempDir()
+	writeSrc(t, source, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\n")
+	output := t.TempDir()
+	if _, err := Build(source, output, []Target{Codex}, nil); err != nil {
 		t.Fatal(err)
 	}
-	// The trailing slash is normalized; the authored host is otherwise untouched
-	// rather than derived from the publisher domain.
-	if !strings.Contains(string(raw), `"url": "https://runtime.acme.example/agents/agent"`) {
-		t.Errorf("the card should route to the authored endpoint:\n%s", raw)
+	agentRoot := filepath.Join(output, "codex", "a")
+	if _, err := os.Stat(filepath.Join(agentRoot, ".codex", "config.toml")); !os.IsNotExist(err) {
+		t.Fatal("build must not emit active Codex runtime configuration")
+	}
+	if _, err := os.Stat(filepath.Join(agentRoot, ".typeference", "link.json")); err != nil {
+		t.Fatal("build must emit typed link requirements")
 	}
 }
 
-func TestCodexConfigEmitsSubstitutionTokenWhenUnbound(t *testing.T) {
-	_, codex := buildWithManifest(t, "")
-	raw, err := os.ReadFile(filepath.Join(codex, ".codex", "config.toml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	config := string(raw)
-	if !strings.Contains(config, MCPCommandToken) {
-		t.Errorf("an unbound MCP command should emit a substitution token:\n%s", config)
-	}
-	// The retired runtime must not be invoked: there is no `serve` verb.
-	if strings.Contains(config, `"serve"`) {
-		t.Errorf("the config must not invoke the retired runtime:\n%s", config)
+func TestProjectManifestRejectsDeployment(t *testing.T) {
+	source := t.TempDir()
+	writeSrc(t, source, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\n")
+	writeSrc(t, source, "typeference.yaml", "schemaVersion: 2\nname: acme/agents\nversion: 1.0.0\ndeployment:\n  mcpCommand: nope\n")
+	_, err := Build(source, t.TempDir(), []Target{Codex}, nil)
+	if err == nil || !strings.Contains(err.Error(), "deployment") {
+		t.Fatalf("deployment metadata in the source manifest must fail, got %v", err)
 	}
 }
 
-func TestCodexConfigBakesDeclaredCommand(t *testing.T) {
-	_, codex := buildWithManifest(t,
-		"schemaVersion: 1\nname: acme\nversion: 1.0.0\ndeployment:\n  mcpCommand: acme-mcp\n")
-	raw, err := os.ReadFile(filepath.Join(codex, ".codex", "config.toml"))
+func TestARDDoesNotInventCallableCards(t *testing.T) {
+	source := t.TempDir()
+	writeSrc(t, source, "cap.yaml", "schemaVersion: 4\nkind: capability\nid: acme/capabilities/c@1.0.0\nvisibility: exposed\n")
+	writeSrc(t, source, "skill.yaml", "schemaVersion: 4\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/capabilities/c@1.0.0\ninstructions: do it\n")
+	writeSrc(t, source, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n")
+	output := t.TempDir()
+	if _, err := Build(source, output, []Target{Neutral}, &ArdPublicationOptions{PublisherDomain: "acme.example"}); err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := os.ReadFile(filepath.Join(output, "ard", "ai-catalog.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	config := string(raw)
-	if !strings.Contains(config, `command = "acme-mcp"`) {
-		t.Errorf("a declared command should be baked in:\n%s", config)
-	}
-	if strings.Contains(config, MCPCommandToken) {
-		t.Errorf("a declared command leaves no substitution token:\n%s", config)
+	if strings.Contains(string(catalog), "a2a-agent-card") || strings.Contains(string(catalog), "mcp-server") {
+		t.Fatal("unlinked build must not publish callable endpoint/provider claims")
 	}
 }

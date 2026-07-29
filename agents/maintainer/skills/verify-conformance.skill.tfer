@@ -1,5 +1,5 @@
 ---
-schemaVersion: 3
+schemaVersion: 4
 kind: skill
 id: typeference/skills/verify-conformance@0.1.0
 binds: typeference/capabilities/verify-conformance@0.1.0
@@ -11,8 +11,8 @@ instructions: |
   List each failing fixture and target as a mismatch. Never resolve a mismatch
   by editing a digest; find the compiler regression, or take the ruling to the
   specification with an ADR and a regenerated fixture.
-contextFiles:
-  - context/determinism.md
+requiresContextTypes:
+  - typeference/context-types/determinism@0.1.0
 inputSchema: '{"type":"object","additionalProperties":false}'
 outputSchema: '{"type":"object","properties":{"passed":{"type":"boolean"},"mismatches":{"type":"array","items":{"type":"string"}}},"required":["passed","mismatches"]}'
 ---

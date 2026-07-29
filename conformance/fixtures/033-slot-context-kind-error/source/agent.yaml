@@ -1,0 +1,5 @@
+schemaVersion: 4
+kind: agent
+id: conformance/agents/bad-slot@1.0.0
+slots:
+  evidence: conformance/capabilities/not-context@1.0.0

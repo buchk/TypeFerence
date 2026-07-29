@@ -1,12 +1,4 @@
-schemaVersion: 1
-name: helio
+schemaVersion: 2
+name: helio/agents
 version: 1.0.0
 publisher: helio.example
-
-# Where these agents actually run. TypeFerence compiles definitions; it does not
-# deploy them, so an endpoint is declared here rather than invented by the
-# compiler. Without a2aBaseUrl no A2A agent card is emitted, because a published
-# card is a live routing claim a registry and agent picker will follow.
-deployment:
-  a2aBaseUrl: https://helio.example/a2a
-  mcpCommand: helio-mcp-server

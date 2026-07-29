@@ -3,7 +3,7 @@
 All notable changes to TypeFerence are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semantic
 versioning. Tool versions (this file) are independent of the typed-resource
-`schemaVersion` (currently 3) and the trust configuration `schemaVersion`
+`schemaVersion` (currently 4) and the trust configuration `schemaVersion`
 (currently 1), which only change when the source formats change incompatibly.
 
 TypeFerence is an experimental reference implementation; pre-1.0 versions make no
@@ -13,6 +13,17 @@ compatibility promises between minor versions.
 
 ### Changed
 
+- **Closed v4 source language** ([ADR-0020](docs/decisions/0020-close-the-source-language.md)).
+  Native context types replace embedded JSON Schema, context values and typed
+  slots are complete compile-time values, `contextFiles` is removed, mode
+  requirements remain conditional, sealed abstract requirements fail, and
+  normal product entrypoints reject legacy v3 input.
+- **Build/link separation and source identity**
+  ([ADR-0022](docs/decisions/0022-build-link-and-source-identity.md)). Build emits
+  deterministic unlinked targets and integrity indexes; explicit deployment
+  files bind tools, modes, commands, environment references, and endpoints.
+  Linked Codex MCP configuration and neutral A2A cards are structurally
+  serialized without changing source or unlinked-target identity.
 - **Go-only implementation** ([ADR-0014](docs/decisions/0014-go-only-implementation.md)).
   The C# reference implementation was retired; the Go implementation is now the
   sole implementation. The specification stays normative in principle. The
@@ -22,6 +33,11 @@ compatibility promises between minor versions.
 
 ### Added
 
+- **Locked source packages and enterprise restore**
+  ([ADR-0021](docs/decisions/0021-restore-locked-source-packages.md)):
+  `pack`, `restore`, and `update`, canonical `.tferpkg` archives and lockfiles,
+  complete offline dependency materialization, scoped filesystem/HTTP/JFrog/
+  Azure Artifacts routes, and dependency provenance in target artifacts.
 - **`.tfer` source format** and object-model constructs (ADRs 0012–0019):
   invocation-mode skill variants, user-defined typed context (`contextType`
   refinement, context held by id, `requiresContextTypes`), tools as extern

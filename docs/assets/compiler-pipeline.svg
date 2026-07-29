@@ -7,5 +7,5 @@
   <path class="line" d="M730 150H790V48H825"/><path class="line" d="M790 150H825"/><path class="line" d="M790 150V252H825"/>
   <rect class="target" x="825" y="15" rx="10" width="145" height="66"/><text class="t" x="897" y="55" text-anchor="middle">Codex</text>
   <rect class="target" x="825" y="117" rx="10" width="145" height="66"/><text class="t" x="897" y="157" text-anchor="middle">Copilot</text>
-  <rect class="target" x="825" y="219" rx="10" width="145" height="66"/><text class="t" x="897" y="259" text-anchor="middle">Cursor + MCP</text>
+  <rect class="target" x="825" y="219" rx="10" width="145" height="66"/><text class="t" x="897" y="259" text-anchor="middle">Cursor + Neutral</text>
 </svg>

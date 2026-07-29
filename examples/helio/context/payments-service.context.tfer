@@ -1,0 +1,10 @@
+---
+schemaVersion: 4
+kind: context
+id: helio/context/payments-service@1.0.0
+contextType: helio/context-types/payments-service@1.0.0
+displayName: Payments Service
+---
+# Payments service
+
+This fictional service requires API-contract compatibility, reconciliation evidence, and a documented rollback path before a release is described as healthy.

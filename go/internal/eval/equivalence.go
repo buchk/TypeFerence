@@ -100,7 +100,7 @@ func Pack(source, scenariosPath, outDir string, opts PackOptions) (int, error) {
 	if _, err := compile.Build(source, temp, targets, nil); err != nil {
 		return 0, err
 	}
-	sourceDigest, err := compile.HashDirectory(sourceRoot)
+	sourceDigest, err := compile.HashSource(sourceRoot)
 	if err != nil {
 		return 0, err
 	}
@@ -116,20 +116,9 @@ func Pack(source, scenariosPath, outDir string, opts PackOptions) (int, error) {
 			if err := copyTree(bundleDir, workspace); err != nil {
 				return 0, err
 			}
-			contexts := p.agent.ContextFiles
-			if p.skill != nil {
-				contexts = p.skill.ContextFiles
-			}
-			materialized := []string{}
-			for _, relative := range contexts {
-				destination := filepath.Join(workspace, filepath.FromSlash(relative))
-				if _, statErr := os.Stat(destination); statErr == nil {
-					continue
-				}
-				if err := copyFile(filepath.Join(sourceRoot, filepath.FromSlash(relative)), destination); err != nil {
-					return 0, err
-				}
-				materialized = append(materialized, relative)
+			compiledContext := []string{}
+			for _, context := range p.agent.ContextObjects {
+				compiledContext = append(compiledContext, context.ID)
 			}
 			if err := os.WriteFile(filepath.Join(cellDir, promptFileName), []byte(p.scenario.Task), 0o644); err != nil {
 				return 0, err
@@ -142,7 +131,7 @@ func Pack(source, scenariosPath, outDir string, opts PackOptions) (int, error) {
 				{K: "schemaVersion", V: jsonx.Int(1)},
 				{K: "scenario", V: scenarioJSON(p.scenario)},
 				{K: "surface", V: jsonx.Str(target.String())},
-				{K: "materializedContext", V: stringArrJSON(materialized)},
+				{K: "compiledContext", V: stringArrJSON(compiledContext)},
 				{K: "workspaceDigest", V: jsonx.Str(digest)},
 			}
 			if err := os.WriteFile(filepath.Join(cellDir, cellFileName), []byte(jsonx.Indented(cell)+"\n"), 0o644); err != nil {

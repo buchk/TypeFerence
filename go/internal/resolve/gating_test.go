@@ -56,7 +56,7 @@ func TestAllowListIntersectsThroughEmbeds(t *testing.T) {
 	}
 }
 
-func TestVariantContextRequirementAggregatedAndChecked(t *testing.T) {
+func TestVariantContextRequirementRemainsAttachedToMode(t *testing.T) {
 	set := baseSkillAgent(func(s *resource.Document) {
 		s.Variants = map[string]resource.Variant{
 			"manual": {Instructions: "m"},
@@ -64,9 +64,13 @@ func TestVariantContextRequirementAggregatedAndChecked(t *testing.T) {
 		}
 	}, nil) // agent holds no context
 	set["t/ct/gov@1.0.0"] = doc("contextType", "t/ct/gov@1.0.0", nil)
-	_, err := New(set).Resolve("t/agent@1.0.0")
-	if err == nil || !strings.Contains(err.Error(), "requires context type") {
-		t.Fatalf("a variant's context-type requirement must be enforced at the agent, got %v", err)
+	resolved, err := New(set).Resolve("t/agent@1.0.0")
+	if err != nil {
+		t.Fatalf("resolution must not flatten an unselected mode's context requirement: %v", err)
+	}
+	got := resolved.Skills[0].VariantContextRequirements["a2a"]
+	if len(got) != 1 || got[0] != "t/ct/gov@1.0.0" {
+		t.Fatalf("variant requirement was not preserved: %v", got)
 	}
 }
 

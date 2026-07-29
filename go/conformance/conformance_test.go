@@ -12,6 +12,8 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/buchk/TypeFerence/go/internal/compile"
@@ -95,7 +97,17 @@ func runFixture(t *testing.T, dir string) {
 			ard.TrustSignaturesPath = filepath.Join(dir, m.TrustSignatures)
 		}
 	}
-	_, buildErr := compile.Build(source, out, []compile.Target{compile.Neutral, compile.Codex, compile.Copilot, compile.Cursor}, ard)
+	// Fixtures 001-026 preserve the retired v3 byte contract. This explicit
+	// test-only switch does not reopen v3 on CLI/default compiler paths or for
+	// current-version fixtures.
+	legacyV3 := false
+	if prefix, _, ok := strings.Cut(filepath.Base(dir), "-"); ok {
+		number, _ := strconv.Atoi(prefix)
+		legacyV3 = number > 0 && number <= 26
+	}
+	_, buildErr := compile.BuildWithOptions(source, out,
+		[]compile.Target{compile.Neutral, compile.Codex, compile.Copilot, compile.Cursor},
+		ard, compile.BuildOptions{LegacyV3: legacyV3})
 
 	if m.Expect == "error" {
 		if buildErr == nil {

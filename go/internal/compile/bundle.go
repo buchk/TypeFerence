@@ -33,18 +33,29 @@ func bundleValue(agent *resolve.ResolvedAgent) jsonx.Value {
 		{K: "satisfies", V: stringArr(agent.Satisfies)},
 		{K: "slots", V: slots},
 		{K: "workingNorms", V: stringArr(agent.WorkingNorms)},
-		{K: "contextFiles", V: stringArr(agent.ContextFiles)},
+	}
+	if len(agent.ContextFiles) > 0 {
+		obj = append(obj, jsonx.Member{K: "contextFiles", V: stringArr(agent.ContextFiles)})
 	}
 	// Typed context held by id. Absent when the agent holds none, so bundles
 	// that predate reference-by-id context are unchanged (ADR-0013).
 	if len(agent.ContextObjects) > 0 {
 		context := jsonx.Arr{}
 		for _, ref := range agent.ContextObjects {
-			context = append(context, jsonx.Obj{
+			values, err := jsonx.Parse(ref.ValuesJSON)
+			if err != nil {
+				values = jsonx.Obj{}
+			}
+			item := jsonx.Obj{
 				{K: "id", V: jsonx.Str(ref.ID)},
 				{K: "contextType", V: jsonx.Str(ref.ContextType)},
-				{K: "content", V: jsonx.Str(ref.Content)},
-			})
+				{K: "satisfies", V: stringArr(ref.Satisfies)},
+			}
+			if ref.ValuesJSON != "{}" {
+				item = append(item, jsonx.Member{K: "values", V: values})
+			}
+			item = append(item, jsonx.Member{K: "content", V: jsonx.Str(ref.Content)})
+			context = append(context, item)
 		}
 		obj = append(obj, jsonx.Member{K: "context", V: context})
 	}
@@ -62,7 +73,9 @@ func skillValue(skill resolve.ResolvedSkill) jsonx.Value {
 		{K: "instructions", V: jsonx.Str(skill.Instructions)},
 		{K: "inputSchema", V: jsonx.Str(skill.InputSchema)},
 		{K: "outputSchema", V: jsonx.Str(skill.OutputSchema)},
-		{K: "contextFiles", V: stringArr(skill.ContextFiles)},
+	}
+	if len(skill.ContextFiles) > 0 {
+		obj = append(obj, jsonx.Member{K: "contextFiles", V: stringArr(skill.ContextFiles)})
 	}
 	// A multimodal skill also emits its per-mode renderings. This member is
 	// absent for unimodal skills, so their bundle output is unchanged (ADR-0012).
@@ -74,9 +87,23 @@ func skillValue(skill resolve.ResolvedSkill) jsonx.Value {
 		sort.Strings(modes)
 		variants := jsonx.Obj{}
 		for _, mode := range modes {
-			variants = append(variants, jsonx.Member{K: mode, V: jsonx.Str(skill.Variants[mode])})
+			variant := jsonx.Obj{
+				{K: "instructions", V: jsonx.Str(skill.Variants[mode])},
+				{K: "requiresContextTypes", V: stringArr(skill.VariantContextRequirements[mode])},
+				{K: "requiresTools", V: stringArr(skill.VariantToolRequirements[mode])},
+			}
+			variants = append(variants, jsonx.Member{K: mode, V: variant})
 		}
 		obj = append(obj, jsonx.Member{K: "variants", V: variants})
+	}
+	if len(skill.RequiresContextTypes) > 0 {
+		obj = append(obj, jsonx.Member{K: "requiresContextTypes", V: stringArr(skill.RequiresContextTypes)})
+	}
+	if len(skill.RequiresTools) > 0 {
+		obj = append(obj, jsonx.Member{K: "requiresTools", V: stringArr(skill.RequiresTools)})
+	}
+	if skill.Exposed {
+		obj = append(obj, jsonx.Member{K: "exposed", V: jsonx.Bool(true)})
 	}
 	// Modifier state is emitted only when a lock is engaged, so permissive
 	// bindings are unchanged. Absent means the axis is at its default — open,

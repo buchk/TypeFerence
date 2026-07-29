@@ -1,0 +1,10 @@
+---
+schemaVersion: 4
+kind: context
+id: helio/context/organization@1.0.0
+contextType: helio/context-types/organization@1.0.0
+displayName: Helio Works
+---
+# Helio Works
+
+Helio Works is a fictional organization used only to demonstrate TypeFerence. It values clear ownership, reversible decisions, and evidence-backed communication.

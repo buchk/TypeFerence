@@ -2,9 +2,9 @@
   "description": "The agent overrides a promoted skill with its own binding for the same capability; the implementation must preserve the capability's canonical schemas.",
   "expect": "success",
   "digests": {
-    "codex": "sha256:40a96026b0adb233fac90afa7371b5b9ed2e202836237f3e39c3104bd5b3f148",
-    "copilot": "sha256:51dce2817ea87a13fb185bcc8e1774da146a1d8a313ce3798e94c6464538b626",
-    "cursor": "sha256:6e579f2f99d7804938d71d187c787acb37144c53810940bebf13505d574dbb28",
-    "neutral": "sha256:6683382bbd35ec2eee7919cebdae379f403e27e860be18ec0e175202840f7536"
+    "codex": "sha256:2fb138956ba3d5484b8d14045dc464872fd17ace90e826792b04a0b03d3edff1",
+    "copilot": "sha256:94455e965b4336477d3f1f2ba1ac66ef2cc8424f9ee7c8af646a23955221081d",
+    "cursor": "sha256:a5235def10312efb7c7f8811d2a7e20c8fb94c40a5e55ad663e4c7dad0b1381e",
+    "neutral": "sha256:aa57396bc2e927baa7ff7874525e89903229ff8872bf36bf0c7cef4e997348eb"
   }
 }

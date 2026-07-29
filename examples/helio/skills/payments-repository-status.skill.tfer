@@ -1,12 +1,12 @@
 ---
-schemaVersion: 3
+schemaVersion: 4
 kind: skill
 id: helio/skills/payments-repository-status@1.0.0
 binds: helio/capabilities/repository-status@1.0.0
 displayName: Payments Repository Status
 description: Report payments-service health with contract and reconciliation evidence.
-contextFiles:
-  - context/payments-service.md
+requiresContextTypes:
+  - helio/context-types/payments-service@1.0.0
 requiresTools:
   - helio/tools/repository-signals@1.0.0
 inputSchema: '{"type":"object","properties":{"focus":{"type":"string"}},"additionalProperties":false}'

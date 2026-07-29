@@ -1,0 +1,9 @@
+---
+schemaVersion: 4
+kind: contextType
+id: typeference/context-types/trust-model@0.1.0
+displayName: Trust Model
+body:
+  type: text
+  required: true
+---

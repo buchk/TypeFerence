@@ -1,0 +1,10 @@
+{
+  "description": "A version 4 interface slot contract is satisfied only by context of the required type or a refinement.",
+  "expect": "success",
+  "digests": {
+    "codex": "sha256:ccfe958da41c39059ee843cf0d2b4c149846e7c606af4f6fac35bd6178cecad7",
+    "copilot": "sha256:198f125c51bcf0ff75afb9be97e26f7d397cd809e3ed78a4aabc1ca5e26cfd7f",
+    "cursor": "sha256:da59cf975f8d7b843ef7cfca3dbf22ef08aeac75120067980e6d66d4765f1bb4",
+    "neutral": "sha256:0d4f50d78ac105776f840ff7ec97c3c11c327bac38faf8ffd71cd54f6c7126f6"
+  }
+}

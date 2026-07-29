@@ -44,8 +44,9 @@ source language.
 
 - Version 4 can honestly claim that accepted context and tool declarations have
   observable compile/link consequences.
-- Version 3 remains useful historical input but is not silently interpreted as
-  version 4; migration is explicit.
+- Version 3 remains reproducible only through an explicit internal switch used
+  by the historical conformance corpus. Normal compiler, CLI, LSP, package, and
+  playground entrypoints reject it.
 - Target adapters must carry mode requirements and complete context values.
 - Authors wanting an opaque file must name that choice with a raw-text context
   type.

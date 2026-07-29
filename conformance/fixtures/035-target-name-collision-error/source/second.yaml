@@ -1,0 +1,3 @@
+schemaVersion: 4
+kind: agent
+id: other/agents/worker@1.0.0
