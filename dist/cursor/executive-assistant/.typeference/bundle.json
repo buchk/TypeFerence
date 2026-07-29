@@ -10,23 +10,48 @@
     "helio/interfaces/correspondent@1.0.0"
   ],
   "slots": {
-    "organization": "context/organization.md",
-    "principal": "context/principal.md"
+    "organization": "helio/context/organization@1.0.0",
+    "principal": "helio/context/principal@1.0.0"
   },
   "workingNorms": [
     "Preserve a clear audit trail for material decisions.",
     "State uncertainty and route work to an accountable owner when authority is unclear.",
     "Distinguish drafts from messages approved for delivery."
   ],
-  "contextFiles": [
-    "context/organization.md",
-    "context/principal.md",
-    "context/executive-rhythm.md"
-  ],
   "context": [
+    {
+      "id": "helio/context/executive-rhythm@1.0.0",
+      "contextType": "helio/context-types/executive-rhythm@1.0.0",
+      "satisfies": [
+        "helio/context-types/executive-rhythm@1.0.0"
+      ],
+      "content": "# Executive rhythm\n\nDaily briefs prioritize decisions due within 48 hours. Weekly briefs group information by outcome rather than reporting line.\n"
+    },
+    {
+      "id": "helio/context/organization@1.0.0",
+      "contextType": "helio/context-types/organization@1.0.0",
+      "satisfies": [
+        "helio/context-types/organization@1.0.0"
+      ],
+      "content": "# Helio Works\n\nHelio Works is a fictional organization used only to demonstrate TypeFerence. It values clear ownership, reversible decisions, and evidence-backed communication.\n"
+    },
+    {
+      "id": "helio/context/principal@1.0.0",
+      "contextType": "helio/context-types/principal@1.0.0",
+      "satisfies": [
+        "helio/context-types/principal@1.0.0"
+      ],
+      "content": "# Principal\n\nThe principal prefers short decision briefs that identify the owner, deadline, evidence, and unresolved risk.\n"
+    },
     {
       "id": "helio/context/safety-policy@1.0.0",
       "contextType": "helio/context-types/safety-policy@1.0.0",
+      "satisfies": [
+        "helio/context-types/safety-policy@1.0.0"
+      ],
+      "values": {
+        "authority": "explicit"
+      },
       "content": "# Safety policy\n\nAgents may prepare recommendations and drafts. They must not represent approval, transmit external messages, or make irreversible changes without explicit authority.\n"
     }
   ],
@@ -36,14 +61,16 @@
       "capabilityId": "helio/capabilities/prepare-brief@1.0.0",
       "implementationId": "helio/skills/prepare-brief@1.0.0",
       "description": "Assemble an executive brief, requesting repository evidence when needed.",
-      "instructions": "Build a decision-oriented brief from the supplied topic and evidence.\nWhen repository status is material, request \u0060payments-repo-agent.repository-status\u0060 and incorporate its returned evidence with attribution.\n",
+      "instructions": "Build a decision-oriented brief from the supplied topic and evidence.\nWhen repository status is material, use the payments repository agent tool and\nincorporate its returned evidence with attribution.\n",
       "inputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022topic\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022topic\u0022],\u0022additionalProperties\u0022:false}",
       "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022brief\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022openQuestions\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022brief\u0022,\u0022openQuestions\u0022]}",
-      "contextFiles": [
-        "context/organization.md",
-        "context/principal.md",
-        "context/executive-rhythm.md"
+      "requiresContextTypes": [
+        "helio/context-types/executive-rhythm@1.0.0"
       ],
+      "requiresTools": [
+        "helio/tools/payments-repository-agent@1.0.0"
+      ],
+      "exposed": true,
       "provenance": [
         {
           "field": "skill.capability",
@@ -63,10 +90,10 @@
       "instructions": "Read the message and identify its sender, intent, urgency, decision owner, and requested deadline.\nSeparate facts from assumptions. Return a concise recommendation; do not send a reply.\n",
       "inputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022message\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022required\u0022:[\u0022message\u0022],\u0022additionalProperties\u0022:false}",
       "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022summary\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022urgency\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022owner\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022nextAction\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022required\u0022:[\u0022summary\u0022,\u0022urgency\u0022,\u0022owner\u0022,\u0022nextAction\u0022]}",
-      "contextFiles": [
-        "context/organization.md",
-        "context/principal.md"
+      "requiresContextTypes": [
+        "helio/context-types/safety-policy@1.0.0"
       ],
+      "exposed": true,
       "sealed": true,
       "provenance": [
         {
@@ -94,10 +121,6 @@
       "source": "helio/profiles/enterprise-defaults@1.0.0"
     },
     {
-      "field": "contextFiles",
-      "source": "helio/profiles/enterprise-defaults@1.0.0"
-    },
-    {
       "field": "embeds.helio/profiles/enterprise-defaults@1.0.0",
       "source": "helio/profiles/person-defaults@1.0.0"
     },
@@ -110,10 +133,6 @@
       "source": "helio/profiles/person-defaults@1.0.0"
     },
     {
-      "field": "contextFiles",
-      "source": "helio/profiles/person-defaults@1.0.0"
-    },
-    {
       "field": "embeds.helio/profiles/person-defaults@1.0.0",
       "source": "helio/executive-assistant@1.0.0"
     },
@@ -123,10 +142,6 @@
     },
     {
       "field": "description",
-      "source": "helio/executive-assistant@1.0.0"
-    },
-    {
-      "field": "contextFiles",
       "source": "helio/executive-assistant@1.0.0"
     },
     {

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "target": "neutral",
+  "sourceDigest": "sha256:5c65966e441ae60e7e4eadda8e4794f87ec9dbca736a922f32373b06b5ebc4b2",
+  "artifacts": [
+    {
+      "agentId": "typeference/typeference-maintainer@0.1.0",
+      "path": "typeference-maintainer",
+      "digest": "sha256:6815314acf678d951ba331162f63c3e758ae4d2bae6cff1a52cc22a9bc5794a0"
+    }
+  ]
+}

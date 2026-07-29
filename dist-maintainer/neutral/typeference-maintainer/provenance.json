@@ -16,10 +16,6 @@
     "source": "typeference/profiles/spec-conformance@0.1.0"
   },
   {
-    "field": "contextFiles",
-    "source": "typeference/profiles/spec-conformance@0.1.0"
-  },
-  {
     "field": "workingNorms",
     "source": "typeference/profiles/determinism-guardian@0.1.0"
   },
@@ -33,10 +29,6 @@
   },
   {
     "field": "workingNorms",
-    "source": "typeference/profiles/determinism-guardian@0.1.0"
-  },
-  {
-    "field": "contextFiles",
     "source": "typeference/profiles/determinism-guardian@0.1.0"
   },
   {
@@ -53,10 +45,6 @@
   },
   {
     "field": "workingNorms",
-    "source": "typeference/profiles/trust-signing@0.1.0"
-  },
-  {
-    "field": "contextFiles",
     "source": "typeference/profiles/trust-signing@0.1.0"
   },
   {
@@ -73,10 +61,6 @@
   },
   {
     "field": "workingNorms",
-    "source": "typeference/profiles/contribution-workflow@0.1.0"
-  },
-  {
-    "field": "contextFiles",
     "source": "typeference/profiles/contribution-workflow@0.1.0"
   },
   {
@@ -105,10 +89,6 @@
   },
   {
     "field": "slots.repositoryMap",
-    "source": "typeference/typeference-maintainer@0.1.0"
-  },
-  {
-    "field": "contextFiles",
     "source": "typeference/typeference-maintainer@0.1.0"
   }
 ]
