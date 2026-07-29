@@ -1,3 +1,0 @@
-[mcp_servers.payments-repo-agent]
-command = "helio-mcp-server"
-args = [".typeference/bundle.json"]

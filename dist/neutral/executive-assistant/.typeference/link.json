@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "agentId": "helio/executive-assistant@1.0.0",
+  "target": "neutral",
+  "defaultMode": "",
+  "sourceDigest": "sha256:981da89802beea05777dbe99b9898fa07701a7fd40534a4c0aca961fce5376ac",
+  "dependencies": [],
+  "modes": [],
+  "toolImports": [
+    {
+      "toolId": "helio/tools/payments-repository-agent@1.0.0",
+      "skillId": "helio/skills/prepare-brief@1.0.0",
+      "mode": "*"
+    }
+  ]
+}

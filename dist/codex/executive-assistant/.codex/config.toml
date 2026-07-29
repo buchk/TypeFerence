@@ -1,3 +1,0 @@
-[mcp_servers.executive-assistant]
-command = "helio-mcp-server"
-args = [".typeference/bundle.json"]

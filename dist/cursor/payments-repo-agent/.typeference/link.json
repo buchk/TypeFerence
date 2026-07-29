@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "agentId": "helio/payments-repo-agent@1.0.0",
+  "target": "cursor",
+  "defaultMode": "manual",
+  "sourceDigest": "sha256:981da89802beea05777dbe99b9898fa07701a7fd40534a4c0aca961fce5376ac",
+  "dependencies": [],
+  "modes": [
+    "a2a",
+    "manual",
+    "pipeline"
+  ],
+  "toolImports": [
+    {
+      "toolId": "helio/tools/repository-signals@1.0.0",
+      "skillId": "helio/skills/payments-repository-status@1.0.0",
+      "mode": "*"
+    }
+  ]
+}

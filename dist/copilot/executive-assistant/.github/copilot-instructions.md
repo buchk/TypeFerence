@@ -10,10 +10,28 @@ Coordinates an executive's correspondence, briefings, and cross-agent requests.
 
 ## Context slots
 
-- `organization`: `context/organization.md`
-- `principal`: `context/principal.md`
+- `organization`: `helio/context/organization@1.0.0`
+- `principal`: `helio/context/principal@1.0.0`
 
 ## Context
+
+### Executive Rhythm
+
+# Executive rhythm
+
+Daily briefs prioritize decisions due within 48 hours. Weekly briefs group information by outcome rather than reporting line.
+
+### Helio Works
+
+# Helio Works
+
+Helio Works is a fictional organization used only to demonstrate TypeFerence. It values clear ownership, reversible decisions, and evidence-backed communication.
+
+### Principal
+
+# Principal
+
+The principal prefers short decision briefs that identify the owner, deadline, evidence, and unresolved risk.
 
 ### Helio Safety Policy
 
@@ -26,7 +44,8 @@ Agents may prepare recommendations and drafts. They must not represent approval,
 - `executive-assistant.prepare-brief`: Assemble an executive brief, requesting repository evidence when needed.
 
 Build a decision-oriented brief from the supplied topic and evidence.
-When repository status is material, request `payments-repo-agent.repository-status` and incorporate its returned evidence with attribution.
+When repository status is material, use the payments repository agent tool and
+incorporate its returned evidence with attribution.
 
 - `executive-assistant.triage-message`: Classify an inbound message and recommend an accountable next action.
 
