@@ -97,10 +97,11 @@ func TestPackIsDeterministicAndSelfContained(t *testing.T) {
 	if string(prompt) != "Report status." {
 		t.Errorf("PROMPT.txt should be the task verbatim, got %q", string(prompt))
 	}
-	// The compiled bundle and the materialized context are both present.
+	// The compiled bundle contains the typed context; no raw source path is
+	// copied beside it.
 	for _, relative := range []string{
 		filepath.Join(workspaceDirName, "AGENTS.md"),
-		filepath.Join(workspaceDirName, "context", "organization.md"),
+		filepath.Join(workspaceDirName, ".typeference", "bundle.json"),
 		cellFileName,
 	} {
 		if _, statErr := os.Stat(filepath.Join(codex, relative)); statErr != nil {
@@ -111,9 +112,9 @@ func TestPackIsDeterministicAndSelfContained(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	materialized, ok := member(cell, "materializedContext").(jsonx.Arr)
-	if !ok || len(materialized) == 0 {
-		t.Error("cell.json should record materialized context files")
+	compiled, ok := member(cell, "compiledContext").(jsonx.Arr)
+	if !ok || len(compiled) == 0 {
+		t.Error("cell.json should record compiled typed context ids")
 	}
 	digest := jsonMemberString(cell, "workspaceDigest")
 	actual, err := compile.HashDirectory(filepath.Join(codex, workspaceDirName))

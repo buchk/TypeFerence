@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/buchk/TypeFerence/go/internal/jsonx"
+	"github.com/buchk/TypeFerence/go/internal/packages"
 	"github.com/buchk/TypeFerence/go/internal/resolve"
 	"github.com/buchk/TypeFerence/go/internal/resource"
 	"github.com/buchk/TypeFerence/go/internal/trust"
@@ -22,7 +23,6 @@ func writeArdCatalog(
 	agents []*resolve.ResolvedAgent,
 	targets []Target,
 	publisherDomain string,
-	a2aBaseURL string,
 	configuration *trust.Configuration,
 	signatures map[string]string,
 	signatureKeys []string,
@@ -51,13 +51,13 @@ func writeArdCatalog(
 		}
 	}
 	sourceIdentifier := "urn:air:" + publisherDomain + ":typeference:source:" + sourceName
-	sourceHash, err := HashDirectory(source)
+	sourceHash, err := HashSource(source)
 	if err != nil {
 		return err
 	}
 	sourceDigest := "sha256:" + sourceHash
 
-	sourceFiles, err := packageFiles(source)
+	sourceFiles, err := sourcePackageFiles(source)
 	if err != nil {
 		return err
 	}
@@ -181,67 +181,6 @@ func writeArdCatalog(
 				entries = append(entries, append(targetBase, jsonx.Member{K: "trustManifest", V: manifest}))
 			}
 		}
-	}
-
-	// Discovery entries: for each agent that exposes a capability, an A2A Agent
-	// Card and an MCP server, both in the official media types a registry
-	// indexes, embedding the resource as `data` (value-or-reference honored).
-	// There is no proprietary catalog entry — the catalog is pure discovery; the
-	// fulfillment (instruction templates, held context) rides the MCP manifest's
-	// x-typeference extension, i.e. the deployable server artifact (ADR-0018).
-	for _, agent := range agents {
-		if len(agent.ExposedSkills()) == 0 {
-			continue
-		}
-		slug := resolve.Leaf(agent.ID)
-		version := agent.ID[strings.LastIndex(agent.ID, "@")+1:]
-		names := []string{}
-		for _, skill := range exposedInOrder(agent) {
-			names = append(names, skill.DispatchName)
-		}
-		manifest := jsonx.Obj{
-			{K: "identity", V: jsonx.Str("https://" + publisherDomain)},
-			{K: "identityType", V: jsonx.Str("https")},
-			{K: "provenance", V: jsonx.Arr{jsonx.Obj{
-				{K: "relation", V: jsonx.Str("derivedFrom")},
-				{K: "sourceId", V: jsonx.Str(sourceIdentifier)},
-				{K: "sourceDigest", V: jsonx.Str(sourceDigest)},
-			}}},
-		}
-		meta := jsonx.Obj{
-			{K: "generatedBy", V: jsonx.Str("TypeFerence")},
-			{K: "sourceDigest", V: jsonx.Str(sourceDigest)},
-			{K: "sourceIdentifier", V: jsonx.Str(sourceIdentifier)},
-		}
-		// An A2A card is a live discovery claim: a registry indexes it and a
-		// picker routes to its url. The compiler cannot know where an agent is
-		// deployed, so the endpoint is authored (deployment.a2aBaseUrl) and no
-		// card is emitted without one. The MCP entry below asserts no endpoint —
-		// it is a tool manifest — so it is emitted regardless.
-		if a2aBaseURL != "" {
-			entries = append(entries, jsonx.Obj{
-				{K: "identifier", V: jsonx.Str("urn:air:" + publisherDomain + ":typeference:a2a:" + slug)},
-				{K: "displayName", V: jsonx.Str(agent.DisplayName + " (A2A agent card)")},
-				{K: "type", V: jsonx.Str("application/a2a-agent-card+json")},
-				{K: "description", V: jsonx.Str("A2A Agent Card for " + agent.DisplayName + ".")},
-				{K: "capabilities", V: stringArr(names)},
-				{K: "version", V: jsonx.Str(version)},
-				{K: "data", V: a2aCardValue(agent, a2aBaseURL, publisherDomain)},
-				{K: "metadata", V: meta},
-				{K: "trustManifest", V: manifest},
-			})
-		}
-		entries = append(entries, jsonx.Obj{
-			{K: "identifier", V: jsonx.Str("urn:air:" + publisherDomain + ":typeference:mcp:" + slug)},
-			{K: "displayName", V: jsonx.Str(agent.DisplayName + " (MCP tools)")},
-			{K: "type", V: jsonx.Str("application/mcp-server+json")},
-			{K: "description", V: jsonx.Str("MCP tool manifest for " + agent.DisplayName + ".")},
-			{K: "capabilities", V: stringArr(names)},
-			{K: "version", V: jsonx.Str(version)},
-			{K: "data", V: mcpManifestValue(agent)},
-			{K: "metadata", V: meta},
-			{K: "trustManifest", V: manifest},
-		})
 	}
 
 	for _, key := range signatureKeys {
@@ -368,144 +307,6 @@ func buildTrustManifest(
 	return manifest.obj(), nil
 }
 
-// writeDiscoveryCards emits, per agent that exposes a capability, two artifacts
-// in shapes external tooling actually consumes (ADR-0018):
-//
-//   - <slug>.agent-card.json — an A2A Agent Card (a2a-protocol.org), the unit an
-//     agent finder discovers. Its service-endpoint `url` is a live routing claim,
-//     so it comes from the authored deployment.a2aBaseUrl; without one, no card
-//     is emitted rather than one pointing somewhere nothing is served.
-//   - <slug>.mcp.json — an MCP tool manifest (modelcontextprotocol.io), directly
-//     loadable by an MCP server; each exposed capability becomes an MCP tool with
-//     its input/output schemas as JSON Schema objects. It asserts no endpoint, so
-//     it is always emitted.
-func writeDiscoveryCards(ardRoot string, agents []*resolve.ResolvedAgent, a2aBaseURL, publisherDomain string, written *[]string) error {
-	for _, agent := range agents {
-		if len(agent.ExposedSkills()) == 0 {
-			continue
-		}
-		slug := resolve.Leaf(agent.ID)
-		if a2aBaseURL != "" {
-			if err := writeFile(filepath.Join(ardRoot, slug+".agent-card.json"), jsonx.Indented(a2aCardValue(agent, a2aBaseURL, publisherDomain))+"\n", written); err != nil {
-				return err
-			}
-		}
-		if err := writeFile(filepath.Join(ardRoot, slug+".mcp.json"), jsonx.Indented(mcpManifestValue(agent))+"\n", written); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// exposedInOrder returns an agent's exposed skills sorted by dispatch name.
-func exposedInOrder(agent *resolve.ResolvedAgent) []resolve.ResolvedSkill {
-	exposed := agent.ExposedSkills()
-	sort.Slice(exposed, func(i, j int) bool { return exposed[i].DispatchName < exposed[j].DispatchName })
-	return exposed
-}
-
-// a2aCardValue builds an A2A Agent Card (a2a-protocol.org) for an agent's
-// exposed capabilities. a2aBaseURL is the authored deployment endpoint; callers
-// must not invoke this without one, since the card's url is a routing claim.
-func a2aCardValue(agent *resolve.ResolvedAgent, a2aBaseURL, publisherDomain string) jsonx.Obj {
-	slug := resolve.Leaf(agent.ID)
-	skills := jsonx.Arr{}
-	for _, skill := range exposedInOrder(agent) {
-		skills = append(skills, jsonx.Obj{
-			{K: "id", V: jsonx.Str(skill.DispatchName)},
-			{K: "name", V: jsonx.Str(resolve.Leaf(skill.CapabilityID))},
-			{K: "description", V: jsonx.Str(skill.Description)},
-			{K: "tags", V: jsonx.Arr{jsonx.Str("typeference")}},
-		})
-	}
-	return jsonx.Obj{
-		{K: "protocolVersion", V: jsonx.Str("0.3.0")},
-		{K: "name", V: jsonx.Str(agent.DisplayName)},
-		{K: "description", V: jsonx.Str(agent.Description)},
-		{K: "version", V: jsonx.Str(agent.ID[strings.LastIndex(agent.ID, "@")+1:])},
-		{K: "url", V: jsonx.Str(a2aBaseURL + "/" + slug)},
-		{K: "preferredTransport", V: jsonx.Str("JSONRPC")},
-		{K: "capabilities", V: jsonx.Obj{
-			{K: "streaming", V: jsonx.Bool(false)},
-			{K: "pushNotifications", V: jsonx.Bool(false)},
-		}},
-		{K: "defaultInputModes", V: jsonx.Arr{jsonx.Str("application/json")}},
-		{K: "defaultOutputModes", V: jsonx.Arr{jsonx.Str("application/json")}},
-		{K: "provider", V: jsonx.Obj{
-			{K: "organization", V: jsonx.Str(publisherDomain)},
-			{K: "url", V: jsonx.Str("https://" + publisherDomain)},
-		}},
-		{K: "skills", V: skills},
-	}
-}
-
-// mcpManifestValue builds a full MCP tool manifest for an agent: standard MCP
-// tools plus a top-level x-typeference extension carrying the agent's held
-// context. Generic MCP clients read the standard fields and ignore x-*; a
-// TypeFerence-aware server also uses the extension to fulfill calls.
-func mcpManifestValue(agent *resolve.ResolvedAgent) jsonx.Obj {
-	manifest := jsonx.Obj{{K: "tools", V: mcpToolsValue(agent)}}
-	if len(agent.ContextObjects) > 0 {
-		manifest = append(manifest, jsonx.Member{K: "x-typeference", V: jsonx.Obj{
-			{K: "context", V: callableContext(agent.ContextObjects)},
-		}})
-	}
-	return manifest
-}
-
-// mcpToolsValue builds the MCP tool array (modelcontextprotocol.io) for an
-// agent's exposed capabilities, with schemas as JSON Schema objects. Each tool
-// carries an x-typeference extension with the fulfillment a server needs — the
-// a2a instructions template, every declared variant, and required tools — which
-// generic MCP clients ignore.
-func mcpToolsValue(agent *resolve.ResolvedAgent) jsonx.Arr {
-	tools := jsonx.Arr{}
-	for _, skill := range exposedInOrder(agent) {
-		ext := jsonx.Obj{
-			{K: "instructionsTemplate", V: jsonx.Str(skill.InstructionsFor("a2a"))},
-			{K: "requiresTools", V: stringArr(skill.RequiresTools)},
-		}
-		if len(skill.Variants) > 0 {
-			variants := jsonx.Obj{}
-			for _, mode := range sortedModes(skill.Variants) {
-				variants = append(variants, jsonx.Member{K: mode, V: jsonx.Str(skill.Variants[mode])})
-			}
-			ext = append(ext, jsonx.Member{K: "variants", V: variants})
-		}
-		tools = append(tools, jsonx.Obj{
-			{K: "name", V: jsonx.Str(skill.DispatchName)},
-			{K: "description", V: jsonx.Str(skill.Description)},
-			{K: "inputSchema", V: schemaObject(skill.InputSchema)},
-			{K: "outputSchema", V: schemaObject(skill.OutputSchema)},
-			{K: "x-typeference", V: ext},
-		})
-	}
-	return tools
-}
-
-// schemaObject parses a capability's JSON Schema string into an object so it can
-// be embedded (MCP requires inputSchema to be a JSON Schema object, not a
-// string); a malformed schema falls back to an open object.
-func schemaObject(schema string) jsonx.Value {
-	if v, err := jsonx.Parse(schema); err == nil {
-		return v
-	}
-	return jsonx.Obj{{K: "type", V: jsonx.Str("object")}}
-}
-
-// callableContext renders an agent's held context objects for a callable card.
-func callableContext(objs []resolve.ResolvedContextRef) jsonx.Value {
-	arr := jsonx.Arr{}
-	for _, ref := range objs {
-		arr = append(arr, jsonx.Obj{
-			{K: "id", V: jsonx.Str(ref.ID)},
-			{K: "contextType", V: jsonx.Str(ref.ContextType)},
-			{K: "content", V: jsonx.Str(ref.Content)},
-		})
-	}
-	return arr
-}
-
 func metadataValueJSON(value trust.MetadataValue) jsonx.Value {
 	switch v := value.(type) {
 	case nil:
@@ -562,6 +363,22 @@ func packageFiles(root string) (jsonx.Arr, error) {
 			{K: "path", V: jsonx.Str(rel)},
 			{K: "mediaType", V: jsonx.Str(mediaType(rel))},
 			{K: "content", V: jsonx.Str(content)},
+		})
+	}
+	return arr, nil
+}
+
+func sourcePackageFiles(root string) (jsonx.Arr, error) {
+	files, err := packages.SourceFiles(root)
+	if err != nil {
+		return nil, err
+	}
+	arr := jsonx.Arr{}
+	for _, file := range files {
+		arr = append(arr, jsonx.Obj{
+			{K: "path", V: jsonx.Str(file.Path)},
+			{K: "mediaType", V: jsonx.Str(mediaType(file.Path))},
+			{K: "content", V: jsonx.Str(file.Content)},
 		})
 	}
 	return arr, nil

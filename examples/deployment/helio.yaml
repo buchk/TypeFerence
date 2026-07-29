@@ -1,0 +1,27 @@
+schemaVersion: 1
+environment: local
+artifacts:
+  helio/executive-assistant@1.0.0:
+    modes: []
+  helio/payments-repo-agent@1.0.0:
+    modes: [manual]
+providers:
+  payments-agent:
+    kind: mcp
+    transport: http
+    url: https://agents.helio.example/payments-repo-agent/mcp
+  repository-signals:
+    kind: mcp
+    transport: stdio
+    command: helio-repository-signals
+    args: [--bundle, "{bundle}"]
+    environment:
+      HELIO_REPOSITORY_TOKEN:
+        fromEnvironment: HELIO_REPOSITORY_TOKEN
+toolBindings:
+  helio/tools/payments-repository-agent@1.0.0:
+    provider: payments-agent
+    remoteName: repository_status
+  helio/tools/repository-signals@1.0.0:
+    provider: repository-signals
+    remoteName: repository_signals

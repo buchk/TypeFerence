@@ -23,6 +23,9 @@ the complete graph through externally configured namespace routes, verifies
 digests, writes a canonical committed `typeference.lock`, and materializes the
 locked tree under `obj/typeference/packages`.
 
+Once present, the lock is authoritative for `restore`; only `update` may
+re-resolve and rewrite it after the author changes exact manifest dependencies.
+
 The lock records identity, exact version, digest, exports, and dependency edges.
 It never records a feed URL, credential, machine path, or retrieval timestamp.
 Build is offline and frozen: it reads a supplied materialized package directory,

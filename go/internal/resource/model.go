@@ -1,5 +1,4 @@
-// Package resource loads and validates TypeFerence typed resources
-// (docs/specification.md, schemaVersion 3) from a source directory.
+// Package resource loads and validates TypeFerence typed resources.
 package resource
 
 import "fmt"
@@ -15,6 +14,7 @@ type Document struct {
 	Emit                 bool
 	Embeds               []string
 	RequiresSlots        []string
+	RequiredSlotTypes    map[string]string
 	RequiresCapabilities []string
 	Slots                map[string]string
 	WorkingNorms         []string
@@ -36,6 +36,10 @@ type Document struct {
 	// fields (those beyond the standard keys). The declaring contextType's schema
 	// validates their presence and type (ADR-0013).
 	ContextFields map[string]FieldValue
+	// ContextTypeFields and ContextBody define the closed schemaVersion 4 native
+	// context language. Schema remains only for legacy schemaVersion 3 input.
+	ContextTypeFields map[string]ContextField
+	ContextBody       *ContextBody
 	// RequiresContextTypes are contextType ids a skill needs; the holding
 	// agent must supply context satisfying each (ADR-0013).
 	RequiresContextTypes []string
@@ -46,6 +50,9 @@ type Document struct {
 	// anything embedding it) may hold; empty means unrestricted. Intersects
 	// through embeds — the most restrictive ancestor wins (ADR-0013).
 	AllowedContextTypes []string
+	// HasAllowedContextTypes distinguishes an omitted allow-list (unrestricted)
+	// from an explicit empty list (deny all).
+	HasAllowedContextTypes bool
 	// RequiresTools are tool ids a skill depends on; each must be declared and
 	// its interface shape-checked (ADR-0017).
 	RequiresTools []string
@@ -74,6 +81,29 @@ type SkillBinding struct {
 type FieldValue struct {
 	Kind   string
 	Scalar string
+	List   []FieldValue
+	Map    map[string]FieldValue
+}
+
+// TypeExpr is one closed native context type expression.
+type TypeExpr struct {
+	Kind string
+	Elem *TypeExpr
+	Ref  string
+}
+
+// ContextField declares one schemaVersion 4 context field.
+type ContextField struct {
+	Type       TypeExpr
+	Required   bool
+	HasDefault bool
+	Default    FieldValue
+}
+
+// ContextBody declares the optional typed prose body of a contextType.
+type ContextBody struct {
+	Type     string
+	Required bool
 }
 
 // Variant is a mode-specific rendering of a multimodal skill (ADR-0012). It
@@ -88,10 +118,12 @@ type Variant struct {
 // NewDocument returns a Document carrying the spec-defined defaults.
 func NewDocument() *Document {
 	return &Document{
-		Emit:         true,
-		Slots:        map[string]string{},
-		InputSchema:  `{"type":"object","additionalProperties":false}`,
-		OutputSchema: `{"type":"object"}`,
+		Emit:              true,
+		Slots:             map[string]string{},
+		RequiredSlotTypes: map[string]string{},
+		ContextTypeFields: map[string]ContextField{},
+		InputSchema:       `{"type":"object","additionalProperties":false}`,
+		OutputSchema:      `{"type":"object"}`,
 	}
 }
 

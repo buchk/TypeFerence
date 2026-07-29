@@ -1,10 +1,11 @@
 ---
-schemaVersion: 3
+schemaVersion: 4
 kind: context
 id: helio/context/safety-policy@1.0.0
 contextType: helio/context-types/safety-policy@1.0.0
 displayName: Helio Safety Policy
-authority: explicit
+values:
+  authority: explicit
 ---
 # Safety policy
 

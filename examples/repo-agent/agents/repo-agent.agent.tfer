@@ -1,5 +1,5 @@
 ---
-schemaVersion: 3
+schemaVersion: 4
 kind: agent
 id: acme/repo-agent@1.0.0
 displayName: Acme Repo Agent

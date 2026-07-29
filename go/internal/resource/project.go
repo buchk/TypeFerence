@@ -4,42 +4,27 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"regexp"
+	"sort"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 )
 
-// Project is the optional source-root manifest (`typeference.yaml`): the
-// project's declared identity and publisher. It is the home for settings that
-// were otherwise passed on the CLI every build or derived from the folder name
-// — analogous to go.mod / Cargo.toml / package.json.
+var packageName = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]*(?:/[a-z0-9][a-z0-9.-]*)+$`)
+var semanticVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$`)
+
+// Project is the optional schemaVersion 2 source-root manifest. It contains
+// stable source identity only; feeds and deployment are external.
 type Project struct {
-	Name       string
-	Version    string
-	Publisher  string
-	Deployment Deployment
+	Name         string
+	Version      string
+	Publisher    string
+	Dependencies map[string]string
 }
 
-// Deployment declares where this project's agents actually run. TypeFerence
-// compiles definitions; it does not deploy them, so an endpoint is authored
-// here rather than invented by the compiler. Absent values stay unbound and are
-// emitted as named holes for whoever deploys to fill — the same compile-time
-// declaration / runtime body split tools use (ADR-0017).
-type Deployment struct {
-	// A2ABaseURL is the base URL serving this project's A2A agent cards. A card
-	// is a live discovery claim once published, so one is only emitted when this
-	// is declared.
-	A2ABaseURL string
-	// MCPCommand is the command that serves a compiled agent's tool manifest.
-	// When empty, target configuration emits a substitution token instead.
-	MCPCommand string
-}
-
-// ProjectManifestFile is the source-root manifest filename.
 const ProjectManifestFile = "typeference.yaml"
 
-// LoadProject reads the project manifest from a source directory. It returns
-// (nil, nil) when no manifest is present — the manifest is optional.
 func LoadProject(sourceDir string) (*Project, error) {
 	raw, err := os.ReadFile(filepath.Join(sourceDir, ProjectManifestFile))
 	if err != nil {
@@ -49,30 +34,56 @@ func LoadProject(sourceDir string) (*Project, error) {
 		return nil, Errorf("%s: %s", ProjectManifestFile, err)
 	}
 	var doc struct {
-		SchemaVersion int    `yaml:"schemaVersion"`
-		Name          string `yaml:"name"`
-		Version       string `yaml:"version"`
-		Publisher     string `yaml:"publisher"`
-		Deployment    struct {
-			A2ABaseURL string `yaml:"a2aBaseUrl"`
-			MCPCommand string `yaml:"mcpCommand"`
-		} `yaml:"deployment"`
+		SchemaVersion int               `yaml:"schemaVersion"`
+		Name          string            `yaml:"name"`
+		Version       string            `yaml:"version"`
+		Publisher     string            `yaml:"publisher"`
+		Dependencies  map[string]string `yaml:"dependencies"`
 	}
 	dec := yaml.NewDecoder(bytes.NewReader(raw))
 	dec.KnownFields(true)
 	if err := dec.Decode(&doc); err != nil {
 		return nil, Errorf("%s: invalid manifest: %s", ProjectManifestFile, err)
 	}
-	if doc.SchemaVersion != 1 {
-		return nil, Errorf("%s: schemaVersion must be 1", ProjectManifestFile)
+	if doc.SchemaVersion != 2 {
+		return nil, Errorf("%s: schemaVersion must be 2", ProjectManifestFile)
+	}
+	if !packageName.MatchString(doc.Name) {
+		return nil, Errorf("%s: name must use a lowercase namespace/name", ProjectManifestFile)
+	}
+	if !semanticVersion.MatchString(doc.Version) {
+		return nil, Errorf("%s: version must be an exact semantic version", ProjectManifestFile)
+	}
+	if strings.TrimSpace(doc.Publisher) != doc.Publisher {
+		return nil, Errorf("%s: publisher must not contain surrounding whitespace", ProjectManifestFile)
+	}
+	dependencies := map[string]string{}
+	for name, version := range doc.Dependencies {
+		if !packageName.MatchString(name) {
+			return nil, Errorf("%s: dependency '%s' must use a lowercase namespace/name", ProjectManifestFile, name)
+		}
+		if !semanticVersion.MatchString(version) {
+			return nil, Errorf("%s: dependency '%s' must use an exact semantic version", ProjectManifestFile, name)
+		}
+		dependencies[name] = version
 	}
 	return &Project{
-		Name:      doc.Name,
-		Version:   doc.Version,
-		Publisher: doc.Publisher,
-		Deployment: Deployment{
-			A2ABaseURL: strings.TrimRight(strings.TrimSpace(doc.Deployment.A2ABaseURL), "/"),
-			MCPCommand: strings.TrimSpace(doc.Deployment.MCPCommand),
-		},
+		Name:         doc.Name,
+		Version:      doc.Version,
+		Publisher:    doc.Publisher,
+		Dependencies: dependencies,
 	}, nil
 }
+
+// SortedDependencies returns dependency names in canonical order.
+func (p *Project) SortedDependencies() []string {
+	names := make([]string, 0, len(p.Dependencies))
+	for name := range p.Dependencies {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
+
+func IsPackageName(value string) bool     { return packageName.MatchString(value) }
+func IsSemanticVersion(value string) bool { return semanticVersion.MatchString(value) }

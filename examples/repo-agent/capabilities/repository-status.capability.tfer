@@ -1,5 +1,5 @@
 ---
-schemaVersion: 3
+schemaVersion: 4
 kind: capability
 id: acme/capabilities/repository-status@1.0.0
 displayName: Repository Status

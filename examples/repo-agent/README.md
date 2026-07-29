@@ -13,22 +13,23 @@ What each piece demonstrates:
 
 - **Exposure / visibility (ADR-0015).** `capabilities/repository-status` is
   `visibility: exposed`, so the resolved skill is part of the agent's public
-  callable surface (`ResolvedAgent.ExposedSkills()`), from which a callable card
-  would be emitted.
+  callable surface. A native callable card is materialized only after a
+  deployment endpoint/provider is linked.
 - **Mode variants (ADR-0012).** `skills/repository-status` declares `variants`
   for `pipeline`, `manual`, and `a2a` instead of a single `instructions`. The
-  neutral bundle emits a `variants` member (absent for unimodal skills); the
-  default rendering prefers `pipeline`.
+  neutral bundle emits a `variants` member with each mode's additive
+  requirements; build does not flatten them.
 - **Tools as extern (ADR-0017).** `tools/vault-reader` is a `tool` declaration
-  (an extern header). The skill's `requiresTools` names it, checked at build.
-  The tool's *body* is implemented by the deployer, not TypeFerence.
+  (an extern header). The skill's `requiresTools` names it, checked at build and
+  required to have a provider binding at link. The tool's *body* is implemented
+  by the deployer, not TypeFerence.
 - **Typed context + refinement (ADR-0013).** `context-types/governed-cast`
   embeds `cast-of-characters` (refinement). The skill `requiresContextTypes:
   [cast-of-characters]`; the agent holds `notes/team` — a `governed-cast` — and
   a governed cast *is a* cast, so the requirement is satisfied structurally.
-- **Schema-directed fields (ADR-0013).** `governed-cast` declares a `schema`
-  requiring an `owner` field; `notes/team` carries `owner: Dana` in its
-  frontmatter. Remove it and the build fails with a missing-required-field
+- **Schema-directed fields (ADR-0020).** `governed-cast` declares a native
+  `fields` mapping requiring `owner`; `notes/team` carries it under `values`.
+  Remove it and the build fails with a missing-required-field
   error — required fields accumulate across the refinement closure.
 - **Sealing (ADR-0016).** `profiles/repo-defaults` binds the status skill
   `sealed: true`. An agent embedding the profile may extend around it but cannot

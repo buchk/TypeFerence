@@ -1,10 +1,11 @@
 ---
-schemaVersion: 3
+schemaVersion: 4
 kind: context
 id: acme/notes/team@1.0.0
 contextType: acme/context-types/governed-cast@1.0.0
 displayName: Team Roster
-owner: Dana
+values:
+  owner: Dana
 ---
 # Team
 

@@ -9,9 +9,10 @@ import (
 var topLevelFields = []string{
 	"schemaVersion", "kind", "id", "displayName", "description", "binds",
 	"emit", "embeds", "requiresSlots", "requiresCapabilities", "slots",
-	"workingNorms", "contextFiles", "context", "skills", "instructions",
-	"inputSchema", "outputSchema", "contextType", "schema",
+	"workingNorms", "context", "skills", "instructions",
+	"inputSchema", "outputSchema", "contextType", "fields", "body", "values",
 	"requiresContextTypes", "requiresTools", "visibility", "variants",
+	"allowedContextTypes",
 }
 
 // kinds are the resource kinds offered after `kind:`.

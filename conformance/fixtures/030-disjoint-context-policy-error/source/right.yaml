@@ -1,0 +1,5 @@
+schemaVersion: 4
+kind: profile
+id: conformance/profiles/right@1.0.0
+allowedContextTypes:
+  - conformance/context-types/right@1.0.0

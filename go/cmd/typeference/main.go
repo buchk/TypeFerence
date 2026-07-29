@@ -15,8 +15,10 @@ import (
 	"strings"
 
 	"github.com/buchk/TypeFerence/go/internal/compile"
+	"github.com/buchk/TypeFerence/go/internal/deploy"
 	"github.com/buchk/TypeFerence/go/internal/eval"
 	"github.com/buchk/TypeFerence/go/internal/jsonx"
+	"github.com/buchk/TypeFerence/go/internal/packages"
 	"github.com/buchk/TypeFerence/go/internal/resource"
 )
 
@@ -39,6 +41,14 @@ func run(args []string) int {
 		code, err = validate(args)
 	case "build":
 		code, err = build(args)
+	case "pack":
+		code, err = pack(args)
+	case "restore":
+		code, err = restore(args, false)
+	case "update":
+		code, err = restore(args, true)
+	case "link":
+		code, err = link(args)
 	case "inspect":
 		code, err = inspect(args)
 	case "diff":
@@ -70,7 +80,11 @@ func validate(args []string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	agents, err := compile.Validate(source, trustConfig)
+	packagesDir, err := option(args, "--packages-dir")
+	if err != nil {
+		return 0, err
+	}
+	agents, err := compile.ValidateWithPackages(source, trustConfig, packagesDir)
 	if err != nil {
 		return 0, err
 	}
@@ -103,7 +117,11 @@ func build(args []string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	files, err := compile.Build(source, output, targets, ard)
+	packagesDir, err := option(args, "--packages-dir")
+	if err != nil {
+		return 0, err
+	}
+	files, err := compile.BuildWithOptions(source, output, targets, ard, compile.BuildOptions{PackagesDir: packagesDir})
 	if err != nil {
 		return 0, err
 	}
@@ -120,6 +138,89 @@ func build(args []string) (int, error) {
 	return 0, nil
 }
 
+func pack(args []string) (int, error) {
+	source, err := requiredArg(args, 1, "source")
+	if err != nil {
+		return 0, err
+	}
+	output, err := option(args, "--out")
+	if err != nil {
+		return 0, err
+	}
+	digest, err := packages.Pack(source, output)
+	if err != nil {
+		return 0, err
+	}
+	fmt.Printf("Packed %s\n", digest)
+	return 0, nil
+}
+
+func restore(args []string, update bool) (int, error) {
+	source, err := requiredArg(args, 1, "source")
+	if err != nil {
+		return 0, err
+	}
+	feeds, err := option(args, "--feeds")
+	if err != nil {
+		return 0, err
+	}
+	config, err := packages.LoadFeedConfig(feeds)
+	if err != nil {
+		return 0, err
+	}
+	packagesDir, err := option(args, "--packages-dir")
+	if err != nil {
+		return 0, err
+	}
+	locked := slices.Contains(args, "--locked")
+	if update && locked {
+		return 0, resource.Errorf("update cannot be combined with --locked")
+	}
+	if !update && !locked {
+		existing, err := packages.LoadLock(source)
+		if err != nil {
+			return 0, err
+		}
+		locked = existing != nil
+	}
+	restorer := packages.Restorer{
+		Source: source, PackagesDir: packagesDir, Config: config, Locked: locked,
+	}
+	lock, err := restorer.Restore()
+	if err != nil {
+		return 0, err
+	}
+	fmt.Printf("Restored %d packages%s.\n", len(lock.Packages), map[bool]string{true: " and updated the lockfile", false: ""}[update])
+	return 0, nil
+}
+
+func link(args []string) (int, error) {
+	input, err := requiredArg(args, 1, "built target")
+	if err != nil {
+		return 0, err
+	}
+	deployment, err := option(args, "--deployment")
+	if err != nil {
+		return 0, err
+	}
+	if deployment == "" {
+		return 0, resource.Errorf("--deployment is required")
+	}
+	output, err := option(args, "--out")
+	if err != nil {
+		return 0, err
+	}
+	if output == "" {
+		return 0, resource.Errorf("--out is required")
+	}
+	files, err := deploy.Link(input, deployment, output)
+	if err != nil {
+		return 0, err
+	}
+	fmt.Printf("Linked %d files at %s\n", len(files), output)
+	return 0, nil
+}
+
 func inspect(args []string) (int, error) {
 	source := "."
 	if v, err := option(args, "--source"); err != nil {
@@ -131,7 +232,11 @@ func inspect(args []string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	agents, err := compile.Validate(source, "")
+	packagesDir, err := option(args, "--packages-dir")
+	if err != nil {
+		return 0, err
+	}
+	agents, err := compile.ValidateWithPackages(source, "", packagesDir)
 	if err != nil {
 		return 0, err
 	}
@@ -176,7 +281,11 @@ func diff(args []string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	if _, err := compile.Build(source, temp, targets, ard); err != nil {
+	packagesDir, err := option(args, "--packages-dir")
+	if err != nil {
+		return 0, err
+	}
+	if _, err := compile.BuildWithOptions(source, temp, targets, ard, compile.BuildOptions{PackagesDir: packagesDir}); err != nil {
 		return 0, err
 	}
 	result, err := compile.CompareDirs(against, temp)
@@ -456,11 +565,19 @@ func help() int {
 
 Commands:
   typeference validate <source> [--trust-config path]
+      [--packages-dir obj/typeference/packages]
+  typeference pack <source> [--out package.tferpkg]
+  typeference restore <source> --feeds <external-config> [--locked]
+      [--packages-dir obj/typeference/packages]
+typeference update <source> --feeds <external-config>
+      [--packages-dir obj/typeference/packages]
   typeference build <source> [--target all|neutral|codex|copilot|cursor] [--out dist]
+      [--packages-dir obj/typeference/packages]
       [--emit-ard --publisher-domain example.com] [--trust-config path]
       [--trust-signatures signatures.json]
       [--allow-unsigned-trust]
   typeference inspect <agent-id> [--source path]
+  typeference link <built-target-dir> --deployment <file> --out <linked-dir>
   typeference diff <source> --against <compiled-dir> [--target all]
       [--emit-ard --publisher-domain example.com] [--trust-config path]
       [--trust-signatures signatures.json] [--json]

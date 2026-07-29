@@ -8,7 +8,7 @@ version from the tag at build time via `-ldflags -X main.version`).
 ## Before tagging
 
 1. On `main`, CI fully green: both test suites, the conformance suite
-   (26/26 fixtures on both implementations), and the self-host drift gate.
+   (all committed fixtures), and the self-host drift gate.
 2. `CHANGELOG.md`: move the `Unreleased` heading to the release date; confirm every
    spec-affecting entry names its ADR.
 3. `Directory.Build.props` `<Version>` matches the version being tagged.
@@ -41,7 +41,7 @@ reference output; and publishes a GitHub Release with per-platform archives and
 ## Versioning notes
 
 - Tool releases (this checklist) version the CLIs and libraries. They do **not**
-  version the source format: typed resources stay `schemaVersion: 3` and trust
+  version the source format: typed resources stay `schemaVersion: 4` and trust
   configurations `schemaVersion: 1` until an incompatible format change, which
   requires a specification change and an ADR first.
 - Pre-1.0, breaking tool changes are allowed in any release but must be listed

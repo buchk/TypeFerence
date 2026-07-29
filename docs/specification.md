@@ -105,9 +105,17 @@ and MUST fulfill every promoted requirement.
 
 ## Interfaces, capabilities, skills, and bindings
 
-Interfaces MAY require slot names and capability IDs and MAY embed interfaces.
-They provide no implementation. Satisfaction is inferred from the resolved
-member set.
+Interfaces MAY require typed slots and capability IDs and MAY embed interfaces.
+They provide no implementation. In version 4, `requiresSlots` maps each required
+slot name to a contextType ID:
+
+```yaml
+requiresSlots:
+  repository: acme/context-types/repository-evidence@1.0.0
+```
+
+The supplied slot value MUST reference a context resource satisfying that type
+or a refinement. Satisfaction is inferred from the resolved member set.
 
 A capability defines canonical JSON `inputSchema` and `outputSchema`. A skill
 declares `binds: <capability-id>` and MUST preserve those schemas byte-for-byte
@@ -189,6 +197,9 @@ Version 4 supports `string`, `text`, `boolean`, `integer`, `number`, `list<T>`,
 and may declare a type-correct scalar or collection `default`. Unknown
 constructors and unsupported constraints such as unions, `oneOf`, regular
 expressions, arbitrary `$ref`, or open properties are errors.
+Named value references are acyclic and may target field-only context types;
+a context type with a required prose body cannot be embedded as an inline field
+value.
 
 A context instance declares its type and values:
 
@@ -270,9 +281,11 @@ generated target, or VCS data is permitted.
 `typeference restore` reads the manifest, resolves the exact dependency graph from
 configured routes, verifies every package digest, rejects cycles/conflicts, writes
 `typeference.lock`, and materializes the complete graph beneath
-`obj/typeference/packages`. `restore --locked` MUST reject any manifest/lock
-disagreement and MUST NOT rewrite the lock. `typeference update <package>` is the
-explicit operation that rewrites selected lock entries.
+`obj/typeference/packages`. If a lockfile already exists, `restore` honors it and
+MUST reject any manifest/lock/feed disagreement without rewriting it;
+`restore --locked` additionally requires the lockfile to exist. `typeference
+update` is the explicit operation that re-resolves and rewrites the graph after
+the author changes exact manifest dependencies.
 
 The canonical lockfile records root manifest identity, package name/version,
 digest, exports, and dependency edges in deterministic order. It MUST NOT contain
@@ -301,12 +314,14 @@ directory after output has been written. It includes:
 It excludes `.git`, `dist`, `bin`, `obj`, restored packages, deployment files,
 feed configuration, signature maps, generated artifacts, and unreferenced files.
 Build MUST reject an output directory nested inside the source root unless the
-output path is in a normatively excluded generated directory.
+output path is in a normatively excluded generated directory. The source root
+itself is never a valid output directory.
 
 `typeference-resource-set-v1` sorts normalized source-relative paths by UTF-8 byte
 order and hashes, for each file, `path`, NUL, normalized content, NUL using
 SHA-256. Target provenance records the root source digest, the ordered locked
-dependency digests, and compiler/adapter version.
+dependency digests, and target adapter identity. Release metadata belongs to the
+distributed compiler binary, not the reproducible source-derived artifact.
 
 `typeference-directory-v1` remains the target-directory digest: recursively sort
 forward-slash paths, then hash `path`, NUL, normalized text, NUL. It applies only
@@ -318,6 +333,10 @@ Build emits deterministic **unlinked** packages for neutral, Codex, GitHub
 Copilot, and Cursor targets. Each adapter MUST represent every portable resolved
 field or emit a diagnostic. Host-native active runtime configuration is not a
 build artifact.
+
+Every emitted agent artifact path and callable dispatch name MUST be unique
+after target-native naming. If two otherwise distinct resource IDs collapse to
+the same target name, compilation fails rather than overwriting either artifact.
 
 An unlinked target contains instructions, skills, native rules, bundle metadata,
 mode requirements, tool imports, complete compiled context values, provenance,
@@ -354,27 +373,46 @@ agentEndpoints:
 ```
 
 The deployment schema is closed. Commands and arguments are distinct string
-values. Environment entries are references (`fromEnvironment` or a future
-typed secret-provider reference), never secret values. URLs MUST be absolute
-HTTPS URLs unless a transport-specific local-development option explicitly
-allows otherwise.
+values. Stdio environment entries are same-name forwarding references
+(`NAME: { fromEnvironment: NAME }`), never secret values. HTTP bearer
+authentication uses `bearerTokenEnvironment` and likewise names an environment
+variable rather than its value. URLs MUST be absolute HTTPS URLs unless a
+transport-specific local-development option explicitly allows otherwise.
 
 `typeference link <built-target> --deployment <file> --out <dir>`:
 
 1. verifies the unlinked target digest;
 2. selects the artifact modes;
 3. validates every effective tool import and endpoint requirement;
-4. structurally serializes host-native configuration;
-5. records deployment-file and materialized-artifact digests separately.
+4. emits a canonical binding manifest that preserves each source tool ID,
+   selected mode, provider, and provider-level remote name;
+5. structurally serializes host-native configuration;
+6. records deployment-file and materialized-artifact digests separately.
 
 For Codex, local stdio MCP bindings materialize `.codex/config.toml` using TOML
 string escaping; HTTP bindings use the native URL shape. Build never emits an
 active Codex MCP server entry. Equivalent target-native materialization applies
 to other adapters. Hand-concatenating unescaped deployment values is forbidden.
 
+An adapter that builds one concrete mode MUST require link to select exactly
+that mode. The initial Codex, Copilot, and Cursor adapters materialize `manual`
+for multimodal skills; they reject a deployment that claims to select another
+mode. A future adapter may carry multiple renderings and select one during link,
+but it MUST NOT validate one mode's tools while installing another mode's
+instructions.
+
+A2A Agent Cards are linked from the neutral artifact. For a multimodal agent,
+the deployment MUST select `a2a`; only exposed capabilities whose concrete skill
+is unimodal or defines an `a2a` variant are advertised.
+
 The same source and unlinked target linked for staging and production MUST retain
 identical source and unlinked-target digests. Only the linked artifact and
 deployment provenance may differ.
+
+Linked output preserves the input integrity index as historical
+`unlinked-build.json`; it MUST NOT leave that index named as though it described
+the mutated linked tree. Link provenance records a digest for each linked agent
+directory from outside that directory, avoiding a self-digest cycle.
 
 ## ARD and callable publication
 

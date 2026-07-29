@@ -7,6 +7,7 @@ package resolve
 import (
 	"encoding/json"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/buchk/TypeFerence/go/internal/jsonx"
@@ -42,26 +43,31 @@ type ResolvedSkill struct {
 	// Variants maps mode name to that mode's instructions for a multimodal
 	// skill (ADR-0012); nil for a unimodal skill. Instructions above holds the
 	// default (neutral) variant's rendering.
-	Variants   map[string]string
-	Provenance []ProvenanceEntry
+	Variants map[string]string
+	// Variant requirements remain attached to their mode. Base requirements
+	// above apply to every mode.
+	VariantContextRequirements map[string][]string
+	VariantToolRequirements    map[string][]string
+	Provenance                 []ProvenanceEntry
 }
 
 // ResolvedAgent is a fully composed agent or profile.
 type ResolvedAgent struct {
-	ID                  string
-	DisplayName         string
-	Description         string
-	Emit                bool
-	Embeds              []string
-	Satisfies           []string
-	Slots               map[string]string
-	SlotKeys            []string // canonical order for Slots
-	WorkingNorms        []string
-	ContextFiles        []string
-	Context             []string
-	ContextObjects      []ResolvedContextRef
-	AllowedContextTypes []string
-	Skills              []ResolvedSkill
+	ID                     string
+	DisplayName            string
+	Description            string
+	Emit                   bool
+	Embeds                 []string
+	Satisfies              []string
+	Slots                  map[string]string
+	SlotKeys               []string // canonical order for Slots
+	WorkingNorms           []string
+	ContextFiles           []string
+	Context                []string
+	ContextObjects         []ResolvedContextRef
+	AllowedContextTypes    []string
+	HasAllowedContextTypes bool
+	Skills                 []ResolvedSkill
 	// RequiredCapabilities are the capability ids mandated by this component or
 	// anything it embeds. A profile may carry ones it does not bind (an abstract
 	// requirement); a resolved agent never can (ADR-0016).
@@ -76,12 +82,16 @@ type ResolvedContextRef struct {
 	ID          string
 	DisplayName string
 	ContextType string
+	Satisfies   []string
 	Content     string
+	Values      map[string]resource.FieldValue
+	ValuesJSON  string
 }
 
 type interfaceContract struct {
-	slots  []string
-	skills []string
+	slots     []string
+	slotTypes map[string]string
+	skills    []string
 }
 
 // Resolver composes resources into resolved agents.
@@ -120,6 +130,17 @@ func (r *Resolver) ResolveAll() ([]*ResolvedAgent, error) {
 	for _, id := range r.idsOfKind("contextType") {
 		if _, err := r.contextTypeClosure(id, map[string]bool{}); err != nil {
 			return nil, err
+		}
+		if r.resources[id].SchemaVersion == 4 {
+			if _, _, err := r.nativeContextShape(id); err != nil {
+				return nil, err
+			}
+			if err := r.validateContextValueTypeGraph(id, map[string]bool{}); err != nil {
+				return nil, err
+			}
+			if err := r.validateNativeDefaults(id); err != nil {
+				return nil, err
+			}
 		}
 	}
 	for _, id := range r.idsOfKind("context") {
@@ -217,7 +238,7 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 	}
 	norms := distinct(concatNorms(embedded, current))
 	contexts := distinct(normalizeAll(concatContexts(embedded, current)))
-	contextRefs := distinct(concatContextRefs(embedded, current))
+	contextRefs := distinct(append(concatContextRefs(embedded, current), slotContextRefs(slots, slotKeys)...))
 	allowedContextTypes := intersectAllowLists(embedded, current)
 	skills, skillDepths, err := r.mergeSkills(id, current, embedded, contexts)
 	if err != nil {
@@ -243,7 +264,7 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 		if err := r.checkSkillDependencies(id, skills, contextRefs); err != nil {
 			return nil, err
 		}
-		if err := r.checkAllowedContext(id, contextRefs, allowedContextTypes); err != nil {
+		if err := r.checkAllowedContext(id, contextRefs, allowedContextTypes, hasAllowedContextTypes(embedded, current)); err != nil {
 			return nil, err
 		}
 	}
@@ -254,7 +275,7 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 		if ifErr != nil {
 			return nil, ifErr
 		}
-		if satisfiesContract(contract, slots, skills) {
+		if r.satisfiesContract(contract, slots, skills) {
 			satisfies = append(satisfies, interfaceID)
 		}
 	}
@@ -295,32 +316,40 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 	}
 
 	sortedSkills := make([]ResolvedSkill, 0, len(skills))
+	dispatchOwners := map[string]string{}
 	capabilityIDs := make([]string, 0, len(skills))
 	for capabilityID := range skills {
 		capabilityIDs = append(capabilityIDs, capabilityID)
 	}
 	sort.Strings(capabilityIDs)
 	for _, capabilityID := range capabilityIDs {
-		sortedSkills = append(sortedSkills, withDispatch(skills[capabilityID], id))
+		skill := withDispatch(skills[capabilityID], id)
+		if prior, duplicate := dispatchOwners[skill.DispatchName]; duplicate {
+			return nil, resource.Errorf("%s: capabilities %s and %s produce the same target dispatch name %s",
+				id, prior, capabilityID, skill.DispatchName)
+		}
+		dispatchOwners[skill.DispatchName] = capabilityID
+		sortedSkills = append(sortedSkills, skill)
 	}
 
 	resolved := &ResolvedAgent{
-		ID:                   id,
-		DisplayName:          displayName,
-		Description:          current.Description,
-		Emit:                 current.Emit,
-		Embeds:               append([]string{}, current.Embeds...),
-		Satisfies:            satisfies,
-		Slots:                slots,
-		SlotKeys:             slotKeys,
-		WorkingNorms:         norms,
-		ContextFiles:         contexts,
-		Context:              contextRefs,
-		ContextObjects:       r.resolveContextObjects(contextRefs),
-		AllowedContextTypes:  allowedContextTypes,
-		Skills:               sortedSkills,
-		RequiredCapabilities: requiredCapabilities,
-		Provenance:           provenance,
+		ID:                     id,
+		DisplayName:            displayName,
+		Description:            current.Description,
+		Emit:                   current.Emit,
+		Embeds:                 append([]string{}, current.Embeds...),
+		Satisfies:              satisfies,
+		Slots:                  slots,
+		SlotKeys:               slotKeys,
+		WorkingNorms:           norms,
+		ContextFiles:           contexts,
+		Context:                contextRefs,
+		ContextObjects:         r.resolveContextObjects(contextRefs),
+		AllowedContextTypes:    allowedContextTypes,
+		HasAllowedContextTypes: hasAllowedContextTypes(embedded, current),
+		Skills:                 sortedSkills,
+		RequiredCapabilities:   requiredCapabilities,
+		Provenance:             provenance,
 	}
 	r.slotDepths[id] = slotDepths
 	r.skillDepths[id] = skillDepths
@@ -520,19 +549,21 @@ func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded [
 			instructions = defaultInstructions
 		}
 		result[capabilityID] = ResolvedSkill{
-			CapabilityID:         capabilityID,
-			ImplementationID:     implementation.ID,
-			Description:          implementation.Description,
-			Instructions:         instructions,
-			Variants:             variants,
-			InputSchema:          inputSchema,
-			OutputSchema:         outputSchema,
-			ContextFiles:         distinct(append(append([]string{}, contexts...), normalizeAll(implementation.ContextFiles)...)),
-			RequiresContextTypes: aggregateContextRequirements(implementation),
-			RequiresTools:        aggregateToolRequirements(implementation),
-			Exposed:              capability.Visibility == "exposed",
-			Sealed:               binding.Sealed,
-			Required:             binding.Required,
+			CapabilityID:               capabilityID,
+			ImplementationID:           implementation.ID,
+			Description:                implementation.Description,
+			Instructions:               instructions,
+			Variants:                   variants,
+			InputSchema:                inputSchema,
+			OutputSchema:               outputSchema,
+			ContextFiles:               distinct(append(append([]string{}, contexts...), normalizeAll(implementation.ContextFiles)...)),
+			RequiresContextTypes:       append([]string{}, implementation.RequiresContextTypes...),
+			RequiresTools:              append([]string{}, implementation.RequiresTools...),
+			VariantContextRequirements: variantContextRequirements(implementation),
+			VariantToolRequirements:    variantToolRequirements(implementation),
+			Exposed:                    capability.Visibility == "exposed",
+			Sealed:                     binding.Sealed,
+			Required:                   binding.Required,
 			Provenance: []ProvenanceEntry{
 				{Field: "skill.capability", Source: capabilityID},
 				{Field: "skill.implementation", Source: implementation.ID},
@@ -642,6 +673,7 @@ func (r *Resolver) resolveInterface(id string, visiting map[string]bool) (*inter
 	defer delete(visiting, id)
 
 	slots := []string{}
+	slotTypes := map[string]string{}
 	skills := []string{}
 	for _, embedID := range current.Embeds {
 		embedded, embErr := r.resolveInterface(embedID, visiting)
@@ -649,6 +681,12 @@ func (r *Resolver) resolveInterface(id string, visiting map[string]bool) (*inter
 			return nil, embErr
 		}
 		slots = append(slots, embedded.slots...)
+		for name, contextType := range embedded.slotTypes {
+			if prior, exists := slotTypes[name]; exists && prior != contextType {
+				return nil, resource.Errorf("%s: embedded interfaces require incompatible context types for slot %s", id, name)
+			}
+			slotTypes[name] = contextType
+		}
 		skills = append(skills, embedded.skills...)
 	}
 	for _, capability := range current.RequiresCapabilities {
@@ -656,18 +694,36 @@ func (r *Resolver) resolveInterface(id string, visiting map[string]bool) (*inter
 			return nil, capErr
 		}
 	}
+	for name, contextType := range current.RequiredSlotTypes {
+		if _, err := r.require(contextType, "contextType"); err != nil {
+			return nil, err
+		}
+		slotTypes[name] = contextType
+	}
 	contract := &interfaceContract{
-		slots:  distinct(append(slots, current.RequiresSlots...)),
-		skills: distinct(append(skills, current.RequiresCapabilities...)),
+		slots:     distinct(append(slots, current.RequiresSlots...)),
+		slotTypes: slotTypes,
+		skills:    distinct(append(skills, current.RequiresCapabilities...)),
 	}
 	r.interfaceCache[id] = contract
 	return contract, nil
 }
 
-func satisfiesContract(contract *interfaceContract, slots map[string]string, skills map[string]ResolvedSkill) bool {
+func (r *Resolver) satisfiesContract(contract *interfaceContract, slots map[string]string, skills map[string]ResolvedSkill) bool {
 	for _, slot := range contract.slots {
-		if _, ok := slots[slot]; !ok {
+		value, ok := slots[slot]
+		if !ok {
 			return false
+		}
+		if requiredType := contract.slotTypes[slot]; requiredType != "" {
+			context, exists := r.resources[value]
+			if !exists || context.Kind != "context" {
+				return false
+			}
+			closure, err := r.contextTypeClosure(context.ContextType, map[string]bool{})
+			if err != nil || !contains(closure, requiredType) {
+				return false
+			}
 		}
 	}
 	for _, skill := range contract.skills {
@@ -676,6 +732,15 @@ func satisfiesContract(contract *interfaceContract, slots map[string]string, ski
 		}
 	}
 	return true
+}
+
+func contains(values []string, wanted string) bool {
+	for _, value := range values {
+		if value == wanted {
+			return true
+		}
+	}
+	return false
 }
 
 // contextTypeClosure returns the set of contextType ids a context object of the
@@ -726,6 +791,9 @@ func (r *Resolver) providedContextTypes(objectIDs []string) (map[string]bool, er
 // (and every type it refines): required fields are present, and each declared
 // field's structural type matches (ADR-0013).
 func (r *Resolver) validateContextFields(obj *resource.Document) error {
+	if obj.SchemaVersion == 4 {
+		return r.validateNativeContext(obj)
+	}
 	closure, err := r.contextTypeClosure(obj.ContextType, map[string]bool{})
 	if err != nil {
 		return err
@@ -858,6 +926,20 @@ func (r *Resolver) checkSkillDependencies(agentID string, skills map[string]Reso
 					agentID, skill.ImplementationID, toolID)
 			}
 		}
+		for _, mode := range sortedRequirementModes(skill) {
+			for _, required := range skill.VariantContextRequirements[mode] {
+				if _, err := r.require(required, "contextType"); err != nil {
+					return resource.Errorf("%s: skill %s variant %s requires context type %s, which is not declared",
+						agentID, skill.ImplementationID, mode, required)
+				}
+			}
+			for _, toolID := range skill.VariantToolRequirements[mode] {
+				if _, err := r.require(toolID, "tool"); err != nil {
+					return resource.Errorf("%s: skill %s variant %s requires tool %s, which is not declared",
+						agentID, skill.ImplementationID, mode, toolID)
+				}
+			}
+		}
 	}
 	return nil
 }
@@ -885,23 +967,286 @@ func resolveVariants(v map[string]resource.Variant) (string, map[string]string) 
 	return resolved[names[0]], resolved
 }
 
-// aggregateContextRequirements unions a skill's context-type requirements with
-// every variant's, since a multimodal skill emits all of its variants and the
-// agent must satisfy each (ADR-0012 per-variant narrowing; ADR-0013).
-func aggregateContextRequirements(impl *resource.Document) []string {
-	reqs := append([]string{}, impl.RequiresContextTypes...)
-	for _, mode := range sortedKeys(impl.Variants) {
-		reqs = append(reqs, impl.Variants[mode].RequiresContextTypes...)
+func variantContextRequirements(impl *resource.Document) map[string][]string {
+	if len(impl.Variants) == 0 {
+		return nil
 	}
-	return distinct(reqs)
+	result := map[string][]string{}
+	for _, mode := range sortedKeys(impl.Variants) {
+		result[mode] = distinct(append([]string{}, impl.Variants[mode].RequiresContextTypes...))
+	}
+	return result
 }
 
-func aggregateToolRequirements(impl *resource.Document) []string {
-	reqs := append([]string{}, impl.RequiresTools...)
-	for _, mode := range sortedKeys(impl.Variants) {
-		reqs = append(reqs, impl.Variants[mode].RequiresTools...)
+func (r *Resolver) validateNativeContext(obj *resource.Document) error {
+	fields, bodyRequired, err := r.nativeContextShape(obj.ContextType)
+	if err != nil {
+		return resource.Errorf("%s: %s", obj.ID, err)
 	}
-	return distinct(reqs)
+	if obj.ContextFields == nil {
+		obj.ContextFields = map[string]resource.FieldValue{}
+	}
+	for name := range obj.ContextFields {
+		if _, declared := fields[name]; !declared {
+			return resource.Errorf("%s: unknown context field %q", obj.ID, name)
+		}
+	}
+	for _, name := range sortedContextFieldKeys(fields) {
+		field := fields[name]
+		value, present := obj.ContextFields[name]
+		if !present && field.HasDefault {
+			value = cloneFieldValue(field.Default)
+			obj.ContextFields[name] = value
+			present = true
+		}
+		if !present {
+			if field.Required {
+				return resource.Errorf("%s: missing required context field %q", obj.ID, name)
+			}
+			continue
+		}
+		materialized, err := r.materializeNativeValue(value, field.Type, name)
+		if err != nil {
+			return resource.Errorf("%s: %s", obj.ID, err)
+		}
+		obj.ContextFields[name] = materialized
+	}
+	if bodyRequired && strings.TrimSpace(obj.Content) == "" {
+		return resource.Errorf("%s: its contextType requires a text body", obj.ID)
+	}
+	return nil
+}
+
+func (r *Resolver) nativeContextShape(id string) (map[string]resource.ContextField, bool, error) {
+	closure, err := r.contextTypeClosure(id, map[string]bool{})
+	if err != nil {
+		return nil, false, err
+	}
+	fields := map[string]resource.ContextField{}
+	bodyRequired := false
+	// Closure is derived-first. Apply bases first so a valid refinement can
+	// strengthen optional -> required.
+	for i := len(closure) - 1; i >= 0; i-- {
+		ct := r.resources[closure[i]]
+		if ct.SchemaVersion != 4 {
+			return nil, false, resource.Errorf("native contextType %s cannot refine legacy schemaVersion %d type %s", id, ct.SchemaVersion, ct.ID)
+		}
+		if ct.ContextBody != nil && ct.ContextBody.Required {
+			bodyRequired = true
+		}
+		for _, name := range sortedContextFieldKeys(ct.ContextTypeFields) {
+			next := ct.ContextTypeFields[name]
+			if prior, exists := fields[name]; exists {
+				if !sameTypeExpr(prior.Type, next.Type) {
+					return nil, false, resource.Errorf("contextType %s changes inherited field %q's type", ct.ID, name)
+				}
+				if prior.Required && !next.Required {
+					return nil, false, resource.Errorf("contextType %s weakens inherited required field %q", ct.ID, name)
+				}
+				if prior.HasDefault && !next.HasDefault {
+					next.HasDefault = true
+					next.Default = cloneFieldValue(prior.Default)
+				}
+			}
+			fields[name] = next
+		}
+	}
+	return fields, bodyRequired, nil
+}
+
+func (r *Resolver) validateNativeValue(value resource.FieldValue, typ resource.TypeExpr, field string) error {
+	_, err := r.materializeNativeValue(value, typ, field)
+	return err
+}
+
+func (r *Resolver) materializeNativeValue(value resource.FieldValue, typ resource.TypeExpr, field string) (resource.FieldValue, error) {
+	switch typ.Kind {
+	case "string", "text":
+		if value.Kind != "scalar" {
+			return value, resource.Errorf("field %q must be %s, got %s", field, typ.Kind, value.Kind)
+		}
+	case "boolean":
+		if value.Kind != "scalar" || (value.Scalar != "true" && value.Scalar != "false") {
+			return value, resource.Errorf("field %q must be boolean true or false", field)
+		}
+	case "integer":
+		if value.Kind != "scalar" {
+			return value, resource.Errorf("field %q must be an integer", field)
+		}
+		if _, err := strconv.ParseInt(value.Scalar, 10, 64); err != nil {
+			return value, resource.Errorf("field %q must be an integer", field)
+		}
+		if parsed, err := jsonx.Parse(value.Scalar); err != nil {
+			return value, resource.Errorf("field %q must use a canonical JSON integer token", field)
+		} else if _, ok := parsed.(jsonx.Num); !ok || strings.ContainsAny(value.Scalar, ".eE") {
+			return value, resource.Errorf("field %q must be an integer", field)
+		}
+	case "number":
+		if value.Kind != "scalar" {
+			return value, resource.Errorf("field %q must be a number", field)
+		}
+		if _, err := strconv.ParseFloat(value.Scalar, 64); err != nil {
+			return value, resource.Errorf("field %q must be a number", field)
+		}
+		if parsed, err := jsonx.Parse(value.Scalar); err != nil {
+			return value, resource.Errorf("field %q must use a canonical JSON number token", field)
+		} else if _, ok := parsed.(jsonx.Num); !ok {
+			return value, resource.Errorf("field %q must be a number", field)
+		}
+	case "list":
+		if value.Kind != "list" {
+			return value, resource.Errorf("field %q must be a list", field)
+		}
+		for i, item := range value.List {
+			materialized, err := r.materializeNativeValue(item, *typ.Elem, field+"["+strconv.Itoa(i)+"]")
+			if err != nil {
+				return value, err
+			}
+			value.List[i] = materialized
+		}
+	case "map":
+		if value.Kind != "map" {
+			return value, resource.Errorf("field %q must be a map", field)
+		}
+		for _, key := range sortedFieldValueKeys(value.Map) {
+			materialized, err := r.materializeNativeValue(value.Map[key], *typ.Elem, field+"."+key)
+			if err != nil {
+				return value, err
+			}
+			value.Map[key] = materialized
+		}
+	case "ref":
+		if value.Kind != "map" {
+			return value, resource.Errorf("field %q must be a value of named context type %s", field, typ.Ref)
+		}
+		fields, bodyRequired, err := r.nativeContextShape(typ.Ref)
+		if err != nil {
+			return value, err
+		}
+		if bodyRequired {
+			return value, resource.Errorf("field %q cannot embed named context type %s because it requires a text body", field, typ.Ref)
+		}
+		for key := range value.Map {
+			if _, ok := fields[key]; !ok {
+				return value, resource.Errorf("field %q has unknown member %q for %s", field, key, typ.Ref)
+			}
+		}
+		for _, key := range sortedContextFieldKeys(fields) {
+			member, present := value.Map[key]
+			if !present && fields[key].HasDefault {
+				member = cloneFieldValue(fields[key].Default)
+				present = true
+			}
+			if !present {
+				if fields[key].Required {
+					return value, resource.Errorf("field %q is missing required member %q", field, key)
+				}
+				continue
+			}
+			materialized, err := r.materializeNativeValue(member, fields[key].Type, field+"."+key)
+			if err != nil {
+				return value, err
+			}
+			value.Map[key] = materialized
+		}
+	default:
+		return value, resource.Errorf("field %q uses unsupported type %q", field, typ.Kind)
+	}
+	return value, nil
+}
+
+func (r *Resolver) validateNativeDefaults(id string) error {
+	fields, _, err := r.nativeContextShape(id)
+	if err != nil {
+		return err
+	}
+	for _, name := range sortedContextFieldKeys(fields) {
+		field := fields[name]
+		if !field.HasDefault {
+			continue
+		}
+		if _, err := r.materializeNativeValue(cloneFieldValue(field.Default), field.Type, name+" default"); err != nil {
+			return resource.Errorf("contextType %s: %s", id, err)
+		}
+	}
+	return nil
+}
+
+func (r *Resolver) validateContextValueTypeGraph(id string, visiting map[string]bool) error {
+	if visiting[id] {
+		return resource.Errorf("named context value type cycle detected at %s", id)
+	}
+	visiting[id] = true
+	defer delete(visiting, id)
+	fields, _, err := r.nativeContextShape(id)
+	if err != nil {
+		return err
+	}
+	for _, name := range sortedContextFieldKeys(fields) {
+		for _, ref := range typeExprRefs(fields[name].Type) {
+			if err := r.validateContextValueTypeGraph(ref, visiting); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func typeExprRefs(typ resource.TypeExpr) []string {
+	if typ.Kind == "ref" {
+		return []string{typ.Ref}
+	}
+	if typ.Elem != nil {
+		return typeExprRefs(*typ.Elem)
+	}
+	return nil
+}
+
+func sameTypeExpr(a, b resource.TypeExpr) bool {
+	if a.Kind != b.Kind || a.Ref != b.Ref || (a.Elem == nil) != (b.Elem == nil) {
+		return false
+	}
+	return a.Elem == nil || sameTypeExpr(*a.Elem, *b.Elem)
+}
+
+func sortedContextFieldKeys(values map[string]resource.ContextField) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func sortedFieldValueKeys(values map[string]resource.FieldValue) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func variantToolRequirements(impl *resource.Document) map[string][]string {
+	if len(impl.Variants) == 0 {
+		return nil
+	}
+	result := map[string][]string{}
+	for _, mode := range sortedKeys(impl.Variants) {
+		result[mode] = distinct(append([]string{}, impl.Variants[mode].RequiresTools...))
+	}
+	return result
+}
+
+func sortedRequirementModes(skill ResolvedSkill) []string {
+	set := map[string]bool{}
+	for mode := range skill.VariantContextRequirements {
+		set[mode] = true
+	}
+	for mode := range skill.VariantToolRequirements {
+		set[mode] = true
+	}
+	return sortedStringSet(set)
 }
 
 func sortedKeys(m map[string]resource.Variant) []string {
@@ -919,11 +1264,11 @@ func sortedKeys(m map[string]resource.Variant) []string {
 func intersectAllowLists(embedded []*ResolvedAgent, current *resource.Document) []string {
 	lists := [][]string{}
 	for _, c := range embedded {
-		if len(c.AllowedContextTypes) > 0 {
+		if c.HasAllowedContextTypes || len(c.AllowedContextTypes) > 0 {
 			lists = append(lists, c.AllowedContextTypes)
 		}
 	}
-	if len(current.AllowedContextTypes) > 0 {
+	if current.HasAllowedContextTypes || len(current.AllowedContextTypes) > 0 {
 		lists = append(lists, current.AllowedContextTypes)
 	}
 	if len(lists) == 0 {
@@ -946,11 +1291,23 @@ func intersectAllowLists(embedded []*ResolvedAgent, current *resource.Document) 
 	return distinct(result)
 }
 
+func hasAllowedContextTypes(embedded []*ResolvedAgent, current *resource.Document) bool {
+	if current.HasAllowedContextTypes || len(current.AllowedContextTypes) > 0 {
+		return true
+	}
+	for _, component := range embedded {
+		if component.HasAllowedContextTypes || len(component.AllowedContextTypes) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 // checkAllowedContext verifies each held context object satisfies at least one
-// allowed contextType (through its refinement closure). Unrestricted when the
-// effective allow-list is empty (ADR-0013).
-func (r *Resolver) checkAllowedContext(agentID string, contextRefs, allowed []string) error {
-	if len(allowed) == 0 {
+// allowed contextType. An explicit empty list is deny-all; omission is
+// unrestricted.
+func (r *Resolver) checkAllowedContext(agentID string, contextRefs, allowed []string, constrained bool) error {
+	if !constrained {
 		return nil
 	}
 	allowSet := map[string]bool{}
@@ -988,16 +1345,101 @@ func (r *Resolver) resolveContextObjects(contextRefs []string) []ResolvedContext
 	refs := []ResolvedContextRef{}
 	for _, id := range contextRefs {
 		if obj, ok := r.resources[id]; ok && obj.Kind == "context" {
+			satisfies, _ := r.contextTypeClosure(obj.ContextType, map[string]bool{})
 			refs = append(refs, ResolvedContextRef{
 				ID:          id,
 				DisplayName: obj.DisplayName,
 				ContextType: obj.ContextType,
+				Satisfies:   satisfies,
 				Content:     obj.Content,
+				Values:      cloneFieldValues(obj.ContextFields),
+				ValuesJSON:  r.contextValuesJSON(obj),
 			})
 		}
 	}
 	sort.Slice(refs, func(i, j int) bool { return refs[i].ID < refs[j].ID })
 	return refs
+}
+
+func (r *Resolver) contextValuesJSON(obj *resource.Document) string {
+	if obj.SchemaVersion != 4 {
+		return "{}"
+	}
+	fields, _, err := r.nativeContextShape(obj.ContextType)
+	if err != nil {
+		return "{}"
+	}
+	out := jsonx.Obj{}
+	for _, name := range sortedContextFieldKeys(fields) {
+		value, present := obj.ContextFields[name]
+		if !present {
+			continue
+		}
+		out = append(out, jsonx.Member{K: name, V: r.nativeValueJSON(value, fields[name].Type)})
+	}
+	return jsonx.Compact(out)
+}
+
+func (r *Resolver) nativeValueJSON(value resource.FieldValue, typ resource.TypeExpr) jsonx.Value {
+	switch typ.Kind {
+	case "boolean":
+		return jsonx.Bool(value.Scalar == "true")
+	case "integer", "number":
+		parsed, err := jsonx.Parse(value.Scalar)
+		if err == nil {
+			return parsed
+		}
+		return jsonx.Str(value.Scalar)
+	case "list":
+		arr := jsonx.Arr{}
+		for _, item := range value.List {
+			arr = append(arr, r.nativeValueJSON(item, *typ.Elem))
+		}
+		return arr
+	case "map":
+		obj := jsonx.Obj{}
+		for _, key := range sortedFieldValueKeys(value.Map) {
+			obj = append(obj, jsonx.Member{K: key, V: r.nativeValueJSON(value.Map[key], *typ.Elem)})
+		}
+		return obj
+	case "ref":
+		fields, _, err := r.nativeContextShape(typ.Ref)
+		if err != nil {
+			return jsonx.Obj{}
+		}
+		obj := jsonx.Obj{}
+		for _, key := range sortedFieldValueKeys(value.Map) {
+			obj = append(obj, jsonx.Member{K: key, V: r.nativeValueJSON(value.Map[key], fields[key].Type)})
+		}
+		return obj
+	default:
+		return jsonx.Str(value.Scalar)
+	}
+}
+
+func cloneFieldValues(values map[string]resource.FieldValue) map[string]resource.FieldValue {
+	if values == nil {
+		return nil
+	}
+	out := make(map[string]resource.FieldValue, len(values))
+	for key, value := range values {
+		out[key] = cloneFieldValue(value)
+	}
+	return out
+}
+
+func cloneFieldValue(value resource.FieldValue) resource.FieldValue {
+	cloned := resource.FieldValue{Kind: value.Kind, Scalar: value.Scalar}
+	if value.List != nil {
+		cloned.List = make([]resource.FieldValue, len(value.List))
+		for i, item := range value.List {
+			cloned.List[i] = cloneFieldValue(item)
+		}
+	}
+	if value.Map != nil {
+		cloned.Map = cloneFieldValues(value.Map)
+	}
+	return cloned
 }
 
 func concatContextRefs(embedded []*ResolvedAgent, current *resource.Document) []string {
@@ -1006,6 +1448,16 @@ func concatContextRefs(embedded []*ResolvedAgent, current *resource.Document) []
 		values = append(values, component.Context...)
 	}
 	return append(values, current.Context...)
+}
+
+func slotContextRefs(slots map[string]string, keys []string) []string {
+	refs := []string{}
+	for _, key := range keys {
+		if resource.IsResourceID(slots[key]) {
+			refs = append(refs, slots[key])
+		}
+	}
+	return refs
 }
 
 func (r *Resolver) require(id, kind string) (*resource.Document, error) {

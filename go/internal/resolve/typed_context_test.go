@@ -115,3 +115,55 @@ func TestToolInvalidSchemaRejected(t *testing.T) {
 		t.Fatalf("expected invalid tool schema error, got %v", err)
 	}
 }
+
+func TestNamedContextValuesMaterializeDefaultsAndPreserveScalarTypes(t *testing.T) {
+	nested := doc("contextType", "t/ct/nested@1.0.0", func(d *resource.Document) {
+		d.SchemaVersion = 4
+		d.ContextTypeFields = map[string]resource.ContextField{
+			"label": {Type: resource.TypeExpr{Kind: "string"}, Required: true},
+			"enabled": {
+				Type:       resource.TypeExpr{Kind: "boolean"},
+				HasDefault: true,
+				Default:    resource.FieldValue{Kind: "scalar", Scalar: "true"},
+			},
+		}
+	})
+	wrapper := doc("contextType", "t/ct/wrapper@1.0.0", func(d *resource.Document) {
+		d.SchemaVersion = 4
+		d.ContextTypeFields = map[string]resource.ContextField{
+			"nested": {Type: resource.TypeExpr{Kind: "ref", Ref: nested.ID}, Required: true},
+		}
+	})
+	value := doc("context", "t/context/value@1.0.0", func(d *resource.Document) {
+		d.SchemaVersion = 4
+		d.ContextType = wrapper.ID
+		d.ContextFields = map[string]resource.FieldValue{
+			"nested": {Kind: "map", Map: map[string]resource.FieldValue{
+				"label": {Kind: "scalar", Scalar: "ready"},
+			}},
+		}
+	})
+	agent := doc("agent", "t/agent@1.0.0", func(d *resource.Document) {
+		d.SchemaVersion = 4
+		d.Context = []string{value.ID}
+	})
+	resolved, err := New(docSet(nested, wrapper, value, agent)).ResolveAll()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := resolved[0].ContextObjects[0].ValuesJSON; got != `{"nested":{"enabled":true,"label":"ready"}}` {
+		t.Fatalf("named value was not materialized with typed defaults: %s", got)
+	}
+}
+
+func TestNamedContextValueCyclesRejected(t *testing.T) {
+	cyclic := doc("contextType", "t/ct/cyclic@1.0.0", func(d *resource.Document) {
+		d.SchemaVersion = 4
+		d.ContextTypeFields = map[string]resource.ContextField{
+			"next": {Type: resource.TypeExpr{Kind: "ref", Ref: "t/ct/cyclic@1.0.0"}},
+		}
+	})
+	if _, err := New(docSet(cyclic)).ResolveAll(); err == nil || !strings.Contains(err.Error(), "value type cycle") {
+		t.Fatalf("expected recursive named value type diagnostic, got %v", err)
+	}
+}

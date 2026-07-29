@@ -2,9 +2,9 @@
   "description": "Interfaces embed interfaces; agents satisfy them structurally without any implements declaration.",
   "expect": "success",
   "digests": {
-    "codex": "sha256:390449b169c6447189c9c3b1b83abce7667f2c4b724bc10853a3f5a19a7b856b",
-    "copilot": "sha256:48c1d3b17f64c587e88b775e02dc009b08eb372a7cc6083f5fd54813b7b777c6",
-    "cursor": "sha256:834f7d4da4c7185b75bc2755cee227684b4d57ffb5e1e4e6cd00eb28c5be1545",
-    "neutral": "sha256:f649f40e03ab11569f51f1b8a781350e42f769027e306018380dc2d68a29fc70"
+    "codex": "sha256:fe014bdcccba7b47409f9573851110f6e5b2a4237d2623d73b785cf6c3f92220",
+    "copilot": "sha256:9b0bbf96c5e3e3580f60e0b16db32886d6fbcaef7be8f4b72e4f639a4d4a24f6",
+    "cursor": "sha256:b05bce4e7291d3e5707f61614ebfffe718a817ac7cc4e27fa3c3c805232bb0ab",
+    "neutral": "sha256:c547022a6f6d5eecb7bbb3a00256c04f764176b0852775b95885320e0f71c109"
   }
 }
