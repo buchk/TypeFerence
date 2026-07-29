@@ -24,6 +24,7 @@ func buildCatalog(t *testing.T, exposed bool) string {
 	writeSrc(t, src, "cap.yaml", "schemaVersion: 3\nkind: capability\nid: acme/cap/c@1.0.0\n"+vis)
 	writeSrc(t, src, "skill.yaml", "schemaVersion: 3\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/cap/c@1.0.0\ninstructions: do it\n")
 	writeSrc(t, src, "agent.yaml", "schemaVersion: 3\nkind: agent\nid: acme/agent@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n")
+	writeSrc(t, src, "typeference.yaml", "schemaVersion: 1\nname: acme\nversion: 1.0.0\ndeployment:\n  a2aBaseUrl: https://acme.example/a2a\n")
 	out := t.TempDir()
 	targets, err := ParseTargets("neutral")
 	if err != nil {

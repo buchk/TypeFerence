@@ -2,7 +2,7 @@
   "description": "A promoted skill keeps the context list resolved where it was bound; the outer agent's extra context files do not leak into the promoted skill.",
   "expect": "success",
   "digests": {
-    "codex": "sha256:aadc135137def478e6661a47eaabb840edad266a2cc55b1c5f58f57ef7ed357a",
+    "codex": "sha256:ae279ef6360351e769ef4e29cdb3516d7b101deced376cef9d04bea196b9eb98",
     "copilot": "sha256:0fb0e5507a3ba9e80665b30fbb6a2211e967ef2bb01a246ed4b7041a5fdc5dca",
     "cursor": "sha256:c39aaed1b48917075aab9a4aa35894cf6840e770b82ba65a493e60c820bcbcf3",
     "neutral": "sha256:61f9c3147c940916bdd142b5709c13ffccd8f0b9865e5156bea9577d50eda8a0"

@@ -91,6 +91,14 @@ func Build(source, output string, targets []Target, ard *ArdPublicationOptions) 
 	if err != nil {
 		return nil, err
 	}
+	project, err := resource.LoadProject(source)
+	if err != nil {
+		return nil, err
+	}
+	deployment := resource.Deployment{}
+	if project != nil {
+		deployment = project.Deployment
+	}
 	all, err := resolve.New(resources).ResolveAll()
 	if err != nil {
 		return nil, err
@@ -124,7 +132,7 @@ func Build(source, output string, targets []Target, ard *ArdPublicationOptions) 
 			return nil, resource.Errorf("Cannot create target directory: %s", targetRoot)
 		}
 		for _, agent := range agents {
-			if err := writeTarget(target, targetRoot, agent, &written); err != nil {
+			if err := writeTarget(target, targetRoot, agent, deployment, &written); err != nil {
 				return nil, err
 			}
 		}
@@ -167,10 +175,10 @@ func Build(source, output string, targets []Target, ard *ArdPublicationOptions) 
 			return nil, resource.Errorf("--allow-unsigned-trust requires a trust configuration")
 		}
 		if err := writeArdCatalog(ardRoot, source, root, agents, requested, ard.PublisherDomain,
-			configuration, signatures, signatureKeys, ard.AllowUnsignedTrust, &written); err != nil {
+			deployment.A2ABaseURL, configuration, signatures, signatureKeys, ard.AllowUnsignedTrust, &written); err != nil {
 			return nil, err
 		}
-		if err := writeDiscoveryCards(ardRoot, agents, ard.PublisherDomain, &written); err != nil {
+		if err := writeDiscoveryCards(ardRoot, agents, deployment.A2ABaseURL, ard.PublisherDomain, &written); err != nil {
 			return nil, err
 		}
 	}
@@ -199,7 +207,33 @@ func isBeneath(root, path string) bool {
 	return strings.HasPrefix(path, prefix)
 }
 
-func writeTarget(target Target, root string, agent *resolve.ResolvedAgent, written *[]string) error {
+// MCPCommandToken is the substitution token emitted in place of an undeclared
+// MCP server command. Target configuration is local scaffolding a deployer
+// wires up, so a named hole is honest there; a published discovery card, which
+// is a live claim, requires a real endpoint instead.
+const MCPCommandToken = "${TYPEFERENCE_MCP_COMMAND}"
+
+// codexConfig renders the Codex MCP server registration: the binding from the
+// compiled agent to whatever executes it. TypeFerence retired its own runtime
+// (ADR-0014), so the command is authored in the project manifest's deployment
+// block, or left as a substitution token when it is not yet known. The manifest
+// path is known at compile time and is always baked.
+func codexConfig(slug string, deployment resource.Deployment) string {
+	command := deployment.MCPCommand
+	header := ""
+	if command == "" {
+		command = MCPCommandToken
+		header = "# Replace " + MCPCommandToken + " with the command that serves this agent's\n" +
+			"# compiled manifest, or declare deployment.mcpCommand in " + resource.ProjectManifestFile + ".\n" +
+			"# TypeFerence compiles agent definitions; it does not ship a runtime.\n"
+	}
+	return header +
+		"[mcp_servers." + slug + "]\n" +
+		"command = \"" + command + "\"\n" +
+		"args = [\".typeference/bundle.json\"]\n"
+}
+
+func writeTarget(target Target, root string, agent *resolve.ResolvedAgent, deployment resource.Deployment, written *[]string) error {
 	slug := resolve.Leaf(agent.ID)
 	switch target {
 	case Neutral:
@@ -233,8 +267,7 @@ func writeTarget(target Target, root string, agent *resolve.ResolvedAgent, writt
 		if err := writeFile(filepath.Join(root, slug, ".typeference", "bundle.json"), bundleJSON(agent)+"\n", written); err != nil {
 			return err
 		}
-		config := "[mcp_servers.typeference]\ncommand = \"typeference\"\nargs = [\"serve\", \".typeference\"]\n"
-		if err := writeFile(filepath.Join(root, slug, ".codex", "config.toml"), config, written); err != nil {
+		if err := writeFile(filepath.Join(root, slug, ".codex", "config.toml"), codexConfig(slug, deployment), written); err != nil {
 			return err
 		}
 	case Copilot:

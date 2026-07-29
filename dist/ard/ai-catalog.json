@@ -13,7 +13,7 @@
       "version": "1.0.0",
       "data": {
         "schemaVersion": 1,
-        "digest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
+        "digest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143",
         "files": [
           {
             "path": "agents/executive-assistant.agent.tfer",
@@ -128,7 +128,7 @@
           {
             "path": "typeference.yaml",
             "mediaType": "application/yaml",
-            "content": "schemaVersion: 1\nname: helio\nversion: 1.0.0\npublisher: helio.example\n"
+            "content": "schemaVersion: 1\nname: helio\nversion: 1.0.0\npublisher: helio.example\n\n# Where these agents actually run. TypeFerence compiles definitions; it does not\n# deploy them, so an endpoint is declared here rather than invented by the\n# compiler. Without a2aBaseUrl no A2A agent card is emitted, because a published\n# card is a live routing claim a registry and agent picker will follow.\ndeployment:\n  a2aBaseUrl: https://helio.example/a2a\n  mcpCommand: helio-mcp-server\n"
           }
         ]
       },
@@ -181,7 +181,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
+        "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "neutral"
       },
@@ -192,7 +192,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
+            "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143"
           }
         ]
       }
@@ -250,7 +250,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
+        "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "neutral"
       },
@@ -261,7 +261,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
+            "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143"
           }
         ]
       }
@@ -294,7 +294,7 @@
           {
             "path": ".codex/config.toml",
             "mediaType": "application/toml",
-            "content": "[mcp_servers.typeference]\ncommand = \u0022typeference\u0022\nargs = [\u0022serve\u0022, \u0022.typeference\u0022]\n"
+            "content": "[mcp_servers.executive-assistant]\ncommand = \u0022helio-mcp-server\u0022\nargs = [\u0022.typeference/bundle.json\u0022]\n"
           },
           {
             "path": ".typeference/bundle.json",
@@ -310,7 +310,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
+        "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "codex"
       },
@@ -321,7 +321,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
+            "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143"
           }
         ]
       }
@@ -348,7 +348,7 @@
           {
             "path": ".codex/config.toml",
             "mediaType": "application/toml",
-            "content": "[mcp_servers.typeference]\ncommand = \u0022typeference\u0022\nargs = [\u0022serve\u0022, \u0022.typeference\u0022]\n"
+            "content": "[mcp_servers.payments-repo-agent]\ncommand = \u0022helio-mcp-server\u0022\nargs = [\u0022.typeference/bundle.json\u0022]\n"
           },
           {
             "path": ".typeference/bundle.json",
@@ -364,7 +364,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
+        "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "codex"
       },
@@ -375,7 +375,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
+            "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143"
           }
         ]
       }
@@ -414,7 +414,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
+        "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "copilot"
       },
@@ -425,7 +425,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
+            "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143"
           }
         ]
       }
@@ -463,7 +463,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
+        "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "copilot"
       },
@@ -474,7 +474,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
+            "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143"
           }
         ]
       }
@@ -513,7 +513,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
+        "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "cursor"
       },
@@ -524,7 +524,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
+            "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143"
           }
         ]
       }
@@ -562,7 +562,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
+        "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio",
         "target": "cursor"
       },
@@ -573,7 +573,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
+            "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143"
           }
         ]
       }
@@ -630,7 +630,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
+        "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio"
       },
       "trustManifest": {
@@ -640,7 +640,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
+            "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143"
           }
         ]
       }
@@ -757,7 +757,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
+        "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio"
       },
       "trustManifest": {
@@ -767,7 +767,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
+            "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143"
           }
         ]
       }
@@ -815,7 +815,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
+        "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio"
       },
       "trustManifest": {
@@ -825,7 +825,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
+            "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143"
           }
         ]
       }
@@ -903,7 +903,7 @@
       },
       "metadata": {
         "generatedBy": "TypeFerence",
-        "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a",
+        "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143",
         "sourceIdentifier": "urn:air:helio.example:typeference:source:helio"
       },
       "trustManifest": {
@@ -913,7 +913,7 @@
           {
             "relation": "derivedFrom",
             "sourceId": "urn:air:helio.example:typeference:source:helio",
-            "sourceDigest": "sha256:d729282512cfb50ecfc639c8e126b4897018abe2842a2800238ced8af39b148a"
+            "sourceDigest": "sha256:431ed8ce1c8ec5a8ffece9551ebcf2f6d1f1fc37375cf7b3b3ccca5ea5d89143"
           }
         ]
       }

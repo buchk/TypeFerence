@@ -17,6 +17,9 @@ func buildDiscovery(t *testing.T, exposed bool) string {
 	writeSrc(t, src, "cap.yaml", "schemaVersion: 3\nkind: capability\nid: acme/cap/status@1.0.0\ndisplayName: Status\ninputSchema: '{\"type\":\"object\",\"properties\":{\"focus\":{\"type\":\"string\"}},\"additionalProperties\":false}'\n"+vis)
 	writeSrc(t, src, "skill.yaml", "schemaVersion: 3\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/cap/status@1.0.0\ninstructions: do it\ninputSchema: '{\"type\":\"object\",\"properties\":{\"focus\":{\"type\":\"string\"}},\"additionalProperties\":false}'\n")
 	writeSrc(t, src, "agent.yaml", "schemaVersion: 3\nkind: agent\nid: acme/agent@1.0.0\ndisplayName: Acme Agent\nskills:\n  - ref: acme/skills/s@1.0.0\n")
+	// An A2A card carries a routing claim, so it is only emitted for a declared
+	// deployment endpoint.
+	writeSrc(t, src, "typeference.yaml", "schemaVersion: 1\nname: acme\nversion: 1.0.0\ndeployment:\n  a2aBaseUrl: https://acme.example/a2a\n")
 	out := t.TempDir()
 	targets, _ := ParseTargets("neutral")
 	if _, err := Build(src, out, targets, &ArdPublicationOptions{PublisherDomain: "acme.example"}); err != nil {

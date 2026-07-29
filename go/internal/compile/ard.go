@@ -22,6 +22,7 @@ func writeArdCatalog(
 	agents []*resolve.ResolvedAgent,
 	targets []Target,
 	publisherDomain string,
+	a2aBaseURL string,
 	configuration *trust.Configuration,
 	signatures map[string]string,
 	signatureKeys []string,
@@ -212,17 +213,24 @@ func writeArdCatalog(
 			{K: "sourceDigest", V: jsonx.Str(sourceDigest)},
 			{K: "sourceIdentifier", V: jsonx.Str(sourceIdentifier)},
 		}
-		entries = append(entries, jsonx.Obj{
-			{K: "identifier", V: jsonx.Str("urn:air:" + publisherDomain + ":typeference:a2a:" + slug)},
-			{K: "displayName", V: jsonx.Str(agent.DisplayName + " (A2A agent card)")},
-			{K: "type", V: jsonx.Str("application/a2a-agent-card+json")},
-			{K: "description", V: jsonx.Str("A2A Agent Card for " + agent.DisplayName + ".")},
-			{K: "capabilities", V: stringArr(names)},
-			{K: "version", V: jsonx.Str(version)},
-			{K: "data", V: a2aCardValue(agent, publisherDomain)},
-			{K: "metadata", V: meta},
-			{K: "trustManifest", V: manifest},
-		})
+		// An A2A card is a live discovery claim: a registry indexes it and a
+		// picker routes to its url. The compiler cannot know where an agent is
+		// deployed, so the endpoint is authored (deployment.a2aBaseUrl) and no
+		// card is emitted without one. The MCP entry below asserts no endpoint —
+		// it is a tool manifest — so it is emitted regardless.
+		if a2aBaseURL != "" {
+			entries = append(entries, jsonx.Obj{
+				{K: "identifier", V: jsonx.Str("urn:air:" + publisherDomain + ":typeference:a2a:" + slug)},
+				{K: "displayName", V: jsonx.Str(agent.DisplayName + " (A2A agent card)")},
+				{K: "type", V: jsonx.Str("application/a2a-agent-card+json")},
+				{K: "description", V: jsonx.Str("A2A Agent Card for " + agent.DisplayName + ".")},
+				{K: "capabilities", V: stringArr(names)},
+				{K: "version", V: jsonx.Str(version)},
+				{K: "data", V: a2aCardValue(agent, a2aBaseURL, publisherDomain)},
+				{K: "metadata", V: meta},
+				{K: "trustManifest", V: manifest},
+			})
+		}
 		entries = append(entries, jsonx.Obj{
 			{K: "identifier", V: jsonx.Str("urn:air:" + publisherDomain + ":typeference:mcp:" + slug)},
 			{K: "displayName", V: jsonx.Str(agent.DisplayName + " (MCP tools)")},
@@ -364,20 +372,23 @@ func buildTrustManifest(
 // in shapes external tooling actually consumes (ADR-0018):
 //
 //   - <slug>.agent-card.json — an A2A Agent Card (a2a-protocol.org), the unit an
-//     agent finder discovers. TypeFerence is definition-layer, so the required
-//     service-endpoint `url` is templated by convention (https://<domain>/a2a/
-//     <slug>); the deployer serves the A2A endpoint there or overrides it.
+//     agent finder discovers. Its service-endpoint `url` is a live routing claim,
+//     so it comes from the authored deployment.a2aBaseUrl; without one, no card
+//     is emitted rather than one pointing somewhere nothing is served.
 //   - <slug>.mcp.json — an MCP tool manifest (modelcontextprotocol.io), directly
 //     loadable by an MCP server; each exposed capability becomes an MCP tool with
-//     its input/output schemas as JSON Schema objects.
-func writeDiscoveryCards(ardRoot string, agents []*resolve.ResolvedAgent, publisherDomain string, written *[]string) error {
+//     its input/output schemas as JSON Schema objects. It asserts no endpoint, so
+//     it is always emitted.
+func writeDiscoveryCards(ardRoot string, agents []*resolve.ResolvedAgent, a2aBaseURL, publisherDomain string, written *[]string) error {
 	for _, agent := range agents {
 		if len(agent.ExposedSkills()) == 0 {
 			continue
 		}
 		slug := resolve.Leaf(agent.ID)
-		if err := writeFile(filepath.Join(ardRoot, slug+".agent-card.json"), jsonx.Indented(a2aCardValue(agent, publisherDomain))+"\n", written); err != nil {
-			return err
+		if a2aBaseURL != "" {
+			if err := writeFile(filepath.Join(ardRoot, slug+".agent-card.json"), jsonx.Indented(a2aCardValue(agent, a2aBaseURL, publisherDomain))+"\n", written); err != nil {
+				return err
+			}
 		}
 		if err := writeFile(filepath.Join(ardRoot, slug+".mcp.json"), jsonx.Indented(mcpManifestValue(agent))+"\n", written); err != nil {
 			return err
@@ -394,9 +405,9 @@ func exposedInOrder(agent *resolve.ResolvedAgent) []resolve.ResolvedSkill {
 }
 
 // a2aCardValue builds an A2A Agent Card (a2a-protocol.org) for an agent's
-// exposed capabilities. The required service-endpoint url is templated by
-// convention since TypeFerence is definition-layer.
-func a2aCardValue(agent *resolve.ResolvedAgent, publisherDomain string) jsonx.Obj {
+// exposed capabilities. a2aBaseURL is the authored deployment endpoint; callers
+// must not invoke this without one, since the card's url is a routing claim.
+func a2aCardValue(agent *resolve.ResolvedAgent, a2aBaseURL, publisherDomain string) jsonx.Obj {
 	slug := resolve.Leaf(agent.ID)
 	skills := jsonx.Arr{}
 	for _, skill := range exposedInOrder(agent) {
@@ -412,7 +423,7 @@ func a2aCardValue(agent *resolve.ResolvedAgent, publisherDomain string) jsonx.Ob
 		{K: "name", V: jsonx.Str(agent.DisplayName)},
 		{K: "description", V: jsonx.Str(agent.Description)},
 		{K: "version", V: jsonx.Str(agent.ID[strings.LastIndex(agent.ID, "@")+1:])},
-		{K: "url", V: jsonx.Str("https://" + publisherDomain + "/a2a/" + slug)},
+		{K: "url", V: jsonx.Str(a2aBaseURL + "/" + slug)},
 		{K: "preferredTransport", V: jsonx.Str("JSONRPC")},
 		{K: "capabilities", V: jsonx.Obj{
 			{K: "streaming", V: jsonx.Bool(false)},
