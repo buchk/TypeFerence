@@ -28,3 +28,6 @@ Format: `NNNN-short-title.md` with sections **Status**, **Context**, **Decision*
 | [0017](0017-tools-as-extern.md) | Tools as extern declarations (Accepted) |
 | [0018](0018-callable-resource-card-and-publishing.md) | Callable-resource card and publishing (Accepted) |
 | [0019](0019-context-lifecycles-two-doors.md) | Context lifecycles: the two doors (Accepted) |
+| [0020](0020-close-the-source-language.md) | Close the source language and preserve modes (Accepted) |
+| [0021](0021-restore-locked-source-packages.md) | Restore exact, locked source packages (Accepted) |
+| [0022](0022-build-link-and-source-identity.md) | Separate build, link, and source identity (Accepted) |
