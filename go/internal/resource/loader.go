@@ -266,9 +266,10 @@ func scanKind(node *yaml.Node) string {
 }
 
 // splitFrontmatter separates a .tfer file into its YAML frontmatter and its
-// verbatim markdown body. The file MUST begin with a `---` fence line; the
+// normalized markdown body. The file MUST begin with a `---` fence line; the
 // frontmatter runs to the next `---` fence line and the body is everything
-// after it, preserved byte-for-byte (ADR-0013 format: typed head, prose tail).
+// after it, preserved after BOM stripping and CRLF-to-LF normalization
+// (ADR-0023).
 func splitFrontmatter(text string) (frontmatter, body string, err error) {
 	nl := strings.IndexByte(text, '\n')
 	if nl < 0 || strings.TrimRight(text[:nl], "\r") != "---" {
@@ -294,7 +295,7 @@ func splitFrontmatter(text string) (frontmatter, body string, err error) {
 
 // applyBody materializes a .tfer markdown body onto the resource: a skill's
 // instructions or a context object's content. Kinds without a body field
-// reject a non-empty body (ADR-0013 format; ADR-0012 for the multimodal note).
+// reject a non-empty body (ADR-0023; ADR-0012 for multimodal semantics).
 func applyBody(doc *Document, body, file string) error {
 	switch doc.Kind {
 	case "skill":

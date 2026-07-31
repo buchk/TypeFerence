@@ -5,6 +5,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/buchk/TypeFerence/go/internal/resolve"
+	"github.com/buchk/TypeFerence/go/internal/resource"
 )
 
 func TestSourceDigestIgnoresGeneratedAndUnreferencedFiles(t *testing.T) {
@@ -25,6 +28,36 @@ func TestSourceDigestIgnoresGeneratedAndUnreferencedFiles(t *testing.T) {
 	}
 	if before != after {
 		t.Fatalf("generated/unreferenced files changed source identity: %s != %s", before, after)
+	}
+}
+
+func TestSourceDigestUnaffectedByResolverNormalization(t *testing.T) {
+	source := t.TempDir()
+	writeSrc(t, source, "context-type.yaml", "schemaVersion: 4\nkind: contextType\nid: acme/context-types/settings@1.0.0\nfields:\n  enabled:\n    type: boolean\n    default: true\n")
+	writeSrc(t, source, "context.yaml", "schemaVersion: 4\nkind: context\nid: acme/context/settings@1.0.0\ncontextType: acme/context-types/settings@1.0.0\n")
+	writeSrc(t, source, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\ncontext:\n  - acme/context/settings@1.0.0\n")
+
+	before, err := HashSource(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resources, err := resource.Load(source, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := resolve.New(resources).ResolveAll(); err != nil {
+		t.Fatal(err)
+	}
+	value, ok := resources["acme/context/settings@1.0.0"].ContextFields["enabled"]
+	if !ok || value.Kind != "scalar" || value.Scalar != "true" {
+		t.Fatalf("resolver did not exercise in-place default materialization: %#v", value)
+	}
+	after, err := HashSource(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if before != after {
+		t.Fatalf("resolver normalization changed file-derived source identity: %s != %s", before, after)
 	}
 }
 

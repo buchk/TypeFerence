@@ -20,7 +20,7 @@ func TestCodexConfigurationIsMaterializedOnlyAtLink(t *testing.T) {
 		t.Fatal(err)
 	}
 	deployment := filepath.Join(t.TempDir(), "deploy.yaml")
-	writeTestFile(t, deployment, "schemaVersion: 1\nenvironment: test\nartifacts:\n  acme/agents/a@1.0.0:\n    modes: []\nproviders:\n  runtime:\n    kind: mcp\n    transport: stdio\n    command: 'server\"name'\n    args: ['--bundle', '{bundle}']\n    environment:\n      ACME_TOKEN:\n        fromEnvironment: ACME_TOKEN\ntoolBindings:\n  acme/tools/runtime@1.0.0:\n    provider: runtime\n    remoteName: run\n")
+	writeTestFile(t, deployment, "schemaVersion: 1\nenvironment: test\nartifacts:\n  acme/agents/a@1.0.0:\n    modes: []\nproviders:\n  runtime:\n    kind: mcp\n    transport: stdio\n    command: 'server\"{bundle}'\n    args: ['--bundle', '{bundle}', 'twice={bundle}:{bundle}', 'literal={unknown}']\n    environment:\n      ACME_TOKEN:\n        fromEnvironment: ACME_TOKEN\ntoolBindings:\n  acme/tools/runtime@1.0.0:\n    provider: runtime\n    remoteName: run\n")
 	linked := filepath.Join(t.TempDir(), "linked")
 	if _, err := Link(filepath.Join(built, "codex"), deployment, linked); err != nil {
 		t.Fatal(err)
@@ -30,7 +30,9 @@ func TestCodexConfigurationIsMaterializedOnlyAtLink(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := string(config)
-	if !strings.Contains(text, `command = "server\"name"`) || !strings.Contains(text, `env_vars = ["ACME_TOKEN"]`) {
+	if !strings.Contains(text, `command = "server\"{bundle}"`) ||
+		!strings.Contains(text, `args = ["--bundle", ".typeference/bundle.json", "twice=.typeference/bundle.json:.typeference/bundle.json", "literal={unknown}"]`) ||
+		!strings.Contains(text, `env_vars = ["ACME_TOKEN"]`) {
 		t.Fatalf("linked config is not structurally escaped/materialized:\n%s", text)
 	}
 	bindings, err := os.ReadFile(filepath.Join(linked, "a", ".typeference", "tool-bindings.json"))
@@ -101,8 +103,51 @@ func TestLinkRejectsOutputThatContainsItsInput(t *testing.T) {
 	deployment := filepath.Join(t.TempDir(), "deploy.yaml")
 	writeTestFile(t, deployment, "schemaVersion: 1\nenvironment: test\nartifacts:\n  acme/agents/a@1.0.0:\n    modes: []\n")
 	if _, err := Link(filepath.Join(built, "neutral"), deployment, built); err == nil ||
-		!strings.Contains(err.Error(), "separate sibling") {
+		!strings.Contains(err.Error(), "must not contain or be contained") {
 		t.Fatalf("expected containing output to be rejected before reset, got %v", err)
+	}
+}
+
+func TestLinkRefusesNonEmptyUnownedOutputWithoutDeletingIt(t *testing.T) {
+	input, deployment := buildLinkFixture(t)
+	output := filepath.Join(t.TempDir(), "examples")
+	sentinel := filepath.Join(output, "keep-me.txt")
+	writeTestFile(t, sentinel, "user data\n")
+
+	if _, err := Link(input, deployment, output); err == nil ||
+		!strings.Contains(err.Error(), "not a TypeFerence-owned linked output") {
+		t.Fatalf("expected an unowned non-empty output to fail closed, got %v", err)
+	}
+	data, err := os.ReadFile(sentinel)
+	if err != nil || string(data) != "user data\n" {
+		t.Fatalf("link changed or removed the unrelated sentinel: %v, %q", err, data)
+	}
+}
+
+func TestLinkReplacesOnlyAValidPriorLinkedOutput(t *testing.T) {
+	input, deployment := buildLinkFixture(t)
+	output := t.TempDir()
+	if _, err := Link(input, deployment, output); err != nil {
+		t.Fatalf("link should accept an empty output directory: %v", err)
+	}
+	stale := filepath.Join(output, "stale-generated-file.txt")
+	writeTestFile(t, stale, "stale\n")
+	if _, err := Link(input, deployment, output); err != nil {
+		t.Fatalf("link should replace its prior completed output: %v", err)
+	}
+	if _, err := os.Stat(stale); !os.IsNotExist(err) {
+		t.Fatalf("relink must remove stale generated files, got %v", err)
+	}
+
+	writeTestFile(t, filepath.Join(output, ".typeference", "link-provenance.json"), "not json\n")
+	sentinel := filepath.Join(output, "keep-after-corruption.txt")
+	writeTestFile(t, sentinel, "keep\n")
+	if _, err := Link(input, deployment, output); err == nil ||
+		!strings.Contains(err.Error(), "not a TypeFerence-owned linked output") {
+		t.Fatalf("malformed provenance must not authorize recursive replacement, got %v", err)
+	}
+	if data, err := os.ReadFile(sentinel); err != nil || string(data) != "keep\n" {
+		t.Fatalf("failed relink changed the existing output: %v, %q", err, data)
 	}
 }
 
@@ -133,6 +178,19 @@ func TestToolFreeLinkedArtifactRecordsSelectedModes(t *testing.T) {
 	if err != nil || !strings.Contains(string(manifest), "\"selectedModes\": [\n    \"pipeline\"\n  ]") {
 		t.Fatalf("tool-free link did not preserve selected modes: %v\n%s", err, manifest)
 	}
+}
+
+func buildLinkFixture(t *testing.T) (input, deployment string) {
+	t.Helper()
+	source := t.TempDir()
+	writeTestFile(t, filepath.Join(source, "agent.yaml"), "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\n")
+	built := t.TempDir()
+	if _, err := compile.Build(source, built, []compile.Target{compile.Neutral}, nil); err != nil {
+		t.Fatal(err)
+	}
+	deployment = filepath.Join(t.TempDir(), "deploy.yaml")
+	writeTestFile(t, deployment, "schemaVersion: 1\nenvironment: test\nartifacts:\n  acme/agents/a@1.0.0:\n    modes: []\n")
+	return filepath.Join(built, "neutral"), deployment
 }
 
 func writeTestFile(t *testing.T, path, content string) {

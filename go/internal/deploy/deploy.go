@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"io"
 	"io/fs"
 	"net/url"
 	"os"
@@ -86,6 +87,18 @@ type buildIndex struct {
 	Target        string `json:"target"`
 	SourceDigest  string `json:"sourceDigest"`
 	Artifacts     []struct {
+		AgentID string `json:"agentId"`
+		Path    string `json:"path"`
+		Digest  string `json:"digest"`
+	} `json:"artifacts"`
+}
+
+type linkProvenance struct {
+	SchemaVersion    int    `json:"schemaVersion"`
+	Environment      string `json:"environment"`
+	UnlinkedDigest   string `json:"unlinkedDigest"`
+	DeploymentDigest string `json:"deploymentDigest"`
+	Artifacts        []struct {
 		AgentID string `json:"agentId"`
 		Path    string `json:"path"`
 		Digest  string `json:"digest"`
@@ -186,7 +199,7 @@ func Link(input, deploymentPath, output string) ([]string, error) {
 	}
 	outputAbs, err := filepath.Abs(output)
 	if err != nil || sameOrWithin(inputAbs, outputAbs) || sameOrWithin(outputAbs, inputAbs) {
-		return nil, resource.Errorf("linked output must be a separate sibling of the unlinked input")
+		return nil, resource.Errorf("linked output must not contain or be contained by the unlinked input")
 	}
 	info, err := os.Stat(inputAbs)
 	if err != nil || !info.IsDir() {
@@ -211,8 +224,8 @@ func Link(input, deploymentPath, output string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := os.RemoveAll(outputAbs); err != nil {
-		return nil, resource.Errorf("Cannot reset linked output: %s", outputAbs)
+	if err := prepareLinkedOutput(outputAbs); err != nil {
+		return nil, err
 	}
 	written, err := copyTree(inputAbs, outputAbs)
 	if err != nil {
@@ -310,6 +323,83 @@ func sameOrWithin(parent, child string) bool {
 		(!filepath.IsAbs(relative) && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator))))
 }
 
+// prepareLinkedOutput permits recursive replacement only for a completed output
+// whose root provenance proves that TypeFerence owns the directory layout.
+func prepareLinkedOutput(output string) error {
+	if filepath.Dir(output) == output {
+		return resource.Errorf("linked output must not be a filesystem root: %s", output)
+	}
+	info, err := os.Lstat(output)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return resource.Errorf("Cannot inspect linked output: %s", output)
+	}
+	if !info.IsDir() {
+		return resource.Errorf("linked output must be a directory: %s", output)
+	}
+	entries, err := os.ReadDir(output)
+	if err != nil {
+		return resource.Errorf("Cannot inspect linked output: %s", output)
+	}
+	if len(entries) == 0 {
+		if err := os.Remove(output); err != nil {
+			return resource.Errorf("Cannot reset empty linked output: %s", output)
+		}
+		return nil
+	}
+	marker := filepath.Join(output, ".typeference", "link-provenance.json")
+	if !validLinkProvenance(marker) {
+		return resource.Errorf("linked output is non-empty and not a TypeFerence-owned linked output: %s", output)
+	}
+	if err := os.RemoveAll(output); err != nil {
+		return resource.Errorf("Cannot reset linked output: %s", output)
+	}
+	return nil
+}
+
+func validLinkProvenance(path string) bool {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	var provenance linkProvenance
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&provenance); err != nil {
+		return false
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		return false
+	}
+	if provenance.SchemaVersion != 1 || strings.TrimSpace(provenance.Environment) == "" ||
+		!validSHA256Digest(provenance.UnlinkedDigest) || !validSHA256Digest(provenance.DeploymentDigest) ||
+		len(provenance.Artifacts) == 0 {
+		return false
+	}
+	seenAgents := map[string]bool{}
+	seenPaths := map[string]bool{}
+	for _, artifact := range provenance.Artifacts {
+		if !resource.IsResourceID(artifact.AgentID) || artifact.Path == "" ||
+			filepath.Base(filepath.Clean(artifact.Path)) != artifact.Path || !validSHA256Digest(artifact.Digest) ||
+			seenAgents[artifact.AgentID] || seenPaths[artifact.Path] {
+			return false
+		}
+		seenAgents[artifact.AgentID] = true
+		seenPaths[artifact.Path] = true
+	}
+	return true
+}
+
+func validSHA256Digest(value string) bool {
+	if len(value) != len("sha256:")+sha256.Size*2 || !strings.HasPrefix(value, "sha256:") {
+		return false
+	}
+	decoded, err := hex.DecodeString(strings.TrimPrefix(value, "sha256:"))
+	return err == nil && len(decoded) == sha256.Size
+}
+
 func verifyBuildIndex(root string, reqs []requirements) error {
 	path := filepath.Join(root, ".typeference", "build.json")
 	data, err := os.ReadFile(path)
@@ -329,12 +419,8 @@ func verifyBuildIndex(root string, reqs []requirements) error {
 	expected := map[string]expectedArtifact{}
 	for _, artifact := range index.Artifacts {
 		if artifact.Path == "" || filepath.Base(filepath.Clean(artifact.Path)) != artifact.Path ||
-			!resource.IsResourceID(artifact.AgentID) || len(artifact.Digest) != 71 ||
-			!strings.HasPrefix(artifact.Digest, "sha256:") {
+			!resource.IsResourceID(artifact.AgentID) || !validSHA256Digest(artifact.Digest) {
 			return resource.Errorf("Invalid artifact entry in build integrity index: %s", path)
-		}
-		if _, err := hex.DecodeString(strings.TrimPrefix(artifact.Digest, "sha256:")); err != nil {
-			return resource.Errorf("Invalid artifact digest in build integrity index: %s", path)
 		}
 		if _, exists := expected[artifact.AgentID]; exists {
 			return resource.Errorf("Duplicate artifact %s in build integrity index", artifact.AgentID)

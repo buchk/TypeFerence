@@ -36,7 +36,10 @@ compatibility promises between minor versions.
   deterministic unlinked targets and integrity indexes; explicit deployment
   files bind tools, modes, commands, environment references, and endpoints.
   Linked Codex MCP configuration and neutral A2A cards are structurally
-  serialized without changing source or unlinked-target identity.
+  serialized without changing source or unlinked-target identity. Link now
+  replaces a non-empty output only when valid root provenance identifies a prior
+  TypeFerence link ([ADR-0025](docs/decisions/0025-own-linked-output-before-reset.md)),
+  and the stdio `{bundle}` projection is specified explicitly.
 - **Go-only implementation** ([ADR-0014](docs/decisions/0014-go-only-implementation.md)).
   The C# reference implementation was retired; the Go implementation is now the
   sole implementation. The specification stays normative in principle. The

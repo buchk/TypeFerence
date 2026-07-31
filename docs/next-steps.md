@@ -17,6 +17,13 @@ remaining as stale unchecked tasks here.
   interfaces, and dependency validation distinct; a later change can introduce
   explicit phase result types if that improves reviewability without changing
   semantics.
+- [ ] Isolate mutable resolver normalization state from loaded source documents.
+  Source identity is already computed from canonical source files, but a cloned
+  resolver input would make that boundary structural rather than conventional.
+- [ ] Replace `samePromotedSkill`'s whole-struct comparison with an explicit
+  semantic member identity once that identity is specified. The current
+  comparison deliberately ignores only dispatch names and provenance and remains
+  conservative for ambiguity detection.
 - [ ] Define a third-party target-adapter conformance contract before accepting
   adapters as supported rather than experimental.
 

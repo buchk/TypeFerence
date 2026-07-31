@@ -89,8 +89,10 @@ cd go && go build -o ../bin/ ./cmd/typeference && cd ..
 `build` writes deterministic, unlinked neutral, Codex, Copilot, and Cursor
 artifacts under `out/`. It intentionally emits no active MCP command or endpoint.
 `link` validates an explicit external deployment file and materializes runtime
-configuration. `diff` recompiles and byte-compares against the committed reference output
-in `dist/` — "No differences." is the determinism guarantee made visible: your
+configuration. It creates an absent or empty output and replaces a non-empty one
+only when root link provenance identifies it as a prior TypeFerence output.
+`diff` recompiles and byte-compares against the committed reference output in
+`dist/` — "No differences." is the determinism guarantee made visible: your
 freshly built compiler reproduces the repository's artifacts exactly.
 
 The binary is fully static (`CGO_ENABLED=0`) with no runtime dependencies. You can
