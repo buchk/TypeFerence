@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "target": "cursor",
+  "sourceDigest": "sha256:981da89802beea05777dbe99b9898fa07701a7fd40534a4c0aca961fce5376ac",
+  "artifacts": [
+    {
+      "agentId": "helio/executive-assistant@1.0.0",
+      "path": "executive-assistant",
+      "digest": "sha256:bd14a2d263e277be46c8eaff2849c979d7140ae8da2ee2c9ca6a483d7a12f402"
+    },
+    {
+      "agentId": "helio/payments-repo-agent@1.0.0",
+      "path": "payments-repo-agent",
+      "digest": "sha256:6f37ad4627f20c79b2c565dd7c0ec8cd247c2db3417ccad7bc34de56ff7256f6"
+    }
+  ]
+}

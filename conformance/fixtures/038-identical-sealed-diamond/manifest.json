@@ -1,0 +1,10 @@
+{
+  "description": "The same sealed capability implementation promoted through two equal-depth paths converges as one member.",
+  "expect": "success",
+  "digests": {
+    "codex": "sha256:461fe5d6af45903ee1ee0a252588d9763291cc1df1b3544a44fdfa99385b34a6",
+    "copilot": "sha256:badcad489c2bddf92273e2279e59c13c7c2f6ad1383c2fa047785598117689bb",
+    "cursor": "sha256:3c6e6f94b34c6acf38881951844eb7deeb4427b3214e07e7558ae7b0a3cfb33a",
+    "neutral": "sha256:46597cc84cd5f5e182f1bc630ede97d81307c7647ee5999981605cffa8133c5f"
+  }
+}

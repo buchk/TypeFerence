@@ -1,12 +1,13 @@
 {
   "description": "Source files carrying a UTF-8 BOM: the BOM is ignored when reading and stripped before hashing and packaging.",
+  "language": "legacy-v3",
   "expect": "success",
   "emitArd": "conformance.example",
   "digests": {
-    "ard": "sha256:cc1c65064eabe4a925a45ba5f44473c866a2b47fa2aae73496f0e4c867c76653",
-    "codex": "sha256:d8c29653d73c64b082127824246c78a40d4b077ec9a4686610b42680e0d3eebe",
-    "copilot": "sha256:3a81319dab87c3cce2814919ebd4c39d42aaf64b11c080b599463007ad54e762",
-    "cursor": "sha256:46b0f3ec863d160ccc3a35b5ff136818f046b8283ebaa0086cad83218e31cb88",
-    "neutral": "sha256:b0093aa45b100a1e27821fc8664c00dc3603149eeba506bfc2336398ec33161e"
+    "ard": "sha256:0c40dc014563c1ad6566a4157bd2bfbbf40716cf370ed77bce3935abe5dee224",
+    "codex": "sha256:cc389750b88f730183d7920cc09449efb9e083f4f984743dd1810dd0959d1c1a",
+    "copilot": "sha256:b52e5a2cc7dbf42349b0732d190ebdc614a3ec8ecfb79397b02a6e3cfe812ee1",
+    "cursor": "sha256:6768779fe8abd4dc6acb49ebf2ab5890ad4ce2e89be7365c4c83be0a4d5a9b72",
+    "neutral": "sha256:a72417f05c9d9b7c9acffe7e3803450093a23266d4d91f48b2c7768e5e7722a1"
   }
 }

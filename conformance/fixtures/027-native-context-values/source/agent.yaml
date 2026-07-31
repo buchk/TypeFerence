@@ -1,0 +1,5 @@
+schemaVersion: 4
+kind: agent
+id: conformance/agents/native-context@1.0.0
+context:
+  - conformance/context/team@1.0.0

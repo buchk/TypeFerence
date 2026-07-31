@@ -1,3 +1,0 @@
-[mcp_servers.typeference]
-command = "typeference"
-args = ["serve", ".typeference"]

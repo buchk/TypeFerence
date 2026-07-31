@@ -121,7 +121,7 @@ def pipeline():
     node(d, 120, 60, 90, 48, "Compose", "embedding + capabilities")
     arrow(d, 210, 84, 240, 84)
     node(d, 240, 55, 105, 58, "Resolved IR", "behavior + provenance", NAVY, NAVY, True)
-    for y, label in [(125,"Codex"),(72,"Copilot"),(19,"Cursor + MCP")]:
+    for y, label in [(125,"Codex"),(72,"Copilot"),(19,"Cursor + Neutral")]:
         arrow(d, 345, 84, 375, y+18)
         node(d, 375, y, 95, 36, label, fill=PALE, stroke=PURPLE)
     return d
@@ -131,7 +131,7 @@ def interoperability_stack():
     d = Drawing(470, 220)
     node(d, 150, 172, 170, 40, "TypeFerence source", "canonical + governed", NAVY, NAVY, True)
     targets = [(0, "Codex bundle", "target-specific"), (125, "Copilot bundle", "target-specific"),
-               (250, "Cursor bundle", "target-specific"), (375, "MCP card", "callable protocol")]
+               (250, "Cursor bundle", "target-specific"), (375, "Neutral bundle", "linkable target")]
     catalog_ports = [125, 200, 270, 345]
     for (x, label, subtitle), port in zip(targets, catalog_ports):
         arrow(d, 235, 172, x + 47, 142)
@@ -139,24 +139,24 @@ def interoperability_stack():
         arrow(d, x + 47, 102, port, 78)
     node(d, 75, 38, 320, 40, "ARD catalog", "source entry + separately versioned target entries", PALE, PURPLE)
     arrow(d, 235, 38, 235, 23)
-    d.add(String(235, 9, "consumer selects a compatible artifact or callable protocol", textAnchor="middle", fontName=BODY, fontSize=7.2, fillColor=MUTED))
+    d.add(String(235, 9, "consumer selects a compatible unlinked artifact", textAnchor="middle", fontName=BODY, fontSize=7.2, fillColor=MUTED))
     return d
 
 
 def dispatch():
     d = Drawing(470, 150)
-    node(d, 0, 48, 130, 55, "MCP call", "derived skill name")
+    node(d, 0, 48, 130, 55, "Skill tool import", "versioned extern")
     arrow(d, 130, 75, 165, 75)
-    node(d, 165, 40, 140, 70, "Resolve capability", "compatible local binding", NAVY, NAVY, True)
+    node(d, 165, 40, 140, 70, "Link binding", "provider + remote name", NAVY, NAVY, True)
     arrow(d, 305, 75, 340, 75)
-    node(d, 340, 20, 130, 110, "Invocation package", "args + context + provenance", PALE, PURPLE)
+    node(d, 340, 20, 130, 110, "MCP provider", "address + env references", PALE, PURPLE)
     return d
 
 
 def cross_agent():
     d = Drawing(470, 168)
     node(d, 0, 92, 130, 52, "Executive assistant", "owns the brief")
-    node(d, 170, 92, 130, 52, "TypeFerence MCP", "typed boundary", PALE, PURPLE)
+    node(d, 170, 92, 130, 52, "Linked MCP provider", "deployment binding", PALE, PURPLE)
     node(d, 340, 92, 130, 52, "Repo agent", "owns evidence")
     arrow(d,130,118,170,118); arrow(d,300,118,340,118)
     arrow(d,340,96,300,96); arrow(d,170,96,130,96)

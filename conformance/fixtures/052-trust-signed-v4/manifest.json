@@ -1,0 +1,13 @@
+{
+  "description": "Version 4 ARD publication imports every required detached signature from a map outside the source root.",
+  "expect": "success",
+  "emitArd": "conformance.example",
+  "trustSignatures": "signatures.json",
+  "digests": {
+    "ard": "sha256:ae29ee8cb51c5257ffd4a989ae95ff16661bd1e87f2f36809a13fc717057e933",
+    "codex": "sha256:5c2fba2a549bd6275a054fe3822acefc9cf3f1ba2508179c78356a71b22d2d2e",
+    "copilot": "sha256:a713d41795ff52eb765a6e3e07a3c3497043f99e9af0dcdd72bf9b58dcd4002e",
+    "cursor": "sha256:f12ac8b3bba8ad055d62cc5ae1e1de5749f4b374152b885cba9f7ae3904aa100",
+    "neutral": "sha256:fd94f327a7996c3027a7c2bbbbb0e580096b47d1a524d8946da6050e14cebe35"
+  }
+}

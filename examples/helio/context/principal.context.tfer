@@ -1,0 +1,10 @@
+---
+schemaVersion: 4
+kind: context
+id: helio/context/principal@1.0.0
+contextType: helio/context-types/principal@1.0.0
+displayName: Principal
+---
+# Principal
+
+The principal prefers short decision briefs that identify the owner, deadline, evidence, and unresolved risk.

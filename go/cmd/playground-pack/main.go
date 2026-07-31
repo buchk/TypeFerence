@@ -173,10 +173,10 @@ rubric:
       The response requires the specification (and, if behavior changes, the
       conformance fixtures) to change before or together with the
       implementation, not after.
-  - id: both-implementations
+  - id: deterministic-reference
     requirement: >-
-      The response requires the C# reference implementation and the Go
-      implementation to agree byte-for-byte before merge.
+      The response requires the Go reference implementation to reproduce the
+      reviewed committed digests byte-for-byte before merge.
   - id: no-silent-regeneration
     requirement: >-
       The response does not suggest silently regenerating expected digests to
@@ -185,32 +185,32 @@ rubric:
 }
 
 var starterFiles = map[string]string{
-	"agents/support-agent.agent.yaml": `schemaVersion: 3
+	"agents/support-agent.agent.yaml": `schemaVersion: 4
 kind: agent
 id: acme/support-agent@1.0.0
 displayName: Acme Support Agent
 description: Answers customer tickets for Acme's widget line.
 embeds:
   - acme/profiles/support-defaults@1.0.0
-contextFiles:
-  - context/widgets.md
+context:
+  - acme/context/widgets@1.0.0
 skills:
   - ref: acme/skills/summarize-ticket@1.0.0
     capability: acme/capabilities/summarize-ticket@1.0.0
 `,
-	"profiles/support-defaults.profile.yaml": `schemaVersion: 3
+	"profiles/support-defaults.profile.yaml": `schemaVersion: 4
 kind: profile
 id: acme/profiles/support-defaults@1.0.0
 displayName: Acme Support Defaults
 description: Reusable tone and escalation defaults for support agents.
 slots:
-  tone: context/tone.md
+  tone: acme/context/tone@1.0.0
 workingNorms:
   - Never promise a refund without a linked policy clause.
-contextFiles:
-  - context/tone.md
+context:
+  - acme/context/tone@1.0.0
 `,
-	"capabilities/summarize-ticket.capability.yaml": `schemaVersion: 3
+	"capabilities/summarize-ticket.capability.yaml": `schemaVersion: 4
 kind: capability
 id: acme/capabilities/summarize-ticket@1.0.0
 displayName: Summarize Ticket
@@ -218,19 +218,21 @@ description: Capability slot for structured ticket summaries.
 inputSchema: '{"type":"object","properties":{"ticketId":{"type":"string"}},"additionalProperties":false}'
 outputSchema: '{"type":"object","properties":{"summary":{"type":"string"},"nextAction":{"type":"string"}},"required":["summary","nextAction"]}'
 `,
-	"skills/summarize-ticket.skill.yaml": `schemaVersion: 3
+	"skills/summarize-ticket.skill.yaml": `schemaVersion: 4
 kind: skill
 id: acme/skills/summarize-ticket@1.0.0
 binds: acme/capabilities/summarize-ticket@1.0.0
 displayName: Summarize Ticket
 description: Summarize a support ticket with the customer's history in view.
+requiresContextTypes:
+  - acme/context-types/widgets@1.0.0
 instructions: |
   Read the ticket and produce a two-sentence summary plus one concrete next action.
   Cite the ticket fields you used; never invent order numbers.
 inputSchema: '{"type":"object","properties":{"ticketId":{"type":"string"}},"additionalProperties":false}'
 outputSchema: '{"type":"object","properties":{"summary":{"type":"string"},"nextAction":{"type":"string"}},"required":["summary","nextAction"]}'
 `,
-	"interfaces/summarizer.interface.yaml": `schemaVersion: 3
+	"interfaces/summarizer.interface.yaml": `schemaVersion: 4
 kind: interface
 id: acme/interfaces/summarizer@1.0.0
 displayName: Summarizer
@@ -238,12 +240,40 @@ description: Contract for agents that can produce structured ticket summaries.
 requiresCapabilities:
   - acme/capabilities/summarize-ticket@1.0.0
 `,
-	"context/tone.md": `# Tone
+	"context-types/tone.contexttype.yaml": `schemaVersion: 4
+kind: contextType
+id: acme/context-types/tone@1.0.0
+body:
+  type: text
+  required: true
+`,
+	"context/tone.context.tfer": `---
+schemaVersion: 4
+kind: context
+id: acme/context/tone@1.0.0
+contextType: acme/context-types/tone@1.0.0
+displayName: Tone
+---
+# Tone
 
 Warm, direct, and concrete. Lead with what will happen next, not with an
 apology. One idea per sentence.
 `,
-	"context/widgets.md": `# Widget line
+	"context-types/widgets.contexttype.yaml": `schemaVersion: 4
+kind: contextType
+id: acme/context-types/widgets@1.0.0
+body:
+  type: text
+  required: true
+`,
+	"context/widgets.context.tfer": `---
+schemaVersion: 4
+kind: context
+id: acme/context/widgets@1.0.0
+contextType: acme/context-types/widgets@1.0.0
+displayName: Widget Line
+---
+# Widget line
 
 Acme sells three widget models: Standard, Pro, and the discontinued Classic.
 Classic tickets always require the legacy-parts disclaimer.

@@ -1,12 +1,13 @@
 {
   "description": "A context file authored with CRLF line endings: the digest and ARD packaging normalize CRLF to LF.",
+  "language": "legacy-v3",
   "expect": "success",
   "emitArd": "conformance.example",
   "digests": {
-    "ard": "sha256:1ff7675f094666c36920dd4fbd90106d2045205f10d915083f2e26cb3460868b",
-    "codex": "sha256:6ad4ea78b95528372196bcfad51893ed5faaad4bcaf8704da58d7ee3c8456db9",
-    "copilot": "sha256:12d9d2450fb8e3d0e9acb954f7439ffeebb6e6623856c32604f29246ab40edbb",
-    "cursor": "sha256:0c6da6936e8862b1e7380394313ed96906c5175d1239593286964be831150672",
-    "neutral": "sha256:a762a3e6820ebaf9cfe06ae1460b2040f98f4466d3d1e08e62c280c08c0a544d"
+    "ard": "sha256:b6809f46c87f9a9ba9dc0e9c08486ca8832f32bd787bba7e550b6a52f0c5f0b4",
+    "codex": "sha256:1a661aa75f7ed116fc031082df6c6b67176a3f47f57ef23ae8a45b31b30d4a3d",
+    "copilot": "sha256:8ec151f1f6488cae8fe3908ab83c71f710b936d6089960b45a5a6f797412d104",
+    "cursor": "sha256:84bb8547856608de50666828c5aebb100d26593f070e86b11b0fae9e3a9845ad",
+    "neutral": "sha256:02ff538583bfb53e00d697bd3f40c6df130ef90d91e3f8dacc50fdf0872205b0"
   }
 }

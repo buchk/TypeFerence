@@ -1,0 +1,4 @@
+{
+  "description": "Duplicate YAML keys are rejected instead of silently selecting one value.",
+  "expect": "error"
+}

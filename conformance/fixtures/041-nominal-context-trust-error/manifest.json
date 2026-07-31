@@ -1,0 +1,4 @@
+{
+  "description": "A structurally identical context type does not satisfy a governed type without explicitly embedding it.",
+  "expect": "error"
+}

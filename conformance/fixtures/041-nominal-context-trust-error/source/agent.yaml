@@ -1,0 +1,7 @@
+schemaVersion: 4
+kind: agent
+id: conformance/agents/reviewer@1.0.0
+context:
+  - conformance/context/value@1.0.0
+skills:
+  - ref: conformance/skills/review@1.0.0

@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/buchk/TypeFerence/go/internal/packages"
 	"github.com/buchk/TypeFerence/go/internal/resource"
 )
 
@@ -32,6 +33,24 @@ func HashDirectory(directory string) (string, error) {
 		h.Write([]byte(rel))
 		h.Write([]byte{0})
 		h.Write([]byte(content))
+		h.Write([]byte{0})
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+// HashSource computes typeference-resource-set-v1 over the explicit source
+// membership used by pack. Generated output, caches, VCS data, and arbitrary
+// unreferenced files therefore cannot change source identity.
+func HashSource(source string) (string, error) {
+	files, err := packages.SourceFiles(source)
+	if err != nil {
+		return "", err
+	}
+	h := sha256.New()
+	for _, file := range files {
+		h.Write([]byte(file.Path))
+		h.Write([]byte{0})
+		h.Write([]byte(file.Content))
 		h.Write([]byte{0})
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil

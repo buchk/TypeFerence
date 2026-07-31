@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "target": "copilot",
+  "sourceDigest": "sha256:981da89802beea05777dbe99b9898fa07701a7fd40534a4c0aca961fce5376ac",
+  "artifacts": [
+    {
+      "agentId": "helio/executive-assistant@1.0.0",
+      "path": "executive-assistant",
+      "digest": "sha256:59dd5ce9cd7683b7384f775919dcdac8068953581e65661bcb40e52dab01d6c7"
+    },
+    {
+      "agentId": "helio/payments-repo-agent@1.0.0",
+      "path": "payments-repo-agent",
+      "digest": "sha256:f19db443327fe4fb509a0b854581635f33adc88589bba9bed2ceb476fdf651e6"
+    }
+  ]
+}

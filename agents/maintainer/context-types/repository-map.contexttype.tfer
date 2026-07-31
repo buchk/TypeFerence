@@ -1,0 +1,10 @@
+---
+schemaVersion: 4
+kind: contextType
+id: typeference/context-types/repository-map@0.1.0
+displayName: Repository Map
+description: A stable map of repository paths and their maintenance roles.
+body:
+  type: text
+  required: true
+---

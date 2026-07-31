@@ -1,8 +1,6 @@
 package eval
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/buchk/TypeFerence/go/internal/jsonx"
@@ -21,8 +19,8 @@ const maxTokens = 16000
 // BuildExecutorPayload constructs the exact Messages API request body that
 // runs the scenario task against the compiled agent definition. The system
 // prompt is the neutral-target instruction surface: the agent's rendered
-// instructions, the focused skill's instructions (if any), and the content of
-// the agent's context files read from the source root.
+// instructions, the focused skill's instructions (if any), and the agent's
+// compiled typed context values.
 func BuildExecutorPayload(model string, agent *resolve.ResolvedAgent, skill *resolve.ResolvedSkill, sourceRoot, task string) ([]byte, error) {
 	system, err := renderSystemPrompt(agent, skill, sourceRoot)
 	if err != nil {
@@ -106,6 +104,7 @@ func BuildJudgePayload(model string, scenario *Scenario, response string) []byte
 // renderSystemPrompt assembles the instruction surface the neutral target
 // gives a host: agent instructions, the focused skill, and context content.
 func renderSystemPrompt(agent *resolve.ResolvedAgent, skill *resolve.ResolvedSkill, sourceRoot string) (string, error) {
+	_ = sourceRoot // retained for API compatibility; typed context is resolved.
 	var b strings.Builder
 	b.WriteString("You are the following agent, compiled from a TypeFerence definition. ")
 	b.WriteString("Operate strictly within these instructions.\n\n")
@@ -129,19 +128,16 @@ func renderSystemPrompt(agent *resolve.ResolvedAgent, skill *resolve.ResolvedSki
 		b.WriteString(strings.TrimSpace(skill.Instructions))
 		b.WriteString("\n")
 	}
-	contexts := agent.ContextFiles
-	if skill != nil {
-		contexts = skill.ContextFiles
-	}
-	for _, relative := range contexts {
-		content, err := os.ReadFile(filepath.Join(sourceRoot, filepath.FromSlash(relative)))
-		if err != nil {
-			return "", err
-		}
+	for _, context := range agent.ContextObjects {
 		b.WriteString("\n## Context: ")
-		b.WriteString(relative)
+		b.WriteString(context.ID)
 		b.WriteString("\n\n")
-		b.WriteString(strings.ReplaceAll(strings.TrimPrefix(string(content), string(rune(0xFEFF))), "\r\n", "\n"))
+		if context.ValuesJSON != "" && context.ValuesJSON != "{}" {
+			b.WriteString("Values: ")
+			b.WriteString(context.ValuesJSON)
+			b.WriteString("\n\n")
+		}
+		b.WriteString(context.Content)
 		b.WriteString("\n")
 	}
 	return b.String(), nil

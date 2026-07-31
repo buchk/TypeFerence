@@ -4,7 +4,7 @@
 
 TypeFerence is an experimental reference implementation of a typed definition and compilation layer for AI agents. It replaces sprawling, duplicated instruction files with Go-like composition: reusable profiles, agent embedding, structurally satisfied interfaces, versioned capabilities, skill implementations, deterministic compilation, provenance, and artifact diffing.
 
-Read the [whitepaper](docs/whitepaper.md), the [rendered PDF](output/pdf/typeference-whitepaper.pdf), the [draft v3 specification](docs/specification.md), or the [ARD alignment notes](docs/ard-alignment.md).
+Read the [whitepaper](docs/whitepaper.md), the [rendered PDF](output/pdf/typeference-whitepaper.pdf), the [draft v4 specification](docs/specification.md), or the [ARD alignment notes](docs/ard-alignment.md).
 
 ```text
 helio/profiles/enterprise-defaults ──embedded by──> helio/profiles/person-defaults     ──embedded by──> helio/executive-assistant
@@ -22,21 +22,21 @@ Agent runtime system prompts are like machine code: they are what the model actu
 ## Where it fits
 
 ```text
-TypeFerence source
-    -> native agent artifacts
-    -> optional ARD publication and discovery
-    -> MCP, A2A, OpenAPI, or host-native invocation
-    -> Codex, Copilot, Cursor, Yoke, or another runtime
+declared source packages
+    -> restore exact locked dependency tree
+    -> build deterministic unlinked target artifacts
+    -> link explicit deployment bindings
+    -> publish or run through the selected host
 ```
 
 [Agentic Resource Discovery](https://agenticresourcediscovery.org/) helps clients find and verify deployed capabilities. TypeFerence addresses the earlier authoring problem: producing compatible native artifacts from one governed definition. Discovery portability does not itself provide definition portability.
 
-The long-term objective is behavioral equivalence: preserving declared organizational intent across supported hosts closely enough to be measured and governed. V3 provides the common typed source, deterministic adapters, and provenance needed to test that objective; it does not claim that different models or runtimes already behave identically.
+The long-term objective is behavioral equivalence: preserving declared organizational intent across supported hosts closely enough to be measured and governed. V4 provides the closed typed source, deterministic adapters, and provenance needed to test that objective; it does not claim that different models or runtimes already behave identically.
 
-The v3 source shape is deliberately small:
+The v4 source shape is deliberately small:
 
 ```yaml
-schemaVersion: 3
+schemaVersion: 4
 kind: agent
 id: helio/payments-repo-agent@1.0.0
 embeds:
@@ -80,13 +80,19 @@ cd go && go build -o ../bin/ ./cmd/typeference && cd ..
 
 ./bin/typeference validate examples/helio
 ./bin/typeference build examples/helio --target all --out out --emit-ard --publisher-domain helio.example
+./bin/typeference link out/codex --deployment examples/deployment/helio.yaml --out linked/codex
+./bin/typeference link out/neutral --deployment examples/deployment/helio-a2a.yaml --out linked/a2a
 ./bin/typeference diff examples/helio --against dist --emit-ard --publisher-domain helio.example
 ./bin/typeference inspect helio/payments-repo-agent@1.0.0 --source examples/helio
 ```
 
-`build` writes the neutral bundle plus Codex, Copilot, and Cursor artifacts under
-`out/`. `diff` recompiles and byte-compares against the committed reference output
-in `dist/` — "No differences." is the determinism guarantee made visible: your
+`build` writes deterministic, unlinked neutral, Codex, Copilot, and Cursor
+artifacts under `out/`. It intentionally emits no active MCP command or endpoint.
+`link` validates an explicit external deployment file and materializes runtime
+configuration. It creates an absent or empty output and replaces a non-empty one
+only when root link provenance identifies it as a prior TypeFerence output.
+`diff` recompiles and byte-compares against the committed reference output in
+`dist/` — "No differences." is the determinism guarantee made visible: your
 freshly built compiler reproduces the repository's artifacts exactly.
 
 The binary is fully static (`CGO_ENABLED=0`) with no runtime dependencies. You can
@@ -112,15 +118,22 @@ typeference version
 ```
 
 `<source>` in every command below is a directory of your own typed agent
-definitions (`schemaVersion: 3` YAML, shaped like the example above) — clone
+definitions (`schemaVersion: 4` YAML, shaped like the example above) — clone
 this repository to point it at the bundled `examples/helio/` corpus instead.
 
 ```text
 typeference validate <source> [--trust-config path]
+    [--packages-dir obj/typeference/packages]
+typeference pack <source> [--out package.tferpkg]
+typeference restore <source> --feeds <external-config> [--locked]
+    [--packages-dir obj/typeference/packages]
+typeference update <source> --feeds <external-config>
 typeference build <source> [--target all|neutral|codex|copilot|cursor] [--out dist]
+    [--packages-dir obj/typeference/packages]
     [--emit-ard --publisher-domain example.com] [--trust-config path]
     [--trust-signatures signatures.json] [--allow-unsigned-trust]
 typeference inspect <agent-id> [--source path]
+typeference link <built-target-dir> --deployment <file> --out <linked-dir>
 typeference diff <source> --against <compiled-dir> [--target all]
     [--emit-ard --publisher-domain example.com] [--trust-config path]
     [--trust-signatures signatures.json] [--json] [--allow-unsigned-trust]
@@ -131,39 +144,103 @@ typeference equivalence score <run-dir> [--live] [--model id]
 ```
 
 `validate` checks composition and structural typing without writing anything.
-`build` compiles to native target artifacts. `diff` recompiles and byte-compares
+`pack` creates a canonical source package. `restore` is the only dependency
+operation that contacts feeds; it commits exact identities and digests to
+`typeference.lock` and materializes the complete tree under
+`obj/typeference/packages`. Once a lock exists, `restore` honors it; `update`
+is the explicit re-resolution after exact manifest edits. `build` is offline
+and frozen. `link` is the separate
+environment-specific transform. `diff` recompiles and byte-compares
 against an already-built directory — see [Quick start](#quick-start) above for
 what "No differences." means. `eval` and `equivalence` are covered in
 [Behavioral evals](#behavioral-evals) below; both default to a dry run that
 never makes a network call.
 
-## Two implementations, one specification
+## Source format, interfaces, and exposure
 
-The C# implementation under `src/` is the reference implementation; the Go
-implementation under `go/` is an independent second implementation. Both compile
-identical source to **byte-identical artifacts**, enforced by a shared conformance
-suite ([conformance/](conformance/README.md)) that runs on both implementations in
-CI — expected digests are generated by one implementation and independently
-verified by the other. That suite is what makes the
-[specification](docs/specification.md) real rather than aspirational.
+Resources may be head-only `.yaml` documents or `.tfer` documents with an exact
+YAML frontmatter fence and a prose body. A unimodal skill uses its `.tfer` body
+as instructions; a context uses it as the text body declared by its
+`contextType`. Multimodal skills keep instructions under `variants` and cannot
+also carry one ambiguous body. The complete grammar is normative in
+[ADR-0023](docs/decisions/0023-tfer-source-format.md) and the
+[specification](docs/specification.md#source-document-formats).
 
-### Reference implementation (C#)
+Interfaces are satisfied structurally by the resolved slots and capability
+bindings of an agent. Capability visibility is a separate public-API axis:
+`internal` is the default, and both internal and exposed capabilities can satisfy
+interfaces and participate in composition. Only `visibility: exposed`
+capabilities are projected onto linked callable surfaces such as A2A Agent Cards.
 
-Requires the .NET 10 SDK.
+Context governance uses a different boundary. A context satisfies its declared
+type and only the base types it explicitly refines through `embeds`; a
+structurally identical but unrelated type cannot impersonate a governed type.
+Tools are independent extern dependencies consumed by skills, not alternate
+implementations of those skills' capabilities. These boundaries are recorded in
+[ADR-0024](docs/decisions/0024-clarify-v4-type-and-composition-boundaries.md).
 
-```powershell
-dotnet build TypeFerence.slnx
-dotnet src/TypeFerence.Cli/bin/Debug/net10.0/typeference.dll validate examples/helio
-dotnet src/TypeFerence.Cli/bin/Debug/net10.0/typeference.dll serve dist/neutral
+`required` is the demand side of the composition model. A profile may declare a
+required capability without choosing its implementation; every concrete agent
+that carries the requirement must supply a compatible binding. Interface
+satisfaction is observational—it reports what an agent already provides—and does
+not create that obligation. `sealed` is separate: it protects an implementation
+that has already been supplied.
+
+## One implementation, one specification
+
+The Go implementation under `go/` is the reference implementation. The
+[specification](docs/specification.md) stays normative in principle — the
+abstraction is the contract, and anyone may realize it differently — but this
+repository's Go compiler is the one living answer ([ADR-0014](docs/decisions/0014-go-only-implementation.md)).
+Determinism is preserved and made visible by the
+[conformance suite](conformance/README.md): the compiler must reproduce the
+committed digests byte-for-byte.
+The [specification evidence matrix](docs/conformance-matrix.md) maps normative
+areas to current v4 golden fixtures and focused implementation tests. Architectural
+follow-ups are maintained in [next steps](docs/next-steps.md).
+
+The repository's executable corpora have distinct jobs: `examples/helio` is the
+integrated narrative and committed reference output; `examples/repo-agent` is a
+compact object-model authoring example; `agents/maintainer` is the self-hosting
+drift gate; and `conformance/fixtures` is the normative edge-case corpus. New
+features should not be copied into every example unless that role requires them.
+
+An earlier C# reference implementation was retired when the project committed to
+being a tool rather than a multi-implementation standard. Determinism — the
+property that makes `diff` and the committed-digest guarantee real — is a property
+of one good compiler and was unaffected; only the second implementation, and the
+cross-implementation half of the conformance suite, went away. TypeFerence embeds
+no LLM provider. Deployment state is consumed only by the explicit linker and
+never changes source or unlinked-target identity.
+
+## Packages and enterprise feeds
+
+A project manifest declares exact source-package dependencies:
+
+```yaml
+schemaVersion: 2
+name: marathon/payments-agents
+version: 1.0.0
+dependencies:
+  marathon/enterprise-foundations: 3.1.0
 ```
 
-The MCP server (`typeference serve`) is currently implemented in the reference
-implementation only. It exposes tools such as:
+Feed routing is external to source identity. A filesystem/JFrog-compatible
+example looks like:
 
-- `executive-assistant.prepare-brief`
-- `payments-repo-agent.repository-status`
+```yaml
+schemaVersion: 1
+routes:
+  marathon:
+    kind: jfrog
+    baseUrl: https://artifacts.example/artifactory/typeference
+    credentialEnvironment: JFROG_ACCESS_TOKEN
+```
 
-Calls return a deterministic invocation package for the host agent. TypeFerence does not embed an LLM provider.
+`azureArtifacts` routes use Azure Universal Packages through the Azure CLI and
+its existing authentication. Package names replace `/` with `--` in Azure
+Artifacts. Lockfiles contain package identities, exports, dependency edges, and
+content digests—never feed URLs, credentials, or machine paths.
 
 ## Self-hosting
 
@@ -189,7 +266,11 @@ host, and `score` reports adherence per surface and agreement across surfaces,
 listing every divergence. A scorecard is one observation per surface, not a proof;
 see [ADR-0009](docs/decisions/0009-behavioral-equivalence-harness.md).
 
-`--emit-ard` publishes one canonical TypeFerence source-package entry and one precompiled bundle entry for each concrete agent and selected target. Compiled entries carry `derivedFrom` provenance back to the canonical source digest. ARD is an envelope: a target-aware installer must understand static Codex, Copilot, or Cursor bundles, while callable MCP or A2A resources require their own deployed endpoint and native card.
+`--emit-ard` emits one canonical TypeFerence source-package entry and one
+unlinked bundle entry for each concrete agent and selected target. Entries carry
+`derivedFrom` provenance back to the canonical explicit source-resource digest.
+Callable MCP or A2A publication requires linked provider/endpoint metadata;
+build never invents an address.
 
 ### Trust manifests
 
@@ -220,29 +301,35 @@ TypeFerence does not hold signing keys. An external signer can produce detached 
 
 ## Repository map
 
-- `src/` - C# reference implementation: compiler, target adapters, CLI, and MCP runtime.
-- `go/` - independent Go implementation: compiler, target adapters, CLI, and eval harness.
-- `conformance/` - shared cross-implementation conformance fixtures (byte-identity contract).
+- `go/` - the Go implementation: compiler, target adapters, CLI, language server (`cmd/typeference-lsp`), and eval harness.
+- `conformance/` - canonical conformance fixtures (byte-identity contract).
 - `examples/helio/` - fictional cross-domain organization.
 - `web/playground/` - browser playground: the Go compiler built for `js/wasm`, plus the BETH operator console.
 - `agents/maintainer/` - this repository's maintainer agent, defined in TypeFerence.
 - `evals/` - behavioral eval scenarios and honest framing.
-- `docs/specification.md` - normative v3 behavior.
+- `docs/specification.md` - normative v4 behavior.
 - `docs/decisions/` - architecture decision records.
 - `docs/whitepaper.md` and `output/pdf/typeference-whitepaper.pdf` - design paper.
-- `tests/` - C# test suite: type system, targets, determinism, conformance runner, MCP integration.
 - `CHANGELOG.md` and `docs/release-checklist.md` - versioning and release process.
 
 ## Design boundaries
 
 - Agents may embed multiple profiles or agents; profiles may embed other profiles; local slots and capability bindings resolve promoted-name ambiguity.
 - Interfaces may embed interfaces and are satisfied structurally, without declarations on agents.
-- Capabilities are explicit, versioned method slots; skills are concrete implementations that bind those capabilities.
-- Context is referenced and loaded only with the skill that needs it.
-- Target adapters emit platform-native shapes while retaining the portable fields each target supports.
+- Capabilities are explicit, versioned method slots; skills are concrete
+  implementations that bind those capabilities. Internal capabilities still
+  satisfy interfaces; only exposed capabilities enter the public callable surface.
+- Context is a first-class typed resource. Raw prose uses an explicit text-body
+  context type; there is no filesystem-path escape hatch. Refinement is nominal
+  through explicit `embeds`, with structurally checked members.
+- Tools are independent declared runtime imports used by skills. Base and variant
+  requirements remain distinct until link selects deployment modes and providers.
+- Target adapters emit deterministic unlinked platform-native shapes; link
+  materializes active runtime configuration.
 - Build output is deterministic and carries provenance.
-- No deployment state, hosted runtime, or model credentials in v3.
-- No ARD registry lifecycle, federation, dependency, install-safety, or deployment metadata in core TypeFerence semantics.
+- Source package dependencies restore to an exact committed graph before build.
+- No deployment state, hosted runtime, or model credentials participate in
+  source or build semantics.
 - Structural validation does not guarantee identical LLM behavior across models or hosts.
 - ARD publication wraps selected target outputs; it is not itself a compilation target or execution runtime.
 

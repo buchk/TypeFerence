@@ -17,11 +17,10 @@ func repoPath(t *testing.T, parts ...string) string {
 	return filepath.Join(append([]string{root}, parts...)...)
 }
 
-// TestHelioParityWithReferenceImplementation compiles the shared example and
-// byte-compares every target tree against the committed output of the C#
-// reference implementation. This is the cross-implementation contract: same
-// input, byte-identical artifacts.
-func TestHelioParityWithReferenceImplementation(t *testing.T) {
+// TestHelioParityWithCommittedOutput compiles the shared example and
+// byte-compares every target tree against the committed dist/ reference. This is
+// the determinism contract: same input, byte-identical artifacts (ADR-0014).
+func TestHelioParityWithCommittedOutput(t *testing.T) {
 	source := repoPath(t, "examples", "helio")
 	if _, err := os.Stat(source); err != nil {
 		t.Skipf("examples/helio not available: %v", err)

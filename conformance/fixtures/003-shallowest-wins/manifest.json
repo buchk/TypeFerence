@@ -1,10 +1,11 @@
 {
   "description": "A slot declared deep in a chain is overridden by a shallower declaration on a sibling embed; the shallowest wins without ambiguity.",
+  "language": "legacy-v3",
   "expect": "success",
   "digests": {
-    "codex": "sha256:2a4cad50dc1eb0921eb980454732032ff122905282fd99b1c0c543b6f7ab4584",
-    "copilot": "sha256:cfd8e05958b7dc177d543b41620be1a6f9cc97c7e4f9a38049e6dcaba5386b68",
-    "cursor": "sha256:545ed32a35b430d2fde17114d9a4ba6abfb5d440c00b2f66553591286ac6fd86",
-    "neutral": "sha256:24357956d6be75dbba9dcd3ec26e9b4cbee36f21adef912d39a80652984d9257"
+    "codex": "sha256:55a4a3971d19128f3550999e78ff9c6eefa0bd294ba6980b1b5b41c724d0dfb7",
+    "copilot": "sha256:e20d0fb8cd69c7261e83b7279b45689087b201939b1472d201e77b19fbf2f734",
+    "cursor": "sha256:51c4dab8d6a9772f482135e102992a0c19d5a0f622bb20d498ca07ac67829b7f",
+    "neutral": "sha256:a1eaa014ba48f10a22075dac813f182a821339e62c1e1b88b0df5f344083ad9e"
   }
 }

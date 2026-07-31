@@ -5,9 +5,3 @@ description: "Classify an inbound message and recommend an accountable next acti
 
 Read the message and identify its sender, intent, urgency, decision owner, and requested deadline.
 Separate facts from assumptions. Return a concise recommendation; do not send a reply.
-
-## Context loaded on invocation
-
-- `context/organization.md`
-- `context/safety-policy.md`
-- `context/principal.md`

@@ -1,0 +1,7 @@
+schemaVersion: 4
+kind: agent
+id: conformance/agents/number-tokens-v4@1.0.0
+skills:
+  - ref: conformance/skills/measure-v4@1.0.0
+context:
+  - conformance/context/measurements@1.0.0

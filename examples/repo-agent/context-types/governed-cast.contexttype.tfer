@@ -1,0 +1,13 @@
+---
+schemaVersion: 4
+kind: contextType
+id: acme/context-types/governed-cast@1.0.0
+displayName: Governed Cast of Characters
+description: A cast of characters refined with provenance and ownership metadata.
+fields:
+  owner:
+    type: string
+    required: true
+embeds:
+  - acme/context-types/cast-of-characters@1.0.0
+---

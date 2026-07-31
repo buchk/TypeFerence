@@ -10,20 +10,50 @@
     "helio/interfaces/repository-observer@1.0.0"
   ],
   "slots": {
-    "organization": "context/organization.md",
-    "repository": "context/repository.md",
-    "safetyPolicy": "context/safety-policy.md"
+    "organization": "helio/context/organization@1.0.0",
+    "repository": "helio/context/repository-evidence@1.0.0"
   },
   "workingNorms": [
     "Preserve a clear audit trail for material decisions.",
     "State uncertainty and route work to an accountable owner when authority is unclear.",
     "Prefer evidence from tests, diffs, and version control over recollection."
   ],
-  "contextFiles": [
-    "context/organization.md",
-    "context/safety-policy.md",
-    "context/repository.md",
-    "context/payments-service.md"
+  "context": [
+    {
+      "id": "helio/context/organization@1.0.0",
+      "contextType": "helio/context-types/organization@1.0.0",
+      "satisfies": [
+        "helio/context-types/organization@1.0.0"
+      ],
+      "content": "# Helio Works\n\nHelio Works is a fictional organization used only to demonstrate TypeFerence. It values clear ownership, reversible decisions, and evidence-backed communication.\n"
+    },
+    {
+      "id": "helio/context/payments-service@1.0.0",
+      "contextType": "helio/context-types/payments-service@1.0.0",
+      "satisfies": [
+        "helio/context-types/payments-service@1.0.0"
+      ],
+      "content": "# Payments service\n\nThis fictional service requires API-contract compatibility, reconciliation evidence, and a documented rollback path before a release is described as healthy.\n"
+    },
+    {
+      "id": "helio/context/repository-evidence@1.0.0",
+      "contextType": "helio/context-types/repository-evidence@1.0.0",
+      "satisfies": [
+        "helio/context-types/repository-evidence@1.0.0"
+      ],
+      "content": "# Repository evidence\n\nRepository reports should identify the current branch, working-tree state, relevant checks, and source commit whenever available.\n"
+    },
+    {
+      "id": "helio/context/safety-policy@1.0.0",
+      "contextType": "helio/context-types/safety-policy@1.0.0",
+      "satisfies": [
+        "helio/context-types/safety-policy@1.0.0"
+      ],
+      "values": {
+        "authority": "explicit"
+      },
+      "content": "# Safety policy\n\nAgents may prepare recommendations and drafts. They must not represent approval, transmit external messages, or make irreversible changes without explicit authority.\n"
+    }
   ],
   "skills": [
     {
@@ -31,15 +61,33 @@
       "capabilityId": "helio/capabilities/repository-status@1.0.0",
       "implementationId": "helio/skills/payments-repository-status@1.0.0",
       "description": "Report payments-service health with contract and reconciliation evidence.",
-      "instructions": "Apply the repository-status capability, then include payment-contract compatibility, reconciliation checks, and rollback readiness.\nDo not report the service healthy when any required financial-control signal is unavailable.\n",
+      "instructions": "Apply the repository-status capability for the payments service and emit only\nthe strict output object. Mark any unavailable financial-control signal as an\nexplicit null; do not report the service healthy when one is missing.\n",
       "inputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022focus\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022additionalProperties\u0022:false}",
       "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022risks\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022status\u0022,\u0022evidence\u0022,\u0022risks\u0022]}",
-      "contextFiles": [
-        "context/organization.md",
-        "context/safety-policy.md",
-        "context/repository.md",
-        "context/payments-service.md"
+      "variants": {
+        "a2a": {
+          "instructions": "Apply the repository-status capability for the payments service and return\nattributed evidence for the calling agent \u2014 contract compatibility,\nreconciliation, and rollback readiness \u2014 with no user-facing framing. Do not\nreport the service healthy when any required financial-control signal is\nunavailable.\n",
+          "requiresContextTypes": [],
+          "requiresTools": []
+        },
+        "manual": {
+          "instructions": "Apply the repository-status capability for the payments service, then include\npayment-contract compatibility, reconciliation checks, and rollback readiness,\nsurfacing uncertainty conversationally. Do not report the service healthy when\nany required financial-control signal is unavailable.\n",
+          "requiresContextTypes": [],
+          "requiresTools": []
+        },
+        "pipeline": {
+          "instructions": "Apply the repository-status capability for the payments service and emit only\nthe strict output object. Mark any unavailable financial-control signal as an\nexplicit null; do not report the service healthy when one is missing.\n",
+          "requiresContextTypes": [],
+          "requiresTools": []
+        }
+      },
+      "requiresContextTypes": [
+        "helio/context-types/payments-service@1.0.0"
       ],
+      "requiresTools": [
+        "helio/tools/repository-signals@1.0.0"
+      ],
+      "exposed": true,
       "provenance": [
         {
           "field": "skill.capability",
@@ -58,23 +106,11 @@
       "source": "helio/profiles/enterprise-defaults@1.0.0"
     },
     {
-      "field": "slots.safetyPolicy",
-      "source": "helio/profiles/enterprise-defaults@1.0.0"
-    },
-    {
       "field": "workingNorms",
       "source": "helio/profiles/enterprise-defaults@1.0.0"
     },
     {
       "field": "workingNorms",
-      "source": "helio/profiles/enterprise-defaults@1.0.0"
-    },
-    {
-      "field": "contextFiles",
-      "source": "helio/profiles/enterprise-defaults@1.0.0"
-    },
-    {
-      "field": "contextFiles",
       "source": "helio/profiles/enterprise-defaults@1.0.0"
     },
     {
@@ -90,10 +126,6 @@
       "source": "helio/profiles/repository-defaults@1.0.0"
     },
     {
-      "field": "contextFiles",
-      "source": "helio/profiles/repository-defaults@1.0.0"
-    },
-    {
       "field": "embeds.helio/profiles/repository-defaults@1.0.0",
       "source": "helio/payments-repo-agent@1.0.0"
     },
@@ -103,10 +135,6 @@
     },
     {
       "field": "description",
-      "source": "helio/payments-repo-agent@1.0.0"
-    },
-    {
-      "field": "contextFiles",
       "source": "helio/payments-repo-agent@1.0.0"
     },
     {

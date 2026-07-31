@@ -1,0 +1,21 @@
+---
+schemaVersion: 4
+kind: context
+id: typeference/context/spec-workflow@0.1.0
+contextType: typeference/context-types/spec-workflow@0.1.0
+displayName: Specification-first Workflow
+---
+# Specification-first workflow
+
+The normative specification is `docs/specification.md` at the repository root. It is
+the source of truth; the Go implementation under `go/` is its reference realization.
+
+A semantic change alters valid source, composition, or compiled bytes. It follows:
+
+1. Amend `docs/specification.md`.
+2. Record the decision and rejected alternatives in `docs/decisions/`.
+3. Add or update `conformance/fixtures/`.
+4. Update the implementation until determinism passes.
+
+If implementation and specification disagree, the specification wins. Ambiguity is
+a specification bug, not permission for a private implementation rule.
