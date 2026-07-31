@@ -177,6 +177,13 @@ Tools are independent extern dependencies consumed by skills, not alternate
 implementations of those skills' capabilities. These boundaries are recorded in
 [ADR-0024](docs/decisions/0024-clarify-v4-type-and-composition-boundaries.md).
 
+`required` is the demand side of the composition model. A profile may declare a
+required capability without choosing its implementation; every concrete agent
+that carries the requirement must supply a compatible binding. Interface
+satisfaction is observational—it reports what an agent already provides—and does
+not create that obligation. `sealed` is separate: it protects an implementation
+that has already been supplied.
+
 ## One implementation, one specification
 
 The Go implementation under `go/` is the reference implementation. The
@@ -186,6 +193,15 @@ repository's Go compiler is the one living answer ([ADR-0014](docs/decisions/001
 Determinism is preserved and made visible by the
 [conformance suite](conformance/README.md): the compiler must reproduce the
 committed digests byte-for-byte.
+The [specification evidence matrix](docs/conformance-matrix.md) maps normative
+areas to current v4 golden fixtures and focused implementation tests. Architectural
+follow-ups are maintained in [next steps](docs/next-steps.md).
+
+The repository's executable corpora have distinct jobs: `examples/helio` is the
+integrated narrative and committed reference output; `examples/repo-agent` is a
+compact object-model authoring example; `agents/maintainer` is the self-hosting
+drift gate; and `conformance/fixtures` is the normative edge-case corpus. New
+features should not be copied into every example unless that role requires them.
 
 An earlier C# reference implementation was retired when the project committed to
 being a tool rather than a multi-implementation standard. Determinism — the

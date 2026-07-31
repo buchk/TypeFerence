@@ -1,0 +1,4 @@
+schemaVersion: 4
+kind: agent
+id: conformance/agents/notes@1.0.0
+description: Prefix followed by a normalized path separator.

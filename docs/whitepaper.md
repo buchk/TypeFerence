@@ -94,6 +94,10 @@ This enables governance through normal software practices: pull requests, determ
 
 The reference prototype consumes explicit deployment bindings but does not deploy services, manage host models, store secrets, or grant authority. The native context type language is deliberately smaller than JSON Schema. Target adapters demonstrate native shapes and should evolve alongside their platforms.
 
+Maintained engineering follow-ups and corpus ownership are tracked in
+[`docs/next-steps.md`](next-steps.md); normative coverage is tracked separately in
+the [specification evidence matrix](conformance-matrix.md).
+
 Promising extensions include linked ARD cards for additional deployed MCP targets, signed compiled bundles, semantic diff summaries, policy linting, version-range solving, and conformance suites for third-party adapters.
 
 The important boundary should remain: portable mechanics in TypeFerence, behavioral authority in the organization, and execution authority in the host.

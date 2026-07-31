@@ -1,0 +1,4 @@
+schemaVersion: 4
+kind: agent
+id: conformance/agents/notesa@1.0.0
+description: Prefix followed by lowercase ASCII a.

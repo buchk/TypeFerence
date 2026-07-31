@@ -1,0 +1,12 @@
+{
+  "description": "Version 4 target digests sort forward-slash paths identically when an agent directory prefix is followed by '/', '0', or 'a'.",
+  "expect": "success",
+  "emitArd": "conformance.example",
+  "digests": {
+    "ard": "sha256:ac4f72386201fcc76d6c36e19709e29df1d6ebf873074d1e129524cd0a20f29f",
+    "codex": "sha256:6876b940f92091fa873416994bea9366843feb8ba4befe614ce0cd78af46a3c7",
+    "copilot": "sha256:23dcc5d3d566f145387d40a92521e3a25c05d5d1d3f7a7132720950725c416c2",
+    "cursor": "sha256:19c302379961d20ce9e111560df3abb1e431f0f5e535665bf6e1cdae4fd2f4a9",
+    "neutral": "sha256:d37a98d949a291952e0ebbc414d4255f43bcd904ea5fe23159f7824eb4928dd3"
+  }
+}

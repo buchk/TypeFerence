@@ -1,0 +1,6 @@
+schemaVersion: 4
+kind: contextType
+id: conformance/context-types/glossary@1.0.0
+body:
+  type: text
+  required: true
