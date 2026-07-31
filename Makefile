@@ -31,7 +31,7 @@ test-go:
 # Determinism suite: the compiler compiles the shared fixture corpus and must
 # reproduce the committed digests (ADR-0014).
 conformance:
-	cd go && $(GO) test ./conformance -run TestConformance -v
+	cd go && $(GO) test ./conformance -v
 
 # Recompile the self-hosted maintainer definition (agents/maintainer) into its
 # committed artifacts: dist-maintainer and the repository-root AGENTS.md.

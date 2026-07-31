@@ -3,6 +3,7 @@ package packages_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/buchk/TypeFerence/go/internal/compile"
@@ -76,6 +77,31 @@ func TestPackIsByteDeterministic(t *testing.T) {
 	b, _ := os.ReadFile(second)
 	if digestA != digestB || string(a) != string(b) {
 		t.Fatal("repeated packs were not byte-identical")
+	}
+}
+
+func TestBuildAndPackRejectStaleLockForEmptyDependencyGraph(t *testing.T) {
+	source := t.TempDir()
+	write(t, source, "typeference.yaml", "schemaVersion: 2\nname: acme/package\nversion: 1.0.0\n")
+	write(t, source, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\n")
+	lock := packages.Lock{
+		SchemaVersion: 1,
+		Root:          "acme/package",
+		RootVersion:   "1.0.0",
+		Packages: []packages.LockedPackage{{
+			Name: "acme/stale", Version: "1.0.0",
+			Digest: "sha256:" + strings.Repeat("0", 64),
+		}},
+	}
+	write(t, source, packages.LockFile, string(packages.EncodeLock(lock)))
+
+	if _, err := compile.Build(source, t.TempDir(), []compile.Target{compile.Neutral}, nil); err == nil ||
+		!strings.Contains(err.Error(), "unreachable") {
+		t.Fatalf("build must reject an undeclared locked package, got %v", err)
+	}
+	if _, err := packages.Pack(source, filepath.Join(t.TempDir(), "stale.tferpkg")); err == nil ||
+		!strings.Contains(err.Error(), "unreachable") {
+		t.Fatalf("pack must reject an undeclared locked package, got %v", err)
 	}
 }
 

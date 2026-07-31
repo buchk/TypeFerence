@@ -1,5 +1,6 @@
 {
   "description": "A skill bound in an embedded profile is promoted into the agent; the dispatch name derives from the outer agent, not the profile.",
+  "language": "legacy-v3",
   "expect": "success",
   "digests": {
     "codex": "sha256:b76b1deb1f3bf4aa80e8066c3353f349a2d2906f7b4dee5888b3ec40fc7fd1e0",

@@ -1,5 +1,6 @@
 {
   "description": "A promoted skill keeps the context list resolved where it was bound; the outer agent's extra context files do not leak into the promoted skill.",
+  "language": "legacy-v3",
   "expect": "success",
   "digests": {
     "codex": "sha256:0652372175cefb1b3db71d85cc27e0087dd431ff6269a11474feb60c1108227b",

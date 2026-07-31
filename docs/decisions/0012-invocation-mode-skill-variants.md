@@ -2,6 +2,11 @@
 
 **Status:** Accepted (2026-07-23)
 
+**Supersession note:** Decision 5 is superseded by ADR 0024. Build now preserves
+neutral variants or materializes a target adapter's fixed mode; deployment link
+validates and records later mode selection. The deferred `.tfer` format language
+is superseded by ADR 0023.
+
 ## Context
 
 A capability is a fixed contract: a versioned method slot with a stable

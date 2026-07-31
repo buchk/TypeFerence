@@ -1,5 +1,6 @@
 {
   "description": "A context file authored with CRLF line endings: the digest and ARD packaging normalize CRLF to LF.",
+  "language": "legacy-v3",
   "expect": "success",
   "emitArd": "conformance.example",
   "digests": {

@@ -2,6 +2,10 @@
 
 **Status:** Accepted (2026-07-23)
 
+**Supersession note:** ADR 0024 replaces decision 2's structural-satisfaction
+wording with nominal satisfaction through explicit `embeds`, while retaining
+structural member validation. ADR 0023 resolves the deferred `.tfer` serialization.
+
 ## Context
 
 Context today is untyped. `contextFiles` is a list of bare relative paths, and the

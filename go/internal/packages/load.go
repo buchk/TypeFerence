@@ -15,22 +15,21 @@ func LoadDependencies(source, packagesDir string) (map[string]*resource.Document
 	if err != nil {
 		return nil, nil, err
 	}
-	if project == nil || len(project.Dependencies) == 0 {
-		return map[string]*resource.Document{}, nil, nil
-	}
 	lock, err := LoadLock(source)
 	if err != nil {
 		return nil, nil, err
 	}
-	if lock == nil {
-		return nil, nil, resource.Errorf("dependencies are declared but %s is missing; run typeference restore", LockFile)
+	if project == nil {
+		if lock != nil {
+			return nil, nil, resource.Errorf("%s requires %s", LockFile, resource.ProjectManifestFile)
+		}
+		return map[string]*resource.Document{}, nil, nil
 	}
-	if lock.Root != project.Name || lock.RootVersion != project.Version ||
-		!sameDependencies(project.Dependencies, directDependencies(lock.Packages, project.Dependencies)) {
-		return nil, nil, resource.Errorf("%s does not match %s; run typeference restore", LockFile, resource.ProjectManifestFile)
-	}
-	if err := validateLockedGraph(lock, project.Dependencies); err != nil {
+	if err := validateProjectLock(project, lock, len(project.Dependencies) > 0); err != nil {
 		return nil, nil, err
+	}
+	if lock == nil {
+		return map[string]*resource.Document{}, nil, nil
 	}
 	if packagesDir == "" {
 		packagesDir = filepath.Join(source, "obj", "typeference", "packages")
@@ -75,6 +74,23 @@ func LoadDependencies(source, packagesDir string) (map[string]*resource.Document
 		}
 	}
 	return all, append([]LockedPackage{}, lock.Packages...), nil
+}
+
+func validateProjectLock(project *resource.Project, lock *Lock, required bool) error {
+	if lock == nil {
+		if required {
+			return resource.Errorf("dependencies are declared but %s is missing; run typeference restore", LockFile)
+		}
+		return nil
+	}
+	if lock.Root != project.Name || lock.RootVersion != project.Version ||
+		!sameDependencies(project.Dependencies, directDependencies(lock.Packages, project.Dependencies)) {
+		return resource.Errorf("%s does not match %s; run typeference restore", LockFile, resource.ProjectManifestFile)
+	}
+	if err := validateLockedGraph(lock, project.Dependencies); err != nil {
+		return err
+	}
+	return nil
 }
 
 func validateLockedGraph(lock *Lock, roots map[string]string) error {

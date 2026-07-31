@@ -1,5 +1,6 @@
 {
   "description": "Smallest valid source tree: one agent with defaults only.",
+  "language": "legacy-v3",
   "expect": "success",
   "digests": {
     "codex": "sha256:438268f3c993be0f5e3c6468ef9324e5c304f644d004eb87730a0cf37147cc2b",

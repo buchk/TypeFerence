@@ -2,6 +2,10 @@
 
 **Status:** Accepted (2026-07-23)
 
+**Supersession note:** ADR 0024 resolves the temporary sealed-diamond limitation:
+identical promoted bindings converge, while different implementations or
+incompatible modifier state remain ambiguous.
+
 ## Context
 
 A security (or platform) team authors a profile that others embed. Some of its

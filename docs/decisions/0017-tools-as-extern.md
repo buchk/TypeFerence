@@ -2,6 +2,10 @@
 
 **Status:** Accepted (2026-07-23)
 
+**Supersession note:** ADR 0024 supersedes decision 2's skill/tool-sibling model
+and the per-variant typed credential/scope claim. Tools are independent extern
+dependencies; deployment bindings attest their runtime fulfillment.
+
 ## Context
 
 Skills reference runtime tools — a vault reader, an API client — and today those

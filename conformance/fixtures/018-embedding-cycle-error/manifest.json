@@ -1,4 +1,5 @@
 {
   "description": "Two profiles embed each other: the embedding cycle is detected at compile time.",
+  "language": "legacy-v3",
   "expect": "error"
 }

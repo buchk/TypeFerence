@@ -1,0 +1,7 @@
+schemaVersion: 4
+kind: contextType
+id: conformance/context-types/right@1.0.0
+fields:
+  owner:
+    type: string
+    default: right

@@ -154,6 +154,29 @@ what "No differences." means. `eval` and `equivalence` are covered in
 [Behavioral evals](#behavioral-evals) below; both default to a dry run that
 never makes a network call.
 
+## Source format, interfaces, and exposure
+
+Resources may be head-only `.yaml` documents or `.tfer` documents with an exact
+YAML frontmatter fence and a prose body. A unimodal skill uses its `.tfer` body
+as instructions; a context uses it as the text body declared by its
+`contextType`. Multimodal skills keep instructions under `variants` and cannot
+also carry one ambiguous body. The complete grammar is normative in
+[ADR-0023](docs/decisions/0023-tfer-source-format.md) and the
+[specification](docs/specification.md#source-document-formats).
+
+Interfaces are satisfied structurally by the resolved slots and capability
+bindings of an agent. Capability visibility is a separate public-API axis:
+`internal` is the default, and both internal and exposed capabilities can satisfy
+interfaces and participate in composition. Only `visibility: exposed`
+capabilities are projected onto linked callable surfaces such as A2A Agent Cards.
+
+Context governance uses a different boundary. A context satisfies its declared
+type and only the base types it explicitly refines through `embeds`; a
+structurally identical but unrelated type cannot impersonate a governed type.
+Tools are independent extern dependencies consumed by skills, not alternate
+implementations of those skills' capabilities. These boundaries are recorded in
+[ADR-0024](docs/decisions/0024-clarify-v4-type-and-composition-boundaries.md).
+
 ## One implementation, one specification
 
 The Go implementation under `go/` is the reference implementation. The
@@ -275,11 +298,14 @@ TypeFerence does not hold signing keys. An external signer can produce detached 
 
 - Agents may embed multiple profiles or agents; profiles may embed other profiles; local slots and capability bindings resolve promoted-name ambiguity.
 - Interfaces may embed interfaces and are satisfied structurally, without declarations on agents.
-- Capabilities are explicit, versioned method slots; skills are concrete implementations that bind those capabilities.
+- Capabilities are explicit, versioned method slots; skills are concrete
+  implementations that bind those capabilities. Internal capabilities still
+  satisfy interfaces; only exposed capabilities enter the public callable surface.
 - Context is a first-class typed resource. Raw prose uses an explicit text-body
-  context type; there is no filesystem-path escape hatch.
-- Tools are declared runtime imports. Base and variant requirements remain
-  distinct until link selects deployment modes and providers.
+  context type; there is no filesystem-path escape hatch. Refinement is nominal
+  through explicit `embeds`, with structurally checked members.
+- Tools are independent declared runtime imports used by skills. Base and variant
+  requirements remain distinct until link selects deployment modes and providers.
 - Target adapters emit deterministic unlinked platform-native shapes; link
   materializes active runtime configuration.
 - Build output is deterministic and carries provenance.

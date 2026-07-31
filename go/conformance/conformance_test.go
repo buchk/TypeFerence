@@ -1,7 +1,5 @@
-// Package conformance runs the shared cross-implementation conformance suite
-// (repository conformance/ directory). The same fixtures are executed by the
-// C# reference implementation's ConformanceSuiteTests; expected digests can
-// only be green when both implementations agree byte-for-byte.
+// Package conformance runs the current-language golden conformance corpus and
+// the separately identified legacy-v3 archival regression corpus.
 package conformance
 
 import (
@@ -12,8 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/buchk/TypeFerence/go/internal/compile"
@@ -21,12 +17,12 @@ import (
 )
 
 // -update regenerates the digests in every success manifest from this
-// implementation's output. The C# runner then independently verifies them;
-// never hand-edit a digest.
+// implementation's output; never hand-edit a digest.
 var update = flag.Bool("update", false, "rewrite fixture manifests with computed digests")
 
 type manifest struct {
 	Description        string            `json:"description"`
+	Language           string            `json:"language,omitempty"`
 	Expect             string            `json:"expect"`
 	EmitArd            string            `json:"emitArd,omitempty"`
 	TrustSignatures    string            `json:"trustSignatures,omitempty"`
@@ -47,6 +43,15 @@ func fixturesRoot(t *testing.T) string {
 }
 
 func TestConformance(t *testing.T) {
+	runCorpus(t, "")
+}
+
+func TestLegacyV3Golden(t *testing.T) {
+	runCorpus(t, "legacy-v3")
+}
+
+func runCorpus(t *testing.T, language string) {
+	t.Helper()
 	root := fixturesRoot(t)
 	entries, err := os.ReadDir(root)
 	if err != nil {
@@ -59,17 +64,25 @@ func TestConformance(t *testing.T) {
 		}
 	}
 	sort.Strings(names)
-	if len(names) == 0 {
-		t.Fatal("no fixtures found")
-	}
+	count := 0
 	for _, name := range names {
+		dir := filepath.Join(root, name)
+		m := readManifest(t, dir)
+		if m.Language != language {
+			continue
+		}
+		count++
 		t.Run(name, func(t *testing.T) {
-			runFixture(t, filepath.Join(root, name))
+			runFixture(t, dir, m, language == "legacy-v3")
 		})
+	}
+	if count == 0 {
+		t.Fatalf("no fixtures found for language %q", map[bool]string{true: "v4", false: language}[language == ""])
 	}
 }
 
-func runFixture(t *testing.T, dir string) {
+func readManifest(t *testing.T, dir string) manifest {
+	t.Helper()
 	manifestPath := filepath.Join(dir, "manifest.json")
 	raw, err := os.ReadFile(manifestPath)
 	if err != nil {
@@ -81,10 +94,17 @@ func runFixture(t *testing.T, dir string) {
 	if err := decoder.Decode(&m); err != nil {
 		t.Fatalf("invalid manifest: %v", err)
 	}
+	if m.Language != "" && m.Language != "legacy-v3" {
+		t.Fatalf("manifest language must be omitted for v4 or legacy-v3, got %q", m.Language)
+	}
 	if m.Expect != "success" && m.Expect != "error" {
 		t.Fatalf("manifest expect must be success or error, got %q", m.Expect)
 	}
+	return m
+}
 
+func runFixture(t *testing.T, dir string, m manifest, legacyV3 bool) {
+	manifestPath := filepath.Join(dir, "manifest.json")
 	source := filepath.Join(dir, "source")
 	out := t.TempDir()
 	var ard *compile.ArdPublicationOptions
@@ -96,14 +116,6 @@ func runFixture(t *testing.T, dir string) {
 		if m.TrustSignatures != "" {
 			ard.TrustSignaturesPath = filepath.Join(dir, m.TrustSignatures)
 		}
-	}
-	// Fixtures 001-026 preserve the retired v3 byte contract. This explicit
-	// test-only switch does not reopen v3 on CLI/default compiler paths or for
-	// current-version fixtures.
-	legacyV3 := false
-	if prefix, _, ok := strings.Cut(filepath.Base(dir), "-"); ok {
-		number, _ := strconv.Atoi(prefix)
-		legacyV3 = number > 0 && number <= 26
 	}
 	_, buildErr := compile.BuildWithOptions(source, out,
 		[]compile.Target{compile.Neutral, compile.Codex, compile.Copilot, compile.Cursor},
@@ -155,7 +167,7 @@ func runFixture(t *testing.T, dir string) {
 	}
 
 	if len(m.Digests) == 0 {
-		t.Fatal("manifest has no digests; run `go test ./conformance -update` and verify with the C# runner")
+		t.Fatal("manifest has no digests; run `go test ./conformance -update` and review the specification/ADR change")
 	}
 	for target, want := range m.Digests {
 		got, ok := computed[target]

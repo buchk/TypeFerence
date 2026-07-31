@@ -1,5 +1,6 @@
 {
   "description": "Non-ASCII and escape-sensitive characters in display names, descriptions, norms, instructions, and context content; ARD emission inlines and escapes them.",
+  "language": "legacy-v3",
   "expect": "success",
   "emitArd": "conformance.example",
   "digests": {

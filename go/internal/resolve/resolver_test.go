@@ -221,3 +221,49 @@ func TestPromotedSkillAmbiguityRequiresLocalBinding(t *testing.T) {
 		t.Fatalf("expected capability ambiguity error, got %v", err)
 	}
 }
+
+func TestIdenticalSealedDiamondConverges(t *testing.T) {
+	capability := doc("capability", "t/capabilities/check@1.0.0", nil)
+	skill := doc("skill", "t/skills/check@1.0.0", func(d *resource.Document) {
+		d.Binds = capability.ID
+	})
+	base := doc("profile", "t/profiles/base@1.0.0", func(d *resource.Document) {
+		d.Skills = []resource.SkillBinding{{Ref: skill.ID, Sealed: true, Required: true}}
+	})
+	left := doc("profile", "t/profiles/left@1.0.0", func(d *resource.Document) {
+		d.Embeds = []string{base.ID}
+	})
+	right := doc("profile", "t/profiles/right@1.0.0", func(d *resource.Document) {
+		d.Embeds = []string{base.ID}
+	})
+	agent := doc("agent", "t/agent@1.0.0", func(d *resource.Document) {
+		d.Embeds = []string{left.ID, right.ID}
+	})
+	resolved, err := New(docSet(capability, skill, base, left, right, agent)).Resolve(agent.ID)
+	if err != nil {
+		t.Fatalf("identical sealed diamond must converge: %v", err)
+	}
+	if len(resolved.Skills) != 1 || !resolved.Skills[0].Sealed || !resolved.Skills[0].Required {
+		t.Fatalf("converged member lost modifier state: %+v", resolved.Skills)
+	}
+}
+
+func TestSameImplementationWithDifferentModifiersIsAmbiguous(t *testing.T) {
+	capability := doc("capability", "t/capabilities/check@1.0.0", nil)
+	skill := doc("skill", "t/skills/check@1.0.0", func(d *resource.Document) {
+		d.Binds = capability.ID
+	})
+	open := doc("profile", "t/profiles/open@1.0.0", func(d *resource.Document) {
+		d.Skills = []resource.SkillBinding{{Ref: skill.ID}}
+	})
+	sealed := doc("profile", "t/profiles/sealed@1.0.0", func(d *resource.Document) {
+		d.Skills = []resource.SkillBinding{{Ref: skill.ID, Sealed: true}}
+	})
+	agent := doc("agent", "t/agent@1.0.0", func(d *resource.Document) {
+		d.Embeds = []string{open.ID, sealed.ID}
+	})
+	if _, err := New(docSet(capability, skill, open, sealed, agent)).Resolve(agent.ID); err == nil ||
+		!strings.Contains(err.Error(), "ambiguous") {
+		t.Fatalf("different modifier state must remain ambiguous, got %v", err)
+	}
+}

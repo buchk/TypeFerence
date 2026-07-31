@@ -1,5 +1,6 @@
 {
   "description": "Agent with no displayName and no description: displayName falls back to the resource id, empty strings serialize as empty.",
+  "language": "legacy-v3",
   "expect": "success",
   "digests": {
     "codex": "sha256:25e235a770b1cf9500e0d19284aa08f0b0169cd99e37289a8bee86ec21d2dbec",

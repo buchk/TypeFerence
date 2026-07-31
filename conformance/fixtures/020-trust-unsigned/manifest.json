@@ -1,5 +1,6 @@
 {
   "description": "Full trust configuration (schema, attestations, provenance links, metadata, non-required signature intent) compiled into ARD trust manifests without signatures.",
+  "language": "legacy-v3",
   "expect": "success",
   "emitArd": "conformance.example",
   "digests": {

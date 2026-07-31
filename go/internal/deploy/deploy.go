@@ -369,7 +369,9 @@ func verifyBuildIndex(root string, reqs []requirements) error {
 
 func toolBindingsJSON(req requirements, deployment *File) string {
 	selected := map[string]bool{}
-	for _, mode := range deployment.Artifacts[req.AgentID].Modes {
+	selectedModes := append([]string{}, deployment.Artifacts[req.AgentID].Modes...)
+	sort.Strings(selectedModes)
+	for _, mode := range selectedModes {
 		selected[mode] = true
 	}
 	imports := append([]struct {
@@ -403,8 +405,17 @@ func toolBindingsJSON(req requirements, deployment *File) string {
 	return jsonx.Indented(jsonx.Obj{
 		{K: "schemaVersion", V: jsonx.Num("1")},
 		{K: "environment", V: jsonx.Str(deployment.Environment)},
+		{K: "selectedModes", V: stringArr(selectedModes)},
 		{K: "bindings", V: bindings},
 	}) + "\n"
+}
+
+func stringArr(values []string) jsonx.Arr {
+	result := jsonx.Arr{}
+	for _, value := range values {
+		result = append(result, jsonx.Str(value))
+	}
+	return result
 }
 
 func a2aCard(inputRoot string, req requirements, endpoint string) (string, error) {

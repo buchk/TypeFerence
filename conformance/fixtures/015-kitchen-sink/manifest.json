@@ -1,5 +1,6 @@
 {
   "description": "Maximal composition: multi-level profiles, interfaces, promoted and overridden skills, a non-emitting agent embedded by an emitting one, and ARD emission.",
+  "language": "legacy-v3",
   "expect": "success",
   "emitArd": "conformance.example",
   "digests": {

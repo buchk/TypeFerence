@@ -1,5 +1,6 @@
 {
   "description": "A context file without a trailing newline: content is hashed and packaged exactly as authored.",
+  "language": "legacy-v3",
   "expect": "success",
   "emitArd": "conformance.example",
   "digests": {

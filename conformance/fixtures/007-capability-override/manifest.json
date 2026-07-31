@@ -1,5 +1,6 @@
 {
   "description": "The agent overrides a promoted skill with its own binding for the same capability; the implementation must preserve the capability's canonical schemas.",
+  "language": "legacy-v3",
   "expect": "success",
   "digests": {
     "codex": "sha256:2fb138956ba3d5484b8d14045dc464872fd17ace90e826792b04a0b03d3edff1",

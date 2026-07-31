@@ -1,5 +1,6 @@
 {
   "description": "Externally produced detached JWS signatures are imported from a signature map outside the source root; every configured entry is signed.",
+  "language": "legacy-v3",
   "expect": "success",
   "emitArd": "conformance.example",
   "trustSignatures": "signatures.json",

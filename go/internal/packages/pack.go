@@ -66,18 +66,12 @@ func Pack(source, output string) (string, error) {
 	if project == nil {
 		return "", resource.Errorf("typeference pack requires %s", resource.ProjectManifestFile)
 	}
-	if len(project.Dependencies) > 0 {
-		lock, err := LoadLock(source)
-		if err != nil {
-			return "", err
-		}
-		if lock == nil || lock.Root != project.Name || lock.RootVersion != project.Version ||
-			!sameDependencies(project.Dependencies, directDependencies(lock.Packages, project.Dependencies)) {
-			return "", resource.Errorf("typeference pack requires a lockfile matching declared dependencies; run typeference restore")
-		}
-		if err := validateLockedGraph(lock, project.Dependencies); err != nil {
-			return "", err
-		}
+	lock, err := LoadLock(source)
+	if err != nil {
+		return "", err
+	}
+	if err := validateProjectLock(project, lock, len(project.Dependencies) > 0); err != nil {
+		return "", resource.Errorf("typeference pack requires a lockfile matching declared dependencies: %s", err)
 	}
 	documents, err := resource.Load(source, "")
 	if err != nil {
