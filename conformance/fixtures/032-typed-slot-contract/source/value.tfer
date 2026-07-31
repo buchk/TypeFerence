@@ -1,0 +1,6 @@
+---
+schemaVersion: 4
+kind: context
+id: conformance/context/value@1.0.0
+contextType: conformance/context-types/other@1.0.0
+---

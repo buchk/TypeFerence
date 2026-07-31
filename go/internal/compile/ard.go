@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/buchk/TypeFerence/go/internal/jsonx"
+	"github.com/buchk/TypeFerence/go/internal/packages"
 	"github.com/buchk/TypeFerence/go/internal/resolve"
 	"github.com/buchk/TypeFerence/go/internal/resource"
 	"github.com/buchk/TypeFerence/go/internal/trust"
@@ -36,14 +37,27 @@ func writeArdCatalog(
 		return resource.Errorf("Source directory not found: %s", source)
 	}
 	sourceName := urnSegment(filepath.Base(strings.TrimRight(sourceAbs, `\/`)))
+	sourceVersion := "1.0.0"
+	project, projErr := resource.LoadProject(source)
+	if projErr != nil {
+		return projErr
+	}
+	if project != nil {
+		if strings.TrimSpace(project.Name) != "" {
+			sourceName = urnSegment(project.Name)
+		}
+		if strings.TrimSpace(project.Version) != "" {
+			sourceVersion = project.Version
+		}
+	}
 	sourceIdentifier := "urn:air:" + publisherDomain + ":typeference:source:" + sourceName
-	sourceHash, err := HashDirectory(source)
+	sourceHash, err := HashSource(source)
 	if err != nil {
 		return err
 	}
 	sourceDigest := "sha256:" + sourceHash
 
-	sourceFiles, err := packageFiles(source)
+	sourceFiles, err := sourcePackageFiles(source)
 	if err != nil {
 		return err
 	}
@@ -55,7 +69,7 @@ func writeArdCatalog(
 		{K: "displayName", V: jsonx.Str("TypeFerence source package: " + sourceName)},
 		{K: "type", V: jsonx.Str("application/vnd.typeference.source-package+json")},
 		{K: "description", V: jsonx.Str("Canonical typed source package for validation, audit, and reproducible compilation.")},
-		{K: "version", V: jsonx.Str("1.0.0")},
+		{K: "version", V: jsonx.Str(sourceVersion)},
 		{K: "data", V: jsonx.Obj{
 			{K: "schemaVersion", V: jsonx.Num("1")},
 			{K: "digest", V: jsonx.Str(sourceDigest)},
@@ -349,6 +363,22 @@ func packageFiles(root string) (jsonx.Arr, error) {
 			{K: "path", V: jsonx.Str(rel)},
 			{K: "mediaType", V: jsonx.Str(mediaType(rel))},
 			{K: "content", V: jsonx.Str(content)},
+		})
+	}
+	return arr, nil
+}
+
+func sourcePackageFiles(root string) (jsonx.Arr, error) {
+	files, err := packages.SourceFiles(root)
+	if err != nil {
+		return nil, err
+	}
+	arr := jsonx.Arr{}
+	for _, file := range files {
+		arr = append(arr, jsonx.Obj{
+			{K: "path", V: jsonx.Str(file.Path)},
+			{K: "mediaType", V: jsonx.Str(mediaType(file.Path))},
+			{K: "content", V: jsonx.Str(file.Content)},
 		})
 	}
 	return arr, nil

@@ -1,0 +1,7 @@
+---
+schemaVersion: 4
+kind: skill
+id: conformance/skills/check@1.0.0
+binds: conformance/capabilities/check@1.0.0
+---
+Check the internal state.

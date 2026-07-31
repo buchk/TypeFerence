@@ -1,19 +1,18 @@
 # Release checklist
 
 Releases ship the Go CLI as single static binaries per platform (see ADR-0007).
-The version lives in three places that must agree: `CHANGELOG.md`,
-`Directory.Build.props` (`<Version>`), and the git tag (the Go binary takes its
-version from the tag at build time via `-ldflags -X main.version`).
+The release version is the git tag; the Go binary receives it at build time via
+`-ldflags -X main.version`. `CHANGELOG.md` must contain the matching dated
+release entry before that tag is created.
 
 ## Before tagging
 
-1. On `main`, CI fully green: both test suites, the conformance suite
-   (26/26 fixtures on both implementations), and the self-host drift gate.
+1. On `main`, CI fully green: the Go test suite, current-v4 conformance and
+   legacy-v3 archival golden corpus, and the self-host drift gate.
 2. `CHANGELOG.md`: move the `Unreleased` heading to the release date; confirm every
    spec-affecting entry names its ADR.
-3. `Directory.Build.props` `<Version>` matches the version being tagged.
-4. Quick start in `README.md` executed literally from a clean clone.
-5. No uncommitted generated artifacts: `make selfhost-check` passes; `typeference
+3. Quick start in `README.md` executed literally from a clean clone.
+4. No uncommitted generated artifacts: `make selfhost-check` passes; `typeference
    diff examples/helio --against dist --emit-ard --publisher-domain helio.example`
    exits 0.
 
@@ -35,13 +34,12 @@ reference output; and publishes a GitHub Release with per-platform archives and
 1. Verify the release page lists 6 archives + `SHA256SUMS` and the generated notes.
 2. Download one archive on a machine you did not build on; check
    `sha256sum -c SHA256SUMS` (for that file) and `typeference version`.
-3. Start the next `Unreleased` section in `CHANGELOG.md` and bump
-   `Directory.Build.props` if the next version is known.
+3. Start the next `Unreleased` section in `CHANGELOG.md`.
 
 ## Versioning notes
 
 - Tool releases (this checklist) version the CLIs and libraries. They do **not**
-  version the source format: typed resources stay `schemaVersion: 3` and trust
+  version the source format: typed resources stay `schemaVersion: 4` and trust
   configurations `schemaVersion: 1` until an incompatible format change, which
   requires a specification change and an ADR first.
 - Pre-1.0, breaking tool changes are allowed in any release but must be listed

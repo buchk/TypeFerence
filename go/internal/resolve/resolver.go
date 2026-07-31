@@ -8,11 +8,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/buchk/TypeFerence/go/internal/jsonx"
 	"github.com/buchk/TypeFerence/go/internal/resource"
 )
 
-// ProvenanceEntry records which resource contributed a resolved field.
 type ProvenanceEntry struct {
 	Field  string
 	Source string
@@ -20,39 +18,82 @@ type ProvenanceEntry struct {
 
 // ResolvedSkill is a concrete skill after promotion and contract checks.
 type ResolvedSkill struct {
-	DispatchName     string
-	CapabilityID     string
-	ImplementationID string
-	Description      string
-	Instructions     string
-	InputSchema      string
-	OutputSchema     string
-	ContextFiles     []string
-	Provenance       []ProvenanceEntry
+	DispatchName         string
+	CapabilityID         string
+	ImplementationID     string
+	Description          string
+	Instructions         string
+	InputSchema          string
+	OutputSchema         string
+	ContextFiles         []string
+	RequiresContextTypes []string
+	RequiresTools        []string
+	// Exposed is true when the bound capability's visibility is "exposed":
+	// part of the agent's public callable surface, eligible for a callable
+	// card (ADR-0015). Rides the skill, so promotion carries it automatically.
+	Exposed bool
+	// Sealed marks a binding an embedder may not override or rebind; Required
+	// marks it mandatory (ADR-0016). Both ride the skill through promotion.
+	Sealed   bool
+	Required bool
+	// Variants maps mode name to that mode's instructions for a multimodal
+	// skill (ADR-0012); nil for a unimodal skill. Instructions above holds the
+	// default (neutral) variant's rendering.
+	Variants map[string]string
+	// Variant requirements remain attached to their mode. Base requirements
+	// above apply to every mode.
+	VariantContextRequirements map[string][]string
+	VariantToolRequirements    map[string][]string
+	Provenance                 []ProvenanceEntry
 }
 
 // ResolvedAgent is a fully composed agent or profile.
 type ResolvedAgent struct {
-	ID           string
-	DisplayName  string
-	Description  string
-	Emit         bool
-	Embeds       []string
-	Satisfies    []string
-	Slots        map[string]string
-	SlotKeys     []string // canonical order for Slots
-	WorkingNorms []string
-	ContextFiles []string
-	Skills       []ResolvedSkill
-	Provenance   []ProvenanceEntry
+	ID                     string
+	DisplayName            string
+	Description            string
+	Emit                   bool
+	Embeds                 []string
+	Satisfies              []string
+	Slots                  map[string]string
+	SlotKeys               []string // canonical order for Slots
+	WorkingNorms           []string
+	ContextFiles           []string
+	Context                []string
+	ContextObjects         []ResolvedContextRef
+	AllowedContextTypes    []string
+	HasAllowedContextTypes bool
+	Skills                 []ResolvedSkill
+	// RequiredCapabilities are the capability ids mandated by this component or
+	// anything it embeds. A profile may carry ones it does not bind (an abstract
+	// requirement); a resolved agent never can (ADR-0016).
+	RequiredCapabilities []string
+	Provenance           []ProvenanceEntry
+}
+
+// ResolvedContextRef is a context object an agent holds by id, with the
+// contextType it instantiates and its materialized content (ADR-0013). Content
+// lets a target inline the held context, not merely reference it.
+type ResolvedContextRef struct {
+	ID          string
+	DisplayName string
+	ContextType string
+	Satisfies   []string
+	Content     string
+	Values      map[string]resource.FieldValue
+	ValuesJSON  string
 }
 
 type interfaceContract struct {
-	slots  []string
-	skills []string
+	slots     []string
+	slotTypes map[string]string
+	skills    []string
 }
 
-// Resolver composes resources into resolved agents.
+// Resolver composes resources into resolved agents. Its resource set is mutable
+// normalization state: native context defaults and canonical typed values are
+// materialized in place. Source identity is computed separately from canonical
+// source files and must never depend on these documents.
 type Resolver struct {
 	resources      map[string]*resource.Document
 	componentCache map[string]*ResolvedAgent
@@ -82,6 +123,36 @@ func (r *Resolver) ResolveAll() ([]*ResolvedAgent, error) {
 	}
 	for _, id := range r.idsOfKind("interface") {
 		if _, err := r.resolveInterface(id, map[string]bool{}); err != nil {
+			return nil, err
+		}
+	}
+	for _, id := range r.idsOfKind("contextType") {
+		if _, err := r.contextTypeClosure(id, map[string]bool{}); err != nil {
+			return nil, err
+		}
+		if r.resources[id].SchemaVersion == 4 {
+			if _, _, _, err := r.nativeContextShape(id); err != nil {
+				return nil, err
+			}
+			if err := r.validateContextValueTypeGraph(id, map[string]bool{}); err != nil {
+				return nil, err
+			}
+			if err := r.validateNativeDefaults(id); err != nil {
+				return nil, err
+			}
+		}
+	}
+	for _, id := range r.idsOfKind("context") {
+		obj := r.resources[id]
+		if _, err := r.contextTypeClosure(obj.ContextType, map[string]bool{}); err != nil {
+			return nil, resource.Errorf("%s: %s", id, err)
+		}
+		if err := r.validateContextFields(obj); err != nil {
+			return nil, err
+		}
+	}
+	for _, id := range r.idsOfKind("tool") {
+		if err := r.validateTool(r.resources[id]); err != nil {
 			return nil, err
 		}
 	}
@@ -166,9 +237,35 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 	}
 	norms := distinct(concatNorms(embedded, current))
 	contexts := distinct(normalizeAll(concatContexts(embedded, current)))
+	contextRefs := distinct(append(concatContextRefs(embedded, current), slotContextRefs(slots, slotKeys)...))
+	allowedContextTypes := intersectAllowLists(embedded, current)
 	skills, skillDepths, err := r.mergeSkills(id, current, embedded, contexts)
 	if err != nil {
 		return nil, err
+	}
+	requiredCapabilities, requiredBy, err := r.mergeRequired(id, current, embedded)
+	if err != nil {
+		return nil, err
+	}
+	// A mandated capability is mandatory wherever it is carried, however it came
+	// to be bound, so the flag reflects the requirement rather than the binding
+	// that happened to satisfy it (ADR-0016).
+	for capabilityID := range requiredBy {
+		if skill, bound := skills[capabilityID]; bound && !skill.Required {
+			skill.Required = true
+			skills[capabilityID] = skill
+		}
+	}
+	if current.Kind == "agent" {
+		if err := checkRequiredCapabilities(id, requiredBy, skills); err != nil {
+			return nil, err
+		}
+		if err := r.checkSkillDependencies(id, skills, contextRefs); err != nil {
+			return nil, err
+		}
+		if err := r.checkAllowedContext(id, contextRefs, allowedContextTypes, hasAllowedContextTypes(embedded, current)); err != nil {
+			return nil, err
+		}
 	}
 
 	satisfies := []string{}
@@ -177,7 +274,7 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 		if ifErr != nil {
 			return nil, ifErr
 		}
-		if satisfiesContract(contract, slots, skills) {
+		if r.satisfiesContract(contract, slots, skills) {
 			satisfies = append(satisfies, interfaceID)
 		}
 	}
@@ -218,286 +315,45 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 	}
 
 	sortedSkills := make([]ResolvedSkill, 0, len(skills))
+	dispatchOwners := map[string]string{}
 	capabilityIDs := make([]string, 0, len(skills))
 	for capabilityID := range skills {
 		capabilityIDs = append(capabilityIDs, capabilityID)
 	}
 	sort.Strings(capabilityIDs)
 	for _, capabilityID := range capabilityIDs {
-		sortedSkills = append(sortedSkills, withDispatch(skills[capabilityID], id))
+		skill := withDispatch(skills[capabilityID], id)
+		if prior, duplicate := dispatchOwners[skill.DispatchName]; duplicate {
+			return nil, resource.Errorf("%s: capabilities %s and %s produce the same target dispatch name %s",
+				id, prior, capabilityID, skill.DispatchName)
+		}
+		dispatchOwners[skill.DispatchName] = capabilityID
+		sortedSkills = append(sortedSkills, skill)
 	}
 
 	resolved := &ResolvedAgent{
-		ID:           id,
-		DisplayName:  displayName,
-		Description:  current.Description,
-		Emit:         current.Emit,
-		Embeds:       append([]string{}, current.Embeds...),
-		Satisfies:    satisfies,
-		Slots:        slots,
-		SlotKeys:     slotKeys,
-		WorkingNorms: norms,
-		ContextFiles: contexts,
-		Skills:       sortedSkills,
-		Provenance:   provenance,
+		ID:                     id,
+		DisplayName:            displayName,
+		Description:            current.Description,
+		Emit:                   current.Emit,
+		Embeds:                 append([]string{}, current.Embeds...),
+		Satisfies:              satisfies,
+		Slots:                  slots,
+		SlotKeys:               slotKeys,
+		WorkingNorms:           norms,
+		ContextFiles:           contexts,
+		Context:                contextRefs,
+		ContextObjects:         r.resolveContextObjects(contextRefs),
+		AllowedContextTypes:    allowedContextTypes,
+		HasAllowedContextTypes: hasAllowedContextTypes(embedded, current),
+		Skills:                 sortedSkills,
+		RequiredCapabilities:   requiredCapabilities,
+		Provenance:             provenance,
 	}
 	r.slotDepths[id] = slotDepths
 	r.skillDepths[id] = skillDepths
 	r.componentCache[id] = resolved
 	return resolved, nil
-}
-
-type slotCandidate struct {
-	agent string
-	value string
-	depth int
-}
-
-func (r *Resolver) mergeSlots(id string, current *resource.Document, embedded []*ResolvedAgent) (map[string]string, []string, map[string]int, error) {
-	candidates := map[string][]slotCandidate{}
-	order := []string{}
-	for _, component := range embedded {
-		for _, key := range component.SlotKeys {
-			if _, ok := candidates[key]; !ok {
-				order = append(order, key)
-			}
-			candidates[key] = append(candidates[key], slotCandidate{
-				agent: component.ID,
-				value: component.Slots[key],
-				depth: r.slotDepths[component.ID][key] + 1,
-			})
-		}
-	}
-	result := map[string]string{}
-	depths := map[string]int{}
-	for _, key := range order {
-		group := candidates[key]
-		minDepth := group[0].depth
-		for _, c := range group {
-			if c.depth < minDepth {
-				minDepth = c.depth
-			}
-		}
-		nearest := []slotCandidate{}
-		for _, c := range group {
-			if c.depth == minDepth {
-				nearest = append(nearest, c)
-			}
-		}
-		if len(nearest) > 1 {
-			if _, declaredLocally := current.Slots[key]; !declaredLocally {
-				agents := make([]string, len(nearest))
-				for i, c := range nearest {
-					agents[i] = c.agent
-				}
-				return nil, nil, nil, resource.Errorf(
-					"%s: embedded slot '%s' is ambiguous between %s; declare it on %s to resolve the conflict",
-					id, key, strings.Join(agents, ", "), id)
-			}
-		}
-		result[key] = nearest[0].value
-		depths[key] = minDepth
-	}
-	for _, key := range resource.SortedKeys(current.Slots) {
-		result[key] = normalizePath(current.Slots[key])
-		depths[key] = 0
-	}
-	keys := make([]string, 0, len(result))
-	for key := range result {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	return result, keys, depths, nil
-}
-
-type skillCandidate struct {
-	agent string
-	skill ResolvedSkill
-	depth int
-}
-
-func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded []*ResolvedAgent, contexts []string) (map[string]ResolvedSkill, map[string]int, error) {
-	localCapabilities := map[string]bool{}
-	for _, binding := range current.Skills {
-		capabilityID, err := r.resolveCapabilityID(binding, id)
-		if err != nil {
-			return nil, nil, err
-		}
-		if localCapabilities[capabilityID] {
-			return nil, nil, resource.Errorf("%s: a capability cannot be bound more than once", id)
-		}
-		localCapabilities[capabilityID] = true
-	}
-
-	candidates := map[string][]skillCandidate{}
-	order := []string{}
-	for _, component := range embedded {
-		for _, skill := range component.Skills {
-			if _, ok := candidates[skill.CapabilityID]; !ok {
-				order = append(order, skill.CapabilityID)
-			}
-			candidates[skill.CapabilityID] = append(candidates[skill.CapabilityID], skillCandidate{
-				agent: component.ID,
-				skill: skill,
-				depth: r.skillDepths[component.ID][skill.CapabilityID] + 1,
-			})
-		}
-	}
-
-	result := map[string]ResolvedSkill{}
-	depths := map[string]int{}
-	for _, capabilityID := range order {
-		group := candidates[capabilityID]
-		minDepth := group[0].depth
-		for _, c := range group {
-			if c.depth < minDepth {
-				minDepth = c.depth
-			}
-		}
-		nearest := []skillCandidate{}
-		for _, c := range group {
-			if c.depth == minDepth {
-				nearest = append(nearest, c)
-			}
-		}
-		if len(nearest) > 1 && !localCapabilities[capabilityID] {
-			agents := make([]string, len(nearest))
-			for i, c := range nearest {
-				agents[i] = c.agent
-			}
-			return nil, nil, resource.Errorf(
-				"%s: embedded capability '%s' is ambiguous between %s; bind the capability on %s to resolve the conflict",
-				id, capabilityID, strings.Join(agents, ", "), id)
-		}
-		result[capabilityID] = nearest[0].skill
-		depths[capabilityID] = minDepth
-	}
-
-	for _, binding := range current.Skills {
-		implementation, err := r.require(binding.Ref, "skill")
-		if err != nil {
-			return nil, nil, err
-		}
-		capabilityID, err := r.resolveCapabilityID(binding, id)
-		if err != nil {
-			return nil, nil, err
-		}
-		capability, err := r.require(capabilityID, "capability")
-		if err != nil {
-			return nil, nil, err
-		}
-		if err := ensureImplementsCapability(capability, implementation, id); err != nil {
-			return nil, nil, err
-		}
-		if promoted, ok := result[capabilityID]; ok {
-			if err := ensureSameCapability(promoted, capability, id); err != nil {
-				return nil, nil, err
-			}
-		}
-		inputSchema, err := canonicalJSON(implementation.InputSchema)
-		if err != nil {
-			return nil, nil, err
-		}
-		outputSchema, err := canonicalJSON(implementation.OutputSchema)
-		if err != nil {
-			return nil, nil, err
-		}
-		result[capabilityID] = ResolvedSkill{
-			CapabilityID:     capabilityID,
-			ImplementationID: implementation.ID,
-			Description:      implementation.Description,
-			Instructions:     implementation.Instructions,
-			InputSchema:      inputSchema,
-			OutputSchema:     outputSchema,
-			ContextFiles:     distinct(append(append([]string{}, contexts...), normalizeAll(implementation.ContextFiles)...)),
-			Provenance: []ProvenanceEntry{
-				{Field: "skill.capability", Source: capabilityID},
-				{Field: "skill.implementation", Source: implementation.ID},
-			},
-		}
-		depths[capabilityID] = 0
-	}
-	return result, depths, nil
-}
-
-func (r *Resolver) resolveCapabilityID(binding resource.SkillBinding, agent string) (string, error) {
-	implementation, err := r.require(binding.Ref, "skill")
-	if err != nil {
-		return "", err
-	}
-	if isBlank(implementation.Binds) {
-		return "", resource.Errorf("%s: skill %s does not bind a capability", agent, implementation.ID)
-	}
-	if binding.Capability != nil && *binding.Capability != implementation.Binds {
-		return "", resource.Errorf("%s: binding declares capability %s, but skill %s binds %s",
-			agent, *binding.Capability, implementation.ID, implementation.Binds)
-	}
-	if binding.Capability != nil {
-		return *binding.Capability, nil
-	}
-	return implementation.Binds, nil
-}
-
-func (r *Resolver) validateSkillImplementation(implementation *resource.Document) error {
-	if isBlank(implementation.Binds) {
-		return resource.Errorf("Skill %s does not bind a capability", implementation.ID)
-	}
-	capability, err := r.require(implementation.Binds, "capability")
-	if err != nil {
-		return err
-	}
-	return ensureImplementsCapability(capability, implementation, implementation.ID)
-}
-
-func (r *Resolver) resolveInterface(id string, visiting map[string]bool) (*interfaceContract, error) {
-	if cached, ok := r.interfaceCache[id]; ok {
-		return cached, nil
-	}
-	current, err := r.require(id, "interface")
-	if err != nil {
-		return nil, err
-	}
-	if visiting[id] {
-		return nil, resource.Errorf("Interface embedding cycle detected at %s", id)
-	}
-	visiting[id] = true
-	defer delete(visiting, id)
-
-	slots := []string{}
-	skills := []string{}
-	for _, embedID := range current.Embeds {
-		embedded, embErr := r.resolveInterface(embedID, visiting)
-		if embErr != nil {
-			return nil, embErr
-		}
-		slots = append(slots, embedded.slots...)
-		skills = append(skills, embedded.skills...)
-	}
-	for _, capability := range current.RequiresCapabilities {
-		if _, capErr := r.require(capability, "capability"); capErr != nil {
-			return nil, capErr
-		}
-	}
-	contract := &interfaceContract{
-		slots:  distinct(append(slots, current.RequiresSlots...)),
-		skills: distinct(append(skills, current.RequiresCapabilities...)),
-	}
-	r.interfaceCache[id] = contract
-	return contract, nil
-}
-
-func satisfiesContract(contract *interfaceContract, slots map[string]string, skills map[string]ResolvedSkill) bool {
-	for _, slot := range contract.slots {
-		if _, ok := slots[slot]; !ok {
-			return false
-		}
-	}
-	for _, skill := range contract.skills {
-		if _, ok := skills[skill]; !ok {
-			return false
-		}
-	}
-	return true
 }
 
 func (r *Resolver) require(id, kind string) (*resource.Document, error) {
@@ -516,53 +372,26 @@ func (r *Resolver) requireEmbeddable(id string) (*resource.Document, error) {
 	return doc, nil
 }
 
-func ensureSameCapability(promoted ResolvedSkill, capability *resource.Document, agent string) error {
-	capabilityInput, err := canonicalJSON(capability.InputSchema)
-	if err != nil {
-		return err
+// InstructionsFor returns the rendering for an invocation mode, falling back to
+// the unimodal or default instructions (ADR-0012).
+func (s ResolvedSkill) InstructionsFor(mode string) string {
+	if ins, ok := s.Variants[mode]; ok {
+		return ins
 	}
-	capabilityOutput, err := canonicalJSON(capability.OutputSchema)
-	if err != nil {
-		return err
-	}
-	if promoted.InputSchema != capabilityInput || promoted.OutputSchema != capabilityOutput {
-		return resource.Errorf("%s: promoted implementation %s changes the public contract of %s",
-			agent, promoted.ImplementationID, capability.ID)
-	}
-	return nil
+	return s.Instructions
 }
 
-func ensureImplementsCapability(capability, implementation *resource.Document, agent string) error {
-	if implementation.Binds != capability.ID {
-		return resource.Errorf("%s: implementation %s binds %s, not capability %s",
-			agent, implementation.ID, implementation.Binds, capability.ID)
+// ExposedSkills returns the resolved skills whose capability is exposed, in
+// dispatch order: the agent's public callable surface (ADR-0015). A callable
+// card (ADR-0018) is emitted from exactly these, not from every skill.
+func (a *ResolvedAgent) ExposedSkills() []ResolvedSkill {
+	out := []ResolvedSkill{}
+	for _, s := range a.Skills {
+		if s.Exposed {
+			out = append(out, s)
+		}
 	}
-	capabilityInput, err := canonicalJSON(capability.InputSchema)
-	if err != nil {
-		return err
-	}
-	capabilityOutput, err := canonicalJSON(capability.OutputSchema)
-	if err != nil {
-		return err
-	}
-	implementationInput, err := canonicalJSON(implementation.InputSchema)
-	if err != nil {
-		return err
-	}
-	implementationOutput, err := canonicalJSON(implementation.OutputSchema)
-	if err != nil {
-		return err
-	}
-	if capabilityInput != implementationInput || capabilityOutput != implementationOutput {
-		return resource.Errorf("%s: implementation %s changes the public contract of %s",
-			agent, implementation.ID, capability.ID)
-	}
-	return nil
-}
-
-func withDispatch(skill ResolvedSkill, agentID string) ResolvedSkill {
-	skill.DispatchName = Leaf(agentID) + "." + Leaf(skill.CapabilityID)
-	return skill
+	return out
 }
 
 // Leaf extracts the unversioned name segment of a resource id
@@ -571,54 +400,6 @@ func Leaf(id string) string {
 	parts := strings.Split(id, "/")
 	last := parts[len(parts)-1]
 	return strings.SplitN(last, "@", 2)[0]
-}
-
-func concatNorms(embedded []*ResolvedAgent, current *resource.Document) []string {
-	values := []string{}
-	for _, component := range embedded {
-		values = append(values, component.WorkingNorms...)
-	}
-	return append(values, current.WorkingNorms...)
-}
-
-func concatContexts(embedded []*ResolvedAgent, current *resource.Document) []string {
-	values := []string{}
-	for _, component := range embedded {
-		values = append(values, component.ContextFiles...)
-	}
-	return append(values, current.ContextFiles...)
-}
-
-func normalizeAll(values []string) []string {
-	result := make([]string, len(values))
-	for i, v := range values {
-		result[i] = normalizePath(v)
-	}
-	return result
-}
-
-func normalizePath(value string) string {
-	return strings.TrimLeft(strings.ReplaceAll(value, "\\", "/"), "/")
-}
-
-func distinct(values []string) []string {
-	seen := map[string]bool{}
-	result := []string{}
-	for _, v := range values {
-		if !seen[v] {
-			seen[v] = true
-			result = append(result, v)
-		}
-	}
-	return result
-}
-
-func canonicalJSON(raw string) (string, error) {
-	v, err := jsonx.Parse(raw)
-	if err != nil {
-		return "", resource.Errorf("invalid JSON schema: %s", err)
-	}
-	return jsonx.Compact(v), nil
 }
 
 func isBlank(s string) bool { return strings.TrimSpace(s) == "" }

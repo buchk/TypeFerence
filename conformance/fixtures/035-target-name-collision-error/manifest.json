@@ -1,0 +1,4 @@
+{
+  "description": "Distinct agent IDs that collapse to one target artifact name fail instead of overwriting.",
+  "expect": "error"
+}

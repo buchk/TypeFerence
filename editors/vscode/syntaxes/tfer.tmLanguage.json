@@ -1,0 +1,26 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "TypeFerence",
+  "scopeName": "source.tfer",
+  "patterns": [
+    {
+      "comment": "YAML frontmatter between the leading --- fences",
+      "begin": "\\A(---)\\s*$",
+      "end": "^(---)\\s*$",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.tfer" }
+      },
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.end.tfer" }
+      },
+      "name": "meta.embedded.block.frontmatter.tfer",
+      "patterns": [
+        { "include": "source.yaml" }
+      ]
+    },
+    {
+      "comment": "The body is markdown (skill instructions or context content)",
+      "include": "text.html.markdown"
+    }
+  ]
+}

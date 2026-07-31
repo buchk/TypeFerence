@@ -1,0 +1,9 @@
+---
+schemaVersion: 4
+kind: skill
+id: conformance/skills/brief@1.0.0
+binds: conformance/capabilities/brief@1.0.0
+---
+Prepare a concise brief.
+
+Preserve the evidence trail.

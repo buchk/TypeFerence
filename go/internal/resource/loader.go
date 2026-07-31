@@ -26,10 +26,20 @@ var slotName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
 // IsResourceID reports whether id is a well-formed resource identifier.
 func IsResourceID(id string) bool { return resourceID.MatchString(id) }
 
-// Load reads every *.yaml resource beneath sourceDir (excluding the trust
-// configuration), validates document shape, and returns documents keyed by
-// resource id.
+type LoadOptions struct {
+	// AllowLegacyV3 exists only so the historical conformance corpus can remain
+	// reproducible. Product entrypoints never enable it.
+	AllowLegacyV3 bool
+}
+
+// Load reads and validates the closed current source language.
 func Load(sourceDir string, trustConfigPath string) (map[string]*Document, error) {
+	return LoadWithOptions(sourceDir, trustConfigPath, LoadOptions{})
+}
+
+// LoadWithOptions additionally supports the explicitly selected historical v3
+// grammar for conformance tooling.
+func LoadWithOptions(sourceDir string, trustConfigPath string, options LoadOptions) (map[string]*Document, error) {
 	root, err := filepath.Abs(sourceDir)
 	if err != nil {
 		return nil, Errorf("Source directory not found: %s", sourceDir)
@@ -37,7 +47,10 @@ func Load(sourceDir string, trustConfigPath string) (map[string]*Document, error
 	if info, statErr := os.Stat(root); statErr != nil || !info.IsDir() {
 		return nil, Errorf("Source directory not found: %s", root)
 	}
-	excluded := []string{filepath.Join(root, "typeference.trust.yaml")}
+	excluded := []string{
+		filepath.Join(root, "typeference.trust.yaml"),
+		filepath.Join(root, ProjectManifestFile),
+	}
 	if trustConfigPath != "" {
 		if full, absErr := filepath.Abs(trustConfigPath); absErr == nil {
 			excluded = append(excluded, full)
@@ -48,7 +61,14 @@ func Load(sourceDir string, trustConfigPath string) (map[string]*Document, error
 		if err != nil {
 			return err
 		}
-		if d.IsDir() || !strings.HasSuffix(d.Name(), ".yaml") {
+		name := d.Name()
+		if d.IsDir() {
+			if filepath.Dir(path) == root && (name == ".git" || name == "dist" || name == "bin" || name == "obj") {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !strings.HasSuffix(name, ".yaml") && !strings.HasSuffix(name, ".tfer") {
 			return nil
 		}
 		for _, ex := range excluded {
@@ -70,14 +90,34 @@ func Load(sourceDir string, trustConfigPath string) (map[string]*Document, error
 		if readErr != nil {
 			return nil, Errorf("%s: %s", file, readErr)
 		}
-		doc, parseErr := parseDocument(stripBOM(string(raw)))
+		// Normalize CRLF to LF before parsing. A .tfer body is carried verbatim
+		// into artifacts, so without this the compiled output would depend on the
+		// checkout's line-ending configuration rather than on the source — the
+		// determinism contract is byte-identical output for identical source
+		// (ADR-0014). Mirrors compile.readTextFile.
+		text := stripBOM(strings.ReplaceAll(string(raw), "\r\n", "\n"))
+		isTfer := strings.HasSuffix(file, ".tfer")
+		var body string
+		if isTfer {
+			frontmatter, tferBody, splitErr := splitFrontmatter(text)
+			if splitErr != nil {
+				return nil, Errorf("%s: %s", file, splitErr)
+			}
+			text, body = frontmatter, tferBody
+		}
+		doc, parseErr := parseDocument(text)
 		if parseErr != nil {
 			return nil, Errorf("%s: invalid YAML resource: %s", file, parseErr)
 		}
 		if doc == nil {
 			return nil, Errorf("Empty resource: %s", file)
 		}
-		if err := validateShape(doc, file, root); err != nil {
+		if isTfer {
+			if err := applyBody(doc, body, file); err != nil {
+				return nil, err
+			}
+		}
+		if err := validateShape(doc, file, root, options.AllowLegacyV3); err != nil {
 			return nil, err
 		}
 		if _, exists := result[doc.ID]; exists {
@@ -121,6 +161,18 @@ func parseDocument(text string) (*Document, error) {
 		return nil, Errorf("expected a single YAML document")
 	}
 	doc := NewDocument()
+	// Version 3 context objects carried values as extra frontmatter fields.
+	// Version 4 closes the shape and requires the explicit `values` mapping.
+	kind := scanKind(&node)
+	schemaVersion := scanSchemaVersion(&node)
+	extraFields := map[string]*yaml.Node{}
+	unknown := func(key string, value *yaml.Node) error {
+		if kind == "context" && schemaVersion == 3 {
+			extraFields[key] = value
+			return nil
+		}
+		return Errorf("property '%s' not found", key)
+	}
 	if err := decodeMapping(&node, map[string]fieldDecoder{
 		"schemaVersion":        intField(&doc.SchemaVersion),
 		"kind":                 stringField(&doc.Kind),
@@ -130,7 +182,7 @@ func parseDocument(text string) (*Document, error) {
 		"binds":                stringField(&doc.Binds),
 		"emit":                 boolField(&doc.Emit),
 		"embeds":               stringListField(&doc.Embeds),
-		"requiresSlots":        stringListField(&doc.RequiresSlots),
+		"requiresSlots":        slotRequirementsField(doc),
 		"requiresCapabilities": stringListField(&doc.RequiresCapabilities),
 		"slots":                stringMapField(&doc.Slots),
 		"workingNorms":         stringListField(&doc.WorkingNorms),
@@ -139,10 +191,132 @@ func parseDocument(text string) (*Document, error) {
 		"instructions":         stringField(&doc.Instructions),
 		"inputSchema":          stringField(&doc.InputSchema),
 		"outputSchema":         stringField(&doc.OutputSchema),
-	}); err != nil {
+		"contextType":          stringField(&doc.ContextType),
+		"schema":               stringField(&doc.Schema),
+		"fields":               contextTypeFieldsField(&doc.ContextTypeFields),
+		"body":                 contextBodyField(&doc.ContextBody),
+		"values":               contextValuesField(&doc.ContextFields),
+		"requiresContextTypes": stringListField(&doc.RequiresContextTypes),
+		"context":              stringListField(&doc.Context),
+		"requiresTools":        stringListField(&doc.RequiresTools),
+		"visibility":           stringField(&doc.Visibility),
+		"variants":             variantsField(&doc.Variants),
+		"allowedContextTypes": func(n *yaml.Node) error {
+			doc.HasAllowedContextTypes = true
+			return stringListField(&doc.AllowedContextTypes)(n)
+		},
+	}, unknown); err != nil {
 		return nil, err
 	}
+	if len(extraFields) > 0 {
+		doc.ContextFields = map[string]FieldValue{}
+		for key, value := range extraFields {
+			switch value.Kind {
+			case yaml.SequenceNode:
+				doc.ContextFields[key] = FieldValue{Kind: "sequence"}
+			case yaml.MappingNode:
+				doc.ContextFields[key] = FieldValue{Kind: "mapping"}
+			default:
+				doc.ContextFields[key] = FieldValue{Kind: "scalar", Scalar: value.Value}
+			}
+		}
+	}
 	return doc, nil
+}
+
+func scanSchemaVersion(node *yaml.Node) int {
+	n := resolveAlias(node)
+	if n.Kind == yaml.DocumentNode && len(n.Content) == 1 {
+		n = resolveAlias(n.Content[0])
+	}
+	if n.Kind != yaml.MappingNode {
+		return 0
+	}
+	for i := 0; i+1 < len(n.Content); i += 2 {
+		key := resolveAlias(n.Content[i])
+		value := resolveAlias(n.Content[i+1])
+		if key.Kind == yaml.ScalarNode && key.Value == "schemaVersion" && value.Kind == yaml.ScalarNode {
+			version, _ := strconv.Atoi(value.Value)
+			return version
+		}
+	}
+	return 0
+}
+
+// scanKind reads the top-level `kind` scalar without a full decode, so the
+// decoder can decide whether unknown frontmatter keys are context fields or an
+// error.
+func scanKind(node *yaml.Node) string {
+	n := resolveAlias(node)
+	if n.Kind == yaml.DocumentNode && len(n.Content) == 1 {
+		n = resolveAlias(n.Content[0])
+	}
+	if n.Kind != yaml.MappingNode {
+		return ""
+	}
+	for i := 0; i+1 < len(n.Content); i += 2 {
+		key := resolveAlias(n.Content[i])
+		if key.Kind == yaml.ScalarNode && key.Value == "kind" {
+			if v := resolveAlias(n.Content[i+1]); v.Kind == yaml.ScalarNode {
+				return v.Value
+			}
+		}
+	}
+	return ""
+}
+
+// splitFrontmatter separates a .tfer file into its YAML frontmatter and its
+// normalized markdown body. The file MUST begin with a `---` fence line; the
+// frontmatter runs to the next `---` fence line and the body is everything
+// after it, preserved after BOM stripping and CRLF-to-LF normalization
+// (ADR-0023).
+func splitFrontmatter(text string) (frontmatter, body string, err error) {
+	nl := strings.IndexByte(text, '\n')
+	if nl < 0 || strings.TrimRight(text[:nl], "\r") != "---" {
+		return "", "", Errorf("a .tfer file must begin with a '---' frontmatter fence")
+	}
+	rest := text[nl+1:]
+	for idx := 0; ; {
+		lineEnd := strings.IndexByte(rest[idx:], '\n')
+		if lineEnd < 0 {
+			if strings.TrimRight(rest[idx:], "\r") == "---" {
+				return rest[:idx], "", nil
+			}
+			return "", "", Errorf("a .tfer file is missing its closing '---' frontmatter fence")
+		}
+		line := rest[idx : idx+lineEnd]
+		next := idx + lineEnd + 1
+		if strings.TrimRight(line, "\r") == "---" {
+			return rest[:idx], rest[next:], nil
+		}
+		idx = next
+	}
+}
+
+// applyBody materializes a .tfer markdown body onto the resource: a skill's
+// instructions or a context object's content. Kinds without a body field
+// reject a non-empty body (ADR-0023; ADR-0012 for multimodal semantics).
+func applyBody(doc *Document, body, file string) error {
+	switch doc.Kind {
+	case "skill":
+		if strings.TrimSpace(body) == "" {
+			return nil
+		}
+		if len(doc.Variants) != 0 {
+			return Errorf("%s: a multimodal skill has no single body; put instructions inside each variant", file)
+		}
+		if strings.TrimSpace(doc.Instructions) != "" {
+			return Errorf("%s: a .tfer skill sets instructions in both the body and frontmatter; use one", file)
+		}
+		doc.Instructions = body
+	case "context":
+		doc.Content = body
+	default:
+		if strings.TrimSpace(body) != "" {
+			return Errorf("%s: a %s resource has no body field; put content in frontmatter", file, doc.Kind)
+		}
+	}
+	return nil
 }
 
 type fieldDecoder func(*yaml.Node) error
@@ -154,7 +328,9 @@ func resolveAlias(node *yaml.Node) *yaml.Node {
 	return node
 }
 
-func decodeMapping(node *yaml.Node, fields map[string]fieldDecoder) error {
+// decodeMapping decodes a mapping node against a field table. Unknown keys go
+// to the optional unknown handler; when it is nil an unknown key is an error.
+func decodeMapping(node *yaml.Node, fields map[string]fieldDecoder, unknown func(string, *yaml.Node) error) error {
 	node = resolveAlias(node)
 	if node.Kind == yaml.DocumentNode && len(node.Content) == 1 {
 		node = resolveAlias(node.Content[0])
@@ -162,13 +338,24 @@ func decodeMapping(node *yaml.Node, fields map[string]fieldDecoder) error {
 	if node.Kind != yaml.MappingNode {
 		return Errorf("expected a mapping")
 	}
+	seen := map[string]bool{}
 	for i := 0; i+1 < len(node.Content); i += 2 {
 		key := resolveAlias(node.Content[i])
 		if key.Kind != yaml.ScalarNode {
 			return Errorf("mapping keys must be scalars")
 		}
+		if seen[key.Value] {
+			return Errorf("duplicate property '%s'", key.Value)
+		}
+		seen[key.Value] = true
 		decoder, known := fields[key.Value]
 		if !known {
+			if unknown != nil {
+				if err := unknown(key.Value, resolveAlias(node.Content[i+1])); err != nil {
+					return err
+				}
+				continue
+			}
 			return Errorf("property '%s' not found", key.Value)
 		}
 		if err := decoder(resolveAlias(node.Content[i+1])); err != nil {
@@ -251,13 +438,243 @@ func stringMapField(target *map[string]string) fieldDecoder {
 			return Errorf("expected a mapping")
 		}
 		m := map[string]string{}
+		seen := map[string]bool{}
 		for i := 0; i+1 < len(node.Content); i += 2 {
 			key := resolveAlias(node.Content[i])
 			if key.Kind != yaml.ScalarNode {
 				return Errorf("mapping keys must be scalars")
 			}
+			if seen[key.Value] {
+				return Errorf("duplicate mapping key '%s'", key.Value)
+			}
+			seen[key.Value] = true
 			var v string
 			if err := scalarString(resolveAlias(node.Content[i+1]), &v); err != nil {
+				return err
+			}
+			m[key.Value] = v
+		}
+		*target = m
+		return nil
+	}
+}
+
+func slotRequirementsField(doc *Document) fieldDecoder {
+	return func(node *yaml.Node) error {
+		if node.Kind == yaml.SequenceNode {
+			return stringListField(&doc.RequiresSlots)(node)
+		}
+		if node.Kind != yaml.MappingNode {
+			return Errorf("requiresSlots must be a mapping from slot name to contextType")
+		}
+		values := map[string]string{}
+		for i := 0; i+1 < len(node.Content); i += 2 {
+			key := resolveAlias(node.Content[i])
+			if key.Kind != yaml.ScalarNode || !slotName.MatchString(key.Value) {
+				return Errorf("required slot names must be ASCII identifiers")
+			}
+			if _, duplicate := values[key.Value]; duplicate {
+				return Errorf("duplicate required slot '%s'", key.Value)
+			}
+			var contextType string
+			if err := scalarString(resolveAlias(node.Content[i+1]), &contextType); err != nil {
+				return err
+			}
+			values[key.Value] = contextType
+		}
+		doc.RequiredSlotTypes = values
+		doc.RequiresSlots = make([]string, 0, len(values))
+		for key := range values {
+			doc.RequiresSlots = append(doc.RequiresSlots, key)
+		}
+		sort.Strings(doc.RequiresSlots)
+		return nil
+	}
+}
+
+func decodeFieldValue(node *yaml.Node) FieldValue {
+	node = resolveAlias(node)
+	switch node.Kind {
+	case yaml.SequenceNode:
+		items := make([]FieldValue, 0, len(node.Content))
+		for _, item := range node.Content {
+			items = append(items, decodeFieldValue(item))
+		}
+		return FieldValue{Kind: "list", List: items}
+	case yaml.MappingNode:
+		values := map[string]FieldValue{}
+		for i := 0; i+1 < len(node.Content); i += 2 {
+			values[resolveAlias(node.Content[i]).Value] = decodeFieldValue(node.Content[i+1])
+		}
+		return FieldValue{Kind: "map", Map: values}
+	default:
+		if node.Tag == "!!null" {
+			return FieldValue{Kind: "null"}
+		}
+		return FieldValue{Kind: "scalar", Scalar: node.Value}
+	}
+}
+
+func validateValueNode(node *yaml.Node) error {
+	node = resolveAlias(node)
+	switch node.Kind {
+	case yaml.SequenceNode:
+		for _, item := range node.Content {
+			if err := validateValueNode(item); err != nil {
+				return err
+			}
+		}
+	case yaml.MappingNode:
+		seen := map[string]bool{}
+		for i := 0; i+1 < len(node.Content); i += 2 {
+			key := resolveAlias(node.Content[i])
+			if key.Kind != yaml.ScalarNode {
+				return Errorf("context value mapping keys must be scalars")
+			}
+			if seen[key.Value] {
+				return Errorf("duplicate context value key '%s'", key.Value)
+			}
+			seen[key.Value] = true
+			if err := validateValueNode(node.Content[i+1]); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func contextValuesField(target *map[string]FieldValue) fieldDecoder {
+	return func(node *yaml.Node) error {
+		if node.Kind != yaml.MappingNode {
+			return Errorf("expected a mapping")
+		}
+		values := map[string]FieldValue{}
+		for i := 0; i+1 < len(node.Content); i += 2 {
+			key := resolveAlias(node.Content[i])
+			if key.Kind != yaml.ScalarNode || !slotName.MatchString(key.Value) {
+				return Errorf("context field names must be ASCII identifiers")
+			}
+			if _, duplicate := values[key.Value]; duplicate {
+				return Errorf("duplicate context field '%s'", key.Value)
+			}
+			if err := validateValueNode(node.Content[i+1]); err != nil {
+				return err
+			}
+			values[key.Value] = decodeFieldValue(node.Content[i+1])
+		}
+		*target = values
+		return nil
+	}
+}
+
+func typeExpr(node *yaml.Node) (TypeExpr, error) {
+	node = resolveAlias(node)
+	if node.Kind == yaml.ScalarNode {
+		switch node.Value {
+		case "string", "text", "boolean", "integer", "number":
+			return TypeExpr{Kind: node.Value}, nil
+		default:
+			if resourceID.MatchString(node.Value) {
+				return TypeExpr{Kind: "ref", Ref: node.Value}, nil
+			}
+			return TypeExpr{}, Errorf("unknown context type '%s'", node.Value)
+		}
+	}
+	if node.Kind != yaml.MappingNode || len(node.Content) != 2 {
+		return TypeExpr{}, Errorf("a context type is a scalar or one of {list: T}/{map: T}")
+	}
+	constructor := resolveAlias(node.Content[0])
+	if constructor.Kind != yaml.ScalarNode || (constructor.Value != "list" && constructor.Value != "map") {
+		return TypeExpr{}, Errorf("unknown context type constructor")
+	}
+	elem, err := typeExpr(node.Content[1])
+	if err != nil {
+		return TypeExpr{}, err
+	}
+	return TypeExpr{Kind: constructor.Value, Elem: &elem}, nil
+}
+
+func contextTypeFieldsField(target *map[string]ContextField) fieldDecoder {
+	return func(node *yaml.Node) error {
+		if node.Kind != yaml.MappingNode {
+			return Errorf("expected a mapping")
+		}
+		fields := map[string]ContextField{}
+		for i := 0; i+1 < len(node.Content); i += 2 {
+			key := resolveAlias(node.Content[i])
+			if key.Kind != yaml.ScalarNode || !slotName.MatchString(key.Value) {
+				return Errorf("context field names must be ASCII identifiers")
+			}
+			if _, duplicate := fields[key.Value]; duplicate {
+				return Errorf("duplicate context field declaration '%s'", key.Value)
+			}
+			var field ContextField
+			err := decodeMapping(resolveAlias(node.Content[i+1]), map[string]fieldDecoder{
+				"type": func(n *yaml.Node) error {
+					t, err := typeExpr(n)
+					field.Type = t
+					return err
+				},
+				"required": boolField(&field.Required),
+				"default": func(n *yaml.Node) error {
+					if err := validateValueNode(n); err != nil {
+						return err
+					}
+					field.HasDefault = true
+					field.Default = decodeFieldValue(n)
+					return nil
+				},
+			}, nil)
+			if err != nil {
+				return err
+			}
+			if field.Type.Kind == "" {
+				return Errorf("context field '%s' must declare type", key.Value)
+			}
+			fields[key.Value] = field
+		}
+		*target = fields
+		return nil
+	}
+}
+
+func contextBodyField(target **ContextBody) fieldDecoder {
+	return func(node *yaml.Node) error {
+		body := &ContextBody{}
+		if err := decodeMapping(node, map[string]fieldDecoder{
+			"type":     stringField(&body.Type),
+			"required": boolField(&body.Required),
+		}, nil); err != nil {
+			return err
+		}
+		if body.Type != "text" {
+			return Errorf("context body type must be 'text'")
+		}
+		*target = body
+		return nil
+	}
+}
+
+func variantsField(target *map[string]Variant) fieldDecoder {
+	return func(node *yaml.Node) error {
+		if node.Kind != yaml.MappingNode {
+			return Errorf("expected a mapping")
+		}
+		m := map[string]Variant{}
+		for i := 0; i+1 < len(node.Content); i += 2 {
+			key := resolveAlias(node.Content[i])
+			if key.Kind != yaml.ScalarNode {
+				return Errorf("mapping keys must be scalars")
+			}
+			if _, duplicate := m[key.Value]; duplicate {
+				return Errorf("duplicate variant '%s'", key.Value)
+			}
+			var v Variant
+			if err := decodeMapping(resolveAlias(node.Content[i+1]), map[string]fieldDecoder{
+				"instructions":         stringField(&v.Instructions),
+				"requiresContextTypes": stringListField(&v.RequiresContextTypes),
+				"requiresTools":        stringListField(&v.RequiresTools),
+			}, nil); err != nil {
 				return err
 			}
 			m[key.Value] = v
@@ -283,7 +700,9 @@ func skillsField(target *[]SkillBinding) fieldDecoder {
 					hasCapability = true
 					return scalarString(n, &capability)
 				},
-			})
+				"sealed":   boolField(&binding.Sealed),
+				"required": boolField(&binding.Required),
+			}, nil)
 			if err != nil {
 				return err
 			}
@@ -297,20 +716,177 @@ func skillsField(target *[]SkillBinding) fieldDecoder {
 	}
 }
 
-func validateShape(doc *Document, file, root string) error {
-	if doc.SchemaVersion != 3 {
-		return Errorf("%s: schemaVersion must be 3", file)
+func validateShape(doc *Document, file, root string, allowLegacyV3 bool) error {
+	if err := validateDocumentShape(doc, file, allowLegacyV3); err != nil {
+		return err
+	}
+	var referenced []string
+	if doc.SchemaVersion == 3 {
+		referenced = append(referenced, doc.ContextFiles...)
+		for _, key := range SortedKeys(doc.Slots) {
+			referenced = append(referenced, doc.Slots[key])
+		}
+	}
+	for _, relative := range referenced {
+		full := filepath.Join(root, filepath.FromSlash(relative))
+		if !strings.HasPrefix(full, root+string(filepath.Separator)) {
+			return Errorf("%s: path escapes source root: %s", file, relative)
+		}
+		if info, err := os.Stat(full); err != nil || info.IsDir() {
+			return Errorf("%s: referenced file does not exist: %s", file, relative)
+		}
+	}
+	return nil
+}
+
+// validateDocumentShape validates a single resource in isolation: every rule
+// except the composition-level checks that require the whole source tree
+// (referenced-file existence). CheckDocument reuses it for the language server.
+func validateDocumentShape(doc *Document, file string, allowLegacyV3 bool) error {
+	if doc.SchemaVersion != 4 && !(allowLegacyV3 && doc.SchemaVersion == 3) {
+		return Errorf("%s: schemaVersion must be 4", file)
 	}
 	switch doc.Kind {
-	case "agent", "profile", "interface", "capability", "skill":
+	case "agent", "profile", "interface", "capability", "skill", "context", "contextType", "tool":
 	default:
 		return Errorf("%s: unknown kind '%s'", file, doc.Kind)
 	}
 	if !resourceID.MatchString(doc.ID) {
 		return Errorf("%s: id must use lowercase namespace/name@semantic-version", file)
 	}
-	if (doc.Kind == "capability" || doc.Kind == "skill") && len(doc.Embeds) != 0 {
-		return Errorf("%s: %ss cannot embed resources", file, doc.Kind)
+	// capabilities, skills, context objects, and tools do not embed; contextTypes
+	// may embed to refine other contextTypes (ADR-0013), and agents/profiles/
+	// interfaces embed by design.
+	switch doc.Kind {
+	case "capability", "skill", "context", "tool":
+		if len(doc.Embeds) != 0 {
+			return Errorf("%s: %ss cannot embed resources", file, doc.Kind)
+		}
+	}
+	if doc.Kind == "context" {
+		if strings.TrimSpace(doc.ContextType) == "" {
+			return Errorf("%s: a context resource must declare a contextType", file)
+		}
+		if !resourceID.MatchString(doc.ContextType) {
+			return Errorf("%s: contextType must reference a contextType id", file)
+		}
+	} else if strings.TrimSpace(doc.ContextType) != "" {
+		return Errorf("%s: only context resources declare a contextType", file)
+	}
+	if doc.Kind == "contextType" {
+		if doc.SchemaVersion == 3 && strings.TrimSpace(doc.Schema) != "" {
+			if err := validateJSON(doc.Schema, file, "schema"); err != nil {
+				return err
+			}
+		} else if doc.SchemaVersion == 4 && strings.TrimSpace(doc.Schema) != "" {
+			return Errorf("%s: schemaVersion 4 contextTypes use native 'fields', not JSON Schema", file)
+		}
+	} else if strings.TrimSpace(doc.Schema) != "" {
+		return Errorf("%s: only contextType resources declare a schema", file)
+	}
+	if doc.SchemaVersion == 3 && (len(doc.ContextTypeFields) != 0 || doc.ContextBody != nil) {
+		return Errorf("%s: native context fields require schemaVersion 4", file)
+	}
+	if doc.Kind != "contextType" && (len(doc.ContextTypeFields) != 0 || doc.ContextBody != nil) {
+		return Errorf("%s: only contextType resources declare fields or body", file)
+	}
+	if doc.SchemaVersion == 4 && len(doc.ContextFiles) != 0 {
+		return Errorf("%s: contextFiles does not exist in schemaVersion 4; declare a typed context resource", file)
+	}
+	if doc.SchemaVersion == 4 {
+		if len(doc.RequiresSlots) > 0 && len(doc.RequiredSlotTypes) == 0 {
+			return Errorf("%s: schemaVersion 4 requiresSlots is a mapping from slot name to contextType id", file)
+		}
+		if len(doc.RequiredSlotTypes) > 0 && doc.Kind != "interface" {
+			return Errorf("%s: only interfaces declare typed slot requirements", file)
+		}
+		for name, contextType := range doc.RequiredSlotTypes {
+			if !resourceID.MatchString(contextType) {
+				return Errorf("%s: required slot '%s' must reference a contextType id", file, name)
+			}
+		}
+	}
+	if doc.SchemaVersion == 4 && doc.Kind != "context" && len(doc.ContextFields) != 0 {
+		return Errorf("%s: only context resources declare values", file)
+	}
+	if doc.SchemaVersion == 3 && doc.Kind == "context" && doc.ContextFields == nil {
+		doc.ContextFields = map[string]FieldValue{}
+	}
+	// requiresContextTypes / requiresTools are skill-only; context (holding by
+	// id) is agent/profile-only; visibility is capability-only.
+	if len(doc.RequiresContextTypes) != 0 && doc.Kind != "skill" {
+		return Errorf("%s: only skills declare requiresContextTypes", file)
+	}
+	if len(doc.RequiresTools) != 0 && doc.Kind != "skill" {
+		return Errorf("%s: only skills declare requiresTools", file)
+	}
+	if len(doc.Context) != 0 && doc.Kind != "agent" && doc.Kind != "profile" {
+		return Errorf("%s: only agents and profiles hold context by id", file)
+	}
+	if doc.HasAllowedContextTypes && doc.Kind != "agent" && doc.Kind != "profile" {
+		return Errorf("%s: only agents and profiles declare allowedContextTypes", file)
+	}
+	// A binding names its implementation with "ref". Omitting "ref" declares an
+	// abstract requirement instead: a capability an embedder must bind. That is
+	// meaningful only when mandated, so it must be required (ADR-0016).
+	for _, binding := range doc.Skills {
+		if strings.TrimSpace(binding.Ref) != "" {
+			continue
+		}
+		if binding.Capability == nil || strings.TrimSpace(*binding.Capability) == "" {
+			return Errorf("%s: a skill binding must set 'ref', or name a 'capability' to declare an abstract requirement", file)
+		}
+		if !binding.Required {
+			return Errorf("%s: abstract requirement on capability '%s' must set 'required: true'; an unbound optional capability has no effect", file, *binding.Capability)
+		}
+		if binding.Sealed {
+			return Errorf("%s: abstract requirement on capability '%s' cannot be sealed; sealing protects a concrete implementation", file, *binding.Capability)
+		}
+		if !resourceID.MatchString(*binding.Capability) {
+			return Errorf("%s: reference '%s' must be a namespace/name@semantic-version id", file, *binding.Capability)
+		}
+	}
+	refs := append([]string{}, doc.RequiresContextTypes...)
+	refs = append(refs, doc.RequiresTools...)
+	refs = append(refs, doc.Context...)
+	refs = append(refs, doc.AllowedContextTypes...)
+	for _, name := range doc.RequiresSlots {
+		if contextType := doc.RequiredSlotTypes[name]; contextType != "" {
+			refs = append(refs, contextType)
+		}
+	}
+	for _, v := range doc.Variants {
+		refs = append(refs, v.RequiresContextTypes...)
+		refs = append(refs, v.RequiresTools...)
+	}
+	for _, ref := range refs {
+		if !resourceID.MatchString(ref) {
+			return Errorf("%s: reference '%s' must be a namespace/name@semantic-version id", file, ref)
+		}
+	}
+	if strings.TrimSpace(doc.Visibility) != "" {
+		if doc.Kind != "capability" {
+			return Errorf("%s: only capabilities declare visibility", file)
+		}
+		if doc.Visibility != "internal" && doc.Visibility != "exposed" {
+			return Errorf("%s: visibility must be 'internal' or 'exposed'", file)
+		}
+	}
+	if len(doc.Variants) != 0 {
+		if doc.Kind != "skill" {
+			return Errorf("%s: only skills declare variants", file)
+		}
+		if strings.TrimSpace(doc.Instructions) != "" {
+			return Errorf("%s: a skill declares either instructions or variants, not both", file)
+		}
+		for mode, v := range doc.Variants {
+			if !slotName.MatchString(mode) {
+				return Errorf("%s: variant mode '%s' must be an ASCII identifier", file, mode)
+			}
+			if strings.TrimSpace(v.Instructions) == "" {
+				return Errorf("%s: variant '%s' must set instructions", file, mode)
+			}
+		}
 	}
 	if doc.Kind == "skill" && strings.TrimSpace(doc.Binds) == "" {
 		return Errorf("%s: skills must bind a capability", file)
@@ -327,24 +903,46 @@ func validateShape(doc *Document, file, root string) error {
 			return Errorf("%s: slot name '%s' must be an ASCII identifier matching [A-Za-z0-9][A-Za-z0-9._-]*", file, name)
 		}
 	}
-	var referenced []string
-	referenced = append(referenced, doc.ContextFiles...)
-	for _, key := range SortedKeys(doc.Slots) {
-		referenced = append(referenced, doc.Slots[key])
-	}
-	for _, relative := range referenced {
-		full := filepath.Join(root, filepath.FromSlash(relative))
-		if !strings.HasPrefix(full, root+string(filepath.Separator)) {
-			return Errorf("%s: path escapes source root: %s", file, relative)
-		}
-		if info, err := os.Stat(full); err != nil || info.IsDir() {
-			return Errorf("%s: referenced file does not exist: %s", file, relative)
+	if doc.SchemaVersion == 4 {
+		for _, name := range SortedKeys(doc.Slots) {
+			if !resourceID.MatchString(doc.Slots[name]) {
+				return Errorf("%s: schemaVersion 4 slot '%s' must reference a typed context resource id", file, name)
+			}
 		}
 	}
 	if err := validateJSON(doc.InputSchema, file, "inputSchema"); err != nil {
 		return err
 	}
 	return validateJSON(doc.OutputSchema, file, "outputSchema")
+}
+
+// CheckDocument parses one resource from its path and content and validates its
+// shape in isolation, without composition-level checks that need the whole
+// source tree. It is the diagnostic entrypoint used by the language server.
+func CheckDocument(path, content string) error {
+	text := stripBOM(content)
+	isTfer := strings.HasSuffix(path, ".tfer")
+	var body string
+	if isTfer {
+		frontmatter, tferBody, err := splitFrontmatter(text)
+		if err != nil {
+			return err
+		}
+		text, body = frontmatter, tferBody
+	}
+	doc, err := parseDocument(text)
+	if err != nil {
+		return Errorf("invalid YAML resource: %s", err)
+	}
+	if doc == nil {
+		return Errorf("empty resource")
+	}
+	if isTfer {
+		if err := applyBody(doc, body, filepath.Base(path)); err != nil {
+			return err
+		}
+	}
+	return validateDocumentShape(doc, filepath.Base(path), false)
 }
 
 func validateJSON(value, file, field string) error {

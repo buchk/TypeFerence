@@ -1,0 +1,12 @@
+{
+  "description": "Version 4 source and target trust manifests preserve declarative trust metadata without requiring signatures.",
+  "expect": "success",
+  "emitArd": "conformance.example",
+  "digests": {
+    "ard": "sha256:163894f91c151e150dba37c2b6754248a73c2a3bf49e195f5a740ed5c3549951",
+    "codex": "sha256:f438a0ca3aabd569be88fb4d6dff6d015a37472f80c3e447552f2941f763dfba",
+    "copilot": "sha256:db25479dcfca3f4d3b306f096a72cb87e4b462623873964df02dfb7dc39e4329",
+    "cursor": "sha256:d7da5a14a914258fe79b7694f1d00faa1bd7661496d26c4df6912089af02aaf2",
+    "neutral": "sha256:20be242345f955c93c1a79f2e50d45607c375fe18a29a67aeb06bd74a41c26cd"
+  }
+}

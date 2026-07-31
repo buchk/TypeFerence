@@ -1,4 +1,5 @@
 {
   "description": "A profile embeds an agent, which the composition rules forbid.",
+  "language": "legacy-v3",
   "expect": "error"
 }

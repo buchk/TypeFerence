@@ -1,0 +1,4 @@
+{
+  "description": "A version 4 slot value must resolve to a context resource, not merely any valid resource id.",
+  "expect": "error"
+}

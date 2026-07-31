@@ -1,12 +1,13 @@
 {
   "description": "A context file without a trailing newline: content is hashed and packaged exactly as authored.",
+  "language": "legacy-v3",
   "expect": "success",
   "emitArd": "conformance.example",
   "digests": {
-    "ard": "sha256:75a5b16fbf63f11e7c797601daea18d16a13ce214e93912bfd032eaf97cc2b6a",
-    "codex": "sha256:32d3c4dddacf5f1c2b5455fc529ef32db23e01026cd2ce68c1bb06367b4c1e73",
-    "copilot": "sha256:c8e8ebb9cb28714baaf5e68cfa6142ee8875d71e610bea20412889b55207ba23",
-    "cursor": "sha256:4300dbfc02a62f08b02a9cf47fb60d640c65a4a90ee21bc7f3a27b739ecad2f4",
-    "neutral": "sha256:75f98e1bb7777c63d628b4ed5faaeb9656541144ff8029d0641685714be8fb5d"
+    "ard": "sha256:4b9496db5cb67889b9dd7b24d87c8484900e84d9b509917af4ec2e1de7efa80b",
+    "codex": "sha256:341ad047c7558df8c1cc0dadc2ec46faabe638e0d2d9289190391d456cfc3a51",
+    "copilot": "sha256:923404cfd7ae28ee1204b0d040b1f9272a4ccb0ed8968e39091a5c3ad357cde3",
+    "cursor": "sha256:7e46ab37de2d5eaf6f6f8c8e7bce09bb81055a968bd0fca6d4ad3d24a8578a6f",
+    "neutral": "sha256:cdc615e5d541c114b7f846fb4d5f9e0a0b93639a7e675e15f3f9da765042c5ba"
   }
 }

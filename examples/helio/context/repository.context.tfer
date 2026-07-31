@@ -1,0 +1,10 @@
+---
+schemaVersion: 4
+kind: context
+id: helio/context/repository-evidence@1.0.0
+contextType: helio/context-types/repository-evidence@1.0.0
+displayName: Repository Evidence
+---
+# Repository evidence
+
+Repository reports should identify the current branch, working-tree state, relevant checks, and source commit whenever available.

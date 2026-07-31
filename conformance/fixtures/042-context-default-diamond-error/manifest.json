@@ -1,0 +1,4 @@
+{
+  "description": "Sibling context refinements with conflicting defaults require a local declaration.",
+  "expect": "error"
+}

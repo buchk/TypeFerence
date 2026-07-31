@@ -1,12 +1,13 @@
 {
   "description": "Non-ASCII and escape-sensitive characters in display names, descriptions, norms, instructions, and context content; ARD emission inlines and escapes them.",
+  "language": "legacy-v3",
   "expect": "success",
   "emitArd": "conformance.example",
   "digests": {
-    "ard": "sha256:f1190bbcd05789e94f7bf2c05a2c44796cc7ab51cc5169a3da47158a58327c73",
-    "codex": "sha256:7dce90627866e66ba3d8dc3256748e7e4725d7142ab33761c7d41e14957b01a0",
-    "copilot": "sha256:a53323547d183be82fe7e12e8b1053a147ca4035dad589443a443e03731b466c",
-    "cursor": "sha256:fe0a19e38eab9b2b2a0eefbaa9b06648a1a79e72d5e9e2a238ce9f5a5ad15331",
-    "neutral": "sha256:f2090385d737e4ad96dec563f30fcd04452a6b5a28b217a431c39d8568cb70f3"
+    "ard": "sha256:935362fc35307f54f99b4a194b24adc0e8933ab8db577ff8d140bee743342803",
+    "codex": "sha256:5ea783bb80a100ae8c129f959fa4a226e3496bcdcf4b7877ba91c954afcb870c",
+    "copilot": "sha256:f971c494b10bc72a09a92e1d726cd1ea11c219009a265da99ff2a75320fa6dc9",
+    "cursor": "sha256:3abe49463bbcba1ce40233afc2025517ccf09f6ec92cd6e3fbb6684cbe5ded52",
+    "neutral": "sha256:9a03e13a0ce86ac45d0e2a3fee3308825fb38d3aace472afb6ae20f05ff63bc1"
   }
 }

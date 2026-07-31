@@ -1,12 +1,13 @@
 {
   "description": "Maximal composition: multi-level profiles, interfaces, promoted and overridden skills, a non-emitting agent embedded by an emitting one, and ARD emission.",
+  "language": "legacy-v3",
   "expect": "success",
   "emitArd": "conformance.example",
   "digests": {
-    "ard": "sha256:ec9641e8ba188bdc513a8058559204fe8f175047b2fb2e0da897f1193ec49f7b",
-    "codex": "sha256:e7cbf898886493c2732b140f46dd43ac1100ae4d3a1dcee2f49085eeea5b76f2",
-    "copilot": "sha256:c562cf680d46f02891fb4679887ab508de751ed03bcd70ff9b3b11d405587087",
-    "cursor": "sha256:627fc2d6d7349e5c9c2d556f23cb41f89685fbb46268c64c453b8639e76f992b",
-    "neutral": "sha256:3299639f297a9b6b6ac3bc27fb12febe47ac30aee53c85e278702c876177b222"
+    "ard": "sha256:e884cf2aa0f1f1592e352f69743fd500ac3d134d5557840f914b049d4a8df9b8",
+    "codex": "sha256:0bdf3931204d38a5eaac23bebac717d6af0ba3a0365ba1eae7265900c1d55a23",
+    "copilot": "sha256:90a9fd099cc92c388ff47b7b8c615a37f3a64ed420d41e7aea4ce893a5afee51",
+    "cursor": "sha256:e2645a024f46a7d0e25f1a0b950b0f10d0d48f40bc86a412e8c603faab78a9bf",
+    "neutral": "sha256:910fb6b92ee3280094e03ed3fc380f11c38fcbba4b8b2ecd8f1bd1aadfa58349"
   }
 }

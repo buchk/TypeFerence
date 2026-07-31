@@ -1,0 +1,5 @@
+{
+  "description": "Version 4 ARD publication fails closed when declarative signature intent is required and no external signature map is supplied.",
+  "expect": "error",
+  "emitArd": "conformance.example"
+}

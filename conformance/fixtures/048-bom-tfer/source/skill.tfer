@@ -1,0 +1,7 @@
+﻿---
+schemaVersion: 4
+kind: skill
+id: conformance/skills/bom-v4@1.0.0
+binds: conformance/capabilities/bom-v4@1.0.0
+---
+This document begins with a UTF-8 byte-order mark.

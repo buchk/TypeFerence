@@ -1,0 +1,8 @@
+schemaVersion: 4
+kind: contextType
+id: conformance/context-types/measurements@1.0.0
+fields:
+  samples:
+    type:
+      list: number
+    required: true

@@ -3,11 +3,65 @@
 All notable changes to TypeFerence are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semantic
 versioning. Tool versions (this file) are independent of the typed-resource
-`schemaVersion` (currently 3) and the trust configuration `schemaVersion`
+`schemaVersion` (currently 4) and the trust configuration `schemaVersion`
 (currently 1), which only change when the source formats change incompatibly.
 
 TypeFerence is an experimental reference implementation; pre-1.0 versions make no
 compatibility promises between minor versions.
+
+## [Unreleased]
+
+### Changed
+
+- **Closed v4 source language** ([ADR-0020](docs/decisions/0020-close-the-source-language.md)).
+  Native context types replace embedded JSON Schema, context values and typed
+  slots are complete compile-time values, `contextFiles` is removed, mode
+  requirements remain conditional, sealed abstract requirements fail, and
+  normal product entrypoints reject legacy v3 input.
+- **Closed serialization and clarified v4 boundaries**
+  ([ADR-0023](docs/decisions/0023-tfer-source-format.md),
+  [ADR-0024](docs/decisions/0024-clarify-v4-type-and-composition-boundaries.md)).
+  `.tfer` fences and bodied kinds are normative; interfaces remain structural,
+  context trust refinement is nominal through explicit embedding, visibility is
+  orthogonal to interface satisfaction, tools are independent extern
+  dependencies, selected modes are recorded at link, and identical sealed
+  diamonds converge.
+- **Current-language determinism evidence.** Version 4 golden fixtures now pin
+  `.tfer` Unicode, BOM, CRLF, and trailing-newline behavior, schema-directed
+  number tokens, cross-platform digest path ordering, and signed, unsigned, and
+  fail-closed trust publication. A specification evidence matrix tracks the
+  normative test surface, and resolver responsibilities are separated by phase.
+- **Build/link separation and source identity**
+  ([ADR-0022](docs/decisions/0022-build-link-and-source-identity.md)). Build emits
+  deterministic unlinked targets and integrity indexes; explicit deployment
+  files bind tools, modes, commands, environment references, and endpoints.
+  Linked Codex MCP configuration and neutral A2A cards are structurally
+  serialized without changing source or unlinked-target identity. Link now
+  replaces a non-empty output only when valid root provenance identifies a prior
+  TypeFerence link ([ADR-0025](docs/decisions/0025-own-linked-output-before-reset.md)),
+  and the stdio `{bundle}` projection is specified explicitly.
+- **Go-only implementation** ([ADR-0014](docs/decisions/0014-go-only-implementation.md)).
+  The C# reference implementation was retired; the Go implementation is now the
+  sole implementation. The specification stays normative in principle. The
+  cross-implementation conformance suite becomes a single-implementation
+  golden-file determinism suite over the same fixtures — the determinism
+  guarantee is unchanged.
+
+### Added
+
+- **Locked source packages and enterprise restore**
+  ([ADR-0021](docs/decisions/0021-restore-locked-source-packages.md)):
+  `pack`, `restore`, and `update`, canonical `.tferpkg` archives and lockfiles,
+  complete offline dependency materialization, scoped filesystem/HTTP/JFrog/
+  Azure Artifacts routes, and dependency provenance in target artifacts.
+- **`.tfer` source format** and object-model constructs (ADRs 0012–0019, 0023–0024):
+  invocation-mode skill variants, user-defined typed context (`contextType`
+  refinement, context held by id, `requiresContextTypes`), tools as extern
+  declarations (`requiresTools`), capability exposure/visibility, and sealing
+  (`sealed`/`required` bindings). All additive and opt-in.
+- **Language server** (`typeference-lsp`): authoring and composition
+  diagnostics, completion, go-to-definition, and document symbols for `.tfer`
+  and `.yaml` sources.
 
 ## [0.0.4] - 2026-07-15
 

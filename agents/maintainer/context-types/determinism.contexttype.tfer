@@ -1,0 +1,9 @@
+---
+schemaVersion: 4
+kind: contextType
+id: typeference/context-types/determinism@0.1.0
+displayName: Determinism Guarantees
+body:
+  type: text
+  required: true
+---

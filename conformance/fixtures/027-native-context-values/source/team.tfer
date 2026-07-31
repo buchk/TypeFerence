@@ -1,0 +1,10 @@
+---
+schemaVersion: 4
+kind: context
+id: conformance/context/team@1.0.0
+contextType: conformance/context-types/team@1.0.0
+values:
+  owner: payments
+  participants: [Ari, Sam]
+---
+Stable team context.

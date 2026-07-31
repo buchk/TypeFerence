@@ -11,7 +11,3 @@ when the diff exits 0 and the byte comparison matches. Any drift between the
 definition and its committed artifacts is a broken build: regenerate with
 `make selfhost` and commit definition and artifacts together, or revert the
 stray edit to the generated files.
-
-## Context loaded on invocation
-
-- `context/determinism.md`
