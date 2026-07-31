@@ -439,6 +439,13 @@ authentication uses `bearerTokenEnvironment` and likewise names an environment
 variable rather than its value. URLs MUST be absolute HTTPS URLs unless a
 transport-specific local-development option explicitly allows otherwise.
 
+Deployment-provider substitution is closed and adapter-directed. In a stdio MCP
+provider's `args` only, every `{bundle}` occurrence is replaced with
+`.typeference/bundle.json`, the bundle path relative to the linked agent artifact
+root. It is not replaced in `command`, environment bindings, HTTP provider
+fields, or compiled files. No other token has special meaning in deployment
+schema version 1; other argument text remains literal.
+
 `typeference link <built-target> --deployment <file> --out <dir>`:
 
 1. verifies the unlinked target digest;
@@ -476,6 +483,15 @@ Linked output preserves the input integrity index as historical
 `unlinked-build.json`; it MUST NOT leave that index named as though it described
 the mutated linked tree. Link provenance records a digest for each linked agent
 directory from outside that directory, avoiding a self-digest cycle.
+
+Link may create an absent output directory or populate an existing empty one. It
+MUST reject an existing non-empty output unless the directory root contains a
+valid schema version 1 `.typeference/link-provenance.json` written by a completed
+TypeFerence link. A previously linked output may be recursively replaced; an
+unowned directory, file, filesystem root, or path that contains or is contained
+by the unlinked input MUST fail before output deletion or writing. The provenance
+file is an ownership marker for safe replacement, not a cryptographic trust
+claim.
 
 ## ARD and callable publication
 

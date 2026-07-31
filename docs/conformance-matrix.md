@@ -28,7 +28,7 @@ invariants, and cases that do not define emitted bytes.
 | Cross-platform digest path ordering | 050 | `internal/compile`: deterministic rebuild and parity tests |
 | Trust metadata, external signatures, and required-signature failure | 051, 052, 053 | trust publication exercised through conformance; signature maps remain outside source roots |
 | Offline locked packages and deterministic packing | — | `internal/packages/packages_test.go` |
-| Unlinked build identity and deployment-only link changes | 031, 040 | `internal/compile/deployment_test.go`, `internal/deploy/deploy_test.go` |
+| Unlinked build identity and deployment-only link changes | 031, 040 | `internal/compile/deployment_test.go`, `TestSourceDigestUnaffectedByResolverNormalization`; `internal/deploy`: provider projection and linked-output ownership tests |
 | Committed reference and self-host output | Helio `dist/`; maintainer `dist-maintainer/` | `internal/compile`: `TestHelioParityWithCommittedOutput`, `TestDeterministicRebuild`; `make selfhost-check` |
 
 ## Maintenance rule

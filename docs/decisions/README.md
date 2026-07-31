@@ -35,3 +35,4 @@ their decision.
 | [0022](0022-build-link-and-source-identity.md) | Separate build, link, and source identity | Accepted | — |
 | [0023](0023-tfer-source-format.md) | Define the `.tfer` source format | Accepted | — |
 | [0024](0024-clarify-v4-type-and-composition-boundaries.md) | Clarify version 4 type and composition boundaries | Accepted | — |
+| [0025](0025-own-linked-output-before-reset.md) | Require linked-output ownership before reset | Accepted | — |

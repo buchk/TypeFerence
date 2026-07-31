@@ -7,6 +7,8 @@ import (
 	"github.com/buchk/TypeFerence/go/internal/resource"
 )
 
+// validateTool checks that a tool declaration's interface schemas parse
+// (ADR-0017).
 func (r *Resolver) validateTool(tool *resource.Document) error {
 	if _, err := canonicalJSON(tool.InputSchema); err != nil {
 		return resource.Errorf("%s: invalid tool inputSchema: %s", tool.ID, err)

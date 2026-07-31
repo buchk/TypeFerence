@@ -154,7 +154,8 @@ func sortedStringMapKeys(m map[string]string) []string {
 	return keys
 }
 
-// validateTool checks a tool declaration's interface schemas parse (ADR-0017).
+// validateNativeContext validates and materializes a context object's typed
+// values against the nominal contextType it declares.
 func (r *Resolver) validateNativeContext(obj *resource.Document) error {
 	fields, bodyAllowed, bodyRequired, err := r.nativeContextShape(obj.ContextType)
 	if err != nil {
@@ -473,6 +474,9 @@ func sortedFieldValueKeys(values map[string]resource.FieldValue) []string {
 	return keys
 }
 
+// checkAllowedContext verifies each held context object satisfies at least one
+// allowed contextType. An explicit empty list is deny-all; omission is
+// unrestricted.
 func (r *Resolver) checkAllowedContext(agentID string, contextRefs, allowed []string, constrained bool) error {
 	if !constrained {
 		return nil

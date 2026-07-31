@@ -90,7 +90,10 @@ type interfaceContract struct {
 	skills    []string
 }
 
-// Resolver composes resources into resolved agents.
+// Resolver composes resources into resolved agents. Its resource set is mutable
+// normalization state: native context defaults and canonical typed values are
+// materialized in place. Source identity is computed separately from canonical
+// source files and must never depend on these documents.
 type Resolver struct {
 	resources      map[string]*resource.Document
 	componentCache map[string]*ResolvedAgent
@@ -369,6 +372,8 @@ func (r *Resolver) requireEmbeddable(id string) (*resource.Document, error) {
 	return doc, nil
 }
 
+// InstructionsFor returns the rendering for an invocation mode, falling back to
+// the unimodal or default instructions (ADR-0012).
 func (s ResolvedSkill) InstructionsFor(mode string) string {
 	if ins, ok := s.Variants[mode]; ok {
 		return ins

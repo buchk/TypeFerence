@@ -372,9 +372,8 @@ func hasAllowedContextTypes(embedded []*ResolvedAgent, current *resource.Documen
 	return false
 }
 
-// checkAllowedContext verifies each held context object satisfies at least one
-// allowed contextType. An explicit empty list is deny-all; omission is
-// unrestricted.
+// ensureSameCapability verifies that a promoted implementation still carries
+// the capability's canonical public contract.
 func ensureSameCapability(promoted ResolvedSkill, capability *resource.Document, agent string) error {
 	capabilityInput, err := canonicalJSON(capability.InputSchema)
 	if err != nil {
@@ -424,10 +423,8 @@ func withDispatch(skill ResolvedSkill, agentID string) ResolvedSkill {
 	return skill
 }
 
-// InstructionsFor returns the instructions for an invocation mode: the variant's
-// rendering when this is a multimodal skill that declares the mode, otherwise the
-// default Instructions (ADR-0012). Lets a surface pick its face — e.g. a callable
-// card selects the a2a variant.
+// concatNorms preserves embed order before the caller performs canonical
+// de-duplication.
 func concatNorms(embedded []*ResolvedAgent, current *resource.Document) []string {
 	values := []string{}
 	for _, component := range embedded {
