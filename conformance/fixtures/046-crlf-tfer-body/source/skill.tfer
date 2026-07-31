@@ -1,0 +1,9 @@
+---
+schemaVersion: 4
+kind: skill
+id: conformance/skills/crlf-v4@1.0.0
+binds: conformance/capabilities/crlf-v4@1.0.0
+---
+First Windows-authored line.
+
+Second Windows-authored line.

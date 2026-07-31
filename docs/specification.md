@@ -138,7 +138,10 @@ Resolution proceeds from embedded resources toward the embedding resource:
 6. Every contribution records source-resource provenance.
 
 Profiles may retain abstract required capability bindings. Agents are concrete
-and MUST fulfill every promoted requirement.
+and MUST fulfill every promoted requirement. `required` is the demand side of
+composition: a ref-less required binding declares an obligation without supplying
+an implementation. Structural interface satisfaction only observes the resolved
+member set and MUST NOT create or fulfill that obligation.
 
 ## Interfaces, capabilities, skills, and bindings
 
@@ -180,7 +183,9 @@ A binding without `ref` MUST be `required: true` and MUST NOT be sealed. Sealing
 protects a supplied implementation; it cannot protect an absent one. Therefore
 `required: true, sealed: true` without `ref` is a compile error. A concrete
 required-and-sealed binding is valid. Rebinding or suppressing a promoted sealed
-binding is an error.
+binding is an error. Presence and mutability remain independent: `required`
+demands that concrete agents contain a binding, while `sealed` controls whether a
+supplied binding may be replaced.
 
 ## Invocation modes
 

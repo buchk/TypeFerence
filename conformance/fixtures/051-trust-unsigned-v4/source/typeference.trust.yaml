@@ -1,0 +1,33 @@
+schemaVersion: 1
+source:
+  identity: https://conformance.example
+  identityType: https
+  trustSchema:
+    identifier: https://conformance.example/trust-schema
+    version: "1.0"
+    governanceUri: https://conformance.example/governance
+    verificationMethods:
+      - manual-review
+  attestations:
+    - type: sbom
+      uri: https://conformance.example/attestations/sbom.json
+      digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      size: 2048
+      description: Software bill of materials.
+  provenance:
+    - relation: describedBy
+      sourceId: https://conformance.example/catalog/source
+  metadata:
+    example.owner: platform-team
+    example.tier: gold
+  signatureIntent:
+    algorithm: ES256
+    required: false
+bundles:
+  identityTemplate: https://conformance.example/bundles/{target}/{agent}@{version}
+  identityType: https
+  metadata:
+    example.channel: stable
+  signatureIntent:
+    algorithm: ES256
+    required: false

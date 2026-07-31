@@ -2,6 +2,12 @@
 
 **Status:** Accepted (2026-07-23)
 
+**Partial supersession note:** ADR 0024 narrows the Go export analogy to the
+public callable projection. `internal` is not an access-control boundary inside
+composition: internal capabilities still promote, participate in ambiguity
+checks, and satisfy structural interfaces. Only their projection onto public
+callable surfaces is suppressed.
+
 ## Context
 
 "Authoring an MCP tool" has felt like a missing concept. It is not: **MCP is the

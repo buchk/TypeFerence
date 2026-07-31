@@ -1,0 +1,10 @@
+{
+  "description": "A version 4 .tfer body without a trailing newline remains distinguishable in canonical output.",
+  "expect": "success",
+  "digests": {
+    "codex": "sha256:7d3daec19fd26baf57ac0123820bfe7f138cc0edeafbeac7315e6f734c8a6691",
+    "copilot": "sha256:eca7ccb1844fffb3159550501f6b4641e414afa235c1b0c1746e512ea42f3967",
+    "cursor": "sha256:f3f0c71df051051207c807a52f370ebc2be1bcc5d5e740acd778b636f2a9d017",
+    "neutral": "sha256:7372d1b5d619852c62c57f043112ee0c0a740b71265ec5dae16661bb3ff58c64"
+  }
+}

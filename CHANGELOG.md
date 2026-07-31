@@ -26,6 +26,11 @@ compatibility promises between minor versions.
   orthogonal to interface satisfaction, tools are independent extern
   dependencies, selected modes are recorded at link, and identical sealed
   diamonds converge.
+- **Current-language determinism evidence.** Version 4 golden fixtures now pin
+  `.tfer` Unicode, BOM, CRLF, and trailing-newline behavior, schema-directed
+  number tokens, cross-platform digest path ordering, and signed, unsigned, and
+  fail-closed trust publication. A specification evidence matrix tracks the
+  normative test surface, and resolver responsibilities are separated by phase.
 - **Build/link separation and source identity**
   ([ADR-0022](docs/decisions/0022-build-link-and-source-identity.md)). Build emits
   deterministic unlinked targets and integrity indexes; explicit deployment

@@ -36,6 +36,12 @@ conformance/fixtures/<NNN-name>/
 All fixtures build with `--target all`. `TestConformance` runs current v4;
 `TestLegacyV3Golden` runs the archival corpus.
 
+The [specification evidence matrix](../docs/conformance-matrix.md) records which
+normative areas are covered by v4 golden fixtures and which are enforced by
+focused unit tests. Canonicalization and composition rulings require a current
+fixture in the same change; unit tests are supporting evidence, not a substitute
+for the golden-byte contract in those areas.
+
 ## Running
 
 `cd go && go test ./conformance` (or `make conformance`).
