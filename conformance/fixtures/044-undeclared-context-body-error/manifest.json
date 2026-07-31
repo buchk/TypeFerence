@@ -1,0 +1,4 @@
+{
+  "description": "A context .tfer body is rejected when its contextType does not declare a text body.",
+  "expect": "error"
+}

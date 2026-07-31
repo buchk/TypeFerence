@@ -1,0 +1,5 @@
+schemaVersion: 4
+kind: interface
+id: conformance/interfaces/checker@1.0.0
+requiresCapabilities:
+  - conformance/capabilities/check@1.0.0

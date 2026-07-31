@@ -1,0 +1,7 @@
+---
+schemaVersion: 4
+kind: skill
+id: conformance/skills/audit@1.0.0
+binds: conformance/capabilities/audit@1.0.0
+---
+Preserve the audit evidence.

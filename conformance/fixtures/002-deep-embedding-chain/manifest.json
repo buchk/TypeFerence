@@ -1,5 +1,6 @@
 {
   "description": "Five-level profile embedding chain; slots, norms, and contexts promote through every level in first-seen order.",
+  "language": "legacy-v3",
   "expect": "success",
   "digests": {
     "codex": "sha256:0d1b7b3d1eec723f0add102cedaeb067a0b3728f8926b928a8c4e51160b7f252",

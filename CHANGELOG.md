@@ -18,6 +18,14 @@ compatibility promises between minor versions.
   slots are complete compile-time values, `contextFiles` is removed, mode
   requirements remain conditional, sealed abstract requirements fail, and
   normal product entrypoints reject legacy v3 input.
+- **Closed serialization and clarified v4 boundaries**
+  ([ADR-0023](docs/decisions/0023-tfer-source-format.md),
+  [ADR-0024](docs/decisions/0024-clarify-v4-type-and-composition-boundaries.md)).
+  `.tfer` fences and bodied kinds are normative; interfaces remain structural,
+  context trust refinement is nominal through explicit embedding, visibility is
+  orthogonal to interface satisfaction, tools are independent extern
+  dependencies, selected modes are recorded at link, and identical sealed
+  diamonds converge.
 - **Build/link separation and source identity**
   ([ADR-0022](docs/decisions/0022-build-link-and-source-identity.md)). Build emits
   deterministic unlinked targets and integrity indexes; explicit deployment
@@ -38,7 +46,7 @@ compatibility promises between minor versions.
   `pack`, `restore`, and `update`, canonical `.tferpkg` archives and lockfiles,
   complete offline dependency materialization, scoped filesystem/HTTP/JFrog/
   Azure Artifacts routes, and dependency provenance in target artifacts.
-- **`.tfer` source format** and object-model constructs (ADRs 0012–0019):
+- **`.tfer` source format** and object-model constructs (ADRs 0012–0019, 0023–0024):
   invocation-mode skill variants, user-defined typed context (`contextType`
   refinement, context held by id, `requiresContextTypes`), tools as extern
   declarations (`requiresTools`), capability exposure/visibility, and sealing

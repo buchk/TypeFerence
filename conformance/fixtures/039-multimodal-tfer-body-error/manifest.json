@@ -1,0 +1,4 @@
+{
+  "description": "A multimodal .tfer skill rejects a single prose body because every rendering belongs to a named variant.",
+  "expect": "error"
+}

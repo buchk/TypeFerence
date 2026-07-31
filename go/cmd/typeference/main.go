@@ -1,7 +1,6 @@
-// Command typeference is the Go implementation of the TypeFerence CLI. It
-// implements the same command surface as the C# reference implementation and
-// produces byte-identical artifacts (verified by the shared conformance
-// suite under conformance/).
+// Command typeference is the reference CLI. It produces deterministic artifacts
+// verified by the current-v4 conformance and legacy archival golden corpora under
+// conformance/.
 package main
 
 import (

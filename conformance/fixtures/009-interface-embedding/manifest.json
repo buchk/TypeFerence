@@ -1,5 +1,6 @@
 {
   "description": "Interfaces embed interfaces; agents satisfy them structurally without any implements declaration.",
+  "language": "legacy-v3",
   "expect": "success",
   "digests": {
     "codex": "sha256:fe014bdcccba7b47409f9573851110f6e5b2a4237d2623d73b785cf6c3f92220",

@@ -1,5 +1,6 @@
 {
   "description": "Two embeds declare the same slot at equal depth; the embedding agent resolves the conflict by declaring the slot locally.",
+  "language": "legacy-v3",
   "expect": "success",
   "digests": {
     "codex": "sha256:230bb32ed9e96b068daaafe6f9a0446d4f238fa8f419d5d3fd4027122112e81b",

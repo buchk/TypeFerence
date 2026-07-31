@@ -173,10 +173,10 @@ rubric:
       The response requires the specification (and, if behavior changes, the
       conformance fixtures) to change before or together with the
       implementation, not after.
-  - id: both-implementations
+  - id: deterministic-reference
     requirement: >-
-      The response requires the C# reference implementation and the Go
-      implementation to agree byte-for-byte before merge.
+      The response requires the Go reference implementation to reproduce the
+      reviewed committed digests byte-for-byte before merge.
   - id: no-silent-regeneration
     requirement: >-
       The response does not suggest silently regenerating expected digests to

@@ -31,3 +31,5 @@ Format: `NNNN-short-title.md` with sections **Status**, **Context**, **Decision*
 | [0020](0020-close-the-source-language.md) | Close the source language and preserve modes (Accepted) |
 | [0021](0021-restore-locked-source-packages.md) | Restore exact, locked source packages (Accepted) |
 | [0022](0022-build-link-and-source-identity.md) | Separate build, link, and source identity (Accepted) |
+| [0023](0023-tfer-source-format.md) | Define the `.tfer` source format (Accepted) |
+| [0024](0024-clarify-v4-type-and-composition-boundaries.md) | Clarify version 4 type and composition boundaries (Accepted) |

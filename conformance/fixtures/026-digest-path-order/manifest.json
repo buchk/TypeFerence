@@ -1,5 +1,6 @@
 {
   "description": "File names straddling the ASCII range between '/' (0x2F) and '\\' (0x5C): the digest must sort forward-slash relative paths in code point order, so it is identical on every platform (ADR-0004 ruling 4).",
+  "language": "legacy-v3",
   "expect": "success",
   "emitArd": "conformance.example",
   "digests": {

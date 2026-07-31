@@ -1,0 +1,4 @@
+schemaVersion: 4
+kind: capability
+id: conformance/capabilities/check@1.0.0
+visibility: internal

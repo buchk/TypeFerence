@@ -40,7 +40,11 @@ jobs:
   # single-implementation successor to the cross-implementation suite; the
   # fixtures and canonicalization rulings (ADR-0004) are unchanged (ADR-0014).
   determinism:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5

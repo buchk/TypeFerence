@@ -81,6 +81,41 @@ in the root package or to an export in the committed dependency graph. Searching
 feeds, selecting a similarly named resource, or allowing a local resource to
 shadow a dependency is forbidden.
 
+## Source document formats
+
+A `.yaml` source file is exactly one YAML mapping document and has no separate
+body. A `.tfer` source file is a frontmatter-plus-body document:
+
+```text
+---
+schemaVersion: 4
+kind: skill
+id: acme/skills/example@1.0.0
+binds: acme/capabilities/example@1.0.0
+---
+Model-facing instructions.
+```
+
+The opening and closing `---` fences MUST each occupy an exact line. The file
+MUST start with the opening fence. The content between the fences is exactly one
+YAML mapping and is subject to the same closed-field rules as a `.yaml` resource.
+The text after the closing fence is the body.
+
+Input text is UTF-8, BOM-stripped, and CRLF-normalized to LF before the document
+is split. The normalized body is otherwise preserved. Trimming is used only to
+decide whether a body is empty and whether a required context body is present.
+
+Only a unimodal `skill` and a `context` may carry a non-whitespace body. For a
+unimodal skill the body is `instructions`; a skill MUST NOT declare instructions
+both in frontmatter and in its body. A multimodal skill keeps each instruction
+rendering under `variants` and MUST have an empty body. A context body is the
+typed text body declared by its `contextType`. Every other resource kind rejects
+a non-whitespace body.
+
+YAML scalar tokens in native context `values` and `default` members are retained
+lexically and interpreted schema-directed. YAML implicit typing MUST NOT change a
+string such as `no` into a boolean or choose the TypeFerence field type.
+
 ## Composition
 
 Agents MAY embed profiles or agents. Profiles MAY embed profiles but MUST NOT
@@ -94,8 +129,10 @@ Resolution proceeds from embedded resources toward the embedding resource:
 3. Norms and held context IDs append in embedding order and deduplicate in
    first-seen order.
 4. Capability bindings promote by capability ID. The shallowest compatible
-   implementation wins; different implementations at the same depth are
-   ambiguous unless bound locally.
+   implementation wins. At the same depth, bindings with the same resolved
+   implementation and modifier state converge as one member; different
+   implementations or incompatible modifier state are ambiguous unless bound
+   locally. Provenance retains every contributing path.
 5. Allow-lists intersect. A disjoint intersection is an explicit empty set, not
    an unrestricted set.
 6. Every contribution records source-resource provenance.
@@ -120,6 +157,12 @@ or a refinement. Satisfaction is inferred from the resolved member set.
 A capability defines canonical JSON `inputSchema` and `outputSchema`. A skill
 declares `binds: <capability-id>` and MUST preserve those schemas byte-for-byte
 after canonicalization. Its instructions provide the model implementation.
+
+A capability's `visibility` is `internal` by default or `exposed`. Visibility is
+orthogonal to composition: internal and exposed capabilities both promote,
+participate in ambiguity checks, and satisfy structural interfaces. Only exposed
+capabilities appear on public callable surfaces such as linked A2A Agent Cards
+and callable ARD projections. Exposure follows the capability through embedding.
 
 Bindings have independent presence and mutability axes:
 
@@ -221,9 +264,17 @@ named-type references are errors. Defaults are materialized before hashing and
 emission. Resolved artifacts preserve the complete canonical value object and
 body, so any semantic context change changes target bytes.
 
-Context types MAY embed other context types to refine them. Field redeclaration
-must preserve the original type and may only strengthen optional to required.
-A context satisfies its declared type and every embedded base type.
+Context types MAY explicitly `embed` other context types to refine them. Type
+satisfaction is nominal: a context satisfies its declared type and the transitive
+set of base type IDs named by `embeds`; an unrelated type with the same fields
+does not satisfy that relationship. The declared member shape is checked
+structurally.
+
+Field redeclaration must preserve the original type and may only strengthen
+optional to required. Identical inherited declarations deduplicate. Sibling bases
+that contribute conflicting defaults or modifier state for the same field are
+ambiguous unless the derived context type redeclares that field locally with one
+compatible resolution.
 
 Agents and profiles hold context by resource ID using `context`. Skills require
 types using `requiresContextTypes`. `allowedContextTypes` is a closed whitelist;
@@ -243,20 +294,24 @@ TypeFerence validation semantics.
 
 ## Tools as runtime imports
 
-A `tool` is an extern declaration: a versioned runtime import with canonical
-input/output schemas and optional non-secret requirement metadata. It contains no
+A `tool` is an independent extern declaration: a versioned runtime import with
+canonical input/output schemas. It is a dependency used by a skill, not a
+code-implemented fulfillment of that skill's capability. It contains no
 implementation, command, endpoint, environment-specific scope, or credential
 value.
 
 A skill or variant lists exact tool IDs in `requiresTools`. Build verifies that
 each declaration exists, is a `tool`, and is structurally valid. It does not
 pretend the runtime implementation exists. Link binds each effective required
-tool to one compatible provider in the deployment file and fails closed if
-missing or incompatible.
+tool to one provider and remote name in the deployment file and fails closed if
+the declaration, binding, provider, or selected mode is missing or malformed.
+The deployment binding attests that the named remote callable implements the
+exact source tool contract. TypeFerence does not interrogate the provider or
+prove its runtime schema, authorization, or cryptographic validity.
 
 The vocabulary is intentionally separate:
 
-- capability: exported semantic contract;
+- capability: agent behavior contract;
 - skill: model implementation of a capability;
 - tool: imported runtime callable used by a skill.
 
@@ -384,8 +439,9 @@ transport-specific local-development option explicitly allows otherwise.
 1. verifies the unlinked target digest;
 2. selects the artifact modes;
 3. validates every effective tool import and endpoint requirement;
-4. emits a canonical binding manifest that preserves each source tool ID,
-   selected mode, provider, and provider-level remote name;
+4. emits a canonical binding manifest that preserves the artifact's sorted
+   selected-mode set and each effective source tool ID, requirement mode,
+   provider, and provider-level remote name;
 5. structurally serializes host-native configuration;
 6. records deployment-file and materialized-artifact digests separately.
 
@@ -397,9 +453,11 @@ to other adapters. Hand-concatenating unescaped deployment values is forbidden.
 An adapter that builds one concrete mode MUST require link to select exactly
 that mode. The initial Codex, Copilot, and Cursor adapters materialize `manual`
 for multimodal skills; they reject a deployment that claims to select another
-mode. A future adapter may carry multiple renderings and select one during link,
-but it MUST NOT validate one mode's tools while installing another mode's
-instructions.
+mode. The neutral adapter carries every rendering; link records which of those
+renderings deployment selected even when the artifact imports no tools. A future
+host projection may install selected renderings, but it MUST NOT validate one
+mode's tools while installing another mode's instructions or synthesize new
+instructions during link.
 
 A2A Agent Cards are linked from the neutral artifact. For a multimodal agent,
 the deployment MUST select `a2a`; only exposed capabilities whose concrete skill

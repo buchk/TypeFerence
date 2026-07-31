@@ -6,6 +6,7 @@ package resolve
 
 import (
 	"encoding/json"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -132,7 +133,7 @@ func (r *Resolver) ResolveAll() ([]*ResolvedAgent, error) {
 			return nil, err
 		}
 		if r.resources[id].SchemaVersion == 4 {
-			if _, _, err := r.nativeContextShape(id); err != nil {
+			if _, _, _, err := r.nativeContextShape(id); err != nil {
 				return nil, err
 			}
 			if err := r.validateContextValueTypeGraph(id, map[string]bool{}); err != nil {
@@ -480,13 +481,22 @@ func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded [
 			}
 		}
 		if len(nearest) > 1 && !localCapabilities[capabilityID] {
-			agents := make([]string, len(nearest))
-			for i, c := range nearest {
-				agents[i] = c.agent
+			identical := true
+			for _, candidate := range nearest[1:] {
+				if !samePromotedSkill(nearest[0].skill, candidate.skill) {
+					identical = false
+					break
+				}
 			}
-			return nil, nil, resource.Errorf(
-				"%s: embedded capability '%s' is ambiguous between %s; bind the capability on %s to resolve the conflict",
-				id, capabilityID, strings.Join(agents, ", "), id)
+			if !identical {
+				agents := make([]string, len(nearest))
+				for i, c := range nearest {
+					agents[i] = c.agent
+				}
+				return nil, nil, resource.Errorf(
+					"%s: embedded capability '%s' is ambiguous between %s; bind the capability on %s to resolve the conflict",
+					id, capabilityID, strings.Join(agents, ", "), id)
+			}
 		}
 		result[capabilityID] = nearest[0].skill
 		depths[capabilityID] = minDepth
@@ -572,6 +582,16 @@ func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded [
 		depths[capabilityID] = 0
 	}
 	return result, depths, nil
+}
+
+// samePromotedSkill compares the semantic member carried through embedding.
+// DispatchName is recomputed for every embedding component and provenance records
+// the contributing paths, so neither makes two otherwise-identical members
+// ambiguous.
+func samePromotedSkill(left, right ResolvedSkill) bool {
+	left.DispatchName, right.DispatchName = "", ""
+	left.Provenance, right.Provenance = nil, nil
+	return reflect.DeepEqual(left, right)
 }
 
 // mergeRequired computes the capability ids mandated for this component: those
@@ -979,7 +999,7 @@ func variantContextRequirements(impl *resource.Document) map[string][]string {
 }
 
 func (r *Resolver) validateNativeContext(obj *resource.Document) error {
-	fields, bodyRequired, err := r.nativeContextShape(obj.ContextType)
+	fields, bodyAllowed, bodyRequired, err := r.nativeContextShape(obj.ContextType)
 	if err != nil {
 		return resource.Errorf("%s: %s", obj.ID, err)
 	}
@@ -1014,36 +1034,71 @@ func (r *Resolver) validateNativeContext(obj *resource.Document) error {
 	if bodyRequired && strings.TrimSpace(obj.Content) == "" {
 		return resource.Errorf("%s: its contextType requires a text body", obj.ID)
 	}
+	if !bodyAllowed && strings.TrimSpace(obj.Content) != "" {
+		return resource.Errorf("%s: its contextType does not declare a text body", obj.ID)
+	}
 	return nil
 }
 
-func (r *Resolver) nativeContextShape(id string) (map[string]resource.ContextField, bool, error) {
-	closure, err := r.contextTypeClosure(id, map[string]bool{})
-	if err != nil {
-		return nil, false, err
+func (r *Resolver) nativeContextShape(id string) (map[string]resource.ContextField, bool, bool, error) {
+	return r.nativeContextShapeFrom(id, map[string]bool{})
+}
+
+type contextFieldConflict struct {
+	required bool
+	defaults bool
+}
+
+func (r *Resolver) nativeContextShapeFrom(id string, visiting map[string]bool) (map[string]resource.ContextField, bool, bool, error) {
+	ct, ok := r.resources[id]
+	if !ok || ct.Kind != "contextType" {
+		return nil, false, false, resource.Errorf("Missing contextType: %s", id)
 	}
+	if visiting[id] {
+		return nil, false, false, resource.Errorf("ContextType refinement cycle detected at %s", id)
+	}
+	if ct.SchemaVersion != 4 {
+		return nil, false, false, resource.Errorf("native contextType %s cannot use legacy schemaVersion %d type %s", id, ct.SchemaVersion, ct.ID)
+	}
+	visiting[id] = true
+	defer delete(visiting, id)
+
 	fields := map[string]resource.ContextField{}
+	bodyAllowed := false
 	bodyRequired := false
-	// Closure is derived-first. Apply bases first so a valid refinement can
-	// strengthen optional -> required.
-	for i := len(closure) - 1; i >= 0; i-- {
-		ct := r.resources[closure[i]]
-		if ct.SchemaVersion != 4 {
-			return nil, false, resource.Errorf("native contextType %s cannot refine legacy schemaVersion %d type %s", id, ct.SchemaVersion, ct.ID)
+	conflicts := map[string]contextFieldConflict{}
+	for _, baseID := range ct.Embeds {
+		baseFields, baseBodyAllowed, baseBodyRequired, err := r.nativeContextShapeFrom(baseID, visiting)
+		if err != nil {
+			return nil, false, false, err
 		}
-		if ct.ContextBody != nil && ct.ContextBody.Required {
+		if baseBodyAllowed {
+			bodyAllowed = true
+		}
+		if baseBodyRequired {
 			bodyRequired = true
 		}
-		for _, name := range sortedContextFieldKeys(ct.ContextTypeFields) {
-			next := ct.ContextTypeFields[name]
+		for _, name := range sortedContextFieldKeys(baseFields) {
+			next := baseFields[name]
 			if prior, exists := fields[name]; exists {
 				if !sameTypeExpr(prior.Type, next.Type) {
-					return nil, false, resource.Errorf("contextType %s changes inherited field %q's type", ct.ID, name)
+					return nil, false, false, resource.Errorf("contextType %s inherits incompatible types for field %q", ct.ID, name)
 				}
-				if prior.Required && !next.Required {
-					return nil, false, resource.Errorf("contextType %s weakens inherited required field %q", ct.ID, name)
+				conflict := conflicts[name]
+				if prior.Required != next.Required {
+					conflict.required = true
 				}
-				if prior.HasDefault && !next.HasDefault {
+				if prior.HasDefault != next.HasDefault ||
+					(prior.HasDefault && !reflect.DeepEqual(prior.Default, next.Default)) {
+					conflict.defaults = true
+				}
+				if conflict.required || conflict.defaults {
+					conflicts[name] = conflict
+				} else {
+					delete(conflicts, name)
+				}
+				next.Required = prior.Required || next.Required
+				if prior.HasDefault {
 					next.HasDefault = true
 					next.Default = cloneFieldValue(prior.Default)
 				}
@@ -1051,7 +1106,41 @@ func (r *Resolver) nativeContextShape(id string) (map[string]resource.ContextFie
 			fields[name] = next
 		}
 	}
-	return fields, bodyRequired, nil
+	if ct.ContextBody != nil {
+		bodyAllowed = true
+		if ct.ContextBody.Required {
+			bodyRequired = true
+		}
+	}
+	for _, name := range sortedContextFieldKeys(ct.ContextTypeFields) {
+		next := ct.ContextTypeFields[name]
+		if prior, exists := fields[name]; exists {
+			if !sameTypeExpr(prior.Type, next.Type) {
+				return nil, false, false, resource.Errorf("contextType %s changes inherited field %q's type", ct.ID, name)
+			}
+			if prior.Required && !next.Required {
+				return nil, false, false, resource.Errorf("contextType %s weakens inherited required field %q", ct.ID, name)
+			}
+			if conflict := conflicts[name]; conflict.defaults && !next.HasDefault {
+				return nil, false, false, resource.Errorf("contextType %s must resolve inherited default ambiguity for field %q", ct.ID, name)
+			}
+			if prior.HasDefault && !next.HasDefault {
+				next.HasDefault = true
+				next.Default = cloneFieldValue(prior.Default)
+			}
+		}
+		fields[name] = next
+		delete(conflicts, name)
+	}
+	if len(conflicts) > 0 {
+		names := make([]string, 0, len(conflicts))
+		for name := range conflicts {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+		return nil, false, false, resource.Errorf("contextType %s inherits ambiguous field %q; redeclare it locally", ct.ID, names[0])
+	}
+	return fields, bodyAllowed, bodyRequired, nil
 }
 
 func (r *Resolver) validateNativeValue(value resource.FieldValue, typ resource.TypeExpr, field string) error {
@@ -1119,7 +1208,7 @@ func (r *Resolver) materializeNativeValue(value resource.FieldValue, typ resourc
 		if value.Kind != "map" {
 			return value, resource.Errorf("field %q must be a value of named context type %s", field, typ.Ref)
 		}
-		fields, bodyRequired, err := r.nativeContextShape(typ.Ref)
+		fields, _, bodyRequired, err := r.nativeContextShape(typ.Ref)
 		if err != nil {
 			return value, err
 		}
@@ -1156,7 +1245,7 @@ func (r *Resolver) materializeNativeValue(value resource.FieldValue, typ resourc
 }
 
 func (r *Resolver) validateNativeDefaults(id string) error {
-	fields, _, err := r.nativeContextShape(id)
+	fields, _, _, err := r.nativeContextShape(id)
 	if err != nil {
 		return err
 	}
@@ -1178,7 +1267,7 @@ func (r *Resolver) validateContextValueTypeGraph(id string, visiting map[string]
 	}
 	visiting[id] = true
 	defer delete(visiting, id)
-	fields, _, err := r.nativeContextShape(id)
+	fields, _, _, err := r.nativeContextShape(id)
 	if err != nil {
 		return err
 	}
@@ -1365,7 +1454,7 @@ func (r *Resolver) contextValuesJSON(obj *resource.Document) string {
 	if obj.SchemaVersion != 4 {
 		return "{}"
 	}
-	fields, _, err := r.nativeContextShape(obj.ContextType)
+	fields, _, _, err := r.nativeContextShape(obj.ContextType)
 	if err != nil {
 		return "{}"
 	}
@@ -1403,7 +1492,7 @@ func (r *Resolver) nativeValueJSON(value resource.FieldValue, typ resource.TypeE
 		}
 		return obj
 	case "ref":
-		fields, _, err := r.nativeContextShape(typ.Ref)
+		fields, _, _, err := r.nativeContextShape(typ.Ref)
 		if err != nil {
 			return jsonx.Obj{}
 		}

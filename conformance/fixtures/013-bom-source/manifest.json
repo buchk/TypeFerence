@@ -1,5 +1,6 @@
 {
   "description": "Source files carrying a UTF-8 BOM: the BOM is ignored when reading and stripped before hashing and packaging.",
+  "language": "legacy-v3",
   "expect": "success",
   "emitArd": "conformance.example",
   "digests": {

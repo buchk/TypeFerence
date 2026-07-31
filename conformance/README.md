@@ -1,11 +1,16 @@
 # TypeFerence determinism suite
 
 Language-neutral fixtures the compiler must reproduce as byte-identical
-artifacts. This suite pins the specification's canonical output: the Go
-implementation runs it in CI, and a digest mismatch on any fixture is a broken
-build. The fixtures and canonicalization rulings (ADR-0004) are the same corpus
-that once verified two implementations against each other; a single
-implementation now carries it forward as a golden-file guarantee (ADR-0014).
+artifacts. The current version 4 corpus pins the specification's canonical
+output: the Go implementation runs it in CI, and a digest mismatch on any current
+fixture is a broken build.
+
+Fixtures explicitly marked `"language": "legacy-v3"` form a separate archival
+golden regression corpus. They preserve retired bytes through a test-only compiler
+switch but do not describe source accepted by the CLI, LSP, package, or playground
+entrypoints. This keeps historical determinism evidence without calling retired
+version 3 behavior current conformance. The corpus once compared Go and C#; after
+ADR-0014 it is a single-implementation golden guarantee.
 
 ## Layout
 
@@ -21,13 +26,15 @@ conformance/fixtures/<NNN-name>/
 | Field | Meaning |
 | --- | --- |
 | `description` | What the fixture exercises. |
+| `language` | Omitted for current v4; `legacy-v3` only for the archival corpus. |
 | `expect` | `success` or `error`. Error fixtures must fail compilation in every implementation; the diagnostic text is not part of the contract (see ADR-0005). |
 | `emitArd` | Optional ARD publisher domain; presence enables `--emit-ard`. |
 | `trustSignatures` | Optional signature map path relative to the fixture directory. |
 | `allowUnsignedTrust` | Optional; enables the unsigned-staging escape hatch. |
 | `digests` | For `success` fixtures: the expected `typeference-directory-v1` digest of each emitted top-level target directory (`neutral`, `codex`, `copilot`, `cursor`, `ard`). |
 
-All fixtures build with `--target all`.
+All fixtures build with `--target all`. `TestConformance` runs current v4;
+`TestLegacyV3Golden` runs the archival corpus.
 
 ## Running
 

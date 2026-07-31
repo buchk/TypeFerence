@@ -167,3 +167,53 @@ func TestNamedContextValueCyclesRejected(t *testing.T) {
 		t.Fatalf("expected recursive named value type diagnostic, got %v", err)
 	}
 }
+
+func TestSiblingContextDefaultsRequireLocalResolution(t *testing.T) {
+	field := func(value string) resource.ContextField {
+		return resource.ContextField{
+			Type:       resource.TypeExpr{Kind: "string"},
+			HasDefault: true,
+			Default:    resource.FieldValue{Kind: "scalar", Scalar: value},
+		}
+	}
+	left := doc("contextType", "t/ct/left@1.0.0", func(d *resource.Document) {
+		d.SchemaVersion = 4
+		d.ContextTypeFields = map[string]resource.ContextField{"owner": field("left")}
+	})
+	right := doc("contextType", "t/ct/right@1.0.0", func(d *resource.Document) {
+		d.SchemaVersion = 4
+		d.ContextTypeFields = map[string]resource.ContextField{"owner": field("right")}
+	})
+	ambiguous := doc("contextType", "t/ct/ambiguous@1.0.0", func(d *resource.Document) {
+		d.SchemaVersion = 4
+		d.Embeds = []string{left.ID, right.ID}
+	})
+	if _, err := New(docSet(left, right, ambiguous)).ResolveAll(); err == nil ||
+		!strings.Contains(err.Error(), "ambiguous field") {
+		t.Fatalf("conflicting sibling defaults must be ambiguous, got %v", err)
+	}
+
+	resolved := doc("contextType", "t/ct/resolved@1.0.0", func(d *resource.Document) {
+		d.SchemaVersion = 4
+		d.Embeds = []string{left.ID, right.ID}
+		d.ContextTypeFields = map[string]resource.ContextField{"owner": field("resolved")}
+	})
+	if _, err := New(docSet(left, right, resolved)).ResolveAll(); err != nil {
+		t.Fatalf("a compatible local declaration must resolve the ambiguity: %v", err)
+	}
+}
+
+func TestContextBodyRequiresADeclaredBodyType(t *testing.T) {
+	contextType := doc("contextType", "t/ct/fields-only@1.0.0", func(d *resource.Document) {
+		d.SchemaVersion = 4
+	})
+	value := doc("context", "t/context/value@1.0.0", func(d *resource.Document) {
+		d.SchemaVersion = 4
+		d.ContextType = contextType.ID
+		d.Content = "undeclared body\n"
+	})
+	if _, err := New(docSet(contextType, value)).ResolveAll(); err == nil ||
+		!strings.Contains(err.Error(), "does not declare a text body") {
+		t.Fatalf("body content without a body type must fail, got %v", err)
+	}
+}
