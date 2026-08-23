@@ -1,0 +1,9 @@
+---
+schemaVersion: 5
+kind: contextType
+id: acme/context-types/norms@1.0.0
+displayName: Norms
+body:
+  type: text
+  required: true
+---

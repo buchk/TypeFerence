@@ -1,0 +1,8 @@
+{
+  "answerSet": "answers.json",
+  "description": "Golden wizard fixture: the canonical answer set's generated suite (ADR-0028). The scaffold digest pins generator 1.0.0 x schemaVersion 1 to these bytes; the tree must also compile through the ordinary compiler.",
+  "digests": {
+    "scaffold": "sha256:bb3eeddac92fb41f7d49f504c43fbaf88be783b054a40e0f7b92aad5f4d0d5d1"
+  },
+  "expect": "success"
+}

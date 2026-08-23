@@ -1,0 +1,13 @@
+---
+schemaVersion: 5
+kind: profile
+id: acme/profiles/platform@1.0.0
+displayName: Platform Defaults
+description: Platform-level defaults embedding the parent profile.
+embeds:
+  - "acme/profiles/base@1.0.0"
+
+
+slots:
+  domain: acme/context/domain-scope@1.0.0
+---

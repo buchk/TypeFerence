@@ -1,0 +1,12 @@
+---
+schemaVersion: 5
+kind: profile
+id: acme/profiles/base@1.0.0
+displayName: Base Defaults
+description: Organization-wide defaults for acme.
+context:
+  - "acme/context/norm-review-before-merge@1.0.0"
+  - "acme/context/norm-ci-only-deploys@1.0.0"
+
+
+---

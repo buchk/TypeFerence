@@ -1,0 +1,14 @@
+---
+schemaVersion: 5
+kind: agent
+id: acme/agents/ticket-bot@1.0.0
+displayName: Ticket Bot
+description: Generated from a setup answer set; edit freely.
+emit: true
+embeds:
+  - "acme/profiles/platform@1.0.0"
+
+
+slots:
+  domain: acme/context/domain-scope@1.0.0
+---
