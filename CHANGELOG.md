@@ -11,7 +11,17 @@ compatibility promises between minor versions.
 
 ## [Unreleased]
 
-### Changed
+### Added
+
+- **Deterministic setup wizard** ([ADR-0028](docs/decisions/0028-deterministic-setup-wizard.md)).
+  `typeference init --answers answers.json [--out DIR] [--verify sha256:...]`
+  scaffolds a complete multilevel v5 suite — typed norm contexts, a profile
+  embedding chain, one concrete agent — from a strict, versioned answer set.
+  The browser playground's new Setup wizard runs the same generator over the
+  wasm bridge and offers the identical digest, so the local checkout can be
+  verified byte-for-byte against the browser session. The canonical answer
+  set's golden fixture (057) compiles through the ordinary compiler and pins
+  generator × schema to bytes in CI.
 
 - **v5 closure: one closed frontmatter grammar, no untyped behavioral prose**
   ([ADR-0026](docs/decisions/0026-v5-closed-frontmatter-grammar.md),
