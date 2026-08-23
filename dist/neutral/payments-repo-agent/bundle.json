@@ -13,12 +13,23 @@
     "organization": "helio/context/organization@1.0.0",
     "repository": "helio/context/repository-evidence@1.0.0"
   },
-  "workingNorms": [
-    "Preserve a clear audit trail for material decisions.",
-    "State uncertainty and route work to an accountable owner when authority is unclear.",
-    "Prefer evidence from tests, diffs, and version control over recollection."
-  ],
   "context": [
+    {
+      "id": "helio/context/audit-norm@1.0.0",
+      "contextType": "helio/context-types/norms@1.0.0",
+      "satisfies": [
+        "helio/context-types/norms@1.0.0"
+      ],
+      "content": "Preserve a clear audit trail for material decisions.\n"
+    },
+    {
+      "id": "helio/context/evidence-norm@1.0.0",
+      "contextType": "helio/context-types/norms@1.0.0",
+      "satisfies": [
+        "helio/context-types/norms@1.0.0"
+      ],
+      "content": "Prefer evidence from tests, diffs, and version control over recollection.\n"
+    },
     {
       "id": "helio/context/organization@1.0.0",
       "contextType": "helio/context-types/organization@1.0.0",
@@ -53,6 +64,14 @@
         "authority": "explicit"
       },
       "content": "# Safety policy\n\nAgents may prepare recommendations and drafts. They must not represent approval, transmit external messages, or make irreversible changes without explicit authority.\n"
+    },
+    {
+      "id": "helio/context/uncertainty-norm@1.0.0",
+      "contextType": "helio/context-types/norms@1.0.0",
+      "satisfies": [
+        "helio/context-types/norms@1.0.0"
+      ],
+      "content": "State uncertainty and route work to an accountable owner when authority is unclear.\n"
     }
   ],
   "skills": [
@@ -106,23 +125,11 @@
       "source": "helio/profiles/enterprise-defaults@1.0.0"
     },
     {
-      "field": "workingNorms",
-      "source": "helio/profiles/enterprise-defaults@1.0.0"
-    },
-    {
-      "field": "workingNorms",
-      "source": "helio/profiles/enterprise-defaults@1.0.0"
-    },
-    {
       "field": "embeds.helio/profiles/enterprise-defaults@1.0.0",
       "source": "helio/profiles/repository-defaults@1.0.0"
     },
     {
       "field": "slots.repository",
-      "source": "helio/profiles/repository-defaults@1.0.0"
-    },
-    {
-      "field": "workingNorms",
       "source": "helio/profiles/repository-defaults@1.0.0"
     },
     {

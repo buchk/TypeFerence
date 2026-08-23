@@ -12,7 +12,7 @@ import (
 
 func TestSourceDigestIgnoresGeneratedAndUnreferencedFiles(t *testing.T) {
 	source := t.TempDir()
-	writeSrc(t, source, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\n")
+	writeSrc(t, source, "agent.yaml", "schemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\n")
 	before, err := HashSource(source)
 	if err != nil {
 		t.Fatal(err)
@@ -33,9 +33,9 @@ func TestSourceDigestIgnoresGeneratedAndUnreferencedFiles(t *testing.T) {
 
 func TestSourceDigestUnaffectedByResolverNormalization(t *testing.T) {
 	source := t.TempDir()
-	writeSrc(t, source, "context-type.yaml", "schemaVersion: 4\nkind: contextType\nid: acme/context-types/settings@1.0.0\nfields:\n  enabled:\n    type: boolean\n    default: true\n")
-	writeSrc(t, source, "context.yaml", "schemaVersion: 4\nkind: context\nid: acme/context/settings@1.0.0\ncontextType: acme/context-types/settings@1.0.0\n")
-	writeSrc(t, source, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\ncontext:\n  - acme/context/settings@1.0.0\n")
+	writeSrc(t, source, "context-type.yaml", "schemaVersion: 5\nkind: contextType\nid: acme/context-types/settings@1.0.0\nfields:\n  enabled:\n    type: boolean\n    default: true\n")
+	writeSrc(t, source, "context.yaml", "schemaVersion: 5\nkind: context\nid: acme/context/settings@1.0.0\ncontextType: acme/context-types/settings@1.0.0\n")
+	writeSrc(t, source, "agent.yaml", "schemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\ncontext:\n  - acme/context/settings@1.0.0\n")
 
 	before, err := HashSource(source)
 	if err != nil {
@@ -63,7 +63,7 @@ func TestSourceDigestUnaffectedByResolverNormalization(t *testing.T) {
 
 func TestBuildRejectsSourceRootAsOutput(t *testing.T) {
 	source := t.TempDir()
-	writeSrc(t, source, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\n")
+	writeSrc(t, source, "agent.yaml", "schemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\n")
 	if _, err := Build(source, source, []Target{Neutral}, nil); err == nil ||
 		!strings.Contains(err.Error(), "must not be the source root") {
 		t.Fatalf("expected source-root output rejection, got %v", err)

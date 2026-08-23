@@ -1,4 +1,4 @@
-schemaVersion: 4
+schemaVersion: 5
 kind: capability
 id: conformance/capabilities/translate-v4@1.0.0
 displayName: Translate — 翻訳

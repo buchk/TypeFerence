@@ -7,8 +7,6 @@ embeds:
   - conformance/profiles/org@1.0.0
 slots:
   playbook: context/playbook.md
-workingNorms:
-  - Prefer evidence over recollection.
 contextFiles:
   - context/playbook.md
 skills:

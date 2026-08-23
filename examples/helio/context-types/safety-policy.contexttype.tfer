@@ -1,5 +1,5 @@
 ---
-schemaVersion: 4
+schemaVersion: 5
 kind: contextType
 id: helio/context-types/safety-policy@1.0.0
 displayName: Safety Policy

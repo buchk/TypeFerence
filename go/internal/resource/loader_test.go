@@ -61,15 +61,15 @@ func TestUnknownFieldRejected(t *testing.T) {
 
 func TestDuplicatePropertiesAndNestedContextKeysRejected(t *testing.T) {
 	root := writeSource(t, map[string]string{
-		"agent.yaml": "schemaVersion: 4\nkind: agent\nid: t/agents/a@1.0.0\ndescription: first\ndescription: second\n",
+		"agent.yaml": "schemaVersion: 5\nkind: agent\nid: t/agents/a@1.0.0\ndescription: first\ndescription: second\n",
 	})
 	if _, err := Load(root, ""); err == nil || !strings.Contains(err.Error(), "duplicate property 'description'") {
 		t.Fatalf("expected duplicate property diagnostic, got %v", err)
 	}
 
 	root = writeSource(t, map[string]string{
-		"type.yaml":  "schemaVersion: 4\nkind: contextType\nid: t/context-types/c@1.0.0\nfields:\n  data:\n    type:\n      map: string\n",
-		"value.yaml": "schemaVersion: 4\nkind: context\nid: t/context/c@1.0.0\ncontextType: t/context-types/c@1.0.0\nvalues:\n  data:\n    owner: first\n    owner: second\n",
+		"type.yaml":  "schemaVersion: 5\nkind: contextType\nid: t/context-types/c@1.0.0\nfields:\n  data:\n    type:\n      map: string\n",
+		"value.yaml": "schemaVersion: 5\nkind: context\nid: t/context/c@1.0.0\ncontextType: t/context-types/c@1.0.0\nvalues:\n  data:\n    owner: first\n    owner: second\n",
 	})
 	if _, err := Load(root, ""); err == nil || !strings.Contains(err.Error(), "duplicate context value key 'owner'") {
 		t.Fatalf("expected nested duplicate context value diagnostic, got %v", err)
@@ -79,15 +79,15 @@ func TestDuplicatePropertiesAndNestedContextKeysRejected(t *testing.T) {
 func TestSchemaVersionEnforced(t *testing.T) {
 	root := writeSource(t, map[string]string{"agent.yaml": strings.Replace(minimalAgent, "schemaVersion: 3", "schemaVersion: 2", 1)})
 	_, err := loadLegacyForTest(root, "")
-	if err == nil || !strings.Contains(err.Error(), "schemaVersion must be 4") {
+	if err == nil || !strings.Contains(err.Error(), "schemaVersion must be 5") {
 		t.Fatalf("expected schemaVersion error, got %v", err)
 	}
 }
 
 func TestDefaultLoaderRejectsLegacyV3(t *testing.T) {
 	root := writeSource(t, map[string]string{"agent.yaml": minimalAgent})
-	if _, err := Load(root, ""); err == nil || !strings.Contains(err.Error(), "schemaVersion must be 4") {
-		t.Fatalf("the default source language must be closed to v4, got %v", err)
+	if _, err := Load(root, ""); err == nil || !strings.Contains(err.Error(), "schemaVersion must be 5") {
+		t.Fatalf("the default source language must be closed, got %v", err)
 	}
 }
 

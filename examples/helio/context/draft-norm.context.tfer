@@ -1,0 +1,8 @@
+---
+schemaVersion: 5
+kind: context
+id: helio/context/draft-norm@1.0.0
+contextType: helio/context-types/norms@1.0.0
+displayName: Draft norm
+---
+Distinguish drafts from messages approved for delivery.

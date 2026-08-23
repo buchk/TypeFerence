@@ -1,5 +1,5 @@
 ---
-schemaVersion: 4
+schemaVersion: 5
 kind: context
 id: conformance/context/left@1.0.0
 contextType: conformance/context-types/left@1.0.0

@@ -1,4 +1,4 @@
-schemaVersion: 4
+schemaVersion: 5
 kind: contextType
 id: conformance/context-types/measurements@1.0.0
 fields:

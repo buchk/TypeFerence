@@ -2,9 +2,9 @@
   "description": "A UTF-8 BOM before a version 4 .tfer opening fence is stripped before parsing and canonicalization.",
   "expect": "success",
   "digests": {
-    "codex": "sha256:b10918e38f8cad9b0e633a7402b43fcb3ebcbada4f7836da85cce229f1a52cf0",
-    "copilot": "sha256:561780d0e23fa22ce13a59cfa7ba888b26c8309417d8ba2c96b8a29d26d0e7ac",
-    "cursor": "sha256:2b5b081e53f696d7ef45e4897a6c3b27b67c6822c2d3c7a39246eb8320ead78a",
-    "neutral": "sha256:cf1ed1ef8a37b57010bb9205378d09f0673461cc812b88b7a249230ac1516f91"
+    "codex": "sha256:6f5b87c48d6d519699105a46279819800a393ab59c26ae89a9a6a3a56bd1d24e",
+    "copilot": "sha256:34c72d6e5e9107212d2662f9d3e2774eb1d30c64afe9896805d6a66f5f916822",
+    "cursor": "sha256:15b3dfa9296300e2a1e770e7e45896b2b7c909ea6509e16eccda142d8de2dccc",
+    "neutral": "sha256:a35d71206fc5e3482afc5d5f3c8f79905613bf2c7216afaed9b0f4259b81ab88"
   }
 }

@@ -5,7 +5,5 @@ displayName: Level Five
 description: Deepest profile.
 slots:
   deepest: context/deep.md
-workingNorms:
-  - Norm from level five.
 contextFiles:
   - context/deep.md

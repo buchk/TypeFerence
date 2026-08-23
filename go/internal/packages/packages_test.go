@@ -14,18 +14,18 @@ func TestRestoreMaterializesTransitiveGraphForOfflineBuild(t *testing.T) {
 	feed := t.TempDir()
 	base := t.TempDir()
 	write(t, base, "typeference.yaml", "schemaVersion: 2\nname: marathon/base\nversion: 1.0.0\n")
-	write(t, base, "profile.yaml", "schemaVersion: 4\nkind: profile\nid: marathon/profiles/base@1.0.0\nworkingNorms: [preserve evidence]\n")
+	write(t, base, "profile.tfer", "---\nschemaVersion: 5\nkind: profile\nid: marathon/profiles/base@1.0.0\n---\n")
 	packToFeed(t, base, feed, "marathon/base", "1.0.0", "base")
 
 	foundations := t.TempDir()
 	write(t, foundations, "typeference.yaml", "schemaVersion: 2\nname: marathon/foundations\nversion: 2.0.0\ndependencies:\n  marathon/base: 1.0.0\n")
-	write(t, foundations, "profile.yaml", "schemaVersion: 4\nkind: profile\nid: marathon/profiles/foundations@2.0.0\nembeds: [marathon/profiles/base@1.0.0]\n")
+	write(t, foundations, "profile.tfer", "---\nschemaVersion: 5\nkind: profile\nid: marathon/profiles/foundations@2.0.0\nembeds:\n  - marathon/profiles/base@1.0.0\n---\n")
 	restoreProject(t, foundations, feed)
 	packToFeed(t, foundations, feed, "marathon/foundations", "2.0.0", "foundations")
 
 	root := t.TempDir()
 	write(t, root, "typeference.yaml", "schemaVersion: 2\nname: marathon/agents\nversion: 1.0.0\ndependencies:\n  marathon/foundations: 2.0.0\n")
-	write(t, root, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: marathon/agents/payments@1.0.0\nembeds: [marathon/profiles/foundations@2.0.0]\n")
+	write(t, root, "agent.tfer", "---\nschemaVersion: 5\nkind: agent\nid: marathon/agents/payments@1.0.0\nembeds:\n  - marathon/profiles/foundations@2.0.0\n---\n")
 	packagesDir := filepath.Join(root, "obj", "typeference", "packages")
 	restorer := packages.Restorer{
 		Source: root, PackagesDir: packagesDir,
@@ -62,7 +62,7 @@ func restoreProject(t *testing.T, source, feed string) {
 func TestPackIsByteDeterministic(t *testing.T) {
 	source := t.TempDir()
 	write(t, source, "typeference.yaml", "schemaVersion: 2\nname: acme/package\nversion: 1.0.0\n")
-	write(t, source, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\n")
+	write(t, source, "agent.yaml", "schemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\n")
 	first := filepath.Join(t.TempDir(), "a.tferpkg")
 	second := filepath.Join(t.TempDir(), "b.tferpkg")
 	digestA, err := packages.Pack(source, first)
@@ -83,7 +83,7 @@ func TestPackIsByteDeterministic(t *testing.T) {
 func TestBuildAndPackRejectStaleLockForEmptyDependencyGraph(t *testing.T) {
 	source := t.TempDir()
 	write(t, source, "typeference.yaml", "schemaVersion: 2\nname: acme/package\nversion: 1.0.0\n")
-	write(t, source, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\n")
+	write(t, source, "agent.yaml", "schemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\n")
 	lock := packages.Lock{
 		SchemaVersion: 1,
 		Root:          "acme/package",

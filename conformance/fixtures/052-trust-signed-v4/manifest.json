@@ -4,10 +4,10 @@
   "emitArd": "conformance.example",
   "trustSignatures": "signatures.json",
   "digests": {
-    "ard": "sha256:ae29ee8cb51c5257ffd4a989ae95ff16661bd1e87f2f36809a13fc717057e933",
-    "codex": "sha256:5c2fba2a549bd6275a054fe3822acefc9cf3f1ba2508179c78356a71b22d2d2e",
-    "copilot": "sha256:a713d41795ff52eb765a6e3e07a3c3497043f99e9af0dcdd72bf9b58dcd4002e",
-    "cursor": "sha256:f12ac8b3bba8ad055d62cc5ae1e1de5749f4b374152b885cba9f7ae3904aa100",
-    "neutral": "sha256:fd94f327a7996c3027a7c2bbbbb0e580096b47d1a524d8946da6050e14cebe35"
+    "ard": "sha256:5675a87875834c7b92adc846b3da907f0e0c15fef47cd81fc7822f8f00b61725",
+    "codex": "sha256:aa16039bd23fd8743a186970b27037c9b0ba112cbaf41aa36b01bb32162bbfc4",
+    "copilot": "sha256:0391a14c52bdcfe574b23a53a2dad4a1b7127f2d031452537fac996c5e69778e",
+    "cursor": "sha256:bad119688684b03ac1102f705f8f91b4ba83102553c756a274b2d074d068a906",
+    "neutral": "sha256:c5d1eee6bc19f6686d92f8bc3ef13689554ef4f0e7565dd03469bb5029a7aaed"
   }
 }

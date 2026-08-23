@@ -1,4 +1,4 @@
-schemaVersion: 4
+schemaVersion: 5
 kind: interface
 id: conformance/interfaces/typed-slot@1.0.0
 requiresSlots:

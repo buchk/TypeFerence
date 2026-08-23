@@ -185,7 +185,7 @@ rubric:
 }
 
 var starterFiles = map[string]string{
-	"agents/support-agent.agent.yaml": `schemaVersion: 4
+	"agents/support-agent.agent.yaml": `schemaVersion: 5
 kind: agent
 id: acme/support-agent@1.0.0
 displayName: Acme Support Agent
@@ -198,7 +198,7 @@ skills:
   - ref: acme/skills/summarize-ticket@1.0.0
     capability: acme/capabilities/summarize-ticket@1.0.0
 `,
-	"profiles/support-defaults.profile.yaml": `schemaVersion: 4
+	"profiles/support-defaults.profile.yaml": `schemaVersion: 5
 kind: profile
 id: acme/profiles/support-defaults@1.0.0
 displayName: Acme Support Defaults
@@ -210,7 +210,7 @@ workingNorms:
 context:
   - acme/context/tone@1.0.0
 `,
-	"capabilities/summarize-ticket.capability.yaml": `schemaVersion: 4
+	"capabilities/summarize-ticket.capability.yaml": `schemaVersion: 5
 kind: capability
 id: acme/capabilities/summarize-ticket@1.0.0
 displayName: Summarize Ticket
@@ -218,7 +218,7 @@ description: Capability slot for structured ticket summaries.
 inputSchema: '{"type":"object","properties":{"ticketId":{"type":"string"}},"additionalProperties":false}'
 outputSchema: '{"type":"object","properties":{"summary":{"type":"string"},"nextAction":{"type":"string"}},"required":["summary","nextAction"]}'
 `,
-	"skills/summarize-ticket.skill.yaml": `schemaVersion: 4
+	"skills/summarize-ticket.skill.yaml": `schemaVersion: 5
 kind: skill
 id: acme/skills/summarize-ticket@1.0.0
 binds: acme/capabilities/summarize-ticket@1.0.0
@@ -232,7 +232,7 @@ instructions: |
 inputSchema: '{"type":"object","properties":{"ticketId":{"type":"string"}},"additionalProperties":false}'
 outputSchema: '{"type":"object","properties":{"summary":{"type":"string"},"nextAction":{"type":"string"}},"required":["summary","nextAction"]}'
 `,
-	"interfaces/summarizer.interface.yaml": `schemaVersion: 4
+	"interfaces/summarizer.interface.yaml": `schemaVersion: 5
 kind: interface
 id: acme/interfaces/summarizer@1.0.0
 displayName: Summarizer
@@ -240,7 +240,7 @@ description: Contract for agents that can produce structured ticket summaries.
 requiresCapabilities:
   - acme/capabilities/summarize-ticket@1.0.0
 `,
-	"context-types/tone.contexttype.yaml": `schemaVersion: 4
+	"context-types/tone.contexttype.yaml": `schemaVersion: 5
 kind: contextType
 id: acme/context-types/tone@1.0.0
 body:
@@ -248,7 +248,7 @@ body:
   required: true
 `,
 	"context/tone.context.tfer": `---
-schemaVersion: 4
+schemaVersion: 5
 kind: context
 id: acme/context/tone@1.0.0
 contextType: acme/context-types/tone@1.0.0
@@ -259,7 +259,7 @@ displayName: Tone
 Warm, direct, and concrete. Lead with what will happen next, not with an
 apology. One idea per sentence.
 `,
-	"context-types/widgets.contexttype.yaml": `schemaVersion: 4
+	"context-types/widgets.contexttype.yaml": `schemaVersion: 5
 kind: contextType
 id: acme/context-types/widgets@1.0.0
 body:
@@ -267,7 +267,7 @@ body:
   required: true
 `,
 	"context/widgets.context.tfer": `---
-schemaVersion: 4
+schemaVersion: 5
 kind: context
 id: acme/context/widgets@1.0.0
 contextType: acme/context-types/widgets@1.0.0

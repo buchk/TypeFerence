@@ -2,9 +2,9 @@
   "description": "An internal capability participates in composition and structurally satisfies an interface without becoming public.",
   "expect": "success",
   "digests": {
-    "codex": "sha256:7e66566c0cdc3af9f7011d7929dd4bd11e79c6628ce0f6849d7361fdf9f4c984",
-    "copilot": "sha256:4c5d87e343a2bd79fe86b62bd4e9a4c5edbe29c38cbc342858f848b437402e36",
-    "cursor": "sha256:3c5dbbce8631d453e538bdb9572b448d751f0c640b67f5c3db144dc23ff429fd",
-    "neutral": "sha256:41dd6502c0dbc3d5cdf122a5d45b6fff5ce4d6be5d4c2dc48c455dafbecc071b"
+    "codex": "sha256:11162ec651876bf605c9cf34eda3ef4eb152cb9708c4159ddf8babd35e17a200",
+    "copilot": "sha256:8bd097d0cf4fb8909a3e944224fba3075556256554604c176c5a6f9bb00173aa",
+    "cursor": "sha256:9933e66f5dea3531f0f0def10f31501e8b3ab4aef38cb5288a427a603f2a3607",
+    "neutral": "sha256:0de3b8add155839a8380410720a3931cf3acc44e1fd0e5775aafbae6d8d08449"
   }
 }

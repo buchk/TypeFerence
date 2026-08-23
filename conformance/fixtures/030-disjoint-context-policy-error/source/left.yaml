@@ -1,4 +1,4 @@
-schemaVersion: 4
+schemaVersion: 5
 kind: profile
 id: conformance/profiles/left@1.0.0
 allowedContextTypes:

@@ -1,5 +1,5 @@
 ---
-schemaVersion: 4
+schemaVersion: 5
 kind: skill
 id: conformance/skills/check@1.0.0
 binds: conformance/capabilities/check@1.0.0

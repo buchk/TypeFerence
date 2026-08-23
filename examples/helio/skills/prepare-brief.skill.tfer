@@ -1,5 +1,5 @@
 ---
-schemaVersion: 4
+schemaVersion: 5
 kind: skill
 id: helio/skills/prepare-brief@1.0.0
 binds: helio/capabilities/prepare-brief@1.0.0

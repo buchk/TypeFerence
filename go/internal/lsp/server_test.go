@@ -52,8 +52,8 @@ func docParams(uri, text string) map[string]any {
 }
 
 func TestServerDiagnostics(t *testing.T) {
-	goodSkill := "---\nschemaVersion: 4\nkind: skill\nid: t/skills/s@1.0.0\nbinds: t/capabilities/c@1.0.0\n---\ndo the thing\n"
-	badSkill := "---\nschemaVersion: 4\nkind: skill\nid: t/skills/s@1.0.0\n---\ndo the thing\n" // missing binds
+	goodSkill := "---\nschemaVersion: 5\nkind: skill\nid: t/skills/s@1.0.0\nbinds: t/capabilities/c@1.0.0\n---\ndo the thing\n"
+	badSkill := "---\nschemaVersion: 5\nkind: skill\nid: t/skills/s@1.0.0\n---\ndo the thing\n" // missing binds
 
 	input := frame("initialize", 1, map[string]any{}) +
 		frame("textDocument/didOpen", nil, docParams("file:///tmp/bad.tfer", badSkill)) +
@@ -100,7 +100,7 @@ func TestServerDiagnostics(t *testing.T) {
 
 func TestServerBadFrontmatterFenceDiagnostic(t *testing.T) {
 	// A .tfer with no closing fence must produce exactly one diagnostic.
-	broken := "---\nschemaVersion: 4\nkind: skill\nid: t/skills/s@1.0.0\nbinds: t/capabilities/c@1.0.0\n"
+	broken := "---\nschemaVersion: 5\nkind: skill\nid: t/skills/s@1.0.0\nbinds: t/capabilities/c@1.0.0\n"
 	input := frame("initialize", 1, map[string]any{}) +
 		frame("textDocument/didOpen", nil, docParams("file:///tmp/broken.tfer", broken)) +
 		frame("exit", nil, nil)

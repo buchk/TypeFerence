@@ -9,9 +9,9 @@ import (
 
 func TestTargetsSelectSurfaceVariant(t *testing.T) {
 	src := t.TempDir()
-	writeSrc(t, src, "cap.yaml", "schemaVersion: 4\nkind: capability\nid: acme/cap/c@1.0.0\n")
-	writeSrc(t, src, "skill.yaml", "schemaVersion: 4\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/cap/c@1.0.0\nvariants:\n  pipeline:\n    instructions: PIPELINE_TEXT\n  manual:\n    instructions: MANUAL_TEXT\n")
-	writeSrc(t, src, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agent@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n")
+	writeSrc(t, src, "cap.yaml", "schemaVersion: 5\nkind: capability\nid: acme/cap/c@1.0.0\n")
+	writeSrc(t, src, "skill.yaml", "schemaVersion: 5\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/cap/c@1.0.0\nvariants:\n  pipeline:\n    instructions: PIPELINE_TEXT\n  manual:\n    instructions: MANUAL_TEXT\n")
+	writeSrc(t, src, "agent.yaml", "schemaVersion: 5\nkind: agent\nid: acme/agent@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n")
 	out := t.TempDir()
 	targets, err := ParseTargets("all")
 	if err != nil {
