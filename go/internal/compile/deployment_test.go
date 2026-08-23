@@ -16,7 +16,7 @@ func writeSrc(t *testing.T, root, name, content string) {
 
 func TestBuildIsUnlinked(t *testing.T) {
 	source := t.TempDir()
-	writeSrc(t, source, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\n")
+	writeSrc(t, source, "agent.yaml", "schemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\n")
 	output := t.TempDir()
 	if _, err := Build(source, output, []Target{Codex}, nil); err != nil {
 		t.Fatal(err)
@@ -32,7 +32,7 @@ func TestBuildIsUnlinked(t *testing.T) {
 
 func TestProjectManifestRejectsDeployment(t *testing.T) {
 	source := t.TempDir()
-	writeSrc(t, source, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\n")
+	writeSrc(t, source, "agent.yaml", "schemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\n")
 	writeSrc(t, source, "typeference.yaml", "schemaVersion: 2\nname: acme/agents\nversion: 1.0.0\ndeployment:\n  mcpCommand: nope\n")
 	_, err := Build(source, t.TempDir(), []Target{Codex}, nil)
 	if err == nil || !strings.Contains(err.Error(), "deployment") {
@@ -42,9 +42,9 @@ func TestProjectManifestRejectsDeployment(t *testing.T) {
 
 func TestARDDoesNotInventCallableCards(t *testing.T) {
 	source := t.TempDir()
-	writeSrc(t, source, "cap.yaml", "schemaVersion: 4\nkind: capability\nid: acme/capabilities/c@1.0.0\nvisibility: exposed\n")
-	writeSrc(t, source, "skill.yaml", "schemaVersion: 4\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/capabilities/c@1.0.0\ninstructions: do it\n")
-	writeSrc(t, source, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n")
+	writeSrc(t, source, "cap.yaml", "schemaVersion: 5\nkind: capability\nid: acme/capabilities/c@1.0.0\nvisibility: exposed\n")
+	writeSrc(t, source, "skill.yaml", "schemaVersion: 5\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/capabilities/c@1.0.0\ninstructions: do it\n")
+	writeSrc(t, source, "agent.yaml", "schemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n")
 	output := t.TempDir()
 	if _, err := Build(source, output, []Target{Neutral}, &ArdPublicationOptions{PublisherDomain: "acme.example"}); err != nil {
 		t.Fatal(err)

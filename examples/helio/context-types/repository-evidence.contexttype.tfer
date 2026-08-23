@@ -1,5 +1,5 @@
 ---
-schemaVersion: 4
+schemaVersion: 5
 kind: contextType
 id: helio/context-types/repository-evidence@1.0.0
 displayName: Repository Evidence

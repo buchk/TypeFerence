@@ -1,5 +1,5 @@
 ---
-schemaVersion: 4
+schemaVersion: 5
 kind: skill
 id: conformance/skills/crlf-v4@1.0.0
 binds: conformance/capabilities/crlf-v4@1.0.0

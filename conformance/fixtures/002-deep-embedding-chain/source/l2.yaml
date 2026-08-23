@@ -5,5 +5,3 @@ displayName: Level Two
 description: Second profile.
 embeds:
   - conformance/profiles/l3@1.0.0
-workingNorms:
-  - Norm from level two.

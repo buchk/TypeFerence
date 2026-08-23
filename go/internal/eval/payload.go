@@ -113,14 +113,6 @@ func renderSystemPrompt(agent *resolve.ResolvedAgent, skill *resolve.ResolvedSki
 	b.WriteString("\n\n")
 	b.WriteString(agent.Description)
 	b.WriteString("\n")
-	if len(agent.WorkingNorms) > 0 {
-		b.WriteString("\n## Working norms\n\n")
-		for _, norm := range agent.WorkingNorms {
-			b.WriteString("- ")
-			b.WriteString(norm)
-			b.WriteString("\n")
-		}
-	}
 	if skill != nil {
 		b.WriteString("\n## Active skill: ")
 		b.WriteString(skill.DispatchName)

@@ -185,7 +185,6 @@ func parseDocument(text string) (*Document, error) {
 		"requiresSlots":        slotRequirementsField(doc),
 		"requiresCapabilities": stringListField(&doc.RequiresCapabilities),
 		"slots":                stringMapField(&doc.Slots),
-		"workingNorms":         stringListField(&doc.WorkingNorms),
 		"contextFiles":         stringListField(&doc.ContextFiles),
 		"skills":               skillsField(&doc.Skills),
 		"instructions":         stringField(&doc.Instructions),
@@ -743,8 +742,8 @@ func validateShape(doc *Document, file, root string, allowLegacyV3 bool) error {
 // except the composition-level checks that require the whole source tree
 // (referenced-file existence). CheckDocument reuses it for the language server.
 func validateDocumentShape(doc *Document, file string, allowLegacyV3 bool) error {
-	if doc.SchemaVersion != 4 && !(allowLegacyV3 && doc.SchemaVersion == 3) {
-		return Errorf("%s: schemaVersion must be 4", file)
+	if doc.SchemaVersion != 5 && !(allowLegacyV3 && doc.SchemaVersion == 3) {
+		return Errorf("%s: schemaVersion must be 5", file)
 	}
 	switch doc.Kind {
 	case "agent", "profile", "interface", "capability", "skill", "context", "contextType", "tool":
@@ -775,27 +774,27 @@ func validateDocumentShape(doc *Document, file string, allowLegacyV3 bool) error
 	}
 	if doc.Kind == "contextType" {
 		if doc.SchemaVersion == 3 && strings.TrimSpace(doc.Schema) != "" {
-			if err := validateJSON(doc.Schema, file, "schema"); err != nil {
-				return err
+				if err := validateJSON(doc.Schema, file, "schema"); err != nil {
+					return err
+				}
+			} else if doc.SchemaVersion == 5 && strings.TrimSpace(doc.Schema) != "" {
+				return Errorf("%s: schemaVersion 5 contextTypes use native 'fields', not JSON Schema", file)
 			}
-		} else if doc.SchemaVersion == 4 && strings.TrimSpace(doc.Schema) != "" {
-			return Errorf("%s: schemaVersion 4 contextTypes use native 'fields', not JSON Schema", file)
-		}
 	} else if strings.TrimSpace(doc.Schema) != "" {
 		return Errorf("%s: only contextType resources declare a schema", file)
 	}
 	if doc.SchemaVersion == 3 && (len(doc.ContextTypeFields) != 0 || doc.ContextBody != nil) {
-		return Errorf("%s: native context fields require schemaVersion 4", file)
+		return Errorf("%s: native context fields require schemaVersion 5", file)
 	}
 	if doc.Kind != "contextType" && (len(doc.ContextTypeFields) != 0 || doc.ContextBody != nil) {
 		return Errorf("%s: only contextType resources declare fields or body", file)
 	}
-	if doc.SchemaVersion == 4 && len(doc.ContextFiles) != 0 {
-		return Errorf("%s: contextFiles does not exist in schemaVersion 4; declare a typed context resource", file)
+	if doc.SchemaVersion == 5 && len(doc.ContextFiles) != 0 {
+		return Errorf("%s: contextFiles does not exist in schemaVersion 5; declare a typed context resource", file)
 	}
-	if doc.SchemaVersion == 4 {
+	if doc.SchemaVersion == 5 {
 		if len(doc.RequiresSlots) > 0 && len(doc.RequiredSlotTypes) == 0 {
-			return Errorf("%s: schemaVersion 4 requiresSlots is a mapping from slot name to contextType id", file)
+			return Errorf("%s: schemaVersion 5 requiresSlots is a mapping from slot name to contextType id", file)
 		}
 		if len(doc.RequiredSlotTypes) > 0 && doc.Kind != "interface" {
 			return Errorf("%s: only interfaces declare typed slot requirements", file)
@@ -806,7 +805,7 @@ func validateDocumentShape(doc *Document, file string, allowLegacyV3 bool) error
 			}
 		}
 	}
-	if doc.SchemaVersion == 4 && doc.Kind != "context" && len(doc.ContextFields) != 0 {
+	if doc.SchemaVersion == 5 && doc.Kind != "context" && len(doc.ContextFields) != 0 {
 		return Errorf("%s: only context resources declare values", file)
 	}
 	if doc.SchemaVersion == 3 && doc.Kind == "context" && doc.ContextFields == nil {
@@ -903,10 +902,10 @@ func validateDocumentShape(doc *Document, file string, allowLegacyV3 bool) error
 			return Errorf("%s: slot name '%s' must be an ASCII identifier matching [A-Za-z0-9][A-Za-z0-9._-]*", file, name)
 		}
 	}
-	if doc.SchemaVersion == 4 {
+	if doc.SchemaVersion == 5 {
 		for _, name := range SortedKeys(doc.Slots) {
 			if !resourceID.MatchString(doc.Slots[name]) {
-				return Errorf("%s: schemaVersion 4 slot '%s' must reference a typed context resource id", file, name)
+				return Errorf("%s: schemaVersion 5 slot '%s' must reference a typed context resource id", file, name)
 			}
 		}
 	}

@@ -423,16 +423,8 @@ func withDispatch(skill ResolvedSkill, agentID string) ResolvedSkill {
 	return skill
 }
 
-// concatNorms preserves embed order before the caller performs canonical
+// concatContexts preserves embed order before the caller performs canonical
 // de-duplication.
-func concatNorms(embedded []*ResolvedAgent, current *resource.Document) []string {
-	values := []string{}
-	for _, component := range embedded {
-		values = append(values, component.WorkingNorms...)
-	}
-	return append(values, current.WorkingNorms...)
-}
-
 func concatContexts(embedded []*ResolvedAgent, current *resource.Document) []string {
 	values := []string{}
 	for _, component := range embedded {

@@ -9,7 +9,7 @@ import (
 var topLevelFields = []string{
 	"schemaVersion", "kind", "id", "displayName", "description", "binds",
 	"emit", "embeds", "requiresSlots", "requiresCapabilities", "slots",
-	"workingNorms", "context", "skills", "instructions",
+	"context", "skills", "instructions",
 	"inputSchema", "outputSchema", "contextType", "fields", "body", "values",
 	"requiresContextTypes", "requiresTools", "visibility", "variants",
 	"allowedContextTypes",
