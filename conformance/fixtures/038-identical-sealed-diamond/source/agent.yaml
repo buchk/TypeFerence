@@ -1,6 +1,0 @@
-schemaVersion: 5
-kind: agent
-id: conformance/agents/diamond@1.0.0
-embeds:
-  - conformance/profiles/left@1.0.0
-  - conformance/profiles/right@1.0.0

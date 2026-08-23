@@ -1,4 +1,0 @@
-schemaVersion: 5
-kind: agent
-id: conformance/agents/notes0@1.0.0
-description: Prefix followed by ASCII zero.

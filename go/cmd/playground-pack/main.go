@@ -185,7 +185,8 @@ rubric:
 }
 
 var starterFiles = map[string]string{
-	"agents/support-agent.agent.yaml": `schemaVersion: 5
+	"agents/support-agent.agent.tfer": `---
+schemaVersion: 5
 kind: agent
 id: acme/support-agent@1.0.0
 displayName: Acme Support Agent
@@ -197,28 +198,33 @@ context:
 skills:
   - ref: acme/skills/summarize-ticket@1.0.0
     capability: acme/capabilities/summarize-ticket@1.0.0
+---
 `,
-	"profiles/support-defaults.profile.yaml": `schemaVersion: 5
+	"profiles/support-defaults.profile.tfer": `---
+schemaVersion: 5
 kind: profile
 id: acme/profiles/support-defaults@1.0.0
 displayName: Acme Support Defaults
 description: Reusable tone and escalation defaults for support agents.
 slots:
   tone: acme/context/tone@1.0.0
-workingNorms:
-  - Never promise a refund without a linked policy clause.
 context:
   - acme/context/tone@1.0.0
+  - acme/context/refund-norm@1.0.0
+---
 `,
-	"capabilities/summarize-ticket.capability.yaml": `schemaVersion: 5
+	"capabilities/summarize-ticket.capability.tfer": `---
+schemaVersion: 5
 kind: capability
 id: acme/capabilities/summarize-ticket@1.0.0
 displayName: Summarize Ticket
 description: Capability slot for structured ticket summaries.
 inputSchema: '{"type":"object","properties":{"ticketId":{"type":"string"}},"additionalProperties":false}'
 outputSchema: '{"type":"object","properties":{"summary":{"type":"string"},"nextAction":{"type":"string"}},"required":["summary","nextAction"]}'
+---
 `,
-	"skills/summarize-ticket.skill.yaml": `schemaVersion: 5
+	"skills/summarize-ticket.skill.tfer": `---
+schemaVersion: 5
 kind: skill
 id: acme/skills/summarize-ticket@1.0.0
 binds: acme/capabilities/summarize-ticket@1.0.0
@@ -231,21 +237,26 @@ instructions: |
   Cite the ticket fields you used; never invent order numbers.
 inputSchema: '{"type":"object","properties":{"ticketId":{"type":"string"}},"additionalProperties":false}'
 outputSchema: '{"type":"object","properties":{"summary":{"type":"string"},"nextAction":{"type":"string"}},"required":["summary","nextAction"]}'
+---
 `,
-	"interfaces/summarizer.interface.yaml": `schemaVersion: 5
+	"interfaces/summarizer.interface.tfer": `---
+schemaVersion: 5
 kind: interface
 id: acme/interfaces/summarizer@1.0.0
 displayName: Summarizer
 description: Contract for agents that can produce structured ticket summaries.
 requiresCapabilities:
   - acme/capabilities/summarize-ticket@1.0.0
+---
 `,
-	"context-types/tone.contexttype.yaml": `schemaVersion: 5
+	"context-types/tone.contexttype.tfer": `---
+schemaVersion: 5
 kind: contextType
 id: acme/context-types/tone@1.0.0
 body:
   type: text
   required: true
+---
 `,
 	"context/tone.context.tfer": `---
 schemaVersion: 5
@@ -258,13 +269,16 @@ displayName: Tone
 
 Warm, direct, and concrete. Lead with what will happen next, not with an
 apology. One idea per sentence.
+---
 `,
-	"context-types/widgets.contexttype.yaml": `schemaVersion: 5
+	"context-types/widgets.contexttype.tfer": `---
+schemaVersion: 5
 kind: contextType
 id: acme/context-types/widgets@1.0.0
 body:
   type: text
   required: true
+---
 `,
 	"context/widgets.context.tfer": `---
 schemaVersion: 5
@@ -277,5 +291,25 @@ displayName: Widget Line
 
 Acme sells three widget models: Standard, Pro, and the discontinued Classic.
 Classic tickets always require the legacy-parts disclaimer.
+---
+`,	"context-types/norms.contexttype.tfer": `---
+schemaVersion: 5
+kind: contextType
+id: acme/context-types/norms@1.0.0
+displayName: Norms
+body:
+  type: text
+  required: true
+---
 `,
+	"context/refund-norm.context.tfer": `---
+schemaVersion: 5
+kind: context
+id: acme/context/refund-norm@1.0.0
+contextType: acme/context-types/norms@1.0.0
+displayName: Refund norm
+---
+Never promise a refund without a linked policy clause.
+`,
+
 }

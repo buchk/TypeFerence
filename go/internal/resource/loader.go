@@ -48,7 +48,7 @@ func LoadWithOptions(sourceDir string, trustConfigPath string, options LoadOptio
 		return nil, Errorf("Source directory not found: %s", root)
 	}
 	excluded := []string{
-		filepath.Join(root, "typeference.trust.yaml"),
+		filepath.Join(root, "typeference.trust.tfer"),
 		filepath.Join(root, ProjectManifestFile),
 	}
 	if trustConfigPath != "" {
@@ -68,7 +68,14 @@ func LoadWithOptions(sourceDir string, trustConfigPath string, options LoadOptio
 			}
 			return nil
 		}
-		if !strings.HasSuffix(name, ".yaml") && !strings.HasSuffix(name, ".tfer") {
+		if options.AllowLegacyV3 && strings.HasSuffix(name, ".yaml") {
+			files = append(files, path)
+			return nil
+		}
+		if !strings.HasSuffix(name, ".tfer") {
+			return nil
+		}
+		if name == ProjectManifestFile || name == ManifestFileNameV5 || name == "typeference.trust.tfer" {
 			return nil
 		}
 		for _, ex := range excluded {
@@ -126,6 +133,22 @@ func LoadWithOptions(sourceDir string, trustConfigPath string, options LoadOptio
 		result[doc.ID] = doc
 	}
 	if len(result) == 0 {
+		// Distinguish "no resources at all" from "resources exist but only in
+		// the retired .yaml format", so the diagnostic names the format (v5).
+		hasYAML := false
+		walkErr := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if !d.IsDir() && strings.HasSuffix(d.Name(), ".yaml") {
+				hasYAML = true
+				return filepath.SkipAll
+			}
+			return nil
+		})
+		if walkErr == nil && hasYAML && !options.AllowLegacyV3 {
+			return nil, Errorf("No .tfer resources found under %s: bare .yaml sources are not valid schemaVersion 5; convert them to frontmatter-plus-body .tfer documents", root)
+		}
 		return nil, Errorf("No YAML resources found under %s", root)
 	}
 	return result, nil

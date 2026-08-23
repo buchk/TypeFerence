@@ -1,0 +1,8 @@
+---
+schemaVersion: 5
+kind: context
+id: conformance/context/review-norm@1.0.0
+contextType: conformance/context-types/norms@1.0.0
+displayName: Review norm
+---
+Pull requests require one reviewer before merge.

@@ -2,9 +2,9 @@
   "description": "Named context values materialize nested defaults and preserve scalar types.",
   "expect": "success",
   "digests": {
-    "codex": "sha256:2b555f4157fa05df2c5d2f6765380fe4c883ce13432f629c2ee5f9666f70ac91",
-    "copilot": "sha256:f0489e9572e0f6b0e0a88a7decb7092772afff12f2129a7de91c90883c257d1c",
-    "cursor": "sha256:74feab261f22d6783913843817e3312354712a27c76402fc66b5c62c1d3280ff",
-    "neutral": "sha256:54fa66a6a63885f0aeb6c06f6fe54105562c021cc7bc0ae66849262c3a0ebc56"
+    "codex": "sha256:d3debf51d96ce52e2f20edfdeac89247dbf9bf42446923bfc899bebc9c36d0ed",
+    "copilot": "sha256:dbb079e51114f2edb97036857b5d8dbaa00e0938d3327ff5cb893bf29d8ac600",
+    "cursor": "sha256:f7a33913d94a4c04b7ed89347fcbfe93baebf1734904a41f15bb9b86268e3506",
+    "neutral": "sha256:07866e3c134c3bbdd6689d8393855251ad9172230783aa93ba97bc19d352a874"
   }
 }

@@ -1,5 +1,0 @@
-schemaVersion: 5
-kind: profile
-id: conformance/profiles/left@1.0.0
-embeds:
-  - conformance/profiles/base@1.0.0

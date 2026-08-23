@@ -3,9 +3,9 @@
   "language": "legacy-v3",
   "expect": "success",
   "digests": {
-    "codex": "sha256:60e9f1e617ed2912cabe6dccc3f201a95cb187f2d636c19d62e6b6f9053c8458",
-    "copilot": "sha256:bacef9c45dce9e0be66ef97496349bb99b744c2669eb44ffab9db88391e931dd",
-    "cursor": "sha256:7680ccdeff1061f29baaa3a62c4b0d4b050c8606926e168c2c19a649a6c38144",
-    "neutral": "sha256:f6a7f3695553d1754ceccf949c564c70dd0c22b7bacdb85785484177090e5e86"
+    "codex": "sha256:2522a937df07ee4bafacefeacda111209f63957ae18c1b33a42e8121b44cdcdb",
+    "copilot": "sha256:56414d2f676e18974d918e6584efaf9166e49ffe71a169ee27406c97045b5e9e",
+    "cursor": "sha256:a7df1617ece3e0950d2e95448843745a6e3e4bd064516bb7e703fda0f76696ae",
+    "neutral": "sha256:e2f64ef11433a3bff50f16fc2a47420721fea3aff3a9a993083fa77c369fb968"
   }
 }

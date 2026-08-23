@@ -1,9 +1,0 @@
-schemaVersion: 5
-kind: agent
-id: conformance/agents/unicode@1.0.0
-displayName: Traducteur Élégant 🌍
-description: 'Agent de traduction — handles & < > '' + ` " and 中文.'
-skills:
-  - ref: conformance/skills/translate-v4@1.0.0
-context:
-  - conformance/context/glossary@1.0.0

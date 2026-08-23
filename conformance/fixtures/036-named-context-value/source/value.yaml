@@ -1,7 +1,0 @@
-schemaVersion: 5
-kind: context
-id: conformance/context/named@1.0.0
-contextType: conformance/context-types/wrapper@1.0.0
-values:
-  nested:
-    label: ready

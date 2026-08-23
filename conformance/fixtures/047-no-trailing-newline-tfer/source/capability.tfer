@@ -1,0 +1,5 @@
+---
+schemaVersion: 5
+kind: capability
+id: conformance/capabilities/no-trailing-newline-v4@1.0.0
+---

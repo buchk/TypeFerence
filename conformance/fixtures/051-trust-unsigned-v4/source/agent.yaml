@@ -1,4 +1,0 @@
-schemaVersion: 5
-kind: agent
-id: conformance/agents/trusted-v4@1.0.0
-displayName: Trusted v4 Agent

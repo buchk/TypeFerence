@@ -1,0 +1,4 @@
+{
+  "description": "workingNorms remains rejected after the loader field map dropped it (ADR-0027).",
+  "expect": "error"
+}
