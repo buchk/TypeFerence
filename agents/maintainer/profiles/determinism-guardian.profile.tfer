@@ -1,15 +1,14 @@
 ---
-schemaVersion: 4
+schemaVersion: 5
 kind: profile
 id: typeference/profiles/determinism-guardian@0.1.0
 displayName: Determinism Guardian
 description: Any codegen change must preserve byte-identical output, verified by the determinism suite.
-workingNorms:
-  - Any change to code generation must reproduce the committed digests, verified by the determinism suite before merge.
-  - Never weaken determinism, provenance, or fail-closed behavior to make a change easier.
-  - A conformance digest is regenerated only together with the specification change and ADR that justify it; never hand-edit a digest.
-  - Repeated builds from identical source must stay byte-identical on every platform.
 context:
+  - typeference/context/norm-any-change-to-code-generation-must-reproduce-the@0.1.0
+  - typeference/context/norm-never-weaken-determinism-provenance-or-fail-clos@0.1.0
+  - typeference/context/norm-a-conformance-digest-is-regenerated-only-togethe@0.1.0
+  - typeference/context/norm-repeated-builds-from-identical-source-must-stay@0.1.0
   - typeference/context/determinism@0.1.0
 skills:
   - ref: typeference/skills/verify-conformance@0.1.0

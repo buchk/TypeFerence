@@ -1,14 +1,13 @@
 ---
-schemaVersion: 4
+schemaVersion: 5
 kind: profile
 id: typeference/profiles/contribution-workflow@0.1.0
 displayName: Contribution Workflow
 description: How changes to this repository are made, reviewed, and recorded.
-workingNorms:
-  - Every commit builds and passes the test suite and the determinism suite.
-  - Decisions with real tradeoffs are recorded as ADRs in docs/decisions before the change merges.
-  - Documentation must be accurate against the code at the commit that includes it; no fabricated adoption, benchmarks, or endorsements.
-  - Commit messages are conventional and written for a critical human reader.
 context:
+  - typeference/context/norm-every-commit-builds-and-passes-the-test-suite-an@0.1.0
+  - typeference/context/norm-decisions-with-real-tradeoffs-are-recorded-as-ad@0.1.0
+  - typeference/context/norm-documentation-must-be-accurate-against-the-code@0.1.0
+  - typeference/context/norm-commit-messages-are-conventional-and-written-for@0.1.0
   - typeference/context/contribution-workflow@0.1.0
 ---
