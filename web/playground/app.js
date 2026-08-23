@@ -586,6 +586,19 @@ async function boot() {
   }
 
   initExamples();
+  initWizard({
+    getTypeFerence: () => window.TypeFerence,
+    loadFiles(filesObj) {
+      state.example = null;
+      state.files = new Map(Object.entries(filesObj));
+      state.activeArtifact = null;
+      state.activeAgent = null;
+      bethReset(null);
+      const paths = [...state.files.keys()].sort();
+      openFile(paths.find((p) => p.includes("agent")) ?? paths[0]);
+      scheduleCompile();
+    },
+  });
   state.ready = true;
   const restored = await restoreFromHash();
   if (!restored) loadExample(state.examples[0].name);
