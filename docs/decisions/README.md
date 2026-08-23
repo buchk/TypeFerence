@@ -38,3 +38,4 @@ their decision.
 | [0025](0025-own-linked-output-before-reset.md) | Require linked-output ownership before reset | Accepted | — |
 | [0026](0026-v5-closed-frontmatter-grammar.md) | v5: one closed frontmatter grammar and syntactic scalar typing | Accepted | — |
 | [0027](0027-v5-no-untyped-behavioral-prose.md) | v5: no untyped behavioral prose | Accepted | — |
+| [0028](0028-deterministic-setup-wizard.md) | Deterministic setup wizard: one generator, browser and CLI | Accepted | — |

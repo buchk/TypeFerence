@@ -1,0 +1,7 @@
+---
+schemaVersion: 5
+kind: context
+id: acme/context/domain-scope@1.0.0
+contextType: acme/context-types/scope@1.0.0
+displayName: Platform Scope
+---

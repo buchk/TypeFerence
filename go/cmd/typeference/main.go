@@ -36,6 +36,8 @@ func run(args []string) int {
 	var code int
 	var err error
 	switch args[0] {
+	case "init":
+		code, err = initCommand(args)
 	case "validate":
 		code, err = validate(args)
 	case "build":
