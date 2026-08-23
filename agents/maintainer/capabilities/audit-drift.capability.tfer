@@ -1,5 +1,5 @@
 ---
-schemaVersion: 4
+schemaVersion: 5
 kind: capability
 id: typeference/capabilities/audit-drift@0.1.0
 displayName: Audit Self-Host Drift
