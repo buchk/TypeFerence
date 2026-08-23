@@ -39,8 +39,8 @@ func SourceFiles(source string) ([]File, error) {
 		}
 		rel = filepath.ToSlash(rel)
 		name := entry.Name()
-		if name != resource.ProjectManifestFile && name != LockFile && name != "typeference.trust.yaml" &&
-			!strings.HasSuffix(name, ".yaml") && !strings.HasSuffix(name, ".tfer") {
+		if name != resource.ProjectManifestFile && name != resource.ManifestFileNameV5 && name != LockFile && name != "typeference.trust.tfer" &&
+			name != "typeference.yaml" && !strings.HasSuffix(name, ".tfer") {
 			return nil
 		}
 		data, readErr := os.ReadFile(path)

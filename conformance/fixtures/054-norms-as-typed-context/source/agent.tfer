@@ -1,0 +1,10 @@
+---
+schemaVersion: 5
+kind: agent
+id: conformance/agents/normed@1.0.0
+displayName: Normed Agent
+description: Inherits the typed norm through profile embedding.
+emit: true
+embeds:
+  - conformance/profiles/normed@1.0.0
+---

@@ -1,0 +1,19 @@
+---
+schemaVersion: 5
+kind: contextType
+id: conformance/context-types/team@1.0.0
+fields:
+  owner:
+    type: string
+    required: true
+  participants:
+    type:
+      list: string
+    required: true
+  governed:
+    type: boolean
+    default: false
+body:
+  type: text
+  required: true
+---

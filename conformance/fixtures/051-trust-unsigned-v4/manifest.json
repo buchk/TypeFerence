@@ -3,10 +3,10 @@
   "expect": "success",
   "emitArd": "conformance.example",
   "digests": {
-    "ard": "sha256:4bb718e739e82a9da221860a24b68bd87653f4efffb4d4f278bccc5a517ed20f",
-    "codex": "sha256:865110126077da5568b1bda2e0f3122b23f42a84b5c1b0aad70b4e5fa1933a51",
-    "copilot": "sha256:07f197bf1580c230b180f00edb4570c90a0aa216a92d4abe74e65f27f92d36aa",
-    "cursor": "sha256:adc0ee56f114ed6b586e51852c5f5eddfd15283c80cad056f77fcceb6e624a3e",
-    "neutral": "sha256:116c8304d825b250d2e4f7fe4cee3a561fcf3a5d5f025c82a9bce36ca7181519"
+    "ard": "sha256:0d334c1add9e7ae5abbf6f49e2209058196b966f521cd46a036974bf572a530d",
+    "codex": "sha256:f6fa63b8055249a4919deddcbd694797a66ad5ac07cab55723d99c9a1a88b934",
+    "copilot": "sha256:94fe0a3135d102573faa1ca2ceca81cd746ee5dc3e06fd5082f28c701918c5a2",
+    "cursor": "sha256:3108f16265cbb97d1b639c918a31c6f8dd5da7ec4f526f83f2b56025222939a6",
+    "neutral": "sha256:30c100af7712957adc1a341e7246764f2f949d01c7fd3c5a34838b54e0995853"
   }
 }

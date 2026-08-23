@@ -62,7 +62,7 @@ func restoreProject(t *testing.T, source, feed string) {
 func TestPackIsByteDeterministic(t *testing.T) {
 	source := t.TempDir()
 	write(t, source, "typeference.yaml", "schemaVersion: 2\nname: acme/package\nversion: 1.0.0\n")
-	write(t, source, "agent.yaml", "schemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\n")
+	write(t, source, "agent.tfer", "---\nschemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\n---\n")
 	first := filepath.Join(t.TempDir(), "a.tferpkg")
 	second := filepath.Join(t.TempDir(), "b.tferpkg")
 	digestA, err := packages.Pack(source, first)
@@ -83,7 +83,7 @@ func TestPackIsByteDeterministic(t *testing.T) {
 func TestBuildAndPackRejectStaleLockForEmptyDependencyGraph(t *testing.T) {
 	source := t.TempDir()
 	write(t, source, "typeference.yaml", "schemaVersion: 2\nname: acme/package\nversion: 1.0.0\n")
-	write(t, source, "agent.yaml", "schemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\n")
+	write(t, source, "agent.tfer", "---\nschemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\n---\n")
 	lock := packages.Lock{
 		SchemaVersion: 1,
 		Root:          "acme/package",

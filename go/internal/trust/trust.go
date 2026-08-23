@@ -1,4 +1,4 @@
-// Package trust loads and validates the optional typeference.trust.yaml
+// Package trust loads and validates the optional typeference.trust.tfer
 // configuration and external detached-JWS signature maps
 // (docs/specification.md, "Trust metadata compilation"). TypeFerence never
 // signs anything; it imports externally produced signatures, and the
@@ -23,7 +23,11 @@ import (
 )
 
 // DefaultFileName is the conventional trust configuration file name.
-const DefaultFileName = "typeference.trust.yaml"
+const DefaultFileName = "typeference.trust.tfer"
+
+// LegacyFileName is the retired v3/v4 trust file name, accepted only by the
+// archival legacy corpus path.
+const LegacyFileName = "typeference.trust.yaml"
 
 // MetadataPrefix scopes TypeFerence-managed trust metadata keys.
 const MetadataPrefix = "com.github.buchk.typeference"
@@ -84,7 +88,7 @@ type BundleProfile struct {
 	IdentityTemplate string
 }
 
-// Configuration is a parsed typeference.trust.yaml.
+// Configuration is a parsed typeference.trust.tfer.
 type Configuration struct {
 	SchemaVersion int
 	Source        *SourceProfile
@@ -168,7 +172,13 @@ func Load(sourceDir, configuredPath string) (*Loaded, error) {
 	}
 	if configuredPath == "" {
 		if _, statErr := os.Stat(path); statErr != nil {
-			return nil, nil
+			// Legacy v3 corpora keep the retired typeference.trust.yaml name;
+			// fall back to it only when explicitly allowed.
+			if _, legacyStatErr := os.Stat(filepath.Join(root, LegacyFileName)); legacyStatErr == nil && os.Getenv("TYPEFERENCE_ALLOW_LEGACY_TRUST_NAME") == "1" {
+				path = filepath.Join(root, LegacyFileName)
+			} else {
+				return nil, nil
+			}
 		}
 	}
 	if err := ensureBeneathRoot(root, path); err != nil {
@@ -347,8 +357,8 @@ func validateURI(value, field string, allowData bool) error {
 }
 
 func validate(configuration *Configuration, file string) error {
-	if configuration.SchemaVersion != 1 {
-		return resource.Errorf("%s: schemaVersion must be 1", file)
+	if configuration.SchemaVersion != 5 && configuration.SchemaVersion != 1 {
+		return resource.Errorf("%s: schemaVersion must be 5", file)
 	}
 	if configuration.Source == nil && configuration.Bundles == nil {
 		return resource.Errorf("%s: at least one of source or bundles is required", file)
@@ -496,6 +506,25 @@ func optionalDigest(value, field string) error {
 // --- YAML decoding -----------------------------------------------------------
 
 func parseConfiguration(text string) (*Configuration, error) {
+	// The trust file uses the same closed frontmatter grammar as resources:
+	// an optional `---` fence pair may wrap the mapping (v5, ADR-0026).
+	if strings.HasPrefix(text, "---\n") {
+		rest := text[len("---\n"):]
+		closing := strings.Index(rest, "\n---\n")
+		if closing < 0 {
+			if strings.TrimRight(rest, "\n") == "---" {
+				text = ""
+			} else {
+				return nil, resource.Errorf("trust frontmatter is missing its closing '---' fence")
+			}
+		} else {
+			body := rest[closing+len("\n---\n"):]
+			if strings.TrimSpace(body) != "" {
+				return nil, resource.Errorf("trust configuration does not take a body")
+			}
+			text = rest[:closing]
+		}
+	}
 	decoder := yaml.NewDecoder(strings.NewReader(text))
 	var node yaml.Node
 	if err := decoder.Decode(&node); err != nil {

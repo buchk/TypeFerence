@@ -1,0 +1,7 @@
+---
+schemaVersion: 5
+kind: agent
+id: conformance/agents/brief@1.0.0
+skills:
+  - ref: conformance/skills/brief@1.0.0
+---

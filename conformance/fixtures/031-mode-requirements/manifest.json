@@ -2,9 +2,9 @@
   "description": "Base tool requirements apply to every mode while variant requirements stay attached only to their mode.",
   "expect": "success",
   "digests": {
-    "codex": "sha256:4c17a1a5c1418e211add425fd453b926d16cef52748e8b1fc4d466006096a118",
-    "copilot": "sha256:04d7d73a91ca94dc3b5668d5ff70a3d01cd846914e74f2673714306de55a1640",
-    "cursor": "sha256:292809b87c74c437a0ccc9333989d0bdd49efd4593d3bc0fa404b0ccac56b324",
-    "neutral": "sha256:ab8d671307d246dd0a1df1368ee84fc909118d7ff48f61bf02c7fd28cdcc502e"
+    "codex": "sha256:d78935490a38e3d9365b5472f83ea6e3d147944df1e48c09749ef9f7dcff7181",
+    "copilot": "sha256:4dfea0d3979e05f4998a07db07ea238c33e089528c5da0f50136798d9b36e303",
+    "cursor": "sha256:2fd128c03a7bbdaddd1bfe37e3d316e310e63479ea70006e02e5f7261b11be4d",
+    "neutral": "sha256:e2f361c58273dc37850b5241d26d1fba012b8d6279e4171e867c96dc69b83285"
   }
 }
