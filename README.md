@@ -31,12 +31,16 @@ declared source packages
 
 [Agentic Resource Discovery](https://agenticresourcediscovery.org/) helps clients find and verify deployed capabilities. TypeFerence addresses the earlier authoring problem: producing compatible native artifacts from one governed definition. Discovery portability does not itself provide definition portability.
 
-The long-term objective is behavioral equivalence: preserving declared organizational intent across supported hosts closely enough to be measured and governed. V4 provides the closed typed source, deterministic adapters, and provenance needed to test that objective; it does not claim that different models or runtimes already behave identically.
+The long-term objective is behavioral equivalence: preserving declared organizational intent across supported hosts closely enough to be measured and governed. V5 provides the closed typed source, deterministic adapters, and provenance needed to test that objective; it does not claim that different models or runtimes already behave identically.
 
-The v4 source shape is deliberately small:
+The v5 source shape is deliberately small — one `.tfer` format, syntactic
+scalar typing, and a field rule of *typed context, reference, or inert
+metadata; nothing else* ([ADR-0026](docs/decisions/0026-v5-closed-frontmatter-grammar.md),
+[ADR-0027](docs/decisions/0027-v5-no-untyped-behavioral-prose.md)):
 
-```yaml
-schemaVersion: 4
+```text
+---
+schemaVersion: 5
 kind: agent
 id: helio/payments-repo-agent@1.0.0
 embeds:
@@ -44,7 +48,7 @@ embeds:
 skills:
   - ref: helio/skills/payments-repository-status@1.0.0
     capability: helio/capabilities/repository-status@1.0.0
-```
+---
 
 Use profiles for reusable organizational, domain, or team defaults that should participate in composition without producing their own target bundle.
 
@@ -118,7 +122,7 @@ typeference version
 ```
 
 `<source>` in every command below is a directory of your own typed agent
-definitions (`schemaVersion: 4` YAML, shaped like the example above) — clone
+definitions (schemaVersion 5 `.tfer`, shaped like the example above) — clone
 this repository to point it at the bundled `examples/helio/` corpus instead.
 
 ```text
