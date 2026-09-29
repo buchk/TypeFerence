@@ -2,25 +2,6 @@
 
 The agent that maintains the TypeFerence repository, defined in TypeFerence's own terms and compiled into this repository's AGENTS.md.
 
-## Working norms
-
-- Semantic changes land in docs/specification.md before either implementation changes behavior.
-- Where the specification and an implementation disagree, the specification wins; record the ruling in docs/decisions and cover it with a conformance fixture.
-- Every canonicalization or composition ruling ships with a fixture under conformance/fixtures in the same change.
-- Never silently diverge from the specification; fixing the specification is allowed, silent divergence is not.
-- Any change to code generation must reproduce the committed digests, verified by the determinism suite before merge.
-- Never weaken determinism, provenance, or fail-closed behavior to make a change easier.
-- A conformance digest is regenerated only together with the specification change and ADR that justify it; never hand-edit a digest.
-- Repeated builds from identical source must stay byte-identical on every platform.
-- The signature map always resides outside the source root; moving it inside creates a digest/signature cycle and is forbidden.
-- signatureIntent.required fails closed; the unsigned-staging option exists solely to emit payloads for an external signer.
-- TypeFerence imports externally produced signatures; it never signs, never verifies cryptographic validity, and never resolves keys.
-- Trust metadata is declarative; never dereference identity, attestation, or provenance URIs during compilation.
-- Every commit builds and passes the test suite and the determinism suite.
-- Decisions with real tradeoffs are recorded as ADRs in docs/decisions before the change merges.
-- Documentation must be accurate against the code at the commit that includes it; no fabricated adoption, benchmarks, or endorsements.
-- Commit messages are conventional and written for a critical human reader.
-
 ## Context slots
 
 - `repositoryMap`: `typeference/context/repository-map@0.1.0`
@@ -69,6 +50,70 @@ Rules that protect the guarantee:
 - Nothing about determinism, provenance, or fail-closed behavior is ever relaxed to
   make an unrelated change easier. If a change fights the determinism rules, the
   change is wrong or the specification needs a recorded amendment.
+
+### A conformance digest is regenerated only together with the s...
+
+A conformance digest is regenerated only together with the specification change and ADR that justify it; never hand-edit a digest.
+
+### Any change to code generation must reproduce the committed d...
+
+Any change to code generation must reproduce the committed digests, verified by the determinism suite before merge.
+
+### Commit messages are conventional and written for a critical ...
+
+Commit messages are conventional and written for a critical human reader.
+
+### Decisions with real tradeoffs are recorded as ADRs in docs/d...
+
+Decisions with real tradeoffs are recorded as ADRs in docs/decisions before the change merges.
+
+### Documentation must be accurate against the code at the commi...
+
+Documentation must be accurate against the code at the commit that includes it; no fabricated adoption, benchmarks, or endorsements.
+
+### Every canonicalization or composition ruling ships with a fi...
+
+Every canonicalization or composition ruling ships with a fixture under conformance/fixtures in the same change.
+
+### Every commit builds and passes the test suite and the determ...
+
+Every commit builds and passes the test suite and the determinism suite.
+
+### Never silently diverge from the specification; fixing the sp...
+
+Never silently diverge from the specification; fixing the specification is allowed, silent divergence is not.
+
+### Never weaken determinism, provenance, or fail-closed behavio...
+
+Never weaken determinism, provenance, or fail-closed behavior to make a change easier.
+
+### Repeated builds from identical source must stay byte-identic...
+
+Repeated builds from identical source must stay byte-identical on every platform.
+
+### Semantic changes land in docs/specification.md before either...
+
+Semantic changes land in docs/specification.md before either implementation changes behavior.
+
+### signatureIntent.required fails closed; the unsigned-staging ...
+
+signatureIntent.required fails closed; the unsigned-staging option exists solely to emit payloads for an external signer.
+
+### The signature map always resides outside the source root; mo...
+
+The signature map always resides outside the source root; moving it inside creates a digest/signature cycle and is forbidden.
+
+### Trust metadata is declarative; never dereference identity, a...
+
+Trust metadata is declarative; never dereference identity, attestation, or provenance URIs during compilation.
+
+### TypeFerence imports externally produced signatures; it never...
+
+TypeFerence imports externally produced signatures; it never signs, never verifies cryptographic validity, and never resolves keys.
+
+### Where the specification and an implementation disagree, the ...
+
+Where the specification and an implementation disagree, the specification wins; record the ruling in docs/decisions and cover it with a conformance fixture.
 
 ### Repository Map
 

@@ -1,5 +1,5 @@
 ---
-schemaVersion: 4
+schemaVersion: 5
 kind: skill
 id: typeference/skills/audit-drift@0.1.0
 binds: typeference/capabilities/audit-drift@0.1.0

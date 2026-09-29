@@ -1,0 +1,5 @@
+---
+schemaVersion: 5
+kind: capability
+id: conformance/capabilities/bom-v4@1.0.0
+---

@@ -3,16 +3,39 @@
 All notable changes to TypeFerence are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semantic
 versioning. Tool versions (this file) are independent of the typed-resource
-`schemaVersion` (currently 4) and the trust configuration `schemaVersion`
-(currently 1), which only change when the source formats change incompatibly.
+`schemaVersion` (currently 5) and the trust configuration `schemaVersion`
+(also 5), which only change when the source formats change incompatibly.
 
 TypeFerence is an experimental reference implementation; pre-1.0 versions make no
 compatibility promises between minor versions.
 
 ## [Unreleased]
 
-### Changed
+### Added
 
+- **Deterministic setup wizard** ([ADR-0028](docs/decisions/0028-deterministic-setup-wizard.md)).
+  `typeference init --answers answers.json [--out DIR] [--verify sha256:...]`
+  scaffolds a complete multilevel v5 suite — typed norm contexts, a profile
+  embedding chain, one concrete agent — from a strict, versioned answer set.
+  The browser playground's new Setup wizard runs the same generator over the
+  wasm bridge and offers the identical digest, so the local checkout can be
+  verified byte-for-byte against the browser session. The canonical answer
+  set's golden fixture (057) compiles through the ordinary compiler and pins
+  generator × schema to bytes in CI.
+
+- **v5 closure: one closed frontmatter grammar, no untyped behavioral prose**
+  ([ADR-0026](docs/decisions/0026-v5-closed-frontmatter-grammar.md),
+  [ADR-0027](docs/decisions/0027-v5-no-untyped-behavioral-prose.md)).
+  `.tfer` is now the sole source format, parsed by TypeFerence's own closed
+  indentation grammar with syntactic scalar typing: quoted strings,
+  arbitrary-precision integers, verbatim decimal lexemes (`0.50` ≠ `0.5`),
+  reserved booleans/null, every other bare word an error; no floating-point
+  constructor exists. A field is exactly one of typed context, reference, or
+  inert metadata — `workingNorms` is deleted from every kind, and normative
+  prose reaches a model only as context resources of a declared contextType.
+  `description` is inert metadata and emitters keep it out of model-facing
+  output. The conformance corpus, helio, and the self-hosted maintainer
+  definition are migrated; digests were regenerated via `-update`.
 - **Closed v4 source language** ([ADR-0020](docs/decisions/0020-close-the-source-language.md)).
   Native context types replace embedded JSON Schema, context values and typed
   slots are complete compile-time values, `contextFiles` is removed, mode

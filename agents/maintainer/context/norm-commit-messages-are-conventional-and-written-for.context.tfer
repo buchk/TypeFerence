@@ -1,0 +1,8 @@
+---
+schemaVersion: 5
+kind: context
+id: typeference/context/norm-commit-messages-are-conventional-and-written-for@0.1.0
+contextType: typeference/context-types/norms@0.1.0
+displayName: Commit messages are conventional and written for a critical ...
+---
+Commit messages are conventional and written for a critical human reader.

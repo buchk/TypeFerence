@@ -9,9 +9,9 @@ import (
 
 func TestNeutralVariantFanout(t *testing.T) {
 	src := t.TempDir()
-	writeSrc(t, src, "cap.yaml", "schemaVersion: 4\nkind: capability\nid: acme/cap/c@1.0.0\n")
-	writeSrc(t, src, "skill.yaml", "schemaVersion: 4\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/cap/c@1.0.0\nvariants:\n  pipeline:\n    instructions: strict\n  a2a:\n    instructions: attributed\n")
-	writeSrc(t, src, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agent@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n")
+	writeSrc(t, src, "cap.tfer", "schemaVersion: 5\nkind: capability\nid: acme/cap/c@1.0.0\n")
+	writeSrc(t, src, "skill.tfer", "schemaVersion: 5\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/cap/c@1.0.0\nvariants:\n  pipeline:\n    instructions: strict\n  a2a:\n    instructions: attributed\n")
+	writeSrc(t, src, "agent.tfer", "schemaVersion: 5\nkind: agent\nid: acme/agent@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n")
 	out := t.TempDir()
 	targets, err := ParseTargets("neutral")
 	if err != nil {
@@ -34,9 +34,9 @@ func TestNeutralVariantFanout(t *testing.T) {
 
 func TestUnimodalSkillNoFanout(t *testing.T) {
 	src := t.TempDir()
-	writeSrc(t, src, "cap.yaml", "schemaVersion: 4\nkind: capability\nid: acme/cap/c@1.0.0\n")
-	writeSrc(t, src, "skill.yaml", "schemaVersion: 4\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/cap/c@1.0.0\ninstructions: do it\n")
-	writeSrc(t, src, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agent@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n")
+	writeSrc(t, src, "cap.tfer", "schemaVersion: 5\nkind: capability\nid: acme/cap/c@1.0.0\n")
+	writeSrc(t, src, "skill.tfer", "schemaVersion: 5\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/cap/c@1.0.0\ninstructions: do it\n")
+	writeSrc(t, src, "agent.tfer", "schemaVersion: 5\nkind: agent\nid: acme/agent@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n")
 	out := t.TempDir()
 	targets, _ := ParseTargets("neutral")
 	if _, err := Build(src, out, targets, nil); err != nil {

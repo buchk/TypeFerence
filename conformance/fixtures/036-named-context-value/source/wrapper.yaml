@@ -1,7 +1,0 @@
-schemaVersion: 4
-kind: contextType
-id: conformance/context-types/wrapper@1.0.0
-fields:
-  nested:
-    type: conformance/context-types/nested@1.0.0
-    required: true

@@ -1,0 +1,5 @@
+---
+schemaVersion: 5
+kind: capability
+id: conformance/capabilities/status@1.0.0
+---

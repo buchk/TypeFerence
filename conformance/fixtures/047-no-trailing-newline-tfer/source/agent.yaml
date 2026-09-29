@@ -1,5 +1,0 @@
-schemaVersion: 4
-kind: agent
-id: conformance/agents/no-trailing-newline-v4@1.0.0
-skills:
-  - ref: conformance/skills/no-trailing-newline-v4@1.0.0

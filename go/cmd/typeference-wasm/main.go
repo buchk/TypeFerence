@@ -44,9 +44,10 @@ func main() {
 		panic(err)
 	}
 	js.Global().Set("TypeFerence", js.ValueOf(map[string]any{
-		"version": version,
-		"compile": js.FuncOf(compileFunc),
-		"pack":    js.FuncOf(packFunc),
+		"version":  version,
+		"compile":  js.FuncOf(compileFunc),
+		"pack":     js.FuncOf(packFunc),
+		"scaffold": js.FuncOf(scaffoldFunc),
 	}))
 	select {}
 }

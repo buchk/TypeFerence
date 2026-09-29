@@ -66,8 +66,8 @@ func resultFor(frames []map[string]any, id int) any {
 
 func TestDefinitionResolvesResourceID(t *testing.T) {
 	root := t.TempDir()
-	writeFile(t, root, "cap.yaml", "schemaVersion: 4\nkind: capability\nid: acme/cap/c@1.0.0\n")
-	skillText := "schemaVersion: 4\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/cap/c@1.0.0\n"
+	writeFile(t, root, "cap.yaml", "schemaVersion: 5\nkind: capability\nid: acme/cap/c@1.0.0\n")
+	skillText := "schemaVersion: 5\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/cap/c@1.0.0\n"
 	skillURI := pathToURI(writeFile(t, root, "skill.yaml", skillText))
 	frames := runSession(t, pathToURI(root),
 		frame("textDocument/didOpen", nil, docParams(skillURI, skillText)),
@@ -85,7 +85,7 @@ func TestDefinitionResolvesResourceID(t *testing.T) {
 
 func TestDocumentSymbolReturnsResource(t *testing.T) {
 	root := t.TempDir()
-	text := "schemaVersion: 4\nkind: capability\nid: acme/cap/c@1.0.0\n"
+	text := "schemaVersion: 5\nkind: capability\nid: acme/cap/c@1.0.0\n"
 	uri := pathToURI(writeFile(t, root, "cap.yaml", text))
 	frames := runSession(t, pathToURI(root),
 		frame("textDocument/didOpen", nil, docParams(uri, text)),
@@ -106,9 +106,9 @@ func TestDocumentSymbolReturnsResource(t *testing.T) {
 func TestCompositionDiagnosticSurfaces(t *testing.T) {
 	root := t.TempDir()
 	// skill binds a capability that does not exist -> workspace does not compose
-	agentText := "schemaVersion: 4\nkind: agent\nid: acme/agent@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n"
+	agentText := "schemaVersion: 5\nkind: agent\nid: acme/agent@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n"
 	agentURI := pathToURI(writeFile(t, root, "agent.yaml", agentText))
-	writeFile(t, root, "skill.yaml", "schemaVersion: 4\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/cap/missing@1.0.0\n")
+	writeFile(t, root, "skill.yaml", "schemaVersion: 5\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/cap/missing@1.0.0\n")
 	frames := runSession(t, pathToURI(root),
 		frame("textDocument/didOpen", nil, docParams(agentURI, agentText)),
 	)

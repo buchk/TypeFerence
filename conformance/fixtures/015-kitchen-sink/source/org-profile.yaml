@@ -5,8 +5,5 @@ displayName: Org Defaults
 description: Organization-wide defaults.
 slots:
   organization: context/org.md
-workingNorms:
-  - Keep an audit trail.
-  - Route ambiguity to a human owner.
 contextFiles:
   - context/org.md

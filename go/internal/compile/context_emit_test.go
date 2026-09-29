@@ -9,9 +9,9 @@ import (
 
 func TestBundleEmitsHeldContext(t *testing.T) {
 	src := t.TempDir()
-	writeSrc(t, src, "ct.yaml", "schemaVersion: 4\nkind: contextType\nid: acme/ct/cast@1.0.0\nfields:\n  owner:\n    type: string\n    required: true\n  governed:\n    type: boolean\n    default: false\n")
-	writeSrc(t, src, "note.yaml", "schemaVersion: 4\nkind: context\nid: acme/notes/n@1.0.0\ncontextType: acme/ct/cast@1.0.0\nvalues:\n  owner: Dana\n")
-	writeSrc(t, src, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agent@1.0.0\ncontext:\n  - acme/notes/n@1.0.0\n")
+	writeSrc(t, src, "ct.tfer", "schemaVersion: 5\nkind: contextType\nid: acme/ct/cast@1.0.0\nfields:\n  owner:\n    type: string\n    required: true\n  governed:\n    type: boolean\n    default: false\n")
+	writeSrc(t, src, "note.tfer", "schemaVersion: 5\nkind: context\nid: acme/notes/n@1.0.0\ncontextType: acme/ct/cast@1.0.0\nvalues:\n  owner: Dana\n")
+	writeSrc(t, src, "agent.tfer", "schemaVersion: 5\nkind: agent\nid: acme/agent@1.0.0\ncontext:\n  - acme/notes/n@1.0.0\n")
 	out := t.TempDir()
 	targets, _ := ParseTargets("neutral")
 	if _, err := Build(src, out, targets, nil); err != nil {
@@ -34,7 +34,7 @@ func TestBundleEmitsHeldContext(t *testing.T) {
 
 func TestBundleOmitsContextWhenNoneHeld(t *testing.T) {
 	src := t.TempDir()
-	writeSrc(t, src, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agent@1.0.0\n")
+	writeSrc(t, src, "agent.tfer", "schemaVersion: 5\nkind: agent\nid: acme/agent@1.0.0\n")
 	out := t.TempDir()
 	targets, _ := ParseTargets("neutral")
 	if _, err := Build(src, out, targets, nil); err != nil {

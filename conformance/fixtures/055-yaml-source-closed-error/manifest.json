@@ -1,0 +1,4 @@
+{
+  "description": "A bare .yaml resource document is not valid version 5 source (ADR-0026).",
+  "expect": "error"
+}

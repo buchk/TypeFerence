@@ -11,10 +11,10 @@ import (
 
 func TestCodexConfigurationIsMaterializedOnlyAtLink(t *testing.T) {
 	source := t.TempDir()
-	writeTestFile(t, filepath.Join(source, "cap.yaml"), "schemaVersion: 4\nkind: capability\nid: acme/capabilities/c@1.0.0\nvisibility: exposed\n")
-	writeTestFile(t, filepath.Join(source, "tool.yaml"), "schemaVersion: 4\nkind: tool\nid: acme/tools/runtime@1.0.0\n")
-	writeTestFile(t, filepath.Join(source, "skill.yaml"), "schemaVersion: 4\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/capabilities/c@1.0.0\ninstructions: do it\nrequiresTools: [acme/tools/runtime@1.0.0]\n")
-	writeTestFile(t, filepath.Join(source, "agent.yaml"), "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n")
+	writeTestFile(t, filepath.Join(source, "cap.tfer"), "schemaVersion: 5\nkind: capability\nid: acme/capabilities/c@1.0.0\nvisibility: exposed\n")
+	writeTestFile(t, filepath.Join(source, "tool.tfer"), "schemaVersion: 5\nkind: tool\nid: acme/tools/runtime@1.0.0\n")
+	writeTestFile(t, filepath.Join(source, "skill.tfer"), "schemaVersion: 5\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/capabilities/c@1.0.0\ninstructions: do it\nrequiresTools: [acme/tools/runtime@1.0.0]\n")
+	writeTestFile(t, filepath.Join(source, "agent.tfer"), "schemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n")
 	built := t.TempDir()
 	if _, err := compile.Build(source, built, []compile.Target{compile.Codex}, nil); err != nil {
 		t.Fatal(err)
@@ -53,9 +53,9 @@ func TestCodexConfigurationIsMaterializedOnlyAtLink(t *testing.T) {
 
 func TestA2ACardRequiresNeutralArtifactAndA2AMode(t *testing.T) {
 	source := t.TempDir()
-	writeTestFile(t, filepath.Join(source, "cap.yaml"), "schemaVersion: 4\nkind: capability\nid: acme/capabilities/c@1.0.0\nvisibility: exposed\n")
-	writeTestFile(t, filepath.Join(source, "skill.yaml"), "schemaVersion: 4\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/capabilities/c@1.0.0\nvariants:\n  manual:\n    instructions: talk\n  a2a:\n    instructions: call\n")
-	writeTestFile(t, filepath.Join(source, "agent.yaml"), "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n")
+	writeTestFile(t, filepath.Join(source, "cap.tfer"), "schemaVersion: 5\nkind: capability\nid: acme/capabilities/c@1.0.0\nvisibility: exposed\n")
+	writeTestFile(t, filepath.Join(source, "skill.tfer"), "schemaVersion: 5\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/capabilities/c@1.0.0\nvariants:\n  manual:\n    instructions: talk\n  a2a:\n    instructions: call\n")
+	writeTestFile(t, filepath.Join(source, "agent.tfer"), "schemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n")
 	built := t.TempDir()
 	if _, err := compile.Build(source, built, []compile.Target{compile.Neutral, compile.Codex}, nil); err != nil {
 		t.Fatal(err)
@@ -78,7 +78,7 @@ func TestA2ACardRequiresNeutralArtifactAndA2AMode(t *testing.T) {
 
 func TestLinkRejectsTamperedUnlinkedArtifact(t *testing.T) {
 	source := t.TempDir()
-	writeTestFile(t, filepath.Join(source, "agent.yaml"), "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\n")
+	writeTestFile(t, filepath.Join(source, "agent.tfer"), "schemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\n")
 	built := t.TempDir()
 	if _, err := compile.Build(source, built, []compile.Target{compile.Neutral}, nil); err != nil {
 		t.Fatal(err)
@@ -94,7 +94,7 @@ func TestLinkRejectsTamperedUnlinkedArtifact(t *testing.T) {
 
 func TestLinkRejectsOutputThatContainsItsInput(t *testing.T) {
 	source := t.TempDir()
-	writeTestFile(t, filepath.Join(source, "agent.yaml"), "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\n")
+	writeTestFile(t, filepath.Join(source, "agent.tfer"), "schemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\n")
 	container := t.TempDir()
 	built := filepath.Join(container, "built")
 	if _, err := compile.Build(source, built, []compile.Target{compile.Neutral}, nil); err != nil {
@@ -161,9 +161,9 @@ func TestInvalidEndpointFailsClosed(t *testing.T) {
 
 func TestToolFreeLinkedArtifactRecordsSelectedModes(t *testing.T) {
 	source := t.TempDir()
-	writeTestFile(t, filepath.Join(source, "cap.yaml"), "schemaVersion: 4\nkind: capability\nid: acme/capabilities/c@1.0.0\n")
-	writeTestFile(t, filepath.Join(source, "skill.yaml"), "schemaVersion: 4\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/capabilities/c@1.0.0\nvariants:\n  manual:\n    instructions: talk\n  pipeline:\n    instructions: emit\n")
-	writeTestFile(t, filepath.Join(source, "agent.yaml"), "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n")
+	writeTestFile(t, filepath.Join(source, "cap.tfer"), "schemaVersion: 5\nkind: capability\nid: acme/capabilities/c@1.0.0\n")
+	writeTestFile(t, filepath.Join(source, "skill.tfer"), "schemaVersion: 5\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/capabilities/c@1.0.0\nvariants:\n  manual:\n    instructions: talk\n  pipeline:\n    instructions: emit\n")
+	writeTestFile(t, filepath.Join(source, "agent.tfer"), "schemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n")
 	built := t.TempDir()
 	if _, err := compile.Build(source, built, []compile.Target{compile.Neutral}, nil); err != nil {
 		t.Fatal(err)
@@ -183,7 +183,7 @@ func TestToolFreeLinkedArtifactRecordsSelectedModes(t *testing.T) {
 func buildLinkFixture(t *testing.T) (input, deployment string) {
 	t.Helper()
 	source := t.TempDir()
-	writeTestFile(t, filepath.Join(source, "agent.yaml"), "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\n")
+	writeTestFile(t, filepath.Join(source, "agent.tfer"), "schemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\n")
 	built := t.TempDir()
 	if _, err := compile.Build(source, built, []compile.Target{compile.Neutral}, nil); err != nil {
 		t.Fatal(err)
@@ -195,6 +195,10 @@ func buildLinkFixture(t *testing.T) (input, deployment string) {
 
 func writeTestFile(t *testing.T, path, content string) {
 	t.Helper()
+	if strings.HasSuffix(path, ".tfer") && !strings.HasPrefix(content, "---") {
+		// Wrap bare YAML content in the fences the v5 format requires.
+		content = "---\n" + strings.TrimRight(content, "\n") + "\n---\n"
+	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}

@@ -5,5 +5,3 @@ displayName: Level Four
 description: Fourth profile.
 embeds:
   - conformance/profiles/l5@1.0.0
-workingNorms:
-  - Norm from level four.
