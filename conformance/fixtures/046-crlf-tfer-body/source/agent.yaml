@@ -1,5 +1,0 @@
-schemaVersion: 4
-kind: agent
-id: conformance/agents/crlf-v4@1.0.0
-skills:
-  - ref: conformance/skills/crlf-v4@1.0.0

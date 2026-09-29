@@ -1,0 +1,7 @@
+---
+schemaVersion: 5
+kind: agent
+id: conformance/agents/bom-v4@1.0.0
+skills:
+  - ref: conformance/skills/bom-v4@1.0.0
+---

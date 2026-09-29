@@ -3,9 +3,9 @@
   "language": "legacy-v3",
   "expect": "success",
   "digests": {
-    "codex": "sha256:0d1b7b3d1eec723f0add102cedaeb067a0b3728f8926b928a8c4e51160b7f252",
-    "copilot": "sha256:e3379b12835be953081072378c592004a2bc685dc4232513690c5e7c73ced1ba",
-    "cursor": "sha256:01b3e1a5beabda279cf806c2d4613cd8e459521848b448b375c519ad65ff2333",
-    "neutral": "sha256:3f41aec5211b24e6730f9fa8b5be22fad2f9036322d8b9ff3349015031437327"
+    "codex": "sha256:2522a937df07ee4bafacefeacda111209f63957ae18c1b33a42e8121b44cdcdb",
+    "copilot": "sha256:56414d2f676e18974d918e6584efaf9166e49ffe71a169ee27406c97045b5e9e",
+    "cursor": "sha256:a7df1617ece3e0950d2e95448843745a6e3e4bd064516bb7e703fda0f76696ae",
+    "neutral": "sha256:e2f64ef11433a3bff50f16fc2a47420721fea3aff3a9a993083fa77c369fb968"
   }
 }

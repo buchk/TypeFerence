@@ -13,12 +13,23 @@
     "organization": "helio/context/organization@1.0.0",
     "principal": "helio/context/principal@1.0.0"
   },
-  "workingNorms": [
-    "Preserve a clear audit trail for material decisions.",
-    "State uncertainty and route work to an accountable owner when authority is unclear.",
-    "Distinguish drafts from messages approved for delivery."
-  ],
   "context": [
+    {
+      "id": "helio/context/audit-norm@1.0.0",
+      "contextType": "helio/context-types/norms@1.0.0",
+      "satisfies": [
+        "helio/context-types/norms@1.0.0"
+      ],
+      "content": "Preserve a clear audit trail for material decisions.\n"
+    },
+    {
+      "id": "helio/context/draft-norm@1.0.0",
+      "contextType": "helio/context-types/norms@1.0.0",
+      "satisfies": [
+        "helio/context-types/norms@1.0.0"
+      ],
+      "content": "Distinguish drafts from messages approved for delivery.\n"
+    },
     {
       "id": "helio/context/executive-rhythm@1.0.0",
       "contextType": "helio/context-types/executive-rhythm@1.0.0",
@@ -53,6 +64,14 @@
         "authority": "explicit"
       },
       "content": "# Safety policy\n\nAgents may prepare recommendations and drafts. They must not represent approval, transmit external messages, or make irreversible changes without explicit authority.\n"
+    },
+    {
+      "id": "helio/context/uncertainty-norm@1.0.0",
+      "contextType": "helio/context-types/norms@1.0.0",
+      "satisfies": [
+        "helio/context-types/norms@1.0.0"
+      ],
+      "content": "State uncertainty and route work to an accountable owner when authority is unclear.\n"
     }
   ],
   "skills": [
@@ -113,23 +132,11 @@
       "source": "helio/profiles/enterprise-defaults@1.0.0"
     },
     {
-      "field": "workingNorms",
-      "source": "helio/profiles/enterprise-defaults@1.0.0"
-    },
-    {
-      "field": "workingNorms",
-      "source": "helio/profiles/enterprise-defaults@1.0.0"
-    },
-    {
       "field": "embeds.helio/profiles/enterprise-defaults@1.0.0",
       "source": "helio/profiles/person-defaults@1.0.0"
     },
     {
       "field": "slots.principal",
-      "source": "helio/profiles/person-defaults@1.0.0"
-    },
-    {
-      "field": "workingNorms",
       "source": "helio/profiles/person-defaults@1.0.0"
     },
     {

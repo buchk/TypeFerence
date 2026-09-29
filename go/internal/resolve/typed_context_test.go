@@ -118,7 +118,7 @@ func TestToolInvalidSchemaRejected(t *testing.T) {
 
 func TestNamedContextValuesMaterializeDefaultsAndPreserveScalarTypes(t *testing.T) {
 	nested := doc("contextType", "t/ct/nested@1.0.0", func(d *resource.Document) {
-		d.SchemaVersion = 4
+		d.SchemaVersion = 5
 		d.ContextTypeFields = map[string]resource.ContextField{
 			"label": {Type: resource.TypeExpr{Kind: "string"}, Required: true},
 			"enabled": {
@@ -129,13 +129,13 @@ func TestNamedContextValuesMaterializeDefaultsAndPreserveScalarTypes(t *testing.
 		}
 	})
 	wrapper := doc("contextType", "t/ct/wrapper@1.0.0", func(d *resource.Document) {
-		d.SchemaVersion = 4
+		d.SchemaVersion = 5
 		d.ContextTypeFields = map[string]resource.ContextField{
 			"nested": {Type: resource.TypeExpr{Kind: "ref", Ref: nested.ID}, Required: true},
 		}
 	})
 	value := doc("context", "t/context/value@1.0.0", func(d *resource.Document) {
-		d.SchemaVersion = 4
+		d.SchemaVersion = 5
 		d.ContextType = wrapper.ID
 		d.ContextFields = map[string]resource.FieldValue{
 			"nested": {Kind: "map", Map: map[string]resource.FieldValue{
@@ -144,7 +144,7 @@ func TestNamedContextValuesMaterializeDefaultsAndPreserveScalarTypes(t *testing.
 		}
 	})
 	agent := doc("agent", "t/agent@1.0.0", func(d *resource.Document) {
-		d.SchemaVersion = 4
+		d.SchemaVersion = 5
 		d.Context = []string{value.ID}
 	})
 	resolved, err := New(docSet(nested, wrapper, value, agent)).ResolveAll()
@@ -158,7 +158,7 @@ func TestNamedContextValuesMaterializeDefaultsAndPreserveScalarTypes(t *testing.
 
 func TestNamedContextValueCyclesRejected(t *testing.T) {
 	cyclic := doc("contextType", "t/ct/cyclic@1.0.0", func(d *resource.Document) {
-		d.SchemaVersion = 4
+		d.SchemaVersion = 5
 		d.ContextTypeFields = map[string]resource.ContextField{
 			"next": {Type: resource.TypeExpr{Kind: "ref", Ref: "t/ct/cyclic@1.0.0"}},
 		}
@@ -177,15 +177,15 @@ func TestSiblingContextDefaultsRequireLocalResolution(t *testing.T) {
 		}
 	}
 	left := doc("contextType", "t/ct/left@1.0.0", func(d *resource.Document) {
-		d.SchemaVersion = 4
+		d.SchemaVersion = 5
 		d.ContextTypeFields = map[string]resource.ContextField{"owner": field("left")}
 	})
 	right := doc("contextType", "t/ct/right@1.0.0", func(d *resource.Document) {
-		d.SchemaVersion = 4
+		d.SchemaVersion = 5
 		d.ContextTypeFields = map[string]resource.ContextField{"owner": field("right")}
 	})
 	ambiguous := doc("contextType", "t/ct/ambiguous@1.0.0", func(d *resource.Document) {
-		d.SchemaVersion = 4
+		d.SchemaVersion = 5
 		d.Embeds = []string{left.ID, right.ID}
 	})
 	if _, err := New(docSet(left, right, ambiguous)).ResolveAll(); err == nil ||
@@ -194,7 +194,7 @@ func TestSiblingContextDefaultsRequireLocalResolution(t *testing.T) {
 	}
 
 	resolved := doc("contextType", "t/ct/resolved@1.0.0", func(d *resource.Document) {
-		d.SchemaVersion = 4
+		d.SchemaVersion = 5
 		d.Embeds = []string{left.ID, right.ID}
 		d.ContextTypeFields = map[string]resource.ContextField{"owner": field("resolved")}
 	})
@@ -205,10 +205,10 @@ func TestSiblingContextDefaultsRequireLocalResolution(t *testing.T) {
 
 func TestContextBodyRequiresADeclaredBodyType(t *testing.T) {
 	contextType := doc("contextType", "t/ct/fields-only@1.0.0", func(d *resource.Document) {
-		d.SchemaVersion = 4
+		d.SchemaVersion = 5
 	})
 	value := doc("context", "t/context/value@1.0.0", func(d *resource.Document) {
-		d.SchemaVersion = 4
+		d.SchemaVersion = 5
 		d.ContextType = contextType.ID
 		d.Content = "undeclared body\n"
 	})

@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
   "target": "copilot",
-  "sourceDigest": "sha256:981da89802beea05777dbe99b9898fa07701a7fd40534a4c0aca961fce5376ac",
+  "sourceDigest": "sha256:a3601445a5afb5e977072066bf73b7b1f3443404bf2e394f13ba01cfc79422eb",
   "artifacts": [
     {
       "agentId": "helio/executive-assistant@1.0.0",
       "path": "executive-assistant",
-      "digest": "sha256:59dd5ce9cd7683b7384f775919dcdac8068953581e65661bcb40e52dab01d6c7"
+      "digest": "sha256:8578844ff4b0e11b6f04b319309d981305302ccdcf714762510f72761122632a"
     },
     {
       "agentId": "helio/payments-repo-agent@1.0.0",
       "path": "payments-repo-agent",
-      "digest": "sha256:f19db443327fe4fb509a0b854581635f33adc88589bba9bed2ceb476fdf651e6"
+      "digest": "sha256:0d8f5b0319ff88d5ff18dfb4f71bc78492a09b2e83105a5b7bafc65393e628e1"
     }
   ]
 }

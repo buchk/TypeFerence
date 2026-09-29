@@ -32,7 +32,6 @@ func bundleValue(agent *resolve.ResolvedAgent) jsonx.Value {
 		{K: "embeds", V: stringArr(agent.Embeds)},
 		{K: "satisfies", V: stringArr(agent.Satisfies)},
 		{K: "slots", V: slots},
-		{K: "workingNorms", V: stringArr(agent.WorkingNorms)},
 	}
 	if len(agent.ContextFiles) > 0 {
 		obj = append(obj, jsonx.Member{K: "contextFiles", V: stringArr(agent.ContextFiles)})

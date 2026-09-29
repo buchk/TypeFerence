@@ -1,0 +1,9 @@
+---
+schemaVersion: 5
+kind: profile
+id: conformance/profiles/base@1.0.0
+skills:
+  - ref: conformance/skills/audit@1.0.0
+    sealed: true
+    required: true
+---

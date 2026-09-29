@@ -9,6 +9,11 @@ import (
 
 func writeSrc(t *testing.T, root, name, content string) {
 	t.Helper()
+	if strings.HasSuffix(name, ".tfer") && !strings.HasPrefix(content, "---") {
+		// Bare YAML content written to a .tfer name gets the frontmatter
+		// fences the v5 format requires.
+		content = "---\n" + strings.TrimRight(content, "\n") + "\n---\n"
+	}
 	if err := os.WriteFile(filepath.Join(root, name), []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -16,7 +21,7 @@ func writeSrc(t *testing.T, root, name, content string) {
 
 func TestBuildIsUnlinked(t *testing.T) {
 	source := t.TempDir()
-	writeSrc(t, source, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\n")
+	writeSrc(t, source, "agent.tfer", "schemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\n")
 	output := t.TempDir()
 	if _, err := Build(source, output, []Target{Codex}, nil); err != nil {
 		t.Fatal(err)
@@ -32,19 +37,19 @@ func TestBuildIsUnlinked(t *testing.T) {
 
 func TestProjectManifestRejectsDeployment(t *testing.T) {
 	source := t.TempDir()
-	writeSrc(t, source, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\n")
-	writeSrc(t, source, "typeference.yaml", "schemaVersion: 2\nname: acme/agents\nversion: 1.0.0\ndeployment:\n  mcpCommand: nope\n")
+	writeSrc(t, source, "agent.tfer", "schemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\n")
+	writeSrc(t, source, "typeference.tfer", "schemaVersion: 2\nname: acme/agents\nversion: 1.0.0\ndeployment:\n  mcpCommand: nope\n")
 	_, err := Build(source, t.TempDir(), []Target{Codex}, nil)
-	if err == nil || !strings.Contains(err.Error(), "deployment") {
+	if err == nil || (!strings.Contains(err.Error(), "deployment") && !strings.Contains(err.Error(), "mcpCommand")) {
 		t.Fatalf("deployment metadata in the source manifest must fail, got %v", err)
 	}
 }
 
 func TestARDDoesNotInventCallableCards(t *testing.T) {
 	source := t.TempDir()
-	writeSrc(t, source, "cap.yaml", "schemaVersion: 4\nkind: capability\nid: acme/capabilities/c@1.0.0\nvisibility: exposed\n")
-	writeSrc(t, source, "skill.yaml", "schemaVersion: 4\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/capabilities/c@1.0.0\ninstructions: do it\n")
-	writeSrc(t, source, "agent.yaml", "schemaVersion: 4\nkind: agent\nid: acme/agents/a@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n")
+	writeSrc(t, source, "cap.tfer", "schemaVersion: 5\nkind: capability\nid: acme/capabilities/c@1.0.0\nvisibility: exposed\n")
+	writeSrc(t, source, "skill.tfer", "schemaVersion: 5\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/capabilities/c@1.0.0\ninstructions: do it\n")
+	writeSrc(t, source, "agent.tfer", "schemaVersion: 5\nkind: agent\nid: acme/agents/a@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n")
 	output := t.TempDir()
 	if _, err := Build(source, output, []Target{Neutral}, &ArdPublicationOptions{PublisherDomain: "acme.example"}); err != nil {
 		t.Fatal(err)

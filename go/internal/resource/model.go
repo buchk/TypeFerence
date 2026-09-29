@@ -17,7 +17,6 @@ type Document struct {
 	RequiredSlotTypes    map[string]string
 	RequiresCapabilities []string
 	Slots                map[string]string
-	WorkingNorms         []string
 	ContextFiles         []string
 	Skills               []SkillBinding
 	Instructions         string

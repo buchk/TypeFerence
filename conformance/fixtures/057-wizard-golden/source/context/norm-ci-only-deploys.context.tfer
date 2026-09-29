@@ -1,0 +1,9 @@
+---
+schemaVersion: 5
+kind: context
+id: acme/context/norm-ci-only-deploys@1.0.0
+contextType: acme/context-types/norms@1.0.0
+displayName: Ci Only Deploys
+values: {}
+---
+Production deploys go through CI only.

@@ -57,7 +57,6 @@ type ResolvedAgent struct {
 	Satisfies              []string
 	Slots                  map[string]string
 	SlotKeys               []string // canonical order for Slots
-	WorkingNorms           []string
 	ContextFiles           []string
 	Context                []string
 	ContextObjects         []ResolvedContextRef
@@ -130,7 +129,7 @@ func (r *Resolver) ResolveAll() ([]*ResolvedAgent, error) {
 		if _, err := r.contextTypeClosure(id, map[string]bool{}); err != nil {
 			return nil, err
 		}
-		if r.resources[id].SchemaVersion == 4 {
+		if r.resources[id].SchemaVersion == 5 {
 			if _, _, _, err := r.nativeContextShape(id); err != nil {
 				return nil, err
 			}
@@ -235,7 +234,6 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 	if err != nil {
 		return nil, err
 	}
-	norms := distinct(concatNorms(embedded, current))
 	contexts := distinct(normalizeAll(concatContexts(embedded, current)))
 	contextRefs := distinct(append(concatContextRefs(embedded, current), slotContextRefs(slots, slotKeys)...))
 	allowedContextTypes := intersectAllowLists(embedded, current)
@@ -299,9 +297,6 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 	for _, key := range resource.SortedKeys(current.Slots) {
 		provenance = append(provenance, ProvenanceEntry{Field: "slots." + key, Source: id})
 	}
-	for range current.WorkingNorms {
-		provenance = append(provenance, ProvenanceEntry{Field: "workingNorms", Source: id})
-	}
 	for range current.ContextFiles {
 		provenance = append(provenance, ProvenanceEntry{Field: "contextFiles", Source: id})
 	}
@@ -340,7 +335,6 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 		Satisfies:              satisfies,
 		Slots:                  slots,
 		SlotKeys:               slotKeys,
-		WorkingNorms:           norms,
 		ContextFiles:           contexts,
 		Context:                contextRefs,
 		ContextObjects:         r.resolveContextObjects(contextRefs),

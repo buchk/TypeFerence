@@ -1,0 +1,7 @@
+---
+schemaVersion: 5
+kind: agent
+id: conformance/agents/checker@1.0.0
+skills:
+  - ref: conformance/skills/check@1.0.0
+---

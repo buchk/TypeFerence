@@ -2,9 +2,9 @@
   "description": "Version 4 preserves JSON schema number tokens and interprets native context scalars according to their declared numeric type.",
   "expect": "success",
   "digests": {
-    "codex": "sha256:2108987843696ebd22c41f22b6ed704f3562d704ef8ff84f6e733325d5dbaeb2",
-    "copilot": "sha256:bdf66e8e72bbc6823ca801e046ec8cd9297307676852c67112f5baa1c1e9c0e4",
-    "cursor": "sha256:7b47807b2b2dc9b57d62a7f80a4c5b8a86603abac1d17b8bc3ef83ecdf8e82d1",
-    "neutral": "sha256:4800d1eaf44658225825ffb6384d80a41a67e7b4a437e82465c06720efc8fcb2"
+    "codex": "sha256:fea4451533e172ee864143718b3cb29b35c68a2cc93baba3501e5f58d89c2392",
+    "copilot": "sha256:90ff3be420c7322cb295672ee1321c84b581ae3f508e9eff16f0a60e31a0252e",
+    "cursor": "sha256:94161a7995148846300034ea11ef897e8a5b5e2514eac7f9a52f3e8794c5910f",
+    "neutral": "sha256:0098df77cc605370a1ed0675e9a4c9175079aeeb1a75bc0411866501adc50457"
   }
 }

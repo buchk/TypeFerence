@@ -216,7 +216,7 @@ func validateExports(exports []string) error {
 func validateArchiveManifest(archive *Archive) error {
 	var manifest *File
 	for i := range archive.Files {
-		if archive.Files[i].Path == resource.ProjectManifestFile {
+		if archive.Files[i].Path == resource.ProjectManifestFile || archive.Files[i].Path == resource.ManifestFileNameV5 {
 			manifest = &archive.Files[i]
 			break
 		}

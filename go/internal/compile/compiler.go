@@ -498,13 +498,6 @@ func writeSkillFiles(dir string, skill resolve.ResolvedSkill, variant string, fa
 func renderInstructions(agent *resolve.ResolvedAgent, inlineInstructions bool, variant string) string {
 	var b strings.Builder
 	b.WriteString("# " + agent.DisplayName + "\n\n" + agent.Description + "\n\n")
-	if len(agent.WorkingNorms) > 0 {
-		b.WriteString("## Working norms\n\n")
-		for _, norm := range agent.WorkingNorms {
-			b.WriteString("- " + norm + "\n")
-		}
-		b.WriteString("\n")
-	}
 	if len(agent.SlotKeys) > 0 {
 		b.WriteString("## Context slots\n\n")
 		for _, key := range agent.SlotKeys {

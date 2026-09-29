@@ -2,9 +2,9 @@
   "description": "Version 4 native context fields, defaults, collections, and text body are validated and emitted into every target.",
   "expect": "success",
   "digests": {
-    "codex": "sha256:cc739728ef37b68227cf34204329522d078c5640af6ff25434f32121299aaf13",
-    "copilot": "sha256:479af014ed611479b20caa3ded1c0ff09800008b792b20614653cde3e3905b30",
-    "cursor": "sha256:c3a11b2bab341429301a82677e5f923edc27800a703dc7685054b584d1595f04",
-    "neutral": "sha256:581271f02a57e6dbecf7026c9bdf94a9c8a7b03386dfcee7c75993e8e79feef0"
+    "codex": "sha256:074ed22ea32bc32691856c2a30e4065c0a5b124fbebea10316d4637170e44f7a",
+    "copilot": "sha256:bc8be6d691d75e5eb6a57f71823fe0f3bd86f86d16dad9840e80e314126020a5",
+    "cursor": "sha256:80260af20699e7dd07d3d52f669f21d247779c1b006cc698202930155cd88ab3",
+    "neutral": "sha256:c141b4c38b2f1c68999c47e9c6c31473bef20d309cdcda12dbe6e6e90e865e6c"
   }
 }

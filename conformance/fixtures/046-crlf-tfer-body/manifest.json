@@ -2,9 +2,9 @@
   "description": "A version 4 .tfer document authored with CRLF is normalized to LF before frontmatter splitting and body emission.",
   "expect": "success",
   "digests": {
-    "codex": "sha256:8708887021ea732832ec96f949822847231ab3e49c4c90b162b7c3ed11fce7d0",
-    "copilot": "sha256:eec2dd1d69249e1596c8000d9751d6defa7129b352b8308072b286ea30eb4e4e",
-    "cursor": "sha256:5e43fa28ac02c641a42024428cf2570dab82a0d65b9a61903eb74acd196a289f",
-    "neutral": "sha256:af38191b954d4ebbc08e86665868d2605dcfdd836ea469a4e0021ffe23cd54b3"
+    "codex": "sha256:50c82e2f000ac42f17cd5dbcf06c00bac59a904bd31c7cc953bc247a28d02187",
+    "copilot": "sha256:576a899c1f7274aa3e44cc8f8e5b6d552729b600cccb2cc954c9c7897298e876",
+    "cursor": "sha256:1603cbc1ca895b6c5779472db2f84b5d08f24ffd1e47a1ceda0236aec858bbc8",
+    "neutral": "sha256:6da03e41d352290037e6638bf0a414f12131299ec9de024acaf63dbb593dc636"
   }
 }

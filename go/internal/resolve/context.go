@@ -57,7 +57,7 @@ func (r *Resolver) providedContextTypes(objectIDs []string) (map[string]bool, er
 // (and every type it refines): required fields are present, and each declared
 // field's structural type matches (ADR-0013).
 func (r *Resolver) validateContextFields(obj *resource.Document) error {
-	if obj.SchemaVersion == 4 {
+	if obj.SchemaVersion == 5 {
 		return r.validateNativeContext(obj)
 	}
 	closure, err := r.contextTypeClosure(obj.ContextType, map[string]bool{})
@@ -215,7 +215,7 @@ func (r *Resolver) nativeContextShapeFrom(id string, visiting map[string]bool) (
 	if visiting[id] {
 		return nil, false, false, resource.Errorf("ContextType refinement cycle detected at %s", id)
 	}
-	if ct.SchemaVersion != 4 {
+	if ct.SchemaVersion != 5 {
 		return nil, false, false, resource.Errorf("native contextType %s cannot use legacy schemaVersion %d type %s", id, ct.SchemaVersion, ct.ID)
 	}
 	visiting[id] = true
@@ -533,7 +533,7 @@ func (r *Resolver) resolveContextObjects(contextRefs []string) []ResolvedContext
 }
 
 func (r *Resolver) contextValuesJSON(obj *resource.Document) string {
-	if obj.SchemaVersion != 4 {
+	if obj.SchemaVersion != 5 {
 		return "{}"
 	}
 	fields, _, _, err := r.nativeContextShape(obj.ContextType)

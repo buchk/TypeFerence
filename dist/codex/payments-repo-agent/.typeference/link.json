@@ -3,7 +3,7 @@
   "agentId": "helio/payments-repo-agent@1.0.0",
   "target": "codex",
   "defaultMode": "manual",
-  "sourceDigest": "sha256:981da89802beea05777dbe99b9898fa07701a7fd40534a4c0aca961fce5376ac",
+  "sourceDigest": "sha256:a3601445a5afb5e977072066bf73b7b1f3443404bf2e394f13ba01cfc79422eb",
   "dependencies": [],
   "modes": [
     "a2a",

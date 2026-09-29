@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
   "target": "codex",
-  "sourceDigest": "sha256:981da89802beea05777dbe99b9898fa07701a7fd40534a4c0aca961fce5376ac",
+  "sourceDigest": "sha256:a3601445a5afb5e977072066bf73b7b1f3443404bf2e394f13ba01cfc79422eb",
   "artifacts": [
     {
       "agentId": "helio/executive-assistant@1.0.0",
       "path": "executive-assistant",
-      "digest": "sha256:02d28d1dc4ceec13d25c1d4a32229d9ff956c0586fdbd123a41c3b8a83c86c87"
+      "digest": "sha256:ac049dcc0feabc617e69a854928f7d038848dcaaaaf5756452fda5106bbf84ee"
     },
     {
       "agentId": "helio/payments-repo-agent@1.0.0",
       "path": "payments-repo-agent",
-      "digest": "sha256:131be31e4d0839890ead6a31de53a96ba796f30eab1a9f610154c1b84eff0722"
+      "digest": "sha256:94f2efa54234506b2c6e83847280434f2a4cc4c0baad193e33babd887bde812f"
     }
   ]
 }

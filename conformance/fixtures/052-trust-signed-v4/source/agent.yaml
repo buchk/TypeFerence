@@ -1,4 +1,0 @@
-schemaVersion: 4
-kind: agent
-id: conformance/agents/signed-v4@1.0.0
-displayName: Signed v4 Agent

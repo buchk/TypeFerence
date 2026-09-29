@@ -1,9 +1,20 @@
 # TypeFerence Draft Specification
 
-Status: experimental reference draft, July 2026. Typed resources use
-`schemaVersion: 4`; project manifests use `schemaVersion: 2`. Version 4 is a
+Status: experimental reference draft, amended August 2026. Typed resources use
+`schemaVersion: 5`; project manifests use `schemaVersion: 2`. Version 5 is a
 deliberate closure of the source language. Unsupported fields and schema versions
 are errors rather than extension points.
+
+Version 5 changes from version 4:
+
+1. `.tfer` (frontmatter-plus-body) is the only accepted source format; bare
+   YAML sources are no longer valid.
+2. Frontmatter and manifest syntax are TypeFerence's own closed indentation
+   grammar (see "Source document formats"); YAML is no longer the surface
+   parser.
+3. `workingNorms` no longer exists on any resource kind; behavioral prose
+   reaches a model only as typed context (see "Composition" and "Native
+   context type language").
 
 ## Purpose and pipeline
 
@@ -44,9 +55,9 @@ appear in a lockfile or source digest.
 
 ## Project manifest
 
-A source root MAY contain `typeference.yaml`:
+A source root MAY contain `typeference.tfer`:
 
-```yaml
+```text
 schemaVersion: 2
 name: acme/payments-agents
 version: 1.0.0
@@ -56,15 +67,15 @@ dependencies:
 ```
 
 `name`, `version`, and every dependency version are required when the manifest is
-present. Versions are exact semantic versions in version 4; range solving is not
+present. Versions are exact semantic versions in version 5; range solving is not
 defined. Dependency names use the resource namespace grammar. `publisher` is
 optional stable publication identity. Unknown fields, deployment fields, feed
 addresses, and credentials are errors.
 
 ## Resource identity and kinds
 
-A compilation unit contains UTF-8 YAML or frontmatter-plus-body documents with
-`schemaVersion: 4`, a `kind`, and an `id`. IDs use
+A compilation unit contains UTF-8 frontmatter-plus-body documents with
+`schemaVersion: 5`, a `kind`, and an `id`. IDs use
 `namespace/name@semantic-version`. Supported kinds are:
 
 - `agent`: a concrete, target-emitting composition;
@@ -83,12 +94,12 @@ shadow a dependency is forbidden.
 
 ## Source document formats
 
-A `.yaml` source file is exactly one YAML mapping document and has no separate
-body. A `.tfer` source file is a frontmatter-plus-body document:
+Version 5 accepts exactly one source format: the `.tfer` document, a
+frontmatter-plus-body file:
 
 ```text
 ---
-schemaVersion: 4
+schemaVersion: 5
 kind: skill
 id: acme/skills/example@1.0.0
 binds: acme/capabilities/example@1.0.0
@@ -98,8 +109,47 @@ Model-facing instructions.
 
 The opening and closing `---` fences MUST each occupy an exact line. The file
 MUST start with the opening fence. The content between the fences is exactly one
-YAML mapping and is subject to the same closed-field rules as a `.yaml` resource.
-The text after the closing fence is the body.
+mapping in the TypeFerence frontmatter grammar (below) and is subject to the
+same closed-field rules as every other part of the language. The text after the
+closing fence is the body. A bare `.yaml` resource document is not valid
+version 5 source and MUST be rejected with a diagnostic naming the format.
+
+### Frontmatter grammar
+
+The frontmatter grammar is TypeFerence's own closed indentation grammar. Its
+syntax is fixed by this specification; it is not YAML and has no YAML resolver
+semantics. It supports exactly:
+
+- `key: value` mappings nested by two-space indentation increments;
+- flow-free sequences (`- item` lines) at any nesting depth;
+- single- or double-quoted strings, which are always strings;
+- block scalars for multiline string values: literal `|`, stripped `-|`, and
+  an explicit indentation indicator (`|2`). Block-scalar chomping and relative
+  indentation follow YAML 1.2's defined semantics, cited here rather than
+  reinvented;
+- comments: a `#` that starts a line or follows whitespace outside quotes
+  begins a comment, which is inert metadata and never reaches artifacts;
+- duplicate keys are errors.
+
+Scalar typing is syntactic; no implicit resolution ever chooses a type:
+
+- a quoted scalar is a string;
+- an unquoted scalar matching `[0-9]+` (optionally signed) is an integer,
+  preserved as its written digit string;
+- an unquoted scalar matching a decimal number pattern (digits with `.`
+  or exponent) is a decimal, canonicalized by preserving the written lexeme
+  verbatim; `0.50` and `0.5` are distinct values because they are distinct
+  bytes. Decimals carry no arithmetic semantics;
+- `true` and `false` unquoted are booleans;
+- `null` unquoted is null;
+- every other bare-word scalar is an error. There is no implicit typing: a
+  value such as `no` or `staging` MUST be quoted to be a string.
+
+The vocabulary of scalars is deliberately small — quoted strings, integers,
+decimals, booleans, null — plus the composites mapping, sequence, and named
+context types. Integers are arbitrary precision; implementations map them to a
+bounded width only where a schema declares one. Floating-point numbers do not
+exist in version 5.
 
 Input text is UTF-8, BOM-stripped, and CRLF-normalized to LF before the document
 is split. The normalized body is otherwise preserved. Trimming is used only to
@@ -112,9 +162,30 @@ rendering under `variants` and MUST have an empty body. A context body is the
 typed text body declared by its `contextType`. Every other resource kind rejects
 a non-whitespace body.
 
-YAML scalar tokens in native context `values` and `default` members are retained
-lexically and interpreted schema-directed. YAML implicit typing MUST NOT change a
-string such as `no` into a boolean or choose the TypeFerence field type.
+### Field classification rule
+
+A frontmatter field on any resource kind is exactly one of:
+
+1. **typed context** — its value is a declared context reference, slot value,
+   or typed body;
+2. **reference** — an exact resource ID or structural pointer into the
+   composition graph;
+3. **inert metadata** — human-facing documentation that provably never reaches
+   model-facing output.
+
+Nothing else exists. A field whose value reaches model-facing output MUST NOT
+be an untyped scalar or list of scalars. This rule is enforced by the closed
+per-kind field maps: any field outside them is already an error, and no field
+inside them carries free behavioral prose except skill instructions and typed
+context bodies.
+
+### Migration from YAML sources
+
+Conversion from version 4 dual formats is mechanical and syntax-only:
+frontmatter content moves unchanged into the frontmatter grammar (quoting any
+scalar that the rules above require quoting); bodies move unchanged. No
+semantic rewrite occurs. Manifests (`typeference.tfer`) keep their name and
+closed field set but are parsed with the same frontmatter grammar.
 
 ## Composition
 
@@ -126,8 +197,12 @@ Resolution proceeds from embedded resources toward the embedding resource:
 1. Display name and description belong to their declaring resource.
 2. Slots promote by name. The shallowest declaration wins; different
    declarations at the same depth are ambiguous unless declared locally.
-3. Norms and held context IDs append in embedding order and deduplicate in
-   first-seen order.
+3. Held context IDs append in embedding order and deduplicate in first-seen
+   order. Normative behavioral prose exists only as context resources of a
+   declared `contextType`; no resource kind carries a norm list field.
+   Provenance records each contributing profile or agent for every held
+   context, preserving the per-contributor path that `workingNorms` previously
+   provided.
 4. Capability bindings promote by capability ID. The shallowest compatible
    implementation wins. At the same depth, bindings with the same resolved
    implementation and modifier state converge as one member; different
@@ -146,10 +221,10 @@ member set and MUST NOT create or fulfill that obligation.
 ## Interfaces, capabilities, skills, and bindings
 
 Interfaces MAY require typed slots and capability IDs and MAY embed interfaces.
-They provide no implementation. In version 4, `requiresSlots` maps each required
+They provide no implementation. In version 5, `requiresSlots` maps each required
 slot name to a contextType ID:
 
-```yaml
+```text
 requiresSlots:
   repository: acme/context-types/repository-evidence@1.0.0
 ```
@@ -169,7 +244,7 @@ and callable ARD projections. Exposure follows the capability through embedding.
 
 Bindings have independent presence and mutability axes:
 
-```yaml
+```text
 skills:
   - capability: acme/capabilities/audit@1.0.0
     required: true
@@ -192,15 +267,17 @@ supplied binding may be replaced.
 A skill declares either `instructions` or `variants`, never both. Base
 requirements apply to every mode; variant requirements are additive:
 
-```yaml
+```text
 kind: skill
-requiresTools: [acme/tools/repository@1.0.0]
+requiresTools:
+  - acme/tools/repository@1.0.0
 variants:
   manual:
     instructions: Explain the evidence.
   pipeline:
     instructions: Emit strict JSON.
-    requiresTools: [acme/tools/build-signals@1.0.0]
+    requiresTools:
+      - acme/tools/build-signals@1.0.0
 ```
 
 For mode `m`, effective requirements are `base ∪ variant[m]`. Compilation MUST
@@ -217,8 +294,8 @@ change the bound capability or its schemas.
 
 Context types use the TypeFerence type language, not embedded JSON Schema:
 
-```yaml
-schemaVersion: 4
+```text
+schemaVersion: 5
 kind: contextType
 id: acme/context-types/team@1.0.0
 fields:
@@ -226,48 +303,64 @@ fields:
     type: string
     required: true
   participants:
-    type:
-      list: string
+    type: "list<string>"
     required: true
   governed:
     type: boolean
     default: false
   attributes:
-    type:
-      map: string
+    type: "map<string>"
 body:
   type: text
   required: false
 ```
 
-Version 4 supports `string`, `text`, `boolean`, `integer`, `number`, `list<T>`,
-`map<T>`, and exact references to named context types. A field may be `required`
-and may declare a type-correct scalar or collection `default`. Unknown
-constructors and unsupported constraints such as unions, `oneOf`, regular
-expressions, arbitrary `$ref`, or open properties are errors.
+Version 5 supports `string`, `text`, `boolean`, `integer`, `decimal`,
+`list<T>`, `map<T>`, and exact references to named context types. A field's
+`type` member is a **type expression**: a bare scalar constructor name
+(`string`, `text`, `boolean`, `integer`, `decimal`), a parameterized composite
+written as a quoted string (`"list<string>"`, `"map<string>"`,
+`"list<acme/context-types/team@1.0.0>"`), or an exact named context type ID.
+Type expressions are not values; the value-scalar rules below do not apply to
+them. A field may be `required` and may declare a type-correct scalar or
+collection `default`. Unknown constructors and unsupported constraints such as
+unions, `oneOf`, regular expressions, arbitrary `$ref`, or open properties are
+errors.
+
+Scalar values in context `values` and `default` members follow the same
+syntactic typing as the frontmatter grammar: quoted is string, digits are
+integer, decimal lexemes are decimals preserved verbatim, unquoted
+true/false/null are boolean/null, and any other bare word is an error. No
+implicit resolution ever chooses a field's meaning. There is no `number`
+(floating-point) constructor; a schema that previously used it declares
+`integer` or `decimal`. Integers are arbitrary precision and canonicalized as
+their written digit string.
 Named value references are acyclic and may target field-only context types;
 a context type with a required prose body cannot be embedded as an inline field
 value.
 
 A context instance declares its type and values:
 
-```yaml
-schemaVersion: 4
+```text
+schemaVersion: 5
 kind: context
 id: acme/context/payments-team@1.0.0
 contextType: acme/context-types/team@1.0.0
 values:
   owner: payments-platform
-  participants: [Ari, Sam]
+  participants:
+    - "Ari"
+    - "Sam"
 ---
 Stable prose carried as the typed body.
 ```
 
-Values are parsed schema-directed; YAML implicit scalar typing MUST NOT decide
-their meaning. Missing required fields, unknown fields, wrong shapes, and invalid
-named-type references are errors. Defaults are materialized before hashing and
-emission. Resolved artifacts preserve the complete canonical value object and
-body, so any semantic context change changes target bytes.
+Values are parsed with the syntactic scalar rules of the frontmatter grammar;
+no implicit resolution decides their meaning. Missing required fields, unknown
+fields, wrong shapes, and invalid named-type references are errors. Defaults
+are materialized before hashing and emission. Resolved artifacts preserve the
+complete canonical value object and body, so any semantic context change
+changes target bytes.
 
 Context types MAY explicitly `embed` other context types to refine them. Type
 satisfaction is nominal: a context satisfies its declared type and the transitive
@@ -287,7 +380,7 @@ omitting it means unrestricted and specifying `[]` means no context is allowed.
 Allow-lists intersect through composition without treating the empty result as
 unrestricted.
 
-`contextFiles` does not exist in version 4. Raw prose is represented honestly as
+`contextFiles` does not exist. Raw prose is represented honestly as
 a context type with a required `text` body. Slot values that carry context MUST
 reference context resource IDs, never filesystem paths. All referenced files and
 resources MUST be explicit members of the source package and resolve beneath its
@@ -408,7 +501,7 @@ defaults.
 
 Deployment is supplied explicitly outside the source package:
 
-```yaml
+```text
 schemaVersion: 1
 environment: staging
 artifacts:
@@ -506,7 +599,7 @@ network I/O only when requested.
 
 ## Trust metadata
 
-A source root MAY contain `typeference.trust.yaml` or select one explicitly. Trust
+A source root MAY contain `typeference.trust.tfer` or select one explicitly. Trust
 metadata is declarative and participates in source-package publication, not
 behavioral resolution. TypeFerence MUST NOT dereference identity, attestation,
 provenance, policy, or key URIs; sign; verify cryptographic validity; or resolve
@@ -525,9 +618,10 @@ one final LF when its artifact shape requires text termination. Paths use `/`.
 Stable string ordering is lexicographic by UTF-8 bytes. Resource IDs, mode names,
 slot names, field names, and metadata keys use restricted ASCII grammars.
 
-Canonical JSON preserves schema number tokens and authored schema member order,
-uses defined artifact member order, two-space indentation for files, compact form
-for embedded schemas, and deterministic escaping. Map-like objects sort keys.
+Canonical JSON preserves authored schema member order and decimal lexemes
+verbatim, uses defined artifact member order, two-space indentation for files,
+compact form for embedded schemas, and deterministic escaping. Map-like objects
+sort keys.
 Repeated restore, build, pack, and link operations over identical respective
 inputs MUST be byte-identical on every platform.
 

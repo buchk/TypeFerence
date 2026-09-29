@@ -1,0 +1,4 @@
+schemaVersion: 5
+kind: agent
+id: conformance/agents/yaml@1.0.0
+displayName: YAML Agent

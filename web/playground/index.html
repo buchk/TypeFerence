@@ -27,6 +27,8 @@
       <select id="example-select" aria-label="Example"></select>
     </label>
     <button id="reset-btn" class="ghost" title="Restore the current example's original files">Reset</button>
+    <a class="ghost" href="wizard/" title="Generate a starter suite from a few answers">Setup wizard</a>
+    <button id="wizard-open" class="ghost" title="Generate a starter suite from a few answers">Setup wizard</button>
     <label class="control checkbox" title="Also emit the ARD catalog (ard/ai-catalog.json)">
       <input type="checkbox" id="emit-ard" checked> ARD
     </label>
@@ -123,6 +125,8 @@
     </section>
   </main>
 
+
   <footer id="status" class="loading">Loading compiler…</footer>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
