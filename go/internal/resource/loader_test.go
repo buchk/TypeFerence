@@ -173,7 +173,7 @@ func TestInvalidSchemaJSONRejected(t *testing.T) {
 
 func TestTrustConfigurationExcluded(t *testing.T) {
 	root := writeSource(t, map[string]string{
-		"agent.yaml":              minimalAgent,
+		"agent.yaml":             minimalAgent,
 		"typeference.trust.tfer": "schemaVersion: 5\nsource:\n  identity: https://example.com\n",
 	})
 	docs, err := loadLegacyForTest(root, "")

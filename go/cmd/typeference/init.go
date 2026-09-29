@@ -124,4 +124,3 @@ func writeTree(tree *scaffold.SourceTree, out string) (string, error) {
 	}
 	return "sha256:" + fmt.Sprintf("%x", h.Sum(nil)), nil
 }
-

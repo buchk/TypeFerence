@@ -67,7 +67,7 @@ func Scaffold(as *AnswerSet) (*SourceTree, Manifest, error) {
 			fmt.Sprintf("contextType: %s/context-types/norms@%s", org, ver),
 			fmt.Sprintf("displayName: %s", titleize(id)),
 			"values: {}",
-		) + n.Text + "\n")
+		)+n.Text+"\n")
 	}
 
 	// Base profile holds the norms; each team level embeds its parent and

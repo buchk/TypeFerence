@@ -292,7 +292,7 @@ displayName: Widget Line
 Acme sells three widget models: Standard, Pro, and the discontinued Classic.
 Classic tickets always require the legacy-parts disclaimer.
 ---
-`,	"context-types/norms.contexttype.tfer": `---
+`, "context-types/norms.contexttype.tfer": `---
 schemaVersion: 5
 kind: contextType
 id: acme/context-types/norms@1.0.0
@@ -311,5 +311,4 @@ displayName: Refund norm
 ---
 Never promise a refund without a linked policy clause.
 `,
-
 }

@@ -797,12 +797,12 @@ func validateDocumentShape(doc *Document, file string, allowLegacyV3 bool) error
 	}
 	if doc.Kind == "contextType" {
 		if doc.SchemaVersion == 3 && strings.TrimSpace(doc.Schema) != "" {
-				if err := validateJSON(doc.Schema, file, "schema"); err != nil {
-					return err
-				}
-			} else if doc.SchemaVersion == 5 && strings.TrimSpace(doc.Schema) != "" {
-				return Errorf("%s: schemaVersion 5 contextTypes use native 'fields', not JSON Schema", file)
+			if err := validateJSON(doc.Schema, file, "schema"); err != nil {
+				return err
 			}
+		} else if doc.SchemaVersion == 5 && strings.TrimSpace(doc.Schema) != "" {
+			return Errorf("%s: schemaVersion 5 contextTypes use native 'fields', not JSON Schema", file)
+		}
 	} else if strings.TrimSpace(doc.Schema) != "" {
 		return Errorf("%s: only contextType resources declare a schema", file)
 	}
