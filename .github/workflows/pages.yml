@@ -1,15 +1,11 @@
 # Builds the browser playground (web/playground) and deploys it to GitHub
 # Pages on every push to main. The playground is the unmodified Go compiler
 # built for js/wasm; see docs/decisions/0010-browser-playground.md.
-#
-# feat/v5-closure is a TEMPORARY preview trigger: pushes to it deploy the
-# branch build to the same Pages URL so the setup wizard can be tried before
-# the branch merges. Remove this branch from the list once merged.
 name: pages
 
 on:
   push:
-    branches: [main, feat/v5-closure]
+    branches: [main]
   workflow_dispatch:
 
 permissions:

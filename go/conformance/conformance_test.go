@@ -23,12 +23,12 @@ import (
 var update = flag.Bool("update", false, "rewrite fixture manifests with computed digests")
 
 type manifest struct {
-	Description        string            `json:"description"`
-	Language           string            `json:"language,omitempty"`
-	Expect             string            `json:"expect"`
-	EmitArd            string            `json:"emitArd,omitempty"`
-	TrustSignatures    string            `json:"trustSignatures,omitempty"`
-	AllowUnsignedTrust bool              `json:"allowUnsignedTrust,omitempty"`
+	Description        string `json:"description"`
+	Language           string `json:"language,omitempty"`
+	Expect             string `json:"expect"`
+	EmitArd            string `json:"emitArd,omitempty"`
+	TrustSignatures    string `json:"trustSignatures,omitempty"`
+	AllowUnsignedTrust bool   `json:"allowUnsignedTrust,omitempty"`
 	// AnswerSet names the wizard answer file that produced the tree
 	// (ADR-0028); documentation only, not used by compilation.
 	AnswerSet string            `json:"answerSet,omitempty"`
