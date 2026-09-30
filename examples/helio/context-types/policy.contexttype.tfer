@@ -1,0 +1,7 @@
+---
+displayName: Policy
+description: A governing policy stated as prose.
+body:
+  type: text
+  required: true
+---

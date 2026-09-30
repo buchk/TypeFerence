@@ -1,4 +1,5 @@
 {
   "description": "Version 4 rejects contextFiles instead of retaining a raw-path escape hatch.",
+  "language": "legacy-v5",
   "expect": "error"
 }

@@ -34,8 +34,28 @@ func (r *Resolver) checkSkillDependencies(agentID string, skills map[string]Reso
 	sort.Strings(capabilityIDs)
 	for _, capabilityID := range capabilityIDs {
 		skill := skills[capabilityID]
+		// A version 6 skill's own context satisfies its requirements alongside
+		// what the agent holds (ADR-0030).
+		available := provided
+		if len(skill.ContextObjects) > 0 {
+			own := make([]string, 0, len(skill.ContextObjects))
+			for _, ref := range skill.ContextObjects {
+				own = append(own, ref.ID)
+			}
+			held, err := r.providedContextTypes(own)
+			if err != nil {
+				return err
+			}
+			available = map[string]bool{}
+			for t := range provided {
+				available[t] = true
+			}
+			for t := range held {
+				available[t] = true
+			}
+		}
 		for _, required := range skill.RequiresContextTypes {
-			if !provided[required] {
+			if !available[required] {
 				return resource.Errorf("%s: skill %s requires context type %s, which no held context provides",
 					agentID, skill.ImplementationID, required)
 			}

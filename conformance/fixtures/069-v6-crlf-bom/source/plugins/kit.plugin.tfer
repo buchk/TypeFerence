@@ -1,0 +1,5 @@
+---
+description: CRLF kit.
+agents:
+  - agents/crlf.agent.tfer
+---

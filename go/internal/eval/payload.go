@@ -111,8 +111,17 @@ func renderSystemPrompt(agent *resolve.ResolvedAgent, skill *resolve.ResolvedSki
 	b.WriteString("# ")
 	b.WriteString(agent.DisplayName)
 	b.WriteString("\n\n")
-	b.WriteString(agent.Description)
-	b.WriteString("\n")
+	if agent.Language >= 6 {
+		// A version 6 description is routing metadata, never instructions;
+		// the agent's identity is its objectives (ADR-0029, ADR-0030).
+		for _, objective := range agent.Objectives {
+			b.WriteString(strings.TrimSpace(objective.Content))
+			b.WriteString("\n")
+		}
+	} else {
+		b.WriteString(agent.Description)
+		b.WriteString("\n")
+	}
 	if skill != nil {
 		b.WriteString("\n## Active skill: ")
 		b.WriteString(skill.DispatchName)

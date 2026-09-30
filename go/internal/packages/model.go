@@ -14,7 +14,6 @@ import (
 
 	"github.com/buchk/TypeFerence/go/internal/jsonx"
 	"github.com/buchk/TypeFerence/go/internal/resource"
-	"gopkg.in/yaml.v3"
 )
 
 const LockFile = "typeference.lock"
@@ -222,23 +221,15 @@ func validateArchiveManifest(archive *Archive) error {
 		}
 	}
 	if manifest == nil {
-		return resource.Errorf("package is missing %s", resource.ProjectManifestFile)
+		return resource.Errorf("package is missing %s", resource.ManifestFile)
 	}
-	var project struct {
-		SchemaVersion int               `yaml:"schemaVersion"`
-		Name          string            `yaml:"name"`
-		Version       string            `yaml:"version"`
-		Publisher     string            `yaml:"publisher"`
-		Dependencies  map[string]string `yaml:"dependencies"`
-	}
-	decoder := yaml.NewDecoder(strings.NewReader(manifest.Content))
-	decoder.KnownFields(true)
-	if err := decoder.Decode(&project); err != nil || project.SchemaVersion != 2 {
-		return resource.Errorf("package contains an invalid %s", resource.ProjectManifestFile)
+	project, err := resource.ParseProjectManifest(manifest.Path, manifest.Content)
+	if err != nil {
+		return resource.Errorf("package contains an invalid %s: %s", manifest.Path, err)
 	}
 	if project.Name != archive.Name || project.Version != archive.Version ||
 		!sameDependencies(project.Dependencies, archive.Dependencies) {
-		return resource.Errorf("package envelope does not match %s", resource.ProjectManifestFile)
+		return resource.Errorf("package envelope does not match %s", manifest.Path)
 	}
 	return nil
 }

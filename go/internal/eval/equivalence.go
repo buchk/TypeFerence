@@ -51,7 +51,7 @@ func Pack(source, scenariosPath, outDir string, opts PackOptions) (int, error) {
 	}
 	targets := opts.Targets
 	if len(targets) == 0 {
-		targets = []compile.Target{compile.Neutral, compile.Codex, compile.Copilot, compile.Cursor}
+		targets = []compile.Target{compile.Neutral, compile.AgentPlugin}
 	}
 	sort.Slice(targets, func(i, j int) bool { return targets[i] < targets[j] })
 
@@ -113,6 +113,15 @@ func Pack(source, scenariosPath, outDir string, opts PackOptions) (int, error) {
 			cellDir := filepath.Join(outDir, filepath.FromSlash(cellRel))
 			workspace := filepath.Join(cellDir, workspaceDirName)
 			bundleDir := filepath.Join(temp, target.String(), resolve.Leaf(p.agent.ID))
+			if target == compile.AgentPlugin {
+				// The agent-plugin surface is the installable plugin that ships
+				// the agent, rendered for interactive use.
+				dir, findErr := pluginShipping(filepath.Join(temp, target.String()), p.agent.ID)
+				if findErr != nil {
+					return 0, fmt.Errorf("%s: %v", p.scenario.Path, findErr)
+				}
+				bundleDir = dir
+			}
 			if err := copyTree(bundleDir, workspace); err != nil {
 				return 0, err
 			}
@@ -167,13 +176,48 @@ func Pack(source, scenariosPath, outDir string, opts PackOptions) (int, error) {
 	return 0, nil
 }
 
+// pluginShipping finds the manual-mode plugin artifact that ships an agent:
+// the first by directory name whose bundle lists it.
+func pluginShipping(targetRoot, agentID string) (string, error) {
+	entries, err := os.ReadDir(targetRoot)
+	if err != nil {
+		return "", err
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() || strings.HasPrefix(entry.Name(), ".") {
+			continue
+		}
+		raw, readErr := os.ReadFile(filepath.Join(targetRoot, entry.Name(), ".typeference", "bundle.json"))
+		if readErr != nil {
+			continue
+		}
+		value, parseErr := jsonx.Parse(string(raw))
+		if parseErr != nil {
+			continue
+		}
+		bundle, ok := value.(jsonx.Obj)
+		if !ok || jsonMemberString(bundle, "mode") != "manual" {
+			continue
+		}
+		agents, _ := member(bundle, "agents").(jsonx.Arr)
+		for _, agent := range agents {
+			if obj, isObj := agent.(jsonx.Obj); isObj && jsonMemberString(obj, "id") == agentID {
+				return filepath.Join(targetRoot, entry.Name()), nil
+			}
+		}
+	}
+	return "", fmt.Errorf("agent %s is not shipped by any plugin; link it from a plugin to measure the agent-plugin surface", agentID)
+}
+
 const runReadme = `# BETH run directory
 
 One cell per scenario x surface, under cells/<scenario>/<surface>/. To collect
 a cell: open a host with workspace/ as its working directory, submit the
 content of PROMPT.txt verbatim as the first message, and save the host's final
 response text as response.md in the cell directory (next to workspace/, not
-inside it). Optionally record the host in runtime.json:
+inside it). An agent-plugin cell's workspace/ is an installable plugin: install
+it (for example "copilot plugin install ./workspace") and select the agent
+before submitting the prompt. Optionally record the host in runtime.json:
 
     {"host": "claude-code 3.7.0", "model": "claude-fable-5"}
 

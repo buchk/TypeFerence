@@ -1,4 +1,5 @@
 {
   "description": "The normal closed-language path rejects retired schema version 3 input.",
+  "language": "legacy-v5",
   "expect": "error"
 }

@@ -136,7 +136,7 @@ func TestUnknownAgentOrSkillRejected(t *testing.T) {
 	if _, err := Run(source, badAgent, Options{Stdout: &bytes.Buffer{}}); err == nil || !strings.Contains(err.Error(), "agent not found") {
 		t.Errorf("expected agent-not-found error, got %v", err)
 	}
-	badSkill := writeScenario(t, "schemaVersion: 1\nid: x\nagent: helio/payments-repo-agent@1.0.0\nskill: payments-repo-agent.nope\ntask: t\nrubric:\n  - id: r\n    requirement: q\n")
+	badSkill := writeScenario(t, "schemaVersion: 1\nid: x\nagent: helio/works/agents/payments-repo-agent@1.0.0\nskill: payments-repo-agent.nope\ntask: t\nrubric:\n  - id: r\n    requirement: q\n")
 	if _, err := Run(source, badSkill, Options{Stdout: &bytes.Buffer{}}); err == nil || !strings.Contains(err.Error(), "skill dispatch name not found") {
 		t.Errorf("expected skill-not-found error, got %v", err)
 	}
@@ -166,7 +166,7 @@ func TestLiveModeScoresVerdictsThroughInjectedBackend(t *testing.T) {
 	scenario := writeScenario(t, strings.Join([]string{
 		"schemaVersion: 1",
 		"id: evals/test",
-		"agent: helio/payments-repo-agent@1.0.0",
+		"agent: helio/works/agents/payments-repo-agent@1.0.0",
 		"task: Report status.",
 		"rubric:",
 		"  - id: honest",

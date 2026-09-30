@@ -1,7 +1,4 @@
 {
   "urn:air:conformance.example:typeference:source:source": "eyJhbGciOiJFUzI1NiJ9..c2lnbmF0dXJlLXNvdXJjZQ",
-  "urn:air:conformance.example:typeference:neutral:signed-v4": "eyJhbGciOiJFUzI1NiJ9..c2lnbmF0dXJlLW5ldXRyYWw",
-  "urn:air:conformance.example:typeference:codex:signed-v4": "eyJhbGciOiJFUzI1NiJ9..c2lnbmF0dXJlLWNvZGV4",
-  "urn:air:conformance.example:typeference:copilot:signed-v4": "eyJhbGciOiJFUzI1NiJ9..c2lnbmF0dXJlLWNvcGlsb3Q",
-  "urn:air:conformance.example:typeference:cursor:signed-v4": "eyJhbGciOiJFUzI1NiJ9..c2lnbmF0dXJlLWN1cnNvcg"
+  "urn:air:conformance.example:typeference:neutral:signed-v4": "eyJhbGciOiJFUzI1NiJ9..c2lnbmF0dXJlLW5ldXRyYWw"
 }

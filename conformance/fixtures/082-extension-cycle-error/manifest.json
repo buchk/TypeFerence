@@ -1,0 +1,4 @@
+{
+  "description": "Skill extension chains cannot form a cycle.",
+  "expect": "error"
+}

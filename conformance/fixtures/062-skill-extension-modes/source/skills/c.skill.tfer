@@ -1,0 +1,10 @@
+---
+description: Base C.
+variants:
+  manual:
+    instructions: C manual base.
+  pipeline:
+    instructions: C pipeline base.
+  a2a:
+    instructions: C a2a base.
+---

@@ -1,0 +1,8 @@
+---
+description: A governed checker for people and pipelines.
+agents:
+  - agents/checker.agent.tfer
+modes:
+  - manual
+  - pipeline
+---

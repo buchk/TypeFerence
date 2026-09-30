@@ -1,9 +1,9 @@
 schemaVersion: 1
 environment: local
 artifacts:
-  helio/executive-assistant@1.0.0:
+  helio/works/agents/executive-assistant@1.0.0:
     modes: []
-  helio/payments-repo-agent@1.0.0:
+  helio/works/agents/payments-repo-agent@1.0.0:
     modes: [manual]
 providers:
   payments-agent:
@@ -19,9 +19,9 @@ providers:
       HELIO_REPOSITORY_TOKEN:
         fromEnvironment: HELIO_REPOSITORY_TOKEN
 toolBindings:
-  helio/tools/payments-repository-agent@1.0.0:
+  helio/works/tools/payments-repository-agent@1.0.0:
     provider: payments-agent
     remoteName: repository_status
-  helio/tools/repository-signals@1.0.0:
+  helio/works/tools/repository-signals@1.0.0:
     provider: repository-signals
     remoteName: repository_signals

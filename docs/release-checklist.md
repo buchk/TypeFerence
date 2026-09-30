@@ -7,14 +7,14 @@ release entry before that tag is created.
 
 ## Before tagging
 
-1. On `main`, CI fully green: the Go test suite, current-v4 conformance and
-   legacy-v3 archival golden corpus, and the self-host drift gate.
+1. On `main`, CI fully green: the Go test suite, the current version 6
+   conformance corpus and the legacy-v5 and legacy-v3 archival corpora, and the
+   self-host drift gate.
 2. `CHANGELOG.md`: move the `Unreleased` heading to the release date; confirm every
    spec-affecting entry names its ADR.
 3. Quick start in `README.md` executed literally from a clean clone.
 4. No uncommitted generated artifacts: `make selfhost-check` passes; `typeference
-   diff examples/helio --against dist --emit-ard --publisher-domain helio.example`
-   exits 0.
+   diff examples/helio --against dist` exits 0.
 
 ## Tagging
 

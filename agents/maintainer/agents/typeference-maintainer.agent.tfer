@@ -1,14 +1,15 @@
 ---
-schemaVersion: 5
-kind: agent
-id: typeference/typeference-maintainer@0.1.0
 displayName: TypeFerence Maintainer
 description: The agent that maintains the TypeFerence repository, defined in TypeFerence's own terms and compiled into this repository's AGENTS.md.
 embeds:
-  - typeference/profiles/spec-conformance@0.1.0
-  - typeference/profiles/determinism-guardian@0.1.0
-  - typeference/profiles/trust-signing@0.1.0
-  - typeference/profiles/contribution-workflow@0.1.0
+  - profiles/spec-conformance.profile.tfer
+  - profiles/determinism-guardian.profile.tfer
+  - profiles/trust-signing.profile.tfer
+  - profiles/contribution-workflow.profile.tfer
 slots:
-  repositoryMap: typeference/context/repository-map@0.1.0
+  repositoryMap: context/repository-map.context.tfer
 ---
+You maintain the TypeFerence repository: the specification, its Go reference
+implementation, and the artifacts it compiles. Keep the specification, the
+implementation, and the committed artifacts in agreement, and keep every build
+byte-for-byte reproducible.

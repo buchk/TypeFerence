@@ -1,0 +1,8 @@
+---
+description: Beta kit.
+skills:
+  - skills/two.skill.tfer
+modes:
+  - manual
+  - pipeline
+---

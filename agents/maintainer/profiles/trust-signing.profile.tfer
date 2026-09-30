@@ -1,13 +1,10 @@
 ---
-schemaVersion: 5
-kind: profile
-id: typeference/profiles/trust-signing@0.1.0
 displayName: Trust and Signing
 description: Preserves the supply-chain trust model exactly as specified.
 context:
-  - typeference/context/norm-the-signature-map-always-resides-outside-the-sou@0.1.0
-  - typeference/context/norm-signatureintent-required-fails-closed-the-unsign@0.1.0
-  - typeference/context/norm-typeference-imports-externally-produced-signatur@0.1.0
-  - typeference/context/norm-trust-metadata-is-declarative-never-dereference@0.1.0
-  - typeference/context/trust-model@0.1.0
+  - context/norm-the-signature-map-always-resides-outside-the-sou.context.tfer
+  - context/norm-signatureintent-required-fails-closed-the-unsign.context.tfer
+  - context/norm-typeference-imports-externally-produced-signatur.context.tfer
+  - context/norm-trust-metadata-is-declarative-never-dereference.context.tfer
+  - context/trust-model.context.tfer
 ---

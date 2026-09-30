@@ -1,0 +1,7 @@
+---
+schemaVersion: 6
+name: acme/starter-suite
+version: 1.0.0
+plugins:
+  - plugins/ticket-bot.plugin.tfer
+---

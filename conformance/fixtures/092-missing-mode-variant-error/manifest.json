@@ -1,0 +1,4 @@
+{
+  "description": "A pipeline artifact needs a pipeline variant on every multimodal skill it ships.",
+  "expect": "error"
+}

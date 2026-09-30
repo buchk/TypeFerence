@@ -3,9 +3,6 @@
   "language": "legacy-v3",
   "expect": "success",
   "digests": {
-    "codex": "sha256:c8e07819ca21f564100944d180e2f560a06791afcb07dc79c9b4369ff75dff64",
-    "copilot": "sha256:de65c74504e549754b4c51b1df66574c8d590f0ffd366cb543598cb4e36f0bbf",
-    "cursor": "sha256:8e92be2f6085d62d927dd97ef2976b1ee980b4ba76c90d9da67b2293a02f57c8",
     "neutral": "sha256:33d1cf90647242ecf51d08650b70e85284a78a9f17361b12eec54f0f46f80556"
   }
 }

@@ -29,7 +29,7 @@ var examples = []example{
 	{
 		Name:        "starter",
 		Title:       "Starter",
-		Description: "One agent embedding one profile: the smallest complete composition.",
+		Description: "One plugin shipping one agent that embeds one profile: the smallest complete composition.",
 		Domain:      "playground.example",
 		Files:       starterFiles,
 		Scenarios:   starterScenarios,
@@ -37,7 +37,7 @@ var examples = []example{
 	{
 		Name:        "helio",
 		Title:       "Helio Works",
-		Description: "The full fictional organization from examples/helio: two agents, layered profiles, structural interfaces.",
+		Description: "The full fictional organization from examples/helio: a plugin marketplace with a multi-skill agent plugin, a skills pack, skill extension, and a pipeline plugin.",
 		Domain:      "helio.example",
 		Dir:         "examples/helio",
 		ScenarioDir: "evals/scenarios",
@@ -136,7 +136,7 @@ func fatal(format string, args ...any) {
 var starterScenarios = map[string]string{
 	"missing-bracket-refund.yaml": `schemaVersion: 1
 id: playground/missing-bracket-refund
-agent: acme/support-agent@1.0.0
+agent: acme/support/agents/support-agent@1.0.0
 skill: support-agent.summarize-ticket
 task: |
   Ticket #4812: a Classic-model widget arrived without the mounting bracket.
@@ -161,7 +161,7 @@ rubric:
 var maintainerScenarios = map[string]string{
 	"canonicalization-pr.yaml": `schemaVersion: 1
 id: playground/canonicalization-pr
-agent: typeference/typeference-maintainer@0.1.0
+agent: typeference/maintainer/agents/typeference-maintainer@0.1.0
 skill: typeference-maintainer.verify-conformance
 task: |
   A contributor's pull request changes canonical JSON escaping in the Go
@@ -185,38 +185,45 @@ rubric:
 }
 
 var starterFiles = map[string]string{
+	"typeference.tfer": `---
+schemaVersion: 6
+name: acme/support
+version: 1.0.0
+plugins:
+  - plugins/support.plugin.tfer
+exports:
+  - interfaces/summarizer.interface.tfer
+---
+`,
+	"plugins/support.plugin.tfer": `---
+description: Acme's support agent and its ticket-summary skill.
+agents:
+  - agents/support-agent.agent.tfer
+---
+`,
 	"agents/support-agent.agent.tfer": `---
-schemaVersion: 5
-kind: agent
-id: acme/support-agent@1.0.0
 displayName: Acme Support Agent
 description: Answers customer tickets for Acme's widget line.
 embeds:
-  - acme/profiles/support-defaults@1.0.0
+  - profiles/support-defaults.profile.tfer
 context:
-  - acme/context/widgets@1.0.0
+  - context/widgets.context.tfer
 skills:
-  - ref: acme/skills/summarize-ticket@1.0.0
-    capability: acme/capabilities/summarize-ticket@1.0.0
+  - skills/summarize-ticket.skill.tfer
 ---
+You answer customer tickets for Acme's widget line.
 `,
 	"profiles/support-defaults.profile.tfer": `---
-schemaVersion: 5
-kind: profile
-id: acme/profiles/support-defaults@1.0.0
 displayName: Acme Support Defaults
 description: Reusable tone and escalation defaults for support agents.
 slots:
-  tone: acme/context/tone@1.0.0
+  tone: context/tone.context.tfer
 context:
-  - acme/context/tone@1.0.0
-  - acme/context/refund-norm@1.0.0
+  - context/tone.context.tfer
+  - context/refund-norm.context.tfer
 ---
 `,
 	"capabilities/summarize-ticket.capability.tfer": `---
-schemaVersion: 5
-kind: capability
-id: acme/capabilities/summarize-ticket@1.0.0
 displayName: Summarize Ticket
 description: Capability slot for structured ticket summaries.
 inputSchema: '{"type":"object","properties":{"ticketId":{"type":"string"}},"additionalProperties":false}'
@@ -224,89 +231,46 @@ outputSchema: '{"type":"object","properties":{"summary":{"type":"string"},"nextA
 ---
 `,
 	"skills/summarize-ticket.skill.tfer": `---
-schemaVersion: 5
-kind: skill
-id: acme/skills/summarize-ticket@1.0.0
-binds: acme/capabilities/summarize-ticket@1.0.0
 displayName: Summarize Ticket
 description: Summarize a support ticket with the customer's history in view.
+binds: capabilities/summarize-ticket.capability.tfer
 requiresContextTypes:
-  - acme/context-types/widgets@1.0.0
-instructions: |
-  Read the ticket and produce a two-sentence summary plus one concrete next action.
-  Cite the ticket fields you used; never invent order numbers.
-inputSchema: '{"type":"object","properties":{"ticketId":{"type":"string"}},"additionalProperties":false}'
-outputSchema: '{"type":"object","properties":{"summary":{"type":"string"},"nextAction":{"type":"string"}},"required":["summary","nextAction"]}'
+  - context-types/widgets.contexttype.tfer
 ---
+Read the ticket and produce a two-sentence summary plus one concrete next action.
+Cite the ticket fields you used; never invent order numbers.
 `,
 	"interfaces/summarizer.interface.tfer": `---
-schemaVersion: 5
-kind: interface
-id: acme/interfaces/summarizer@1.0.0
 displayName: Summarizer
 description: Contract for agents that can produce structured ticket summaries.
 requiresCapabilities:
-  - acme/capabilities/summarize-ticket@1.0.0
----
-`,
-	"context-types/tone.contexttype.tfer": `---
-schemaVersion: 5
-kind: contextType
-id: acme/context-types/tone@1.0.0
-body:
-  type: text
-  required: true
+  - capabilities/summarize-ticket.capability.tfer
 ---
 `,
 	"context/tone.context.tfer": `---
-schemaVersion: 5
-kind: context
-id: acme/context/tone@1.0.0
-contextType: acme/context-types/tone@1.0.0
 displayName: Tone
 ---
 # Tone
 
 Warm, direct, and concrete. Lead with what will happen next, not with an
 apology. One idea per sentence.
----
 `,
 	"context-types/widgets.contexttype.tfer": `---
-schemaVersion: 5
-kind: contextType
-id: acme/context-types/widgets@1.0.0
 body:
   type: text
   required: true
 ---
 `,
 	"context/widgets.context.tfer": `---
-schemaVersion: 5
-kind: context
-id: acme/context/widgets@1.0.0
-contextType: acme/context-types/widgets@1.0.0
 displayName: Widget Line
+contextType: context-types/widgets.contexttype.tfer
 ---
 # Widget line
 
 Acme sells three widget models: Standard, Pro, and the discontinued Classic.
 Classic tickets always require the legacy-parts disclaimer.
----
-`, "context-types/norms.contexttype.tfer": `---
-schemaVersion: 5
-kind: contextType
-id: acme/context-types/norms@1.0.0
-displayName: Norms
-body:
-  type: text
-  required: true
----
 `,
 	"context/refund-norm.context.tfer": `---
-schemaVersion: 5
-kind: context
-id: acme/context/refund-norm@1.0.0
-contextType: acme/context-types/norms@1.0.0
 displayName: Refund norm
 ---
 Never promise a refund without a linked policy clause.

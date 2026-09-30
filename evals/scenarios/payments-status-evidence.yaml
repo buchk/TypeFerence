@@ -1,6 +1,6 @@
 schemaVersion: 1
 id: evals/payments-status-evidence
-agent: helio/payments-repo-agent@1.0.0
+agent: helio/works/agents/payments-repo-agent@1.0.0
 skill: payments-repo-agent.repository-status
 task: |
   Give me a status report on the payments service repository. The release

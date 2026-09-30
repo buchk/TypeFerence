@@ -14,16 +14,57 @@ var excludedSourceDirs = map[string]bool{
 	".git": true, "dist": true, "bin": true, "obj": true,
 }
 
-// SourceFiles returns the explicit version 4 source resource set. It is shared
-// by pack and source digesting so output/cache directories cannot contaminate
-// identity.
+// SourceFiles returns a package's explicit source resource set. It is shared
+// by pack and source digesting so output and cache directories cannot
+// contaminate identity.
+//
+// A version 6 package's members are its manifest, its lockfile and trust
+// configuration when present, and exactly the documents in the closure of
+// its plugins and exports (ADR-0030); unreferenced files are not members.
+// Archival packages keep their original walk-based membership.
 func SourceFiles(source string) ([]File, error) {
 	root, err := filepath.Abs(source)
 	if err != nil {
 		return nil, resource.Errorf("Source directory not found: %s", source)
 	}
+	project, err := resource.LoadProject(root)
+	if err != nil {
+		return nil, err
+	}
+	if project.IsV6() {
+		return sourceFilesV6(root, project)
+	}
+	return legacySourceFiles(root)
+}
+
+func sourceFilesV6(root string, project *resource.Project) ([]File, error) {
+	loaded, err := resource.LoadV6(root, resource.V6Options{Dependencies: project.Dependencies})
+	if err != nil {
+		return nil, err
+	}
+	paths := append([]string{}, loaded.Files...)
+	paths = append(paths, resource.ManifestFile)
+	for _, optional := range []string{LockFile, "typeference.trust.tfer"} {
+		if info, statErr := os.Stat(filepath.Join(root, optional)); statErr == nil && info.Mode().IsRegular() {
+			paths = append(paths, optional)
+		}
+	}
+	sort.Strings(paths)
+	files := make([]File, 0, len(paths))
+	for _, rel := range paths {
+		data, readErr := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+		if readErr != nil {
+			return nil, resource.Errorf("Cannot read source file: %s", rel)
+		}
+		content := strings.TrimPrefix(strings.ReplaceAll(string(data), "\r\n", "\n"), "\uFEFF")
+		files = append(files, File{Path: rel, Content: content})
+	}
+	return files, nil
+}
+
+func legacySourceFiles(root string) ([]File, error) {
 	files := []File{}
-	err = filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
+	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
@@ -58,13 +99,15 @@ func SourceFiles(source string) ([]File, error) {
 	return files, nil
 }
 
+// Pack writes a version 6 package's canonical source package. Its exports are
+// exactly the resources its manifest exports.
 func Pack(source, output string) (string, error) {
 	project, err := resource.LoadProject(source)
 	if err != nil {
 		return "", err
 	}
-	if project == nil {
-		return "", resource.Errorf("typeference pack requires %s", resource.ProjectManifestFile)
+	if project == nil || !project.IsV6() {
+		return "", resource.Errorf("typeference pack requires a version 6 %s", resource.ManifestFile)
 	}
 	lock, err := LoadLock(source)
 	if err != nil {
@@ -73,15 +116,10 @@ func Pack(source, output string) (string, error) {
 	if err := validateProjectLock(project, lock, len(project.Dependencies) > 0); err != nil {
 		return "", resource.Errorf("typeference pack requires a lockfile matching declared dependencies: %s", err)
 	}
-	documents, err := resource.Load(source, "")
+	loaded, err := resource.LoadV6(source, resource.V6Options{Dependencies: project.Dependencies})
 	if err != nil {
 		return "", err
 	}
-	exports := make([]string, 0, len(documents))
-	for id := range documents {
-		exports = append(exports, id)
-	}
-	sort.Strings(exports)
 	files, err := SourceFiles(source)
 	if err != nil {
 		return "", err
@@ -89,7 +127,7 @@ func Pack(source, output string) (string, error) {
 	archive := Archive{
 		SchemaVersion: 1,
 		Name:          project.Name, Version: project.Version,
-		Dependencies: project.Dependencies, Exports: exports, Files: files,
+		Dependencies: project.Dependencies, Exports: loaded.Exports, Files: files,
 	}
 	data := EncodeArchive(archive)
 	if output == "" {

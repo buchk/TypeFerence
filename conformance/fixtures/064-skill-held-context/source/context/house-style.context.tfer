@@ -1,0 +1,7 @@
+---
+displayName: House style
+contextType: context-types/guide.contexttype.tfer
+values:
+  owner: docs-team
+---
+Prefer short sentences and active voice.

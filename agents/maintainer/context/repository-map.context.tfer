@@ -1,9 +1,6 @@
 ---
-schemaVersion: 5
-kind: context
-id: typeference/context/repository-map@0.1.0
-contextType: typeference/context-types/repository-map@0.1.0
 displayName: Repository Map
+contextType: context-types/repository-map.contexttype.tfer
 ---
 # Repository map
 
@@ -13,12 +10,13 @@ displayName: Repository Map
 | `docs/whitepaper.md` | Motivation and design narrative. |
 | `docs/decisions/` | Architecture decision records. |
 | `go/` | The implementation (static binary; module `github.com/buchk/TypeFerence/go`). |
-| `go/cmd/typeference-lsp/` | Language server for `.tfer`/`.yaml` authoring. |
+| `go/cmd/typeference-lsp/` | Language server for version 6 `.tfer` packages. |
 | `editors/vscode/` | VS Code client for the language server. |
 | `go/conformance/` | Determinism runner (`-update` regenerates digests). |
-| `conformance/` | Golden-file fixture corpus. |
-| `examples/helio` | Example organization used by tests and the quick start. |
-| `dist/` | Committed reference output of `examples/helio` (byte-compared in CI). |
+| `conformance/` | Golden-file fixture corpus: the current language plus archived legacy-v5 and legacy-v3 corpora. |
+| `examples/helio` | Example plugin set used by tests and the quick start. |
+| `examples/deployment` | Deployment files for linking helio's neutral and plugin outputs. |
+| `dist/` | Committed reference output of `examples/helio`: the neutral bundle, the agent-plugin marketplace, and the ARD catalog (byte-compared in CI). |
 | `agents/maintainer/` | This definition; compiled into the root `AGENTS.md` and `dist-maintainer/`. |
 | `.github/workflows/ci.yml` | Build, test, determinism, and self-host drift gates. |
 

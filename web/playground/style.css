@@ -20,6 +20,7 @@
   --syn-comment: #94a3b8;
   --syn-punct: #64748b;
   /* graph node kinds */
+  --kind-plugin: #db2777;
   --kind-agent: #4f46e5;
   --kind-profile: #0891b2;
   --kind-skill: #059669;
@@ -44,6 +45,7 @@
   --syn-num: #fbbf24;
   --syn-comment: #586374;
   --syn-punct: #8b949e;
+  --kind-plugin: #f472b6;
   --kind-agent: #818cf8;
   --kind-profile: #22d3ee;
   --kind-skill: #34d399;

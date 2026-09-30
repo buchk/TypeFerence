@@ -1,0 +1,8 @@
+---
+schemaVersion: 6
+name: conformance/compat
+version: 1.0.0
+plugins:
+  - plugins/core.plugin.tfer
+  - plugins/team.plugin.tfer
+---

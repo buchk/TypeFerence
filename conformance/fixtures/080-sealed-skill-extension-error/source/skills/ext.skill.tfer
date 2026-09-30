@@ -1,0 +1,5 @@
+---
+description: Extension.
+extends: skills/base.skill.tfer
+---
+More.

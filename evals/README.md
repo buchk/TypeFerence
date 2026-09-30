@@ -23,8 +23,8 @@ typeference eval examples/helio --scenarios evals/scenarios --live   # calls the
 ```yaml
 schemaVersion: 1
 id: evals/payments-status-evidence
-agent: helio/payments-repo-agent@1.0.0        # resource id in the source tree
-skill: payments-repo-agent.repository-status  # optional dispatch name to focus on
+agent: helio/works/agents/payments-repo-agent@1.0.0  # agent identity in the source tree
+skill: payments-repo-agent.repository-status        # optional dispatch name to focus on
 task: |
   The user prompt sent to the agent.
 rubric:
@@ -74,7 +74,9 @@ typeference equivalence score beth-run --live     # judges via ANTHROPIC_API_KEY
 ```
 
 `pack` lays out one **cell** per scenario × surface (default `--target all`:
-neutral, codex, copilot, cursor):
+`neutral` and `agent-plugin`). A neutral cell's workspace is the agent's
+neutral bundle; an agent-plugin cell's workspace is the manual-mode plugin that
+ships the agent:
 
 ```
 beth-run/
@@ -88,12 +90,13 @@ beth-run/
     runtime.json                    # you add (optional): {"host": "...", "model": "..."}
 ```
 
-To collect a cell: open the host with `workspace/` as its working directory (Codex
-and Claude Code read `AGENTS.md`; Copilot reads `.github/copilot-instructions.md`),
-submit `PROMPT.txt` verbatim as the first message, and save the final response text
-as `response.md` in the cell directory. Anything that automates this loop is fine —
-suggested (unverified here) one-liners: `claude -p "$(cat PROMPT.txt)"` or
-`codex exec "$(cat PROMPT.txt)"` from inside the workspace.
+To collect a neutral cell: open a host that reads `AGENTS.md` with `workspace/` as
+its working directory. To collect an agent-plugin cell: install the workspace as a
+plugin (`copilot plugin install ./workspace`) and select the agent
+(`copilot --agent <name>`). Submit `PROMPT.txt` verbatim as the first message, and
+save the final response text as `response.md` in the cell directory. Anything that
+automates this loop is fine — a suggested (unverified here) one-liner for a plugin
+cell is `copilot --agent <name> -p "$(cat PROMPT.txt)" -s`.
 
 `score` reuses the eval judge per cell: a pre-seeded `judge-response.json` wins
 (any operator or model may act as judge; recorded as `judge: file`), `--live` calls
@@ -108,5 +111,5 @@ which observes nothing conclusive, is not mistaken for a pass).
 
 A green scorecard is one observation per surface on one day — an instrument reading,
 not a proof. Its value is longitudinal: re-pack and re-score the same corpus across
-adapter changes, host versions, and models, and the README's "behavioral
+compiler changes, host versions, and models, and the README's "behavioral
 equivalence" objective becomes a tracked number.

@@ -1,8 +1,5 @@
 ---
-schemaVersion: 5
-kind: context
-id: typeference/context/norm-a-conformance-digest-is-regenerated-only-togethe@0.1.0
-contextType: typeference/context-types/norms@0.1.0
 displayName: A conformance digest is regenerated only together with the s...
+contextType: context-types/norms.contexttype.tfer
 ---
 A conformance digest is regenerated only together with the specification change and ADR that justify it; never hand-edit a digest.

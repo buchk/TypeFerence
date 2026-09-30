@@ -1,9 +1,6 @@
 ---
-schemaVersion: 5
-kind: context
-id: helio/context/principal@1.0.0
-contextType: helio/context-types/principal@1.0.0
 displayName: Principal
+contextType: context-types/principal.contexttype.tfer
 ---
 # Principal
 

@@ -126,11 +126,12 @@ func compileFunc(_ js.Value, args []js.Value) (result any) {
 		return map[string]any{"ok": false, "error": err.Error()}
 	}
 
-	// The embedding graph comes straight from the loaded documents so it can
-	// be shown even when resolution fails (cycles, ambiguity, missing refs).
+	// The composition graph comes straight from the loaded documents so it
+	// can be shown even when resolution fails (cycles, ambiguity, missing
+	// references).
 	graph := map[string]any{"nodes": []any{}, "edges": []any{}}
-	if resources, err := resource.Load(sourceRoot, ""); err == nil {
-		graph = buildGraph(resources)
+	if loaded, err := resource.LoadV6(sourceRoot, resource.V6Options{}); err == nil {
+		graph = buildGraph(loaded.Documents)
 	}
 
 	targetValue := "all"
@@ -268,7 +269,8 @@ func readTree(root string) (map[string]any, error) {
 }
 
 // buildGraph extracts the declared composition edges from loaded documents:
-// embeds, skill attachments, and capability bindings.
+// embeds, skill attachments, capability bindings, skill extension, and the
+// agents, profiles, and skills each plugin ships.
 func buildGraph(resources map[string]*resource.Document) map[string]any {
 	ids := make([]string, 0, len(resources))
 	for id := range resources {
@@ -300,6 +302,12 @@ func buildGraph(resources map[string]*resource.Document) map[string]any {
 		}
 		if doc.Kind == "skill" && doc.Binds != "" {
 			edge(doc.ID, doc.Binds, "binds")
+		}
+		if doc.Kind == "skill" && doc.Extends != "" {
+			edge(doc.ID, doc.Extends, "extends")
+		}
+		for _, shipped := range append(append(append([]string{}, doc.PluginAgents...), doc.PluginProfiles...), doc.PluginSkills...) {
+			edge(doc.ID, shipped, "ships")
 		}
 		for _, capability := range doc.RequiresCapabilities {
 			edge(doc.ID, capability, "requires")

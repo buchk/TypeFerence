@@ -1,13 +1,10 @@
 ---
-schemaVersion: 5
-kind: profile
-id: helio/profiles/enterprise-defaults@1.0.0
 displayName: Helio Enterprise Defaults
 description: Shared organizational governance for every Helio resource.
 slots:
-  organization: helio/context/organization@1.0.0
+  organization: context/organization.context.tfer
 context:
-  - helio/context/audit-norm@1.0.0
-  - helio/context/uncertainty-norm@1.0.0
-  - helio/context/safety-policy@1.0.0
+  - context/audit-norm.context.tfer
+  - context/uncertainty-norm.context.tfer
+  - context/safety-policy.context.tfer
 ---

@@ -1,0 +1,6 @@
+---
+description: Extension.
+extends: skills/base.skill.tfer
+outputSchema: '{"type":"string"}'
+---
+More.

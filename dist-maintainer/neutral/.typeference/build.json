@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
   "target": "neutral",
-  "sourceDigest": "sha256:7da22b81c18579932326b3710b77e5492ebb31e5b43e8f290da2662ff2bf72a7",
+  "sourceDigest": "sha256:2e0573cd5265c7649cf141d64e160b0802e9a7596a8372d6fe0e52d406d56782",
   "artifacts": [
     {
-      "agentId": "typeference/typeference-maintainer@0.1.0",
+      "agentId": "typeference/maintainer/agents/typeference-maintainer@0.1.0",
       "path": "typeference-maintainer",
-      "digest": "sha256:34379a9d1e2cae887e01fecf9ae834f13e4efce07bddd78f38fdc801ada1605d"
+      "digest": "sha256:f87e1d3c8459f694a37768990f7f3ab3941e9c2bbd15a556f53d705f125e1287"
     }
   ]
 }

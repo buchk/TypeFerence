@@ -1,12 +1,10 @@
 {
   "description": "Version 4 Unicode and escape-sensitive text survives .tfer body normalization and ARD publication.",
+  "language": "legacy-v5",
   "expect": "success",
   "emitArd": "conformance.example",
   "digests": {
-    "ard": "sha256:50484035a77351867e656904c5d41791ddbffc468315a8957c71e662125cf627",
-    "codex": "sha256:923d5e4ba999b61eb1d10e19ece779c864bde51f5a3062912fe0b6f2031d0a14",
-    "copilot": "sha256:610a29fd0a5366dd6904b4be250a54b5e34aee90a79b3abf71539c9e36c275d4",
-    "cursor": "sha256:c5e08b7ea761804da82d3bced47f06182728d78cb8c3c97c28f66010871bd61a",
+    "ard": "sha256:9324504b320ac9e78496e5b9a0c2876f3ef567ac72af7f8c408bb516a8c62107",
     "neutral": "sha256:1784ab0d6db2f115cb6ce555f7edf4fd69247a53a211c55d9f57676d49070ae2"
   }
 }

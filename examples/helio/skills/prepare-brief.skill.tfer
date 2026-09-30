@@ -1,16 +1,11 @@
 ---
-schemaVersion: 5
-kind: skill
-id: helio/skills/prepare-brief@1.0.0
-binds: helio/capabilities/prepare-brief@1.0.0
 displayName: Prepare Brief
 description: Assemble an executive brief, requesting repository evidence when needed.
+binds: capabilities/prepare-brief.capability.tfer
 requiresContextTypes:
-  - helio/context-types/executive-rhythm@1.0.0
+  - context-types/executive-rhythm.contexttype.tfer
 requiresTools:
-  - helio/tools/payments-repository-agent@1.0.0
-inputSchema: '{"type":"object","properties":{"topic":{"type":"string"},"evidence":{"type":"array","items":{"type":"string"}}},"required":["topic"],"additionalProperties":false}'
-outputSchema: '{"type":"object","properties":{"brief":{"type":"string"},"openQuestions":{"type":"array","items":{"type":"string"}}},"required":["brief","openQuestions"]}'
+  - tools/payments-repository-agent.tool.tfer
 ---
 Build a decision-oriented brief from the supplied topic and evidence.
 When repository status is material, use the payments repository agent tool and

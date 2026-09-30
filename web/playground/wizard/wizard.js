@@ -126,9 +126,9 @@
       var teach = document.createElement("p");
       teach.className = "wiz-teach";
       teach.textContent =
-        "Your norm statements are now context resources of the declared type " +
-        "context-types/norms - ordinary prose carried by a named, versioned, " +
-        "addressable type. That is the entire v5 idea.";
+        "Your norm statements are now context documents: ordinary prose with a " +
+        "path, a version, and the built-in text type, held by the base profile " +
+        "that every level embeds. Nothing that reaches the model is untyped.";
       els.result.appendChild(teach);
     }
 

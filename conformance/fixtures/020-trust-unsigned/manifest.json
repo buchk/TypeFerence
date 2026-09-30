@@ -4,10 +4,7 @@
   "expect": "success",
   "emitArd": "conformance.example",
   "digests": {
-    "ard": "sha256:e22f4bf402cbdca9cb70b07dbad543bf85023f317f943ce7bedb3bc8de6115df",
-    "codex": "sha256:3afd0d97f915c81cd8da195d948709339cef15d8e1ff12703b39e24457e2c300",
-    "copilot": "sha256:e89dc6e7b65411b73d6b1515cbb9cd88b3c0cde22a91fae830094f3c0a6d618c",
-    "cursor": "sha256:65138883d18b6a3074d112dabee96e1de7c3d0ff0dd4564d0445f8eedd3b43cb",
+    "ard": "sha256:c096c9e0e7546c12216070cb7bbfc769c76814c25a2865b797668f72e9795b99",
     "neutral": "sha256:a4e5b55d7b84f0999b95af60de1f6af685bff6198568579bfdcce2538f5f2980"
   }
 }

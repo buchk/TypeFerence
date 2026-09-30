@@ -1,0 +1,8 @@
+{
+  "description": "An extension inherits its base's capability and schemas, appends its instructions, and replaces the inherited binding (ADR-0031).",
+  "expect": "success",
+  "digests": {
+    "agent-plugin": "sha256:fe62a768e9661746c8f83e07265080cff0dcfe4cc6298a0d14202524a683d5c1",
+    "neutral": "sha256:30a92c6348ac07d02ba1233ec3463fe6acc80506d0c0cc063d3c85e0f95bb567"
+  }
+}

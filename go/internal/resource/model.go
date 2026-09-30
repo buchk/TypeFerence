@@ -62,7 +62,38 @@ type Document struct {
 	// (ADR-0012): mode name -> variant. A skill declares either Instructions
 	// or Variants, never both.
 	Variants map[string]Variant
+
+	// Version 6 (ADR-0030, ADR-0031). Path is the source-relative path the
+	// identity was derived from; Package is the owning package name.
+	Path    string
+	Package string
+	// Extends names the base skill an extension appends to; Sealed on a
+	// skill document forbids any extension of it.
+	Extends string
+	Sealed  bool
+	// HasInputSchema/HasOutputSchema record whether a skill declared its
+	// schemas, so undeclared ones can be inherited from the capability or base.
+	HasInputSchema  bool
+	HasOutputSchema bool
+	// ImpliedCapability marks a skill whose capability is defined by the skill
+	// itself (it binds no capability document); Binds then names the root of
+	// its extension chain.
+	ImpliedCapability bool
+	// Flattened marks a skill whose extension chain has been materialized.
+	Flattened bool
+	// Objectives is an agent's body: its identity and objectives, a built-in
+	// text value inherited through embedding.
+	Objectives string
+	// Plugin documents link, they do not compose.
+	PluginAgents   []string
+	PluginProfiles []string
+	PluginSkills   []string
+	PluginModes    []string
 }
+
+// IsNative reports whether the document uses the closed native context
+// language (schemaVersion 5 and later).
+func (d *Document) IsNative() bool { return d.SchemaVersion >= 5 }
 
 // SkillBinding attaches a skill implementation (and optionally the capability
 // it must satisfy) to an agent or profile. Sealed marks the binding as
@@ -82,6 +113,9 @@ type FieldValue struct {
 	Scalar string
 	List   []FieldValue
 	Map    map[string]FieldValue
+	// Quoted records a version 6 quoted scalar, which is always a string and
+	// never satisfies a boolean, integer, or decimal field (ADR-0032).
+	Quoted bool
 }
 
 // TypeExpr is one closed native context type expression.

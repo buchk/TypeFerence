@@ -1,8 +1,5 @@
 ---
-schemaVersion: 5
-kind: context
-id: typeference/context/norm-semantic-changes-land-in-docs-specification-md-b@0.1.0
-contextType: typeference/context-types/norms@0.1.0
 displayName: Semantic changes land in docs/specification.md before either...
+contextType: context-types/norms.contexttype.tfer
 ---
 Semantic changes land in docs/specification.md before either implementation changes behavior.

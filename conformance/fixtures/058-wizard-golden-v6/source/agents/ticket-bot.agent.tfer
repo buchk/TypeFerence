@@ -1,0 +1,8 @@
+---
+displayName: Ticket Bot
+description: Generated from a setup answer set; edit freely.
+embeds:
+  - profiles/platform.profile.tfer
+slots:
+  domain: context/domain-scope.context.tfer
+---

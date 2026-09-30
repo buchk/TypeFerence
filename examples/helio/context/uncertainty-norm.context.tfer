@@ -1,8 +1,5 @@
 ---
-schemaVersion: 5
-kind: context
-id: helio/context/uncertainty-norm@1.0.0
-contextType: helio/context-types/norms@1.0.0
 displayName: Uncertainty norm
+contextType: context-types/norms.contexttype.tfer
 ---
 State uncertainty and route work to an accountable owner when authority is unclear.

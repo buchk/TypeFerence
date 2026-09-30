@@ -1,0 +1,7 @@
+---
+schemaVersion: 6
+name: conformance/extension
+version: 1.0.0
+plugins:
+  - plugins/team.plugin.tfer
+---

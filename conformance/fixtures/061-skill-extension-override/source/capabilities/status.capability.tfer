@@ -1,0 +1,6 @@
+---
+description: Status contract.
+visibility: exposed
+inputSchema: '{"type":"object","properties":{"focus":{"type":"string"}},"additionalProperties":false}'
+outputSchema: '{"type":"object","properties":{"status":{"type":"string"}},"required":["status"]}'
+---

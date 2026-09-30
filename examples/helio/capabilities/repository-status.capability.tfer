@@ -1,7 +1,4 @@
 ---
-schemaVersion: 5
-kind: capability
-id: helio/capabilities/repository-status@1.0.0
 displayName: Repository Status
 description: Capability slot for evidence-backed repository health summaries.
 visibility: exposed

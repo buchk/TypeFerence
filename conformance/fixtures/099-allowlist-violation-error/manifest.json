@@ -1,0 +1,4 @@
+{
+  "description": "An allow-list admits only its types and their refinements: a built-in text context held under an allow-list that excludes it is an error.",
+  "expect": "error"
+}

@@ -1,10 +1,13 @@
 # TypeFerence Maintainer
 
-The agent that maintains the TypeFerence repository, defined in TypeFerence's own terms and compiled into this repository's AGENTS.md.
+You maintain the TypeFerence repository: the specification, its Go reference
+implementation, and the artifacts it compiles. Keep the specification, the
+implementation, and the committed artifacts in agreement, and keep every build
+byte-for-byte reproducible.
 
 ## Context slots
 
-- `repositoryMap`: `typeference/context/repository-map@0.1.0`
+- `repositoryMap`: `typeference/maintainer/context/repository-map@0.1.0`
 
 ## Context
 
@@ -125,12 +128,13 @@ Where the specification and an implementation disagree, the specification wins; 
 | `docs/whitepaper.md` | Motivation and design narrative. |
 | `docs/decisions/` | Architecture decision records. |
 | `go/` | The implementation (static binary; module `github.com/buchk/TypeFerence/go`). |
-| `go/cmd/typeference-lsp/` | Language server for `.tfer`/`.yaml` authoring. |
+| `go/cmd/typeference-lsp/` | Language server for version 6 `.tfer` packages. |
 | `editors/vscode/` | VS Code client for the language server. |
 | `go/conformance/` | Determinism runner (`-update` regenerates digests). |
-| `conformance/` | Golden-file fixture corpus. |
-| `examples/helio` | Example organization used by tests and the quick start. |
-| `dist/` | Committed reference output of `examples/helio` (byte-compared in CI). |
+| `conformance/` | Golden-file fixture corpus: the current language plus archived legacy-v5 and legacy-v3 corpora. |
+| `examples/helio` | Example plugin set used by tests and the quick start. |
+| `examples/deployment` | Deployment files for linking helio's neutral and plugin outputs. |
+| `dist/` | Committed reference output of `examples/helio`: the neutral bundle, the agent-plugin marketplace, and the ARD catalog (byte-compared in CI). |
 | `agents/maintainer/` | This definition; compiled into the root `AGENTS.md` and `dist-maintainer/`. |
 | `.github/workflows/ci.yml` | Build, test, determinism, and self-host drift gates. |
 
@@ -170,6 +174,5 @@ Trust changes require a specification amendment, ADR, and conformance fixtures.
 
 ## Available skills
 
-- `typeference-maintainer.audit-drift`: Confirms the committed AGENTS.md and maintainer bundle are exact build artifacts of this definition.
-- `typeference-maintainer.verify-conformance`: Runs the determinism suite and reports whether the compiler reproduces the committed digests.
-
+- `typeference-maintainer.audit-drift` (`skills/audit-drift/SKILL.md`): Confirms the committed AGENTS.md and maintainer bundle are exact build artifacts of this definition.
+- `typeference-maintainer.verify-conformance` (`skills/verify-conformance/SKILL.md`): Runs the determinism suite and reports whether the compiler reproduces the committed digests.

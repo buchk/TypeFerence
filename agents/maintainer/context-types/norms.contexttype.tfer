@@ -1,7 +1,4 @@
 ---
-schemaVersion: 5
-kind: contextType
-id: typeference/context-types/norms@0.1.0
 displayName: Norms
 body:
   type: text

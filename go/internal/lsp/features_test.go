@@ -8,37 +8,59 @@ import (
 	"testing"
 )
 
-func TestCompletionsKindAndFields(t *testing.T) {
-	if got := completions("kind: ", 0, 6); len(got) == 0 || got[0] != "agent" {
-		t.Errorf("expected kind completions after `kind:`, got %v", got)
-	}
-	fields := completions("sch", 0, 3)
-	if !contains(fields, "schemaVersion") {
-		t.Errorf("expected field completions to include schemaVersion, got %v", fields)
-	}
-	if got := completions("id: foo", 0, 7); got != nil {
-		t.Errorf("expected no completions in a value position, got %v", got)
-	}
-}
-
-func TestTokenAtAndSymbolOf(t *testing.T) {
-	text := "kind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/capabilities/c@1.0.0\n"
-	if tok := tokenAt(text, 2, 15); tok != "acme/capabilities/c@1.0.0" {
-		t.Errorf("tokenAt on the binds id: got %q", tok)
-	}
-	id, kind := symbolOf(text)
-	if id != "acme/skills/s@1.0.0" || kind != "skill" {
-		t.Errorf("symbolOf: got (%q, %q)", id, kind)
-	}
+// packageDir writes a minimal version 6 package manifest and returns its root.
+func packageDir(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	writeFile(t, root, "typeference.tfer", "---\nschemaVersion: 6\nname: acme/test\nversion: 1.0.0\nplugins:\n  - plugins/kit.plugin.tfer\n---\n")
+	return root
 }
 
 func writeFile(t *testing.T, root, name, content string) string {
 	t.Helper()
-	full := filepath.Join(root, name)
+	full := filepath.Join(root, filepath.FromSlash(name))
+	if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+		t.Fatal(err)
+	}
 	if err := os.WriteFile(full, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	return full
+}
+
+func TestCompletionsByKindAndReference(t *testing.T) {
+	root := packageDir(t)
+	writeFile(t, root, "skills/review.skill.tfer", "---\ndescription: Review.\n---\nReview.\n")
+	writeFile(t, root, "skills/lint.skill.tfer", "---\ndescription: Lint.\n---\nLint.\n")
+	writeFile(t, root, "profiles/base.profile.tfer", "---\n---\n")
+	agentPath := filepath.Join(root, "agents", "a.agent.tfer")
+
+	fields := completions("---\nde\n---\n", agentPath, root, 1, 2)
+	if !contains(fields, "description") || !contains(fields, "embeds") || contains(fields, "binds") {
+		t.Errorf("an agent's key position offers agent fields only, got %v", fields)
+	}
+	skills := completions("---\nskills:\n  - \n---\n", agentPath, root, 2, 4)
+	if !contains(skills, "skills/review.skill.tfer") || !contains(skills, "skills/lint.skill.tfer") || contains(skills, "profiles/base.profile.tfer") {
+		t.Errorf("a skills item offers skill paths, got %v", skills)
+	}
+	embeds := completions("---\nembeds: \n---\n", agentPath, root, 1, 8)
+	if !contains(embeds, "profiles/base.profile.tfer") {
+		t.Errorf("embeds offers profile paths, got %v", embeds)
+	}
+	modes := completions("---\nmodes:\n  - \n---\n", filepath.Join(root, "plugins", "kit.plugin.tfer"), root, 2, 4)
+	if !contains(modes, "manual") || !contains(modes, "pipeline") {
+		t.Errorf("plugin modes are enumerated, got %v", modes)
+	}
+	if got := completions("---\ndescription: x\n---\nbody text\n", agentPath, root, 3, 2); got != nil {
+		t.Errorf("no completions in the body, got %v", got)
+	}
+}
+
+func TestTokenAtFindsReferencePaths(t *testing.T) {
+	text := "---\nextends: skills/core/review.skill.tfer\n---\n"
+	if tok := tokenAt(text, 1, 15); tok != "skills/core/review.skill.tfer" {
+		t.Errorf("tokenAt on the extends path: got %q", tok)
+	}
 }
 
 func runSession(t *testing.T, rootURI string, msgs ...string) []map[string]any {
@@ -64,29 +86,29 @@ func resultFor(frames []map[string]any, id int) any {
 	return nil
 }
 
-func TestDefinitionResolvesResourceID(t *testing.T) {
-	root := t.TempDir()
-	writeFile(t, root, "cap.yaml", "schemaVersion: 5\nkind: capability\nid: acme/cap/c@1.0.0\n")
-	skillText := "schemaVersion: 5\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/cap/c@1.0.0\n"
-	skillURI := pathToURI(writeFile(t, root, "skill.yaml", skillText))
+func TestDefinitionResolvesReferencePath(t *testing.T) {
+	root := packageDir(t)
+	writeFile(t, root, "capabilities/c.capability.tfer", "---\ndescription: C.\n---\n")
+	skillText := "---\ndescription: S.\nbinds: capabilities/c.capability.tfer\n---\nS.\n"
+	skillURI := pathToURI(writeFile(t, root, "skills/s.skill.tfer", skillText))
 	frames := runSession(t, pathToURI(root),
 		frame("textDocument/didOpen", nil, docParams(skillURI, skillText)),
 		frame("textDocument/definition", 2, map[string]any{
 			"textDocument": map[string]any{"uri": skillURI},
-			"position":     map[string]any{"line": 3, "character": 12}, // on the binds id
+			"position":     map[string]any{"line": 2, "character": 12}, // on the binds path
 		}),
 	)
 	res, _ := resultFor(frames, 2).(map[string]any)
 	uri, _ := res["uri"].(string)
-	if !strings.Contains(uri, "cap.yaml") {
-		t.Errorf("definition should resolve the binds id to cap.yaml, got %q", uri)
+	if !strings.Contains(uri, "c.capability.tfer") {
+		t.Errorf("definition should resolve the binds path, got %q", uri)
 	}
 }
 
-func TestDocumentSymbolReturnsResource(t *testing.T) {
-	root := t.TempDir()
-	text := "schemaVersion: 5\nkind: capability\nid: acme/cap/c@1.0.0\n"
-	uri := pathToURI(writeFile(t, root, "cap.yaml", text))
+func TestDocumentSymbolNamesTheDerivedIdentity(t *testing.T) {
+	root := packageDir(t)
+	text := "---\ndescription: C.\n---\n"
+	uri := pathToURI(writeFile(t, root, "capabilities/c.capability.tfer", text))
 	frames := runSession(t, pathToURI(root),
 		frame("textDocument/didOpen", nil, docParams(uri, text)),
 		frame("textDocument/documentSymbol", 2, map[string]any{
@@ -98,31 +120,23 @@ func TestDocumentSymbolReturnsResource(t *testing.T) {
 		t.Fatalf("expected one document symbol, got %v", syms)
 	}
 	name, _ := syms[0].(map[string]any)["name"].(string)
-	if !strings.Contains(name, "acme/cap/c@1.0.0") {
-		t.Errorf("symbol name should include the id, got %q", name)
+	if name != "capability acme/test/capabilities/c@1.0.0" {
+		t.Errorf("symbol names the kind and derived identity, got %q", name)
 	}
 }
 
 func TestCompositionDiagnosticSurfaces(t *testing.T) {
-	root := t.TempDir()
-	// skill binds a capability that does not exist -> workspace does not compose
-	agentText := "schemaVersion: 5\nkind: agent\nid: acme/agent@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n"
-	agentURI := pathToURI(writeFile(t, root, "agent.yaml", agentText))
-	writeFile(t, root, "skill.yaml", "schemaVersion: 5\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/cap/missing@1.0.0\n")
+	root := packageDir(t)
+	writeFile(t, root, "plugins/kit.plugin.tfer", "---\ndescription: Kit.\nagents:\n  - agents/a.agent.tfer\n---\n")
+	agentText := "---\ndescription: A.\nskills:\n  - skills/s.skill.tfer\n---\n"
+	agentURI := pathToURI(writeFile(t, root, "agents/a.agent.tfer", agentText))
+	// The skill binds a capability document that does not exist.
+	writeFile(t, root, "skills/s.skill.tfer", "---\ndescription: S.\nbinds: capabilities/missing.capability.tfer\n---\nS.\n")
 	frames := runSession(t, pathToURI(root),
 		frame("textDocument/didOpen", nil, docParams(agentURI, agentText)),
 	)
-	found := false
-	for _, m := range frames {
-		if m["method"] == "textDocument/publishDiagnostics" {
-			p := m["params"].(map[string]any)
-			if p["uri"] == agentURI && len(p["diagnostics"].([]any)) >= 1 {
-				found = true
-			}
-		}
-	}
-	if !found {
-		t.Error("expected a composition diagnostic for a workspace that does not resolve")
+	if len(diagnosticsFor(frames, agentURI)) == 0 {
+		t.Error("expected a composition diagnostic for a package that does not resolve")
 	}
 }
 

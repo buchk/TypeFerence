@@ -1,0 +1,4 @@
+{
+  "description": "Version 5 sources are retired: the current language requires a version 6 manifest.",
+  "expect": "error"
+}

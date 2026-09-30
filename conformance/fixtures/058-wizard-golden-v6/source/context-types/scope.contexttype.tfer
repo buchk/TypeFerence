@@ -1,0 +1,6 @@
+---
+displayName: Scope
+fields:
+  owner:
+    type: string
+---

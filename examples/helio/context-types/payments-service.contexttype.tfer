@@ -1,7 +1,4 @@
 ---
-schemaVersion: 5
-kind: contextType
-id: helio/context-types/payments-service@1.0.0
 displayName: Payments Service
 body:
   type: text

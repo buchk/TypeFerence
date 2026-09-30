@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "helio/works/plugins/engineering-kit@1.0.0",
+  "name": "engineering-kit",
+  "mode": "manual",
+  "version": "1.0.0",
+  "description": "Evidence-backed repository status for any Helio team, without an agent.",
+  "agents": [],
+  "skills": [
+    {
+      "name": "repository-status",
+      "implementationId": "helio/works/skills/repository-status@1.0.0",
+      "capabilityId": "helio/works/capabilities/repository-status@1.0.0",
+      "description": "Summarize repository health using current version-control and test evidence.",
+      "instructions": "Inspect the requested repository signals. Report branch state, recent material\nchanges, test evidence, risks, and the next accountable action. Mark any\nunavailable signal explicitly instead of inferring success.\n",
+      "inputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022focus\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022additionalProperties\u0022:false}",
+      "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022risks\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022status\u0022,\u0022evidence\u0022,\u0022risks\u0022]}",
+      "exposed": true,
+      "provenance": [
+        {
+          "field": "skill.capability",
+          "source": "helio/works/capabilities/repository-status@1.0.0"
+        },
+        {
+          "field": "skill.implementation",
+          "source": "helio/works/skills/repository-status@1.0.0"
+        }
+      ]
+    }
+  ]
+}

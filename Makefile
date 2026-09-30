@@ -19,7 +19,7 @@ build: build-go build-lsp
 build-go:
 	cd go && CGO_ENABLED=0 $(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o ../$(BINDIR)/typeference$(shell $(GO) env GOEXE) ./cmd/typeference
 
-# Language server for .tfer/.yaml authoring diagnostics (internal/lsp).
+# Language server for version 6 .tfer package authoring (internal/lsp).
 build-lsp:
 	cd go && CGO_ENABLED=0 $(GO) build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o ../$(BINDIR)/typeference-lsp$(shell $(GO) env GOEXE) ./cmd/typeference-lsp
 
@@ -34,15 +34,21 @@ conformance:
 	cd go && $(GO) test ./conformance -v
 
 # Recompile the self-hosted maintainer definition (agents/maintainer) into its
-# committed artifacts: dist-maintainer and the repository-root AGENTS.md.
+# committed artifacts: dist-maintainer (neutral bundle, installable Copilot
+# plugin, ARD catalog) and the repository-root AGENTS.md. The manifest's
+# publisher turns on ARD emission.
 selfhost: build-go
-	$(BINDIR)/typeference$(shell $(GO) env GOEXE) build agents/maintainer --target neutral --out dist-maintainer --emit-ard --publisher-domain typeference.example
+	$(BINDIR)/typeference$(shell $(GO) env GOEXE) build agents/maintainer --out dist-maintainer
 	cp dist-maintainer/neutral/typeference-maintainer/AGENTS.md AGENTS.md
 
 # Fail if the committed artifacts have drifted from the definition.
 selfhost-check: build-go
-	$(BINDIR)/typeference$(shell $(GO) env GOEXE) diff agents/maintainer --against dist-maintainer --target neutral --emit-ard --publisher-domain typeference.example
+	$(BINDIR)/typeference$(shell $(GO) env GOEXE) diff agents/maintainer --against dist-maintainer
 	cmp AGENTS.md dist-maintainer/neutral/typeference-maintainer/AGENTS.md
+
+# Regenerate the committed reference output of examples/helio.
+reference: build-go
+	$(BINDIR)/typeference$(shell $(GO) env GOEXE) build examples/helio --out dist
 
 fmt:
 	cd go && gofmt -l -w .

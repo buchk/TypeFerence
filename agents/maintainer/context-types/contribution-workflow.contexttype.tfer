@@ -1,7 +1,4 @@
 ---
-schemaVersion: 5
-kind: contextType
-id: typeference/context-types/contribution-workflow@0.1.0
 displayName: Contribution Workflow
 body:
   type: text

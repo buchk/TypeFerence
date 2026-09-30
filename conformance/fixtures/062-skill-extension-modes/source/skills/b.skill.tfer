@@ -1,0 +1,8 @@
+---
+description: Base B.
+variants:
+  manual:
+    instructions: B manual base.
+  pipeline:
+    instructions: B pipeline base.
+---

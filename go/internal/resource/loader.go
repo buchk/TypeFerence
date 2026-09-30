@@ -127,6 +127,9 @@ func LoadWithOptions(sourceDir string, trustConfigPath string, options LoadOptio
 		if err := validateShape(doc, file, root, options.AllowLegacyV3); err != nil {
 			return nil, err
 		}
+		if rel, relErr := filepath.Rel(root, file); relErr == nil {
+			doc.Path = filepath.ToSlash(rel)
+		}
 		if _, exists := result[doc.ID]; exists {
 			return nil, Errorf("Duplicate resource id: %s", doc.ID)
 		}

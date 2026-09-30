@@ -1,0 +1,6 @@
+---
+description: Kit.
+agents:
+  - agents/a.agent.tfer
+  - agents/b.agent.tfer
+---

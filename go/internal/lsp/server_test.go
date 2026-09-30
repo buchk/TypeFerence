@@ -51,13 +51,36 @@ func docParams(uri, text string) map[string]any {
 	return map[string]any{"textDocument": map[string]any{"uri": uri, "text": text}}
 }
 
-func TestServerDiagnostics(t *testing.T) {
-	goodSkill := "---\nschemaVersion: 5\nkind: skill\nid: t/skills/s@1.0.0\nbinds: t/capabilities/c@1.0.0\n---\ndo the thing\n"
-	badSkill := "---\nschemaVersion: 5\nkind: skill\nid: t/skills/s@1.0.0\n---\ndo the thing\n" // missing binds
+// diagnosticsFor returns the diagnostics last published for a uri.
+func diagnosticsFor(frames []map[string]any, uri string) []any {
+	var diags []any
+	for _, m := range frames {
+		if m["method"] == "textDocument/publishDiagnostics" {
+			p := m["params"].(map[string]any)
+			if p["uri"] == uri {
+				diags = p["diagnostics"].([]any)
+			}
+		}
+	}
+	return diags
+}
 
-	input := frame("initialize", 1, map[string]any{}) +
-		frame("textDocument/didOpen", nil, docParams("file:///tmp/bad.tfer", badSkill)) +
-		frame("textDocument/didOpen", nil, docParams("file:///tmp/good.tfer", goodSkill)) +
+func TestServerDiagnostics(t *testing.T) {
+	root := packageDir(t)
+	goodSkill := "---\ndescription: Do the thing.\n---\ndo the thing\n"
+	badSkill := "---\ndescription: Do the thing.\nbinds: [nope]\n---\ndo the thing\n"
+	goodURI := pathToURI(writeFile(t, root, "skills/good.skill.tfer", goodSkill))
+	badURI := pathToURI(writeFile(t, root, "skills/bad.skill.tfer", badSkill))
+
+	input := frame("initialize", 1, map[string]any{"rootUri": pathToURI(root)}) +
+		frame("textDocument/didChange", nil, map[string]any{
+			"textDocument":   map[string]any{"uri": badURI},
+			"contentChanges": []any{map[string]any{"text": badSkill}},
+		}) +
+		frame("textDocument/didChange", nil, map[string]any{
+			"textDocument":   map[string]any{"uri": goodURI},
+			"contentChanges": []any{map[string]any{"text": goodSkill}},
+		}) +
 		frame("shutdown", 2, nil) +
 		frame("exit", nil, nil)
 
@@ -66,21 +89,8 @@ func TestServerDiagnostics(t *testing.T) {
 		t.Fatal(err)
 	}
 	frames := readFrames(t, out.String())
-
 	sawInit := false
-	badDiags, goodDiags := -1, -1
 	for _, m := range frames {
-		if m["method"] == "textDocument/publishDiagnostics" {
-			p := m["params"].(map[string]any)
-			uri := p["uri"].(string)
-			diags := p["diagnostics"].([]any)
-			switch {
-			case strings.Contains(uri, "bad.tfer"):
-				badDiags = len(diags)
-			case strings.Contains(uri, "good.tfer"):
-				goodDiags = len(diags)
-			}
-		}
 		if r, ok := m["result"].(map[string]any); ok {
 			if _, has := r["capabilities"]; has {
 				sawInit = true
@@ -90,39 +100,42 @@ func TestServerDiagnostics(t *testing.T) {
 	if !sawInit {
 		t.Error("expected an initialize result advertising capabilities")
 	}
-	if badDiags != 1 {
-		t.Errorf("bad.tfer: want 1 diagnostic, got %d", badDiags)
+	bad := diagnosticsFor(frames, badURI)
+	if len(bad) != 1 {
+		t.Fatalf("bad.skill.tfer: want 1 diagnostic, got %d", len(bad))
 	}
-	if goodDiags != 0 {
-		t.Errorf("good.tfer: want 0 diagnostics, got %d", goodDiags)
+	start := bad[0].(map[string]any)["range"].(map[string]any)["start"].(map[string]any)
+	if line := int(start["line"].(float64)); line != 2 {
+		t.Errorf("the diagnostic must point at the offending line (0-based 2), got %d", line)
+	}
+	if got := diagnosticsFor(frames, goodURI); len(got) != 0 {
+		t.Errorf("good.skill.tfer: want 0 diagnostics, got %v", got)
 	}
 }
 
 func TestServerBadFrontmatterFenceDiagnostic(t *testing.T) {
-	// A .tfer with no closing fence must produce exactly one diagnostic.
-	broken := "---\nschemaVersion: 5\nkind: skill\nid: t/skills/s@1.0.0\nbinds: t/capabilities/c@1.0.0\n"
-	input := frame("initialize", 1, map[string]any{}) +
-		frame("textDocument/didOpen", nil, docParams("file:///tmp/broken.tfer", broken)) +
-		frame("exit", nil, nil)
+	root := packageDir(t)
+	broken := "---\ndescription: Missing its closing fence.\n"
+	uri := pathToURI(writeFile(t, root, "skills/broken.skill.tfer", broken))
+	frames := runSession(t, pathToURI(root),
+		frame("textDocument/didChange", nil, map[string]any{
+			"textDocument":   map[string]any{"uri": uri},
+			"contentChanges": []any{map[string]any{"text": broken}},
+		}),
+	)
+	diags := diagnosticsFor(frames, uri)
+	if len(diags) != 1 || !strings.Contains(diags[0].(map[string]any)["message"].(string), "closing '---' frontmatter fence") {
+		t.Errorf("expected a closing-fence diagnostic for the broken document, got %v", diags)
+	}
+}
 
-	var out bytes.Buffer
-	if err := NewServer("test").Run(strings.NewReader(input), &out); err != nil {
-		t.Fatal(err)
-	}
-	found := false
-	for _, m := range readFrames(t, out.String()) {
-		if m["method"] == "textDocument/publishDiagnostics" {
-			p := m["params"].(map[string]any)
-			diags := p["diagnostics"].([]any)
-			if len(diags) == 1 {
-				msg := diags[0].(map[string]any)["message"].(string)
-				if strings.Contains(msg, "closing '---' frontmatter fence") {
-					found = true
-				}
-			}
-		}
-	}
-	if !found {
-		t.Error("expected a closing-fence diagnostic for the broken .tfer")
+func TestServerReportsDocumentsOutsideAPackage(t *testing.T) {
+	root := t.TempDir()
+	text := "---\ndescription: Orphan.\n---\nOrphan.\n"
+	uri := pathToURI(writeFile(t, root, "orphan.skill.tfer", text))
+	frames := runSession(t, pathToURI(root), frame("textDocument/didOpen", nil, docParams(uri, text)))
+	diags := diagnosticsFor(frames, uri)
+	if len(diags) != 1 || !strings.Contains(diags[0].(map[string]any)["message"].(string), "not part of a version 6 package") {
+		t.Errorf("a document outside any package must say so, got %v", diags)
 	}
 }

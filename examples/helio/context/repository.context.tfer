@@ -1,9 +1,6 @@
 ---
-schemaVersion: 5
-kind: context
-id: helio/context/repository-evidence@1.0.0
-contextType: helio/context-types/repository-evidence@1.0.0
 displayName: Repository Evidence
+contextType: context-types/repository-evidence.contexttype.tfer
 ---
 # Repository evidence
 

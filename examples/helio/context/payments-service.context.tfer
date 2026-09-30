@@ -1,9 +1,6 @@
 ---
-schemaVersion: 5
-kind: context
-id: helio/context/payments-service@1.0.0
-contextType: helio/context-types/payments-service@1.0.0
 displayName: Payments Service
+contextType: context-types/payments-service.contexttype.tfer
 ---
 # Payments service
 

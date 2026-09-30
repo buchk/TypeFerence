@@ -1,13 +1,10 @@
 ---
-schemaVersion: 5
-kind: profile
-id: typeference/profiles/spec-conformance@0.1.0
 displayName: Spec Conformance
 description: Semantic changes land in the specification first, then in the implementation, with conformance fixtures.
 context:
-  - typeference/context/norm-semantic-changes-land-in-docs-specification-md-b@0.1.0
-  - typeference/context/norm-where-the-specification-and-an-implementation-di@0.1.0
-  - typeference/context/norm-every-canonicalization-or-composition-ruling-shi@0.1.0
-  - typeference/context/norm-never-silently-diverge-from-the-specification-fi@0.1.0
-  - typeference/context/spec-workflow@0.1.0
+  - context/norm-semantic-changes-land-in-docs-specification-md-b.context.tfer
+  - context/norm-where-the-specification-and-an-implementation-di.context.tfer
+  - context/norm-every-canonicalization-or-composition-ruling-shi.context.tfer
+  - context/norm-never-silently-diverge-from-the-specification-fi.context.tfer
+  - context/spec-workflow.context.tfer
 ---

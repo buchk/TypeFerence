@@ -1,0 +1,7 @@
+---
+schemaVersion: 6
+name: conformance/refinement-tools
+version: 1.0.0
+plugins:
+  - plugins/governed.plugin.tfer
+---

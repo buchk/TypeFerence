@@ -1,0 +1,4 @@
+{
+  "description": "A sealed binding cannot be replaced by an extension of the same skill, which shares its capability (ADR-0016, ADR-0031).",
+  "expect": "error"
+}

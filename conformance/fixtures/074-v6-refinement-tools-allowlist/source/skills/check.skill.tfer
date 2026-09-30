@@ -1,0 +1,14 @@
+---
+description: Check a release against policy.
+requiresContextTypes:
+  - context-types/policy.contexttype.tfer
+requiresTools:
+  - tools/signals.tool.tfer
+variants:
+  manual:
+    instructions: Explain which signals pass and which policy applies.
+  pipeline:
+    instructions: Emit one gate result per signal.
+    requiresTools:
+      - tools/gate.tool.tfer
+---

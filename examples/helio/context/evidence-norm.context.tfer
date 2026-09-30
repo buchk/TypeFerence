@@ -1,8 +1,5 @@
 ---
-schemaVersion: 5
-kind: context
-id: helio/context/evidence-norm@1.0.0
-contextType: helio/context-types/norms@1.0.0
 displayName: Evidence norm
+contextType: context-types/norms.contexttype.tfer
 ---
 Prefer evidence from tests, diffs, and version control over recollection.

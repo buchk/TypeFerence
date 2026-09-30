@@ -1,51 +1,81 @@
 package compile
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
 
-func TestTargetsSelectSurfaceVariant(t *testing.T) {
-	src := t.TempDir()
-	writeSrc(t, src, "cap.tfer", "schemaVersion: 5\nkind: capability\nid: acme/cap/c@1.0.0\n")
-	writeSrc(t, src, "skill.tfer", "schemaVersion: 5\nkind: skill\nid: acme/skills/s@1.0.0\nbinds: acme/cap/c@1.0.0\nvariants:\n  pipeline:\n    instructions: PIPELINE_TEXT\n  manual:\n    instructions: MANUAL_TEXT\n")
-	writeSrc(t, src, "agent.tfer", "schemaVersion: 5\nkind: agent\nid: acme/agent@1.0.0\nskills:\n  - ref: acme/skills/s@1.0.0\n")
+func TestExtensionFlattensPerModeAndOverridesTheBase(t *testing.T) {
+	src := writePackage(t, []string{"plugins/kit.plugin.tfer"}, map[string]string{
+		"plugins/kit.plugin.tfer":       "---\ndescription: Kit.\nagents:\n  - agents/team.agent.tfer\nmodes:\n  - manual\n  - pipeline\n---\n",
+		"skills/status.skill.tfer":      "---\ndescription: Status.\n---\nBASE_TEXT\n",
+		"skills/team-status.skill.tfer": "---\ndescription: Team status.\nextends: skills/status.skill.tfer\nvariants:\n  manual:\n    instructions: MANUAL_ADDITION\n  pipeline:\n    instructions: PIPELINE_ADDITION\n---\n",
+		"profiles/base.profile.tfer":    "---\nskills:\n  - skills/status.skill.tfer\n---\n",
+		"agents/team.agent.tfer":        "---\ndescription: Team.\nembeds:\n  - profiles/base.profile.tfer\nskills:\n  - skills/team-status.skill.tfer\n---\n",
+	})
 	out := t.TempDir()
-	targets, err := ParseTargets("all")
-	if err != nil {
+	if _, err := Build(src, out, []Target{Neutral, AgentPlugin}, nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Build(src, out, targets, nil); err != nil {
-		t.Fatal(err)
+	manual := readOut(t, out, "agent-plugin", "kit", "skills", "team-status", "SKILL.md")
+	if !strings.Contains(manual, "BASE_TEXT\n\nMANUAL_ADDITION") {
+		t.Errorf("an extension renders its base's instructions, a blank line, then its own:\n%s", manual)
 	}
-	read := func(parts ...string) string {
-		b, _ := os.ReadFile(filepath.Join(append([]string{out}, parts...)...))
-		return string(b)
+	pipeline := readOut(t, out, "agent-plugin", "kit-pipeline", "skills", "team-status", "SKILL.md")
+	if !strings.Contains(pipeline, "BASE_TEXT\n\nPIPELINE_ADDITION") {
+		t.Errorf("the pipeline rendering flattens the pipeline addition:\n%s", pipeline)
 	}
+	bundle := readOut(t, out, "neutral", "team", "bundle.json")
+	if strings.Contains(bundle, `"implementationId": "acme/test/skills/status@1.0.0"`) {
+		t.Errorf("binding the extension replaces the inherited base binding:\n%s", bundle)
+	}
+	if !strings.Contains(bundle, `"dispatchName": "team.status"`) {
+		t.Errorf("the extension keeps its base's capability, so the dispatch name is unchanged:\n%s", bundle)
+	}
+}
 
-	// Copilot has no per-skill file, so it inlines the manual variant.
-	cop := read("copilot", "agent", ".github", "copilot-instructions.md")
-	if !strings.Contains(cop, "MANUAL_TEXT") || strings.Contains(cop, "PIPELINE_TEXT") {
-		t.Errorf("copilot should inline the manual variant, not pipeline:\n%s", cop)
+func TestSealedSkillCannotBeExtended(t *testing.T) {
+	src := writePackage(t, []string{"plugins/kit.plugin.tfer"}, map[string]string{
+		"plugins/kit.plugin.tfer": "---\ndescription: Kit.\nskills:\n  - skills/ext.skill.tfer\n---\n",
+		"skills/base.skill.tfer":  "---\ndescription: Base.\nsealed: true\n---\nBase.\n",
+		"skills/ext.skill.tfer":   "---\ndescription: Ext.\nextends: skills/base.skill.tfer\n---\nMore.\n",
+	})
+	if _, err := Build(src, t.TempDir(), []Target{AgentPlugin}, nil); err == nil || !strings.Contains(err.Error(), "sealed") {
+		t.Fatalf("extending a sealed skill must fail, got %v", err)
 	}
-	// Cursor likewise inlines manual.
-	cur := read("cursor", "agent", "AGENTS.md")
-	if !strings.Contains(cur, "MANUAL_TEXT") {
-		t.Errorf("cursor should inline the manual variant")
+}
+
+func TestCompatibilityReportNamesCompetingPlugins(t *testing.T) {
+	src := writePackage(t, []string{"plugins/core.plugin.tfer", "plugins/team.plugin.tfer"}, map[string]string{
+		"plugins/core.plugin.tfer":      "---\ndescription: Core.\nskills:\n  - skills/status.skill.tfer\n---\n",
+		"plugins/team.plugin.tfer":      "---\ndescription: Team.\nskills:\n  - skills/team-status.skill.tfer\n---\n",
+		"skills/status.skill.tfer":      "---\ndescription: Status.\n---\nStatus.\n",
+		"skills/team-status.skill.tfer": "---\ndescription: Team status.\nextends: skills/status.skill.tfer\n---\nMore.\n",
+	})
+	out := t.TempDir()
+	if _, err := Build(src, out, []Target{AgentPlugin}, nil); err != nil {
+		t.Fatal(err)
 	}
-	// Codex's SKILL.md renders the manual variant.
-	cod := read("codex", "agent", ".agents", "skills", "c", "SKILL.md")
-	if !strings.Contains(cod, "MANUAL_TEXT") || strings.Contains(cod, "PIPELINE_TEXT") {
-		t.Errorf("codex SKILL.md should render the manual variant")
+	report := readOut(t, out, "agent-plugin", ".typeference", "compatibility.json")
+	if !strings.Contains(report, `"plugin": "core"`) || !strings.Contains(report, `"skill": "team-status"`) {
+		t.Fatalf("plugins shipping different members of one family must be reported:\n%s", report)
 	}
-	// Neutral's SKILL.md keeps the default (pipeline-preferred) and fans out.
-	neu := read("neutral", "agent", "skills", "c", "SKILL.md")
-	if !strings.Contains(neu, "PIPELINE_TEXT") {
-		t.Errorf("neutral SKILL.md should render the default (pipeline) variant")
+}
+
+func TestMarketplaceIndexListsEveryArtifact(t *testing.T) {
+	src := writePackage(t, nil, map[string]string{
+		"typeference.tfer":        "---\nschemaVersion: 6\nname: acme/test\nversion: 2.3.4\nmarketplace:\n  name: acme-market\n  owner: Acme Platform\nplugins:\n  - plugins/kit.plugin.tfer\n---\n",
+		"plugins/kit.plugin.tfer": "---\ndescription: Kit.\nskills:\n  - skills/s.skill.tfer\nmodes:\n  - manual\n  - pipeline\n---\n",
+		"skills/s.skill.tfer":     "---\ndescription: S.\n---\nS.\n",
+	})
+	out := t.TempDir()
+	if _, err := Build(src, out, []Target{AgentPlugin}, nil); err != nil {
+		t.Fatal(err)
 	}
-	if !strings.Contains(read("neutral", "agent", "skills", "c", "SKILL.manual.md"), "MANUAL_TEXT") {
-		t.Errorf("neutral should still fan out SKILL.manual.md")
+	index := readOut(t, out, "agent-plugin", ".github", "plugin", "marketplace.json")
+	for _, want := range []string{`"name": "acme-market"`, `"name": "Acme Platform"`, `"source": "./kit"`, `"source": "./kit-pipeline"`, `"version": "2.3.4"`} {
+		if !strings.Contains(index, want) {
+			t.Errorf("marketplace.json is missing %s:\n%s", want, index)
+		}
 	}
 }

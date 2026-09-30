@@ -1,42 +1,202 @@
 package lsp
 
 import (
+	"io/fs"
+	"os"
+	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
+
+	"github.com/buchk/TypeFerence/go/internal/resource"
 )
 
-// topLevelFields are the resource fields offered as completions at column 0.
-var topLevelFields = []string{
-	"schemaVersion", "kind", "id", "displayName", "description", "binds",
-	"emit", "embeds", "requiresSlots", "requiresCapabilities", "slots",
-	"context", "skills", "instructions",
-	"inputSchema", "outputSchema", "contextType", "fields", "body", "values",
-	"requiresContextTypes", "requiresTools", "visibility", "variants",
-	"allowedContextTypes",
+// manifestKind is the completion vocabulary of the package manifest.
+const manifestKind = "manifest"
+
+// kindFields lists the fields each version 6 document kind accepts, offered
+// as completions in a key position.
+var kindFields = map[string][]string{
+	"agent":       {"displayName", "description", "embeds", "slots", "context", "allowedContextTypes", "skills"},
+	"profile":     {"displayName", "description", "embeds", "slots", "context", "allowedContextTypes", "skills"},
+	"interface":   {"displayName", "description", "embeds", "requiresSlots", "requiresCapabilities"},
+	"capability":  {"displayName", "description", "visibility", "inputSchema", "outputSchema"},
+	"skill":       {"displayName", "description", "binds", "extends", "sealed", "inputSchema", "outputSchema", "requiresContextTypes", "requiresTools", "context", "variants"},
+	"tool":        {"displayName", "description", "inputSchema", "outputSchema"},
+	"contextType": {"displayName", "description", "embeds", "fields", "body"},
+	"context":     {"displayName", "description", "contextType", "values"},
+	"plugin":      {"description", "agents", "profiles", "skills", "modes"},
+	manifestKind:  {"schemaVersion", "name", "version", "publisher", "marketplace", "dependencies", "plugins", "exports"},
 }
 
-// kinds are the resource kinds offered after `kind:`.
-var kinds = []string{"agent", "profile", "interface", "capability", "skill", "context", "contextType", "tool"}
-
-// idToken matches a resource identifier (namespace/name@semver).
-var idToken = regexp.MustCompile(`[a-z0-9][a-z0-9.-]*(?:/[a-z0-9][a-z0-9.-]*)+@[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?`)
-
-// completions returns completion labels for the cursor: kind values after
-// `kind:`, otherwise the top-level field names when the cursor is in a line's
-// leading token (no colon yet).
-func completions(text string, line, char int) []string {
-	cur := lineAt(text, line)
-	prefix := cur
-	if char >= 0 && char <= len(cur) {
-		prefix = cur[:char]
-	}
-	if strings.HasPrefix(strings.TrimSpace(prefix), "kind:") {
-		return kinds
-	}
-	if !strings.Contains(prefix, ":") {
-		return topLevelFields
+// referenceKinds maps a reference field to the document kinds it accepts.
+func referenceKinds(docKind, field string) []string {
+	switch field {
+	case "embeds":
+		switch docKind {
+		case "interface":
+			return []string{"interface"}
+		case "contextType":
+			return []string{"contextType"}
+		case "profile":
+			return []string{"profile"}
+		}
+		return []string{"profile", "agent"}
+	case "skills", "extends", "skill":
+		return []string{"skill"}
+	case "binds":
+		return []string{"capability"}
+	case "capability", "requiresCapabilities":
+		return []string{"capability", "skill"}
+	case "context":
+		return []string{"context"}
+	case "contextType", "requiresContextTypes", "allowedContextTypes":
+		return []string{"contextType"}
+	case "requiresTools":
+		return []string{"tool"}
+	case "agents":
+		return []string{"agent"}
+	case "profiles":
+		return []string{"profile"}
+	case "plugins":
+		return []string{"plugin"}
+	case "exports":
+		return []string{"agent", "profile", "interface", "capability", "skill", "tool", "contextType", "context"}
 	}
 	return nil
+}
+
+var enumValues = map[string][]string{
+	"modes":      {"manual", "pipeline"},
+	"visibility": {"internal", "exposed"},
+	"sealed":     {"true", "false"},
+	"required":   {"true", "false"},
+	"type":       {"string", "text", "boolean", "integer", "decimal", "list<string>", "map<string>"},
+}
+
+// documentKind derives a document's kind from its file name.
+func documentKind(path string) string {
+	if filepath.Base(path) == resource.ManifestFile {
+		return manifestKind
+	}
+	kind, _, ok := resource.KindFromPath(filepath.ToSlash(filepath.Base(path)))
+	if !ok {
+		return ""
+	}
+	return kind
+}
+
+var (
+	keyLine      = regexp.MustCompile(`^(\s*)([A-Za-z0-9_./-]+):(\s.*)?$`)
+	sequenceLine = regexp.MustCompile(`^(\s*)-(\s.*)?$`)
+)
+
+// frontmatterLine reports whether a zero-based line lies between a
+// document's opening and closing fences.
+func frontmatterLine(text string, line int) bool {
+	lines := strings.Split(text, "\n")
+	if len(lines) == 0 || strings.TrimRight(lines[0], "\r") != "---" || line == 0 {
+		return false
+	}
+	for i := 1; i < len(lines) && i <= line; i++ {
+		if strings.TrimRight(lines[i], "\r") == "---" {
+			return false
+		}
+	}
+	return true
+}
+
+// fieldAt names the field whose value the cursor is writing: the key on the
+// cursor's own line, or for a sequence item the nearest less-indented key.
+func fieldAt(text string, line int, prefix string) (field string, keyPosition bool) {
+	if m := keyLine.FindStringSubmatch(prefix); m != nil {
+		return m[2], false
+	}
+	trimmed := strings.TrimSpace(prefix)
+	if !sequenceLine.MatchString(prefix) {
+		return "", !strings.Contains(trimmed, ":")
+	}
+	indent := len(prefix) - len(strings.TrimLeft(prefix, " "))
+	lines := strings.Split(text, "\n")
+	for i := line - 1; i >= 0; i-- {
+		candidate := strings.TrimRight(lines[i], "\r")
+		if strings.TrimSpace(candidate) == "" {
+			continue
+		}
+		candidateIndent := len(candidate) - len(strings.TrimLeft(candidate, " "))
+		if m := keyLine.FindStringSubmatch(candidate); m != nil && candidateIndent <= indent && strings.TrimSpace(m[3]) == "" {
+			return m[2], false
+		}
+		if candidateIndent < indent {
+			break
+		}
+	}
+	return "", false
+}
+
+// completions returns labels for the cursor: field names in a key position,
+// enumerated values, or package-relative paths of the kinds a reference
+// field accepts.
+func completions(text, path, root string, line, char int) []string {
+	if !frontmatterLine(text, line) {
+		return nil
+	}
+	kind := documentKind(path)
+	current := lineAt(text, line)
+	prefix := current
+	if char >= 0 && char <= len(current) {
+		prefix = current[:char]
+	}
+	field, keyPosition := fieldAt(text, line, prefix)
+	if keyPosition {
+		if strings.HasPrefix(prefix, " ") {
+			return nil
+		}
+		return kindFields[kind]
+	}
+	if values, ok := enumValues[field]; ok {
+		if field == "type" {
+			return append(append([]string{}, values...), documentPaths(root, []string{"contextType"})...)
+		}
+		return values
+	}
+	if kinds := referenceKinds(kind, field); kinds != nil && root != "" {
+		return documentPaths(root, kinds)
+	}
+	return nil
+}
+
+// documentPaths lists a package's documents of the given kinds as
+// package-relative paths, in canonical order.
+func documentPaths(root string, kinds []string) []string {
+	want := map[string]bool{}
+	for _, kind := range kinds {
+		want[kind] = true
+	}
+	paths := []string{}
+	filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if d.IsDir() {
+			name := d.Name()
+			if path != root && (strings.HasPrefix(name, ".") || name == "dist" || name == "bin" || name == "obj" || name == "node_modules") {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		rel, relErr := filepath.Rel(root, path)
+		if relErr != nil {
+			return nil
+		}
+		rel = filepath.ToSlash(rel)
+		if kind, _, ok := resource.KindFromPath(rel); ok && want[kind] {
+			paths = append(paths, rel)
+		}
+		return nil
+	})
+	sort.Strings(paths)
+	return paths
 }
 
 func lineAt(text string, line int) string {
@@ -47,38 +207,46 @@ func lineAt(text string, line int) string {
 	return strings.TrimRight(lines[line], "\r")
 }
 
-// tokenAt returns the resource-id token spanning the cursor, or "".
+var pathToken = regexp.MustCompile(`[A-Za-z0-9_./:-]+\.tfer`)
+
+// tokenAt returns the document reference spanning the cursor, or "".
 func tokenAt(text string, line, char int) string {
-	cur := lineAt(text, line)
-	for _, m := range idToken.FindAllStringIndex(cur, -1) {
+	current := lineAt(text, line)
+	for _, m := range pathToken.FindAllStringIndex(current, -1) {
 		if char >= m[0] && char <= m[1] {
-			return cur[m[0]:m[1]]
+			return current[m[0]:m[1]]
 		}
 	}
 	return ""
 }
 
-// symbolOf extracts (id, kind) from a resource's text for a document symbol.
-func symbolOf(text string) (id, kind string) {
-	for _, raw := range strings.Split(text, "\n") {
-		if v, ok := scalarField(raw, "id"); ok {
-			id = v
+// packageRoot finds the version 6 package containing a file: the nearest
+// ancestor directory whose typeference.tfer declares schemaVersion 6.
+func packageRoot(path string) (string, *resource.Project) {
+	dir := filepath.Dir(path)
+	for {
+		if _, err := os.Stat(filepath.Join(dir, resource.ManifestFile)); err == nil {
+			if project, err := resource.LoadProject(dir); err == nil && project.IsV6() {
+				return dir, project
+			}
 		}
-		if v, ok := scalarField(raw, "kind"); ok {
-			kind = v
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", nil
 		}
+		dir = parent
 	}
-	return id, kind
 }
 
-func scalarField(line, name string) (string, bool) {
-	t := strings.TrimSpace(strings.TrimRight(line, "\r"))
-	if strings.HasPrefix(t, name+":") {
-		return strings.TrimSpace(strings.TrimPrefix(t, name+":")), true
+// relativeTo returns a file's package-relative slash path.
+func relativeTo(root, path string) string {
+	rel, err := filepath.Rel(root, path)
+	if err != nil {
+		return filepath.ToSlash(path)
 	}
-	return "", false
+	return filepath.ToSlash(rel)
 }
 
 func isSource(path string) bool {
-	return strings.HasSuffix(path, ".tfer") || strings.HasSuffix(path, ".yaml")
+	return strings.HasSuffix(path, ".tfer")
 }

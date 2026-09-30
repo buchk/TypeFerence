@@ -1,7 +1,4 @@
 ---
-schemaVersion: 5
-kind: contextType
-id: helio/context-types/executive-rhythm@1.0.0
 displayName: Executive Rhythm
 body:
   type: text

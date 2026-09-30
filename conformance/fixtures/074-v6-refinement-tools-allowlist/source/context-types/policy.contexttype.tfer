@@ -1,0 +1,6 @@
+---
+displayName: Policy
+body:
+  type: text
+  required: true
+---

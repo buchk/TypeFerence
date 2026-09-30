@@ -1,0 +1,7 @@
+---
+schemaVersion: 6
+name: conformance/pack
+version: 1.0.0
+plugins:
+  - plugins/pack.plugin.tfer
+---

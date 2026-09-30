@@ -1,0 +1,5 @@
+---
+description: Records a pipeline gate result.
+inputSchema: '{"type":"object"}'
+outputSchema: '{"type":"object"}'
+---

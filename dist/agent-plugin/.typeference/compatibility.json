@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "conflicts": [
+    {
+      "mode": "manual",
+      "capabilityId": "helio/works/capabilities/repository-status@1.0.0",
+      "members": [
+        {
+          "plugin": "engineering-kit",
+          "skill": "repository-status"
+        },
+        {
+          "plugin": "payments",
+          "skill": "payments-repository-status"
+        }
+      ]
+    }
+  ]
+}

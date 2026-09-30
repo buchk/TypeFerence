@@ -1,13 +1,9 @@
-// Package lsp implements a minimal Language Server Protocol server for
-// TypeFerence sources (`.tfer` and `.yaml`). It provides authoring diagnostics
-// by running the loader's single-document shape validation on each open buffer.
-//
-// Scope: this is the v0 surface. It reports per-file syntax and shape errors —
-// malformed frontmatter fences, unknown fields, bad kinds, skills that do not
-// bind a capability, context objects without a contextType, and so on. It does
-// not yet resolve across a source tree, so composition diagnostics (embedding
-// ambiguity, unsatisfied interfaces, unresolved references) are a planned
-// follow-up that requires whole-workspace resolution and source-root discovery.
+// Package lsp implements a Language Server Protocol server for version 6
+// TypeFerence packages. Each open `.tfer` buffer gets the loader's
+// single-document diagnostics, positioned at the reported line; on open and
+// save it also gets the package's composition diagnostics. Completion offers
+// each kind's fields, enumerated values, and the package-relative paths a
+// reference field accepts; definition jumps from a path to its document.
 package lsp
 
 import (
@@ -19,7 +15,9 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -180,20 +178,33 @@ func (s *Server) handleInitialize(raw json.RawMessage) {
 	s.buildIndex()
 }
 
-// buildIndex maps every resource id under the workspace roots to its file uri.
+// buildIndex maps every document identity under the workspace's version 6
+// packages to its file uri, deriving identities from paths without parsing so
+// a broken document still has an entry.
 func (s *Server) buildIndex() {
 	index := map[string]string{}
 	for _, root := range s.roots {
 		filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-			if err != nil || d.IsDir() || !isSource(path) {
+			if err != nil {
 				return nil
 			}
-			raw, readErr := os.ReadFile(path)
-			if readErr != nil {
+			if d.IsDir() {
+				name := d.Name()
+				if path != root && (strings.HasPrefix(name, ".") || name == "node_modules" || name == "dist" || name == "bin" || name == "obj") {
+					return filepath.SkipDir
+				}
 				return nil
 			}
-			if id, _ := symbolOf(string(raw)); id != "" {
-				index[id] = pathToURI(path)
+			if !isSource(path) || d.Name() == resource.ManifestFile {
+				return nil
+			}
+			packageDir, project := packageRoot(path)
+			if project == nil {
+				return nil
+			}
+			rel := relativeTo(packageDir, path)
+			if _, _, ok := resource.KindFromPath(rel); ok {
+				index[resource.DeriveID(project.Name, project.Version, rel)] = pathToURI(path)
 			}
 			return nil
 		})
@@ -292,7 +303,7 @@ func uriParam(raw json.RawMessage) string {
 }
 
 // publish validates one buffer and pushes its diagnostics. When withComposition
-// is set it also reports whole-workspace resolution errors that reference this
+// is set it also reports the package's resolution errors that belong to this
 // file (composition diagnostics read from disk, so they run on open/save).
 func (s *Server) publish(uri, text string, withComposition bool) {
 	path := uriToPath(uri)
@@ -300,50 +311,55 @@ func (s *Server) publish(uri, text string, withComposition bool) {
 		return
 	}
 	var diags []diagnostic
-	if err := resource.CheckDocument(path, text); err != nil {
+	root, project := packageRoot(path)
+	if project == nil {
 		diags = append(diags, diagnostic{
-			Range:    errorRange(text),
+			Range:    lineRange(text, 0),
+			Severity: 1,
+			Source:   "typeference",
+			Message:  "not part of a version 6 package: no ancestor directory has a typeference.tfer declaring schemaVersion 6",
+		})
+		s.publishDiagnostics(uri, diags)
+		return
+	}
+	rel := relativeTo(root, path)
+	if err := resource.CheckV6Document(rel, text); err != nil {
+		line, message := locate(err.Error(), rel)
+		diags = append(diags, diagnostic{
+			Range:    lineRange(text, line),
 			Severity: 1, // Error
 			Source:   "typeference",
-			Message:  stripFilePrefix(err.Error(), filepath.Base(path)),
+			Message:  message,
 		})
 	} else if withComposition {
-		for _, m := range s.compositionErrorsFor(text, path) {
+		id := resource.DeriveID(project.Name, project.Version, rel)
+		for _, m := range s.compositionErrorsFor(root, rel, id) {
+			line, message := locate(m, rel)
 			diags = append(diags, diagnostic{
-				Range:    errorRange(text),
+				Range:    lineRange(text, line),
 				Severity: 1,
 				Source:   "typeference",
-				Message:  m,
+				Message:  message,
 			})
 		}
 	}
 	s.publishDiagnostics(uri, diags)
 }
 
-// compositionErrorsFor resolves each workspace root from disk and returns the
-// resolution errors to show on this file: those that name this file (by id or
-// basename), plus any that cannot be attributed to a different indexed
-// resource (so an unlocated workspace error still surfaces somewhere).
-func (s *Server) compositionErrorsFor(text, path string) []string {
-	id, _ := symbolOf(text)
-	base := filepath.Base(path)
-	seen := map[string]bool{}
-	out := []string{}
-	for _, root := range s.roots {
-		_, err := compile.Validate(root, "")
-		if err == nil {
-			continue
-		}
-		m := err.Error()
-		if seen[m] {
-			continue
-		}
-		seen[m] = true
-		if strings.Contains(m, base) || (id != "" && strings.Contains(m, id)) || !s.attributableElsewhere(m, id) {
-			out = append(out, m)
-		}
+// compositionErrorsFor resolves the file's package from disk and returns the
+// error to show on this file: one that names this file (by path or identity),
+// or one that cannot be attributed to a different indexed document (so an
+// unlocated package error still surfaces somewhere).
+func (s *Server) compositionErrorsFor(root, rel, id string) []string {
+	_, err := compile.Validate(root, "")
+	if err == nil {
+		return nil
 	}
-	return out
+	m := err.Error()
+	if strings.Contains(m, rel) || strings.Contains(m, id) || !s.attributableElsewhere(m, id) {
+		return []string{m}
+	}
+	return nil
 }
 
 // attributableElsewhere reports whether a message names an indexed resource
@@ -357,40 +373,52 @@ func (s *Server) attributableElsewhere(msg, selfID string) bool {
 	return false
 }
 
-// handleCompletion offers kind values and top-level field names.
+// handleCompletion offers field names, enumerated values, and reference paths.
 func (s *Server) handleCompletion(raw json.RawMessage) any {
 	uri, line, char := positionParams(raw)
+	path := uriToPath(uri)
+	root, _ := packageRoot(path)
 	items := []map[string]any{}
-	for _, label := range completions(s.docs[uri], line, char) {
+	for _, label := range completions(s.docs[uri], path, root, line, char) {
 		items = append(items, map[string]any{"label": label})
 	}
 	return map[string]any{"isIncomplete": false, "items": items}
 }
 
-// handleDefinition jumps from a resource-id token to its defining file.
+// handleDefinition jumps from a package-relative document path to its file.
 func (s *Server) handleDefinition(raw json.RawMessage) any {
 	uri, line, char := positionParams(raw)
-	id := tokenAt(s.docs[uri], line, char)
-	target, ok := s.index[id]
-	if id == "" || !ok {
+	token := tokenAt(s.docs[uri], line, char)
+	if token == "" || strings.Contains(token, ":") {
+		return nil
+	}
+	root, _ := packageRoot(uriToPath(uri))
+	if root == "" || resource.ValidSourcePath(token) != nil {
+		return nil
+	}
+	target := filepath.Join(root, filepath.FromSlash(token))
+	if _, err := os.Stat(target); err != nil {
 		return nil
 	}
 	return map[string]any{
-		"uri":   target,
+		"uri":   pathToURI(target),
 		"range": rng{Start: position{0, 0}, End: position{0, 0}},
 	}
 }
 
-// handleDocumentSymbol returns the resource as a single symbol (id + kind).
+// handleDocumentSymbol returns the document as a single symbol: its kind and
+// the identity its path derives.
 func (s *Server) handleDocumentSymbol(raw json.RawMessage) any {
 	uri := uriParam(raw)
-	id, kind := symbolOf(s.docs[uri])
-	if id == "" {
+	path := uriToPath(uri)
+	root, project := packageRoot(path)
+	kind := documentKind(path)
+	if project == nil || kind == "" {
 		return []any{}
 	}
-	name := id
-	if kind != "" {
-		name = kind + " " + id
+	name := project.Name + "@" + project.Version
+	if kind != manifestKind {
+		name = kind + " " + resource.DeriveID(project.Name, project.Version, relativeTo(root, path))
 	}
 	// SymbolKind 5 = Class; a resource is the closest analogue.
 	return []map[string]any{{
@@ -446,21 +474,29 @@ type diagnostic struct {
 	Message  string `json:"message"`
 }
 
-// errorRange anchors a whole-document diagnostic to the first line. The loader
-// reports one shape error per document without a position, so v0 highlights the
-// opening line rather than guessing an offset.
-func errorRange(text string) rng {
-	end := 1
-	if nl := strings.IndexByte(text, '\n'); nl > 0 {
-		end = nl
+// lineRange spans one zero-based line of the buffer.
+func lineRange(text string, line int) rng {
+	lines := strings.Split(text, "\n")
+	if line < 0 || line >= len(lines) {
+		line = 0
 	}
-	return rng{Start: position{0, 0}, End: position{0, end}}
+	end := len(strings.TrimRight(lines[line], "\r"))
+	if end == 0 {
+		end = 1
+	}
+	return rng{Start: position{line, 0}, End: position{line, end}}
 }
 
-// stripFilePrefix removes a leading "basename: " that loader errors carry, since
-// the client already associates the diagnostic with the file by URI.
-func stripFilePrefix(msg, base string) string {
-	return strings.TrimPrefix(msg, base+": ")
+var positioned = regexp.MustCompile(`^([^:\s]+\.tfer):(\d+): (.*)$`)
+
+// locate strips a "path:line: " or "path: " prefix naming this document and
+// returns the zero-based line the message points at.
+func locate(message, rel string) (int, string) {
+	if m := positioned.FindStringSubmatch(message); m != nil && m[1] == rel {
+		n, _ := strconv.Atoi(m[2])
+		return n - 1, m[3]
+	}
+	return 0, strings.TrimPrefix(message, rel+": ")
 }
 
 // pathToURI converts a local filesystem path to a file:// URI, adding the

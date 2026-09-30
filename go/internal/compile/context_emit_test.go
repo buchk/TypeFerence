@@ -1,47 +1,79 @@
 package compile
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestBundleEmitsHeldContext(t *testing.T) {
-	src := t.TempDir()
-	writeSrc(t, src, "ct.tfer", "schemaVersion: 5\nkind: contextType\nid: acme/ct/cast@1.0.0\nfields:\n  owner:\n    type: string\n    required: true\n  governed:\n    type: boolean\n    default: false\n")
-	writeSrc(t, src, "note.tfer", "schemaVersion: 5\nkind: context\nid: acme/notes/n@1.0.0\ncontextType: acme/ct/cast@1.0.0\nvalues:\n  owner: Dana\n")
-	writeSrc(t, src, "agent.tfer", "schemaVersion: 5\nkind: agent\nid: acme/agent@1.0.0\ncontext:\n  - acme/notes/n@1.0.0\n")
+	src := writePackage(t, []string{"plugins/kit.plugin.tfer"}, map[string]string{
+		"plugins/kit.plugin.tfer":             "---\ndescription: Kit.\nagents:\n  - agents/agent.agent.tfer\n---\n",
+		"context-types/cast.contexttype.tfer": "---\nfields:\n  owner:\n    type: string\n    required: true\n  governed:\n    type: boolean\n    default: false\n---\n",
+		"notes/n.context.tfer":                "---\ncontextType: context-types/cast.contexttype.tfer\nvalues:\n  owner: Dana\n---\n",
+		"agents/agent.agent.tfer":             "---\ndescription: Holds a note.\ncontext:\n  - notes/n.context.tfer\n---\n",
+	})
 	out := t.TempDir()
-	targets, _ := ParseTargets("neutral")
-	if _, err := Build(src, out, targets, nil); err != nil {
+	if _, err := Build(src, out, []Target{Neutral}, nil); err != nil {
 		t.Fatal(err)
 	}
-	bundle, err := os.ReadFile(filepath.Join(out, "neutral", "agent", "bundle.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(bundle), `"context"`) || !strings.Contains(string(bundle), "acme/notes/n@1.0.0") {
+	bundle := readOut(t, out, "neutral", "agent", "bundle.json")
+	if !strings.Contains(bundle, `"context"`) || !strings.Contains(bundle, "acme/test/notes/n@1.0.0") {
 		t.Errorf("bundle should list held context objects:\n%s", bundle)
 	}
-	if !strings.Contains(string(bundle), "acme/ct/cast@1.0.0") {
+	if !strings.Contains(bundle, "acme/test/context-types/cast@1.0.0") {
 		t.Errorf("held context should carry its contextType")
 	}
-	if !strings.Contains(string(bundle), `"owner": "Dana"`) || !strings.Contains(string(bundle), `"governed": false`) {
+	if !strings.Contains(bundle, `"owner": "Dana"`) || !strings.Contains(bundle, `"governed": false`) {
 		t.Errorf("bundle should preserve values and materialized defaults:\n%s", bundle)
 	}
 }
 
 func TestBundleOmitsContextWhenNoneHeld(t *testing.T) {
-	src := t.TempDir()
-	writeSrc(t, src, "agent.tfer", "schemaVersion: 5\nkind: agent\nid: acme/agent@1.0.0\n")
+	src := writePackage(t, []string{"plugins/kit.plugin.tfer"}, map[string]string{
+		"plugins/kit.plugin.tfer": "---\ndescription: Kit.\nagents:\n  - agents/agent.agent.tfer\n---\n",
+		"agents/agent.agent.tfer": "---\ndescription: Holds nothing.\n---\n",
+	})
 	out := t.TempDir()
-	targets, _ := ParseTargets("neutral")
-	if _, err := Build(src, out, targets, nil); err != nil {
+	if _, err := Build(src, out, []Target{Neutral}, nil); err != nil {
 		t.Fatal(err)
 	}
-	bundle, _ := os.ReadFile(filepath.Join(out, "neutral", "agent", "bundle.json"))
-	if strings.Contains(string(bundle), `"context"`) {
+	if bundle := readOut(t, out, "neutral", "agent", "bundle.json"); strings.Contains(bundle, `"context"`) {
 		t.Errorf("an agent holding no context must not emit a context member:\n%s", bundle)
+	}
+}
+
+func TestSkillOwnedContextTravelsWithTheSkill(t *testing.T) {
+	src := writePackage(t, []string{"plugins/kit.plugin.tfer"}, map[string]string{
+		"plugins/kit.plugin.tfer":    "---\ndescription: Kit.\nskills:\n  - skills/style.skill.tfer\n---\n",
+		"context/style.context.tfer": "---\ndisplayName: House style\n---\nShort sentences.\n",
+		"skills/style.skill.tfer":    "---\ndescription: Edit to the house style.\ncontext:\n  - context/style.context.tfer\n---\nEdit the text.\n",
+	})
+	out := t.TempDir()
+	if _, err := Build(src, out, []Target{AgentPlugin}, nil); err != nil {
+		t.Fatal(err)
+	}
+	skill := readOut(t, out, "agent-plugin", "kit", "skills", "style", "SKILL.md")
+	if !strings.Contains(skill, "## Context") || !strings.Contains(skill, "### House style") || !strings.Contains(skill, "Short sentences.") {
+		t.Fatalf("a skill's own context must render into its SKILL.md:\n%s", skill)
+	}
+}
+
+func TestDescriptionNeverEntersInstructionBodies(t *testing.T) {
+	src := writePackage(t, []string{"plugins/kit.plugin.tfer"}, map[string]string{
+		"plugins/kit.plugin.tfer": "---\ndescription: Kit.\nagents:\n  - agents/a.agent.tfer\n---\n",
+		"agents/a.agent.tfer":     "---\ndescription: ROUTING-ONLY text.\n---\nYou do the work.\n",
+	})
+	out := t.TempDir()
+	if _, err := Build(src, out, []Target{Neutral, AgentPlugin}, nil); err != nil {
+		t.Fatal(err)
+	}
+	neutral := readOut(t, out, "neutral", "a", "AGENTS.md")
+	if strings.Contains(neutral, "ROUTING-ONLY") || !strings.Contains(neutral, "You do the work.") {
+		t.Errorf("the neutral index carries objectives, never the description:\n%s", neutral)
+	}
+	agent := readOut(t, out, "agent-plugin", "kit", "com.github.copilot", "agents", "a.agent.md")
+	body := agent[strings.Index(agent, "\n---\n")+5:]
+	if !strings.Contains(agent, `description: "ROUTING-ONLY text."`) || strings.Contains(body, "ROUTING-ONLY") {
+		t.Errorf("the plugin agent carries its description only in frontmatter:\n%s", agent)
 	}
 }

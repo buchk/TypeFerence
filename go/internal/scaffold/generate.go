@@ -26,135 +26,107 @@ type Manifest struct {
 	SchemaVersion    int    `json:"schemaVersion"`
 }
 
-// Scaffold maps a validated AnswerSet to an ordinary v5 source tree. The
-// output contains only constructs a human could hand-author: typed norm
-// contexts, a profile embedding chain, and one concrete agent. No wizard-only
-// syntax, no hidden metadata (ADR-0028).
+// Scaffold maps a validated AnswerSet to an ordinary version 6 package: norm
+// statements as prose context documents, a profile embedding chain, one
+// concrete agent, and the plugin that ships it. The output contains only
+// constructs a human could hand-author. No wizard-only syntax, no hidden
+// metadata (ADR-0028).
 func Scaffold(as *AnswerSet) (*SourceTree, Manifest, error) {
 	org := as.Organization.Name
 	ver := as.Organization.Version
+	agentName := slug(as.Agent.Name)
+	if agentName == "" {
+		return nil, Manifest{}, fmt.Errorf("agent.name must contain letters or digits")
+	}
 
 	tree := &SourceTree{}
 	add := func(path, content string) {
 		tree.Files = append(tree.Files, File{Path: path, Bytes: []byte(content)})
 	}
 
-	// Norm contextType: text-bodied type every norm instantiates.
-	add("context-types/norms.contexttype.tfer", fence(
-		"schemaVersion: 5",
-		"kind: contextType",
-		fmt.Sprintf("id: %s/context-types/norms@%s", org, ver),
-		"displayName: Norms",
-		"body:",
-		"  type: text",
-		"  required: true",
-	))
-
-	// One context resource per norm statement.
-	var normRefs []string
+	// One prose context document per norm statement: the built-in text type,
+	// so a norm is just its sentence.
+	var normPaths []string
 	for _, n := range as.Norms {
 		id := n.ID
 		if id == "" {
 			id = slug(n.Text)
 		}
 		path := fmt.Sprintf("context/norm-%s.context.tfer", id)
-		ref := fmt.Sprintf("%s/context/norm-%s@%s", org, id, ver)
-		normRefs = append(normRefs, ref)
+		normPaths = append(normPaths, path)
 		add(path, fence(
-			"schemaVersion: 5",
-			"kind: context",
-			fmt.Sprintf("id: %s", ref),
-			fmt.Sprintf("contextType: %s/context-types/norms@%s", org, ver),
 			fmt.Sprintf("displayName: %s", titleize(id)),
-			"values: {}",
-		)+n.Text+"\n")
+		)+strings.TrimSpace(n.Text)+"\n")
 	}
 
 	// Base profile holds the norms; each team level embeds its parent and
-	// adds a slot; the agent completes the chain. This is deliberately the
-	// simplest composition that demonstrates multilevel embedding.
-	baseProfile := fmt.Sprintf("%s/profiles/base@%s", org, ver)
-	baseLines := []string{
-		"schemaVersion: 5",
-		"kind: profile",
-		fmt.Sprintf("id: %s", baseProfile),
+	// fills a scope slot; the agent completes the chain. This is deliberately
+	// the simplest composition that demonstrates multilevel embedding.
+	add("profiles/base.profile.tfer", fence(
 		"displayName: Base Defaults",
 		fmt.Sprintf("description: Organization-wide defaults for %s.", org),
-	}
-	add("profiles/base.profile.tfer", fence(append(baseLines, listField("context", normRefs))...))
+		listField("context", normPaths),
+	))
 
-	parent := baseProfile
-	prevSlot := ""
+	parent := "profiles/base.profile.tfer"
+	prevSlot, prevScope := "", ""
 	for i, lvl := range as.Levels {
-		name := strings.ToLower(strings.TrimSpace(lvl.Name))
-		id := fmt.Sprintf("%s/profiles/%s@%s", org, name, ver)
+		name := slug(lvl.Name)
 		slot := "domain"
 		if i > 0 {
-			slot = slug(lvl.Name) + "-scope"
+			slot = name + "-scope"
 		}
-		lines := []string{
-			"schemaVersion: 5",
-			"kind: profile",
-			fmt.Sprintf("id: %s", id),
+		scope := fmt.Sprintf("context/%s-scope.context.tfer", slot)
+		path := fmt.Sprintf("profiles/%s.profile.tfer", name)
+		add(path, fence(
 			fmt.Sprintf("displayName: %s Defaults", titleize(name)),
 			fmt.Sprintf("description: %s-level defaults embedding the parent profile.", titleize(name)),
 			listField("embeds", []string{parent}),
-			fmt.Sprintf("slots:%s  %s: %s/context/%s-scope@%s", nl(), slot, org, slot, ver),
-		}
-		add(fmt.Sprintf("profiles/%s.profile.tfer", name), fence(lines...))
-		// Scope context for the slot value.
-		add(fmt.Sprintf("context/%s-scope.context.tfer", slot), fence(
-			"schemaVersion: 5",
-			"kind: context",
-			fmt.Sprintf("id: %s/context/%s-scope@%s", org, slot, ver),
-			fmt.Sprintf("contextType: %s/context-types/scope@%s", org, ver),
-			fmt.Sprintf("displayName: %s Scope", titleize(name)),
+			"slots:",
+			fmt.Sprintf("  %s: %s", slot, scope),
 		))
-		parent = id
-		prevSlot = slot
+		add(scope, fence(
+			fmt.Sprintf("displayName: %s Scope", titleize(name)),
+			"contextType: context-types/scope.contexttype.tfer",
+		))
+		parent, prevSlot, prevScope = path, slot, scope
 	}
 
-	// Scope contextType for slot values.
+	// Scope context type for slot values.
 	add("context-types/scope.contexttype.tfer", fence(
-		"schemaVersion: 5",
-		"kind: contextType",
-		fmt.Sprintf("id: %s/context-types/scope@%s", org, ver),
 		"displayName: Scope",
 		"fields:",
 		"  owner:",
-		"    type: \"string\"",
-		"    required: false",
+		"    type: string",
 	))
 
-	agentName := slug(as.Agent.Name)
-	var agentLines []string
-	agentLines = append(agentLines,
-		"schemaVersion: 5",
-		"kind: agent",
-		fmt.Sprintf("id: %s/agents/%s@%s", org, agentName, ver),
+	agentLines := []string{
 		fmt.Sprintf("displayName: %s", titleize(agentName)),
 		"description: Generated from a setup answer set; edit freely.",
-		"emit: true",
 		listField("embeds", []string{parent}),
-	)
-	if prevSlot != "" {
-		agentLines = append(agentLines, fmt.Sprintf("slots:%s  %s: %s/context/%s-scope@%s", nl(), prevSlot, org, prevSlot, ver))
 	}
-	add(fmt.Sprintf("agents/%s.agent.tfer", agentName), fence(agentLines...))
+	if prevSlot != "" {
+		agentLines = append(agentLines, "slots:", fmt.Sprintf("  %s: %s", prevSlot, prevScope))
+	}
+	agentPath := fmt.Sprintf("agents/%s.agent.tfer", agentName)
+	add(agentPath, fence(agentLines...))
 
-	add("typeference.yaml", strings.Join([]string{
-		"---",
-		"schemaVersion: 2",
+	pluginPath := fmt.Sprintf("plugins/%s.plugin.tfer", agentName)
+	add(pluginPath, fence(
+		fmt.Sprintf("description: The %s agent with the %s defaults it inherits.", titleize(agentName), org),
+		listField("agents", []string{agentPath}),
+	))
+
+	add("typeference.tfer", fence(
+		"schemaVersion: 6",
 		fmt.Sprintf("name: %s/starter-suite", org),
 		fmt.Sprintf("version: %s", ver),
-		"",
-	}, "\n"))
+		listField("plugins", []string{pluginPath}),
+	))
 
 	sort.Slice(tree.Files, func(i, j int) bool { return tree.Files[i].Path < tree.Files[j].Path })
 	return tree, Manifest{GeneratorVersion: GeneratorVersion, SchemaVersion: SchemaVersion}, nil
 }
-
-func nl() string { return "\n" }
 
 func fence(lines ...string) string {
 	return "---\n" + strings.Join(lines, "\n") + "\n---\n"
@@ -162,11 +134,10 @@ func fence(lines ...string) string {
 
 func listField(name string, values []string) string {
 	var b strings.Builder
-	b.WriteString(name + ":\n")
+	b.WriteString(name + ":")
 	for _, v := range values {
-		b.WriteString(fmt.Sprintf("  - \"%s\"\n", v))
+		b.WriteString("\n  - " + v)
 	}
-	b.WriteString("\n")
 	return b.String()
 }
 

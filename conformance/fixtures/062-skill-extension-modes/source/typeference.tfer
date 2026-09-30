@@ -1,0 +1,7 @@
+---
+schemaVersion: 6
+name: conformance/modes
+version: 1.0.0
+plugins:
+  - plugins/ops.plugin.tfer
+---

@@ -7,45 +7,227 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/buchk/TypeFerence/go/internal/tferlex"
 	"gopkg.in/yaml.v3"
 )
 
 var packageName = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]*(?:/[a-z0-9][a-z0-9.-]*)+$`)
 var semanticVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$`)
 
-// Project is the optional schemaVersion 2 source-root manifest. It contains
-// stable source identity only; feeds and deployment are external.
-type Project struct {
-	Name         string
-	Version      string
-	Publisher    string
-	Dependencies map[string]string
+// marketplaceName follows the Copilot marketplace grammar: kebab-case, at
+// most 64 characters, dots accepted.
+var marketplaceName = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$`)
+
+// Marketplace is the optional publication identity a version 6 manifest
+// declares for its generated marketplace index (ADR-0029).
+type Marketplace struct {
+	Name  string
+	Owner string
 }
 
+// Project is the source-root manifest. Version 6 manifests
+// (`typeference.tfer`, schemaVersion 6) additionally list the plugins that
+// define the build and the resources the package exports. Legacy manifests
+// (schemaVersion 2) carry identity and dependencies only.
+type Project struct {
+	SchemaVersion int
+	File          string
+	Name          string
+	Version       string
+	Publisher     string
+	Dependencies  map[string]string
+	Marketplace   *Marketplace
+	Plugins       []string
+	Exports       []string
+}
+
+// ProjectManifestFile is the retired schemaVersion 2 manifest name.
 const ProjectManifestFile = "typeference.yaml"
 
-// ManifestFileNameV5 is the v5 manifest name, parsed with the same frontmatter
-// grammar as resources (ADR-0026).
+// ManifestFileNameV5 is the fenced manifest name. Version 6 manifests use it
+// exclusively.
 const ManifestFileNameV5 = "typeference.tfer"
 
+// ManifestFile is the version 6 project manifest name.
+const ManifestFile = ManifestFileNameV5
+
+// ReservedPackagePrefix names the namespace TypeFerence uses for built-in
+// resources. User packages cannot claim it.
+const ReservedPackagePrefix = "typeference/builtin"
+
+// IsV6 reports whether the manifest declares the version 6 language.
+func (p *Project) IsV6() bool { return p != nil && p.SchemaVersion == 6 }
+
 func LoadProject(sourceDir string) (*Project, error) {
-	manifestFile := ProjectManifestFile
-	raw, err := os.ReadFile(filepath.Join(sourceDir, manifestFile))
-	if err != nil {
-		if !os.IsNotExist(err) {
-			return nil, Errorf("%s: %s", manifestFile, err)
-		}
-		raw, err = os.ReadFile(filepath.Join(sourceDir, ManifestFileNameV5))
-		if err != nil {
-			if os.IsNotExist(err) {
-				return nil, nil
-			}
-			return nil, Errorf("%s: %s", ManifestFileNameV5, err)
-		}
-		manifestFile = ManifestFileNameV5
+	tferPath := filepath.Join(sourceDir, ManifestFileNameV5)
+	yamlPath := filepath.Join(sourceDir, ProjectManifestFile)
+	tferRaw, tferErr := os.ReadFile(tferPath)
+	yamlRaw, yamlErr := os.ReadFile(yamlPath)
+	if tferErr != nil && !os.IsNotExist(tferErr) {
+		return nil, Errorf("%s: %s", ManifestFileNameV5, tferErr)
 	}
+	if yamlErr != nil && !os.IsNotExist(yamlErr) {
+		return nil, Errorf("%s: %s", ProjectManifestFile, yamlErr)
+	}
+	if tferErr == nil {
+		text := stripBOM(strings.ReplaceAll(string(tferRaw), "\r\n", "\n"))
+		if project, isV6, err := parseV6Manifest(text); isV6 {
+			if err != nil {
+				return nil, err
+			}
+			if yamlErr == nil {
+				return nil, Errorf("%s: a version 6 project cannot also contain the retired %s", ManifestFile, ProjectManifestFile)
+			}
+			return project, nil
+		}
+	}
+	// Legacy schemaVersion 2 manifests: typeference.yaml takes precedence, as
+	// it always has, so archived corpora keep their exact identity.
+	if yamlErr == nil {
+		return parseLegacyManifest(string(yamlRaw), ProjectManifestFile)
+	}
+	if tferErr == nil {
+		return parseLegacyManifest(string(tferRaw), ManifestFileNameV5)
+	}
+	return nil, nil
+}
+
+// ParseProjectManifest parses manifest text by file name: a version 6
+// manifest, or an archival schemaVersion 2 manifest.
+func ParseProjectManifest(fileName, text string) (*Project, error) {
+	text = stripBOM(strings.ReplaceAll(text, "\r\n", "\n"))
+	if fileName == ManifestFileNameV5 {
+		if project, isV6, err := parseV6Manifest(text); isV6 {
+			return project, err
+		}
+	}
+	return parseLegacyManifest(text, fileName)
+}
+
+// parseV6Manifest parses a fenced manifest with the closed grammar. isV6
+// reports whether the document declares schemaVersion 6; when it does not,
+// the caller falls back to the legacy parser.
+func parseV6Manifest(text string) (*Project, bool, error) {
+	frontmatter, body, err := splitFrontmatter(text)
+	if err != nil {
+		return nil, false, nil
+	}
+	root, err := tferlex.Parse(frontmatter)
+	if err != nil || root == nil {
+		if err != nil && declaresSchemaVersion6(frontmatter) {
+			return nil, true, Errorf("%s: %s", ManifestFile, err)
+		}
+		return nil, false, nil
+	}
+	versionNode := child(root, "schemaVersion")
+	if versionNode == nil || !versionNode.IsScalar || versionNode.Value.Kind != tferlex.KindPlain || versionNode.Value.Text != "6" {
+		return nil, false, nil
+	}
+	if strings.TrimSpace(body) != "" {
+		return nil, true, Errorf("%s: the project manifest does not take a body", ManifestFile)
+	}
+	project := &Project{SchemaVersion: 6, File: ManifestFile, Dependencies: map[string]string{}}
+	d := &fieldDecoder6{file: ManifestFile}
+	err = d.decode(root, map[string]func(*tferlex.Node) error{
+		"schemaVersion": func(*tferlex.Node) error { return nil },
+		"name":          d.stringInto(&project.Name),
+		"version":       d.stringInto(&project.Version),
+		"publisher":     d.stringInto(&project.Publisher),
+		"marketplace": func(n *tferlex.Node) error {
+			m := &Marketplace{}
+			if err := d.decode(n, map[string]func(*tferlex.Node) error{
+				"name":  d.stringInto(&m.Name),
+				"owner": d.stringInto(&m.Owner),
+			}); err != nil {
+				return err
+			}
+			project.Marketplace = m
+			return nil
+		},
+		"dependencies": func(n *tferlex.Node) error {
+			values, err := d.stringMap(n)
+			if err != nil {
+				return err
+			}
+			project.Dependencies = values
+			return nil
+		},
+		"plugins": d.stringListInto(&project.Plugins),
+		"exports": d.stringListInto(&project.Exports),
+	})
+	if err != nil {
+		return nil, true, err
+	}
+	if !packageName.MatchString(project.Name) {
+		return nil, true, Errorf("%s: name must use a lowercase namespace/name", ManifestFile)
+	}
+	if project.Name == ReservedPackagePrefix || strings.HasPrefix(project.Name, ReservedPackagePrefix+"/") {
+		return nil, true, Errorf("%s: the %s namespace is reserved for built-in resources", ManifestFile, ReservedPackagePrefix)
+	}
+	if !semanticVersion.MatchString(project.Version) {
+		return nil, true, Errorf("%s: version must be an exact semantic version", ManifestFile)
+	}
+	if strings.TrimSpace(project.Publisher) != project.Publisher {
+		return nil, true, Errorf("%s: publisher must not contain surrounding whitespace", ManifestFile)
+	}
+	for name, version := range project.Dependencies {
+		if !packageName.MatchString(name) {
+			return nil, true, Errorf("%s: dependency '%s' must use a lowercase namespace/name", ManifestFile, name)
+		}
+		if !semanticVersion.MatchString(version) {
+			return nil, true, Errorf("%s: dependency '%s' must use an exact semantic version", ManifestFile, name)
+		}
+		if name == project.Name {
+			return nil, true, Errorf("%s: a package cannot depend on itself", ManifestFile)
+		}
+	}
+	if m := project.Marketplace; m != nil {
+		if len(m.Name) > 64 || !marketplaceName.MatchString(m.Name) {
+			return nil, true, Errorf("%s: marketplace.name must be kebab-case, at most 64 characters", ManifestFile)
+		}
+		if strings.TrimSpace(m.Owner) == "" || strings.TrimSpace(m.Owner) != m.Owner {
+			return nil, true, Errorf("%s: marketplace.owner is required and must not contain surrounding whitespace", ManifestFile)
+		}
+	}
+	if len(project.Plugins) == 0 && len(project.Exports) == 0 {
+		return nil, true, Errorf("%s: a version 6 package must list at least one plugin or export", ManifestFile)
+	}
+	seen := map[string]bool{}
+	for _, path := range project.Plugins {
+		if kind, _, ok := KindFromPath(path); !ok || kind != "plugin" {
+			return nil, true, Errorf("%s: plugins must list .plugin.tfer paths, got '%s'", ManifestFile, path)
+		}
+		if seen[path] {
+			return nil, true, Errorf("%s: plugin '%s' is listed more than once", ManifestFile, path)
+		}
+		seen[path] = true
+	}
+	seen = map[string]bool{}
+	for _, path := range project.Exports {
+		kind, _, ok := KindFromPath(path)
+		if !ok || kind == "plugin" {
+			return nil, true, Errorf("%s: exports must list resource paths other than plugins, got '%s'", ManifestFile, path)
+		}
+		if seen[path] {
+			return nil, true, Errorf("%s: export '%s' is listed more than once", ManifestFile, path)
+		}
+		seen[path] = true
+	}
+	return project, true, nil
+}
+
+func declaresSchemaVersion6(frontmatter string) bool {
+	for _, line := range strings.Split(frontmatter, "\n") {
+		if strings.TrimSpace(line) == "schemaVersion: 6" {
+			return true
+		}
+	}
+	return false
+}
+
+func parseLegacyManifest(raw, manifestFile string) (*Project, error) {
 	// The manifest may be fenced; strip an optional `---` pair (ADR-0026).
-	text := strings.TrimPrefix(string(raw), "---\n")
+	text := strings.TrimPrefix(raw, "---\n")
 	if closing := strings.LastIndex(text, "\n---\n"); closing >= 0 {
 		if strings.TrimSpace(text[closing+len("\n---\n"):]) != "" {
 			return nil, Errorf("%s: the project manifest does not take a body", manifestFile)
@@ -65,7 +247,7 @@ func LoadProject(sourceDir string) (*Project, error) {
 		return nil, Errorf("%s: invalid manifest: %s", manifestFile, err)
 	}
 	if doc.SchemaVersion != 2 {
-		return nil, Errorf("%s: schemaVersion must be 2", manifestFile)
+		return nil, Errorf("%s: schemaVersion must be 6", manifestFile)
 	}
 	if !packageName.MatchString(doc.Name) {
 		return nil, Errorf("%s: name must use a lowercase namespace/name", manifestFile)
@@ -87,10 +269,12 @@ func LoadProject(sourceDir string) (*Project, error) {
 		dependencies[name] = version
 	}
 	return &Project{
-		Name:         doc.Name,
-		Version:      doc.Version,
-		Publisher:    doc.Publisher,
-		Dependencies: dependencies,
+		SchemaVersion: 2,
+		File:          manifestFile,
+		Name:          doc.Name,
+		Version:       doc.Version,
+		Publisher:     doc.Publisher,
+		Dependencies:  dependencies,
 	}, nil
 }
 

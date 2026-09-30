@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "id": "helio/works/plugins/payments@1.0.0",
+  "name": "payments",
+  "mode": "manual",
+  "version": "1.0.0",
+  "description": "The payments repository agent, for engineers and for release pipelines.",
+  "agents": [
+    {
+      "id": "helio/works/agents/payments-repo-agent@1.0.0",
+      "displayName": "Helio Payments Repository Agent",
+      "description": "Specializes repository assistance for the fictional payments service.",
+      "emit": true,
+      "embeds": [
+        "helio/works/profiles/repository-defaults@1.0.0"
+      ],
+      "satisfies": [
+        "helio/works/interfaces/repository-observer@1.0.0"
+      ],
+      "slots": {
+        "organization": "helio/works/context/organization@1.0.0",
+        "repository": "helio/works/context/repository@1.0.0"
+      },
+      "objectives": [
+        {
+          "source": "helio/works/agents/payments-repo-agent@1.0.0",
+          "content": "You report on the fictional payments service\u0027s repository for engineers and\nfor release pipelines. A healthy verdict requires every financial-control\nsignal.\n"
+        }
+      ],
+      "context": [
+        {
+          "id": "helio/works/context/audit-norm@1.0.0",
+          "contextType": "helio/works/context-types/norms@1.0.0",
+          "satisfies": [
+            "helio/works/context-types/norms@1.0.0"
+          ],
+          "content": "Preserve a clear audit trail for material decisions.\n"
+        },
+        {
+          "id": "helio/works/context/evidence-norm@1.0.0",
+          "contextType": "helio/works/context-types/norms@1.0.0",
+          "satisfies": [
+            "helio/works/context-types/norms@1.0.0"
+          ],
+          "content": "Prefer evidence from tests, diffs, and version control over recollection.\n"
+        },
+        {
+          "id": "helio/works/context/organization@1.0.0",
+          "contextType": "helio/works/context-types/organization@1.0.0",
+          "satisfies": [
+            "helio/works/context-types/organization@1.0.0"
+          ],
+          "content": "# Helio Works\n\nHelio Works is a fictional organization used only to demonstrate TypeFerence. It values clear ownership, reversible decisions, and evidence-backed communication.\n"
+        },
+        {
+          "id": "helio/works/context/payments-service@1.0.0",
+          "contextType": "helio/works/context-types/payments-service@1.0.0",
+          "satisfies": [
+            "helio/works/context-types/payments-service@1.0.0"
+          ],
+          "content": "# Payments service\n\nThis fictional service requires API-contract compatibility, reconciliation evidence, and a documented rollback path before a release is described as healthy.\n"
+        },
+        {
+          "id": "helio/works/context/repository@1.0.0",
+          "contextType": "helio/works/context-types/repository-evidence@1.0.0",
+          "satisfies": [
+            "helio/works/context-types/repository-evidence@1.0.0"
+          ],
+          "content": "# Repository evidence\n\nRepository reports should identify the current branch, working-tree state, relevant checks, and source commit whenever available.\n"
+        },
+        {
+          "id": "helio/works/context/safety-policy@1.0.0",
+          "contextType": "helio/works/context-types/safety-policy@1.0.0",
+          "satisfies": [
+            "helio/works/context-types/safety-policy@1.0.0",
+            "helio/works/context-types/policy@1.0.0"
+          ],
+          "values": {
+            "authority": "explicit"
+          },
+          "content": "# Safety policy\n\nAgents may prepare recommendations and drafts. They must not represent approval, transmit external messages, or make irreversible changes without explicit authority.\n"
+        },
+        {
+          "id": "helio/works/context/uncertainty-norm@1.0.0",
+          "contextType": "helio/works/context-types/norms@1.0.0",
+          "satisfies": [
+            "helio/works/context-types/norms@1.0.0"
+          ],
+          "content": "State uncertainty and route work to an accountable owner when authority is unclear.\n"
+        }
+      ],
+      "skills": [
+        {
+          "dispatchName": "payments-repo-agent.repository-status",
+          "capabilityId": "helio/works/capabilities/repository-status@1.0.0",
+          "implementationId": "helio/works/skills/payments-repository-status@1.0.0",
+          "description": "Report payments-service health with contract and reconciliation evidence.",
+          "instructions": "Inspect the requested repository signals. Report branch state, recent material\nchanges, test evidence, risks, and the next accountable action. Mark any\nunavailable signal explicitly instead of inferring success.\n\nFor the payments service, emit only the strict output object. Mark any\nunavailable financial-control signal as an explicit null; do not report\nthe service healthy when one is missing.\n",
+          "inputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022focus\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022additionalProperties\u0022:false}",
+          "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022risks\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022status\u0022,\u0022evidence\u0022,\u0022risks\u0022]}",
+          "variants": {
+            "a2a": {
+              "instructions": "Inspect the requested repository signals. Report branch state, recent material\nchanges, test evidence, risks, and the next accountable action. Mark any\nunavailable signal explicitly instead of inferring success.\n\nFor the payments service, return attributed evidence for the calling\nagent (contract compatibility, reconciliation, and rollback readiness)\nwith no user-facing framing. Do not report the service healthy when any\nrequired financial-control signal is unavailable.\n",
+              "requiresContextTypes": [],
+              "requiresTools": []
+            },
+            "manual": {
+              "instructions": "Inspect the requested repository signals. Report branch state, recent material\nchanges, test evidence, risks, and the next accountable action. Mark any\nunavailable signal explicitly instead of inferring success.\n\nFor the payments service, also report payment-contract compatibility,\nreconciliation checks, and rollback readiness, and surface uncertainty\nconversationally. Do not report the service healthy when any required\nfinancial-control signal is unavailable.\n",
+              "requiresContextTypes": [],
+              "requiresTools": []
+            },
+            "pipeline": {
+              "instructions": "Inspect the requested repository signals. Report branch state, recent material\nchanges, test evidence, risks, and the next accountable action. Mark any\nunavailable signal explicitly instead of inferring success.\n\nFor the payments service, emit only the strict output object. Mark any\nunavailable financial-control signal as an explicit null; do not report\nthe service healthy when one is missing.\n",
+              "requiresContextTypes": [],
+              "requiresTools": []
+            }
+          },
+          "requiresContextTypes": [
+            "helio/works/context-types/payments-service@1.0.0"
+          ],
+          "requiresTools": [
+            "helio/works/tools/repository-signals@1.0.0"
+          ],
+          "exposed": true,
+          "provenance": [
+            {
+              "field": "skill.capability",
+              "source": "helio/works/capabilities/repository-status@1.0.0"
+            },
+            {
+              "field": "skill.implementation",
+              "source": "helio/works/skills/payments-repository-status@1.0.0"
+            }
+          ]
+        }
+      ],
+      "provenance": [
+        {
+          "field": "slots.organization",
+          "source": "helio/works/profiles/enterprise-defaults@1.0.0"
+        },
+        {
+          "field": "embeds.helio/works/profiles/enterprise-defaults@1.0.0",
+          "source": "helio/works/profiles/repository-defaults@1.0.0"
+        },
+        {
+          "field": "slots.repository",
+          "source": "helio/works/profiles/repository-defaults@1.0.0"
+        },
+        {
+          "field": "embeds.helio/works/profiles/repository-defaults@1.0.0",
+          "source": "helio/works/agents/payments-repo-agent@1.0.0"
+        },
+        {
+          "field": "displayName",
+          "source": "helio/works/agents/payments-repo-agent@1.0.0"
+        },
+        {
+          "field": "description",
+          "source": "helio/works/agents/payments-repo-agent@1.0.0"
+        },
+        {
+          "field": "satisfies.helio/works/interfaces/repository-observer@1.0.0",
+          "source": "helio/works/agents/payments-repo-agent@1.0.0"
+        },
+        {
+          "field": "objectives",
+          "source": "helio/works/agents/payments-repo-agent@1.0.0"
+        }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "payments-repository-status",
+      "implementationId": "helio/works/skills/payments-repository-status@1.0.0",
+      "capabilityId": "helio/works/capabilities/repository-status@1.0.0",
+      "description": "Report payments-service health with contract and reconciliation evidence.",
+      "instructions": "Inspect the requested repository signals. Report branch state, recent material\nchanges, test evidence, risks, and the next accountable action. Mark any\nunavailable signal explicitly instead of inferring success.\n\nFor the payments service, also report payment-contract compatibility,\nreconciliation checks, and rollback readiness, and surface uncertainty\nconversationally. Do not report the service healthy when any required\nfinancial-control signal is unavailable.\n",
+      "inputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022focus\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022additionalProperties\u0022:false}",
+      "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022risks\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022status\u0022,\u0022evidence\u0022,\u0022risks\u0022]}",
+      "requiresContextTypes": [
+        "helio/works/context-types/payments-service@1.0.0"
+      ],
+      "requiresTools": [
+        "helio/works/tools/repository-signals@1.0.0"
+      ],
+      "exposed": true,
+      "provenance": [
+        {
+          "field": "skill.capability",
+          "source": "helio/works/capabilities/repository-status@1.0.0"
+        },
+        {
+          "field": "skill.implementation",
+          "source": "helio/works/skills/payments-repository-status@1.0.0"
+        }
+      ]
+    }
+  ]
+}
