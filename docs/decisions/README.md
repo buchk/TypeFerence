@@ -26,7 +26,7 @@ their decision.
 | [0013](0013-user-defined-typed-context.md) | User-defined typed context | Accepted | Compatibility, format, and satisfaction partly superseded by [0020](0020-close-the-source-language.md), [0023](0023-tfer-source-format.md), and [0024](0024-clarify-v4-type-and-composition-boundaries.md) |
 | [0014](0014-go-only-implementation.md) | Go-only implementation; the spec is the open invitation | Accepted | — |
 | [0015](0015-exposure-and-visibility.md) | Exposure and visibility | Accepted | Go export analogy narrowed by [0024](0024-clarify-v4-type-and-composition-boundaries.md) |
-| [0016](0016-sealing-mutability-presence.md) | Sealing: mutability and presence | Accepted | Deferred compatibility closed by [0020](0020-close-the-source-language.md); diamond behavior clarified by [0024](0024-clarify-v4-type-and-composition-boundaries.md) |
+| [0016](0016-sealing-mutability-presence.md) | Sealing: mutability and presence | Accepted | Deferred compatibility closed by [0020](0020-close-the-source-language.md); diamond behavior clarified by [0024](0024-clarify-v4-type-and-composition-boundaries.md); skill-level sealing proposed in [0031](0031-additive-skill-extension.md) |
 | [0017](0017-tools-as-extern.md) | Tools as extern declarations | Accepted | Deferred representations and sibling model partly superseded by [0020](0020-close-the-source-language.md) and [0024](0024-clarify-v4-type-and-composition-boundaries.md) |
 | [0018](0018-callable-resource-card-and-publishing.md) | Callable-resource card and publishing | Accepted | Runtime boundary completed by [0022](0022-build-link-and-source-identity.md) |
 | [0019](0019-context-lifecycles-two-doors.md) | Context lifecycles: the two doors | Accepted | Raw-path compatibility closed by [0020](0020-close-the-source-language.md) |
@@ -36,6 +36,11 @@ their decision.
 | [0023](0023-tfer-source-format.md) | Define the `.tfer` source format | Accepted | Dual-format acceptance superseded by [0026](0026-v5-closed-frontmatter-grammar.md) |
 | [0024](0024-clarify-v4-type-and-composition-boundaries.md) | Clarify version 4 type and composition boundaries | Accepted | — |
 | [0025](0025-own-linked-output-before-reset.md) | Require linked-output ownership before reset | Accepted | — |
-| [0026](0026-v5-closed-frontmatter-grammar.md) | v5: one closed frontmatter grammar and syntactic scalar typing | Accepted | — |
-| [0027](0027-v5-no-untyped-behavioral-prose.md) | v5: no untyped behavioral prose | Accepted | — |
-| [0028](0028-deterministic-setup-wizard.md) | Deterministic setup wizard: one generator, browser and CLI | Accepted | — |
+| [0026](0026-v5-closed-frontmatter-grammar.md) | v5: one closed frontmatter grammar and syntactic scalar typing | Accepted | Parser and scalar-typing rulings proposed for amendment by [0032](0032-v6-grammar-and-schema-directed-scalars.md) |
+| [0027](0027-v5-no-untyped-behavioral-prose.md) | v5: no untyped behavioral prose | Accepted | Decision 3 proposed for supersession by [0029](0029-agent-plugins-primary-target.md) |
+| [0028](0028-deterministic-setup-wizard.md) | Deterministic setup wizard: one generator, browser and CLI | Accepted | Generator output moved to version 6 by [0030](0030-plugin-documents-and-v6-authoring.md) |
+| [0029](0029-agent-plugins-primary-target.md) | GitHub Agent Plugins as the primary output target | Proposed | — |
+| [0030](0030-plugin-documents-and-v6-authoring.md) | Plugin documents, thin agents, and v6 authoring | Proposed | — |
+| [0031](0031-additive-skill-extension.md) | Additive skill extension | Proposed | — |
+| [0032](0032-v6-grammar-and-schema-directed-scalars.md) | v6: the closed grammar as the only parser, and schema-directed scalars | Proposed | — |
+| [0033](0033-import-copilot-customizations.md) | Import existing GitHub Copilot customizations | Proposed | — |
