@@ -2,7 +2,7 @@
   "description": "Plugins that ship different members of one capability family are reported as competing when installed together (ADR-0031).",
   "expect": "success",
   "digests": {
-    "agent-plugin": "sha256:904a22a731c22fe978e239193fa19df45bc8810293a04717d7c088b7d54b6067",
+    "agent-plugin": "sha256:1a67a1ba768b092b5178a0f2db407d2e303129532ab8eeef3c8291815645b48f",
     "neutral": "sha256:89722ceae1524a2a313d048c10f1550aadb030a823a9fb5dd0f6b05e18528b0e"
   }
 }

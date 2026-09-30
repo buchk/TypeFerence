@@ -93,6 +93,52 @@ Skills stay `SKILL.md` files, so each one is still a slash command. A skill that
 
 It also writes the `neutral` bundle, the canonical host-independent form that link, A2A publication, and the ARD catalog build on.
 
+## One marketplace for the whole organization
+
+Teams author agents and skills in their own repositories, but people install from one place. That place is the build of a **marketplace package**: a small repository whose manifest pins every team's published package and lists the plugins to ship ([ADR-0034](docs/decisions/0034-organization-marketplace-from-source-packages.md)):
+
+```text
+---
+schemaVersion: 6
+name: acme/marketplace
+version: 2026.10.1
+marketplace:
+  name: acme-agents
+  owner: Acme Platform
+dependencies:
+  acme/core: 3.1.0
+  acme/payments-agents: 2.4.0
+  acme/data-agents: 1.0.2
+plugins:
+  - acme/core:plugins/engineering-kit.plugin.tfer
+  - acme/payments-agents:plugins/payments.plugin.tfer
+  - acme/data-agents:plugins/data.plugin.tfer
+---
+```
+
+Because the whole marketplace is one build, the guarantees of a single build hold across every team:
+
+- Every plugin, agent, and skill name maps to exactly one thing. If two teams ship different skills called `review`, the marketplace build fails and names both, instead of Copilot keeping whichever it loads first.
+- A shared skill from a core package is one skill, emitted byte-for-byte identically in every plugin that carries it, so installing two packs that include it is harmless.
+- The lockfile holds one version of each package. If payments pins `acme/core` 3.1.0 and data pins 3.2.0, restoring the marketplace fails until they agree.
+- The compatibility report covers the whole marketplace: it names plugins that ship competing variants of one skill.
+- Each plugin carries its owning package's version and provenance, so releasing one team's package changes only that team's plugin directories.
+
+The flow:
+
+1. A team merges, and its CI publishes a new version of its package to the feed with `typeference pack`.
+2. A pull request bumps that package's pin in the marketplace package (`typeference update` rewrites the lockfile).
+3. Marketplace CI builds it. Collisions, divergent shared skills, and version skew fail here.
+4. A release job replaces the published marketplace repository's contents with the build output (linked, when plugins import tools). Nothing else goes in, so a plugin reaches people only by going through the compiler.
+
+A team can check its package against the current marketplace before publishing:
+
+```sh
+typeference validate path/to/marketplace --candidate .
+```
+
+It reports collisions, the packages that must move with a core release, and competing plugins, and writes nothing.
+
 ## Using the plugins with Copilot
 
 Publish the `agent-plugin` directory as a repository (here `your-org/agent-plugins`; the marketplace it defines is named `helio-agents` by the manifest), then install from it with [Copilot CLI](https://docs.github.com/en/enterprise-cloud@latest/copilot/reference/copilot-cli-reference/cli-plugin-reference):
@@ -130,6 +176,8 @@ steps:
     env:
       GITHUB_TOKEN: ${{ github.token }}
 ```
+
+A job's default `GITHUB_TOKEN` can read only the job's own repository, so installing from a private marketplace in another repository needs a credential with read access to it; how Copilot CLI picks that credential up is still to be verified.
 
 These host behaviors come from GitHub's documentation; the ones TypeFerence has not yet verified in practice are listed in [ADR-0029](docs/decisions/0029-agent-plugins-primary-target.md#consequences).
 
@@ -236,7 +284,7 @@ typeference init --answers <answers.json> [--out DIR] [--verify sha256:...]
 typeference import <copilot-source> --out <dir> [--name ns/name]
     [--version x.y.z] [--plugin name] [--lossy]
 typeference validate <source> [--trust-config path]
-    [--packages-dir obj/typeference/packages]
+    [--packages-dir obj/typeference/packages] [--candidate <package-dir>]
 typeference pack <source> [--out package.tferpkg]
 typeference restore <source> --feeds <external-config> [--locked]
     [--packages-dir obj/typeference/packages]
@@ -257,7 +305,8 @@ typeference equivalence score <run-dir> [--live] [--model id]
 ```
 
 `validate` checks composition, typing, and every plugin's shipping rules
-without writing anything. `pack` creates a canonical source package. `restore`
+without writing anything; with `--candidate`, it checks an unpublished package
+against a marketplace package's locked graph. `pack` creates a canonical source package. `restore`
 is the only dependency operation that contacts feeds; it commits exact
 identities and digests to `typeference.lock` and materializes the complete tree
 under `obj/typeference/packages`. Once a lock exists, `restore` honors it;

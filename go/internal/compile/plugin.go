@@ -29,9 +29,13 @@ type pluginPlan struct {
 	ID          string
 	Name        string
 	Description string
-	Version     string
-	Modes       []string
-	Agents      []*resolve.ResolvedAgent
+	// Version is the owning package's version (ADR-0034).
+	Version string
+	// Provenance is the owning package's: its source digest and the locked
+	// packages in its dependency closure (ADR-0034).
+	Provenance buildProvenance
+	Modes      []string
+	Agents     []*resolve.ResolvedAgent
 	// Skills are the union of every linked agent's resolved skills, every
 	// linked profile's skills, and every directly linked skill, one per
 	// implementation, ordered by emitted name.
@@ -71,19 +75,17 @@ func validHostName(name string) bool {
 	return len(name) <= 64 && hostNamePattern.MatchString(name)
 }
 
-// planPlugins resolves every plugin in the package and enforces the rules a
-// plugin must satisfy to ship (ADR-0029, ADR-0030).
-func planPlugins(c *compilation, docs map[string]*resource.Document, agents map[string]*resolve.ResolvedAgent) ([]*pluginPlan, error) {
-	ids := []string{}
-	for id, doc := range docs {
-		if doc.Kind == "plugin" && doc.Package == c.project.Name {
-			ids = append(ids, id)
-		}
-	}
-	sort.Strings(ids)
+// planPlugins resolves every plugin the build ships (its own and the
+// dependency plugins its manifest lists, sorted by identity) and enforces the
+// rules a plugin must satisfy to ship (ADR-0029, ADR-0030, ADR-0034).
+func planPlugins(c *compilation, docs map[string]*resource.Document, agents map[string]*resolve.ResolvedAgent, ids []string, owners map[string]buildProvenance) ([]*pluginPlan, error) {
 	plans := []*pluginPlan{}
 	for _, id := range ids {
-		plan, err := planPlugin(c, docs[id], agents)
+		doc, ok := docs[id]
+		if !ok || doc.Kind != "plugin" {
+			return nil, resource.Errorf("%s ships %s, which is not a plugin in this build", c.project.Name, id)
+		}
+		plan, err := planPlugin(c, doc, agents, owners[doc.Package])
 		if err != nil {
 			return nil, err
 		}
@@ -92,12 +94,13 @@ func planPlugins(c *compilation, docs map[string]*resource.Document, agents map[
 	return plans, nil
 }
 
-func planPlugin(c *compilation, doc *resource.Document, agents map[string]*resolve.ResolvedAgent) (*pluginPlan, error) {
+func planPlugin(c *compilation, doc *resource.Document, agents map[string]*resolve.ResolvedAgent, owner buildProvenance) (*pluginPlan, error) {
 	plan := &pluginPlan{
 		ID:          doc.ID,
 		Name:        resource.Leaf(doc.ID),
 		Description: doc.Description,
-		Version:     c.project.Version,
+		Version:     doc.ID[strings.LastIndex(doc.ID, "@")+1:],
+		Provenance:  owner,
 		Modes:       append([]string{}, doc.PluginModes...),
 		direct:      map[string]bool{},
 	}
@@ -316,7 +319,7 @@ func (c *compilation) writePluginArtifact(root string, artifact pluginArtifact, 
 	if err := writeFile(filepath.Join(dir, ".typeference", "bundle.json"), pluginBundleJSON(artifact)+"\n", written); err != nil {
 		return err
 	}
-	return writeFile(filepath.Join(dir, ".typeference", "link.json"), pluginLinkRequirementsJSON(artifact, c.provenance)+"\n", written)
+	return writeFile(filepath.Join(dir, ".typeference", "link.json"), pluginLinkRequirementsJSON(artifact)+"\n", written)
 }
 
 // renderPluginAgent renders a Copilot custom agent profile. The agent is
@@ -386,20 +389,34 @@ func marketplaceJSON(marketplace *resource.Marketplace, version string, artifact
 	})
 }
 
-// compatibilityJSON reports, per mode, every capability that more than one
-// shipped skill implements: plugins that ship different members of one
-// family compete for the same requests when installed together (ADR-0031).
-func compatibilityJSON(artifacts []pluginArtifact) string {
-	type member struct{ plugin, skill string }
-	conflicts := jsonx.Arr{}
+// Conflict is one capability that more than one distinct emitted skill
+// implements in a mode: plugins that ship different members of that family
+// compete for the same requests when installed together (ADR-0031).
+type Conflict struct {
+	Mode         string
+	CapabilityID string
+	Members      []ConflictMember
+}
+
+// ConflictMember is one plugin artifact's skill in a conflicting family.
+type ConflictMember struct {
+	Plugin string
+	Skill  string
+}
+
+// compatibilityConflicts computes the compatibility report: per mode, every
+// capability with more than one distinct emitted skill, members sorted by
+// plugin artifact and skill.
+func compatibilityConflicts(artifacts []pluginArtifact) []Conflict {
+	conflicts := []Conflict{}
 	for _, mode := range []string{"manual", "pipeline"} {
-		families := map[string][]member{}
+		families := map[string][]ConflictMember{}
 		for _, artifact := range artifacts {
 			if artifact.mode != mode {
 				continue
 			}
 			for _, skill := range artifact.plan.Skills {
-				families[skill.CapabilityID] = append(families[skill.CapabilityID], member{artifact.dir, skillName(skill)})
+				families[skill.CapabilityID] = append(families[skill.CapabilityID], ConflictMember{artifact.dir, skillName(skill)})
 			}
 		}
 		capabilities := make([]string, 0, len(families))
@@ -411,30 +428,39 @@ func compatibilityJSON(artifacts []pluginArtifact) string {
 			members := families[capability]
 			distinct := map[string]bool{}
 			for _, m := range members {
-				distinct[m.skill] = true
+				distinct[m.Skill] = true
 			}
 			if len(distinct) < 2 {
 				continue
 			}
 			sort.Slice(members, func(i, j int) bool {
-				if members[i].plugin != members[j].plugin {
-					return members[i].plugin < members[j].plugin
+				if members[i].Plugin != members[j].Plugin {
+					return members[i].Plugin < members[j].Plugin
 				}
-				return members[i].skill < members[j].skill
+				return members[i].Skill < members[j].Skill
 			})
-			entries := jsonx.Arr{}
-			for _, m := range members {
-				entries = append(entries, jsonx.Obj{
-					{K: "plugin", V: jsonx.Str(m.plugin)},
-					{K: "skill", V: jsonx.Str(m.skill)},
-				})
-			}
-			conflicts = append(conflicts, jsonx.Obj{
-				{K: "mode", V: jsonx.Str(mode)},
-				{K: "capabilityId", V: jsonx.Str(capability)},
-				{K: "members", V: entries},
+			conflicts = append(conflicts, Conflict{Mode: mode, CapabilityID: capability, Members: members})
+		}
+	}
+	return conflicts
+}
+
+// compatibilityJSON renders the compatibility report (ADR-0031).
+func compatibilityJSON(artifacts []pluginArtifact) string {
+	conflicts := jsonx.Arr{}
+	for _, conflict := range compatibilityConflicts(artifacts) {
+		entries := jsonx.Arr{}
+		for _, m := range conflict.Members {
+			entries = append(entries, jsonx.Obj{
+				{K: "plugin", V: jsonx.Str(m.Plugin)},
+				{K: "skill", V: jsonx.Str(m.Skill)},
 			})
 		}
+		conflicts = append(conflicts, jsonx.Obj{
+			{K: "mode", V: jsonx.Str(conflict.Mode)},
+			{K: "capabilityId", V: jsonx.Str(conflict.CapabilityID)},
+			{K: "members", V: entries},
+		})
 	}
 	return jsonx.Indented(jsonx.Obj{
 		{K: "schemaVersion", V: jsonx.Num("1")},

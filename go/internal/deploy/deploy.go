@@ -129,7 +129,10 @@ type indexArtifact struct {
 	ID      string `json:"id,omitempty"`
 	Mode    string `json:"mode,omitempty"`
 	Path    string `json:"path"`
-	Digest  string `json:"digest"`
+	// SourceDigest is a plugin artifact's owning package source digest
+	// (build index schemaVersion 2, ADR-0034).
+	SourceDigest string `json:"sourceDigest,omitempty"`
+	Digest       string `json:"digest"`
 }
 
 type buildIndex struct {
@@ -488,6 +491,12 @@ func verifyBuildIndex(root string, reqs []requirements) error {
 		if !validArtifactPath(artifact.Path) || !resource.IsResourceID(id) || !validSHA256Digest(artifact.Digest) {
 			return resource.Errorf("Invalid artifact entry in build integrity index: %s", path)
 		}
+		if index.SchemaVersion == 2 && !validSHA256Digest(artifact.SourceDigest) {
+			return resource.Errorf("Invalid artifact entry in build integrity index: %s", path)
+		}
+		if index.SchemaVersion == 1 && artifact.SourceDigest != "" {
+			return resource.Errorf("Invalid artifact entry in build integrity index: %s", path)
+		}
 		if _, exists := expected[artifact.Path]; exists {
 			return resource.Errorf("Duplicate artifact %s in build integrity index", artifact.Path)
 		}
@@ -497,12 +506,21 @@ func verifyBuildIndex(root string, reqs []requirements) error {
 		return resource.Errorf("Build integrity index does not match its link manifests")
 	}
 	for _, req := range reqs {
-		if req.schemaVersion != index.SchemaVersion || req.Target != index.Target || req.SourceDigest != index.SourceDigest {
+		if req.schemaVersion != index.SchemaVersion || req.Target != index.Target {
 			return resource.Errorf("Link requirements for %s do not match the build integrity index", req.ID)
 		}
 		want, ok := expected[req.slug]
 		if !ok {
 			return resource.Errorf("Build integrity index does not include %s", req.slug)
+		}
+		// A neutral artifact records the build's source digest; a plugin
+		// artifact records its owning package's, which its entry repeats.
+		expectedSource := index.SourceDigest
+		if index.SchemaVersion == 2 {
+			expectedSource = want.SourceDigest
+		}
+		if req.SourceDigest != expectedSource {
+			return resource.Errorf("Link requirements for %s do not match the build integrity index", req.ID)
 		}
 		id := want.AgentID
 		if index.SchemaVersion == 2 {

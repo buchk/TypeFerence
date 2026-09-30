@@ -2,7 +2,7 @@
   "description": "CRLF line endings and a byte-order mark are normalized before parsing, so the output is identical to the LF form.",
   "expect": "success",
   "digests": {
-    "agent-plugin": "sha256:b3e67f2f50f9fe9c907b2a2166e9a3f0d71420cf52a307e00aefec1048bb71f6",
+    "agent-plugin": "sha256:841eb8296d8b92fb3c728352f2dea14ec515ff8c0f10968bdb8c3c4d7c8d9981",
     "neutral": "sha256:27c89f19a32a59841c7c5aadfb53d904e4b5591d5582a977bbd813d6293f334d"
   }
 }

@@ -66,8 +66,11 @@ func linkRequirementsJSON(agent *resolve.ResolvedAgent, provenance buildProvenan
 // pluginLinkRequirementsJSON is a plugin artifact's link manifest
 // (schemaVersion 2). A plugin artifact materializes exactly one mode, so it
 // imports the base tools of every shipped skill plus that mode's variant
-// tools (ADR-0029).
-func pluginLinkRequirementsJSON(artifact pluginArtifact, provenance buildProvenance) string {
+// tools (ADR-0029). It records the owning package's provenance, never the
+// building package's, so the artifact's bytes depend only on the package
+// that owns it (ADR-0034).
+func pluginLinkRequirementsJSON(artifact pluginArtifact) string {
+	provenance := artifact.plan.Provenance
 	modeSet := map[string]bool{}
 	imports := jsonx.Arr{}
 	for _, skill := range artifact.plan.Skills {
@@ -95,7 +98,8 @@ func pluginLinkRequirementsJSON(artifact pluginArtifact, provenance buildProvena
 }
 
 // writePluginBuildIndex writes the agent-plugin target's integrity index
-// (schemaVersion 2): one artifact per plugin and mode.
+// (schemaVersion 2): one artifact per plugin and mode, each with its owning
+// package's source digest (ADR-0034).
 func writePluginBuildIndex(root string, artifacts []pluginArtifact, provenance buildProvenance, written *[]string) error {
 	entries := jsonx.Arr{}
 	for _, artifact := range artifacts {
@@ -107,6 +111,7 @@ func writePluginBuildIndex(root string, artifacts []pluginArtifact, provenance b
 			{K: "id", V: jsonx.Str(artifact.plan.ID)},
 			{K: "mode", V: jsonx.Str(artifact.mode)},
 			{K: "path", V: jsonx.Str(artifact.dir)},
+			{K: "sourceDigest", V: jsonx.Str(artifact.plan.Provenance.SourceDigest)},
 			{K: "digest", V: jsonx.Str("sha256:" + digest)},
 		})
 	}

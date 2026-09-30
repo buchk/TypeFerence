@@ -38,6 +38,10 @@ remaining as stale unchecked tasks here.
   and bearer-token credentials for a plugin's `mcp.json` (ADR-0029 decision 7);
   specify host-native configuration for credentialed CI use once the pilot
   shows how Copilot supplies credentials to plugin MCP servers.
+- [ ] Verify how Copilot CLI authenticates to a private marketplace in a CI
+  job, whose default token reads only its own repository (ADR-0034).
+- [ ] Automate marketplace pin bumps: when a team publishes a package, open
+  a pull request that updates the marketplace package's pin and lockfile.
 - [ ] Decide whether `typeference import` should recover shared structure
   (profiles, extensions) from near-duplicate imported skills, or leave that to
   authors (ADR-0033).

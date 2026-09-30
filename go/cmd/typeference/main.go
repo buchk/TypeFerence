@@ -87,11 +87,21 @@ func validate(args []string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	summary, err := compile.Summarize(source, trustConfig, packagesDir)
+	candidate, err := option(args, "--candidate")
 	if err != nil {
 		return 0, err
 	}
-	fmt.Printf("Valid: %d agents resolved; %d plugin artifacts.\n", len(summary.Agents), len(summary.Plugins))
+	summary, err := compile.SummarizeWithOptions(source, trustConfig,
+		compile.BuildOptions{PackagesDir: packagesDir, Candidate: candidate})
+	if err != nil {
+		return 0, err
+	}
+	verdict := "Valid"
+	if candidate != "" {
+		verdict = "Candidate fits"
+	}
+	fmt.Printf("%s: %d agents resolved; %d plugin artifacts.\n", verdict, len(summary.Agents), len(summary.Plugins))
+	printConflicts(summary.Conflicts)
 	return 0, nil
 }
 
@@ -164,7 +174,20 @@ func reportPluginConflicts(path string) {
 	if json.Unmarshal(data, &report) != nil {
 		return
 	}
+	conflicts := []compile.Conflict{}
 	for _, conflict := range report.Conflicts {
+		members := []compile.ConflictMember{}
+		for _, member := range conflict.Members {
+			members = append(members, compile.ConflictMember{Plugin: member.Plugin, Skill: member.Skill})
+		}
+		conflicts = append(conflicts, compile.Conflict{Mode: conflict.Mode, CapabilityID: conflict.CapabilityID, Members: members})
+	}
+	printConflicts(conflicts)
+}
+
+// printConflicts reports plugins that compete when installed together.
+func printConflicts(conflicts []compile.Conflict) {
+	for _, conflict := range conflicts {
 		members := make([]string, 0, len(conflict.Members))
 		for _, member := range conflict.Members {
 			members = append(members, member.Plugin+"/"+member.Skill)
@@ -608,7 +631,9 @@ Commands:
        into a version 6 package; fails on anything it cannot represent
        unless --lossy)
   typeference validate <source> [--trust-config path]
-      [--packages-dir obj/typeference/packages]
+      [--packages-dir obj/typeference/packages] [--candidate <package-dir>]
+      (--candidate checks an unpublished package against a marketplace
+       package's locked graph without writing anything)
   typeference pack <source> [--out package.tferpkg]
   typeference restore <source> --feeds <external-config> [--locked]
       [--packages-dir obj/typeference/packages]

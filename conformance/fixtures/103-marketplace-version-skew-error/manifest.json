@@ -1,0 +1,5 @@
+{
+  "description": "Two teams depend on different versions of a shared package; the locked graph holds one version of each package, so restoring the marketplace fails (ADR-0021, ADR-0034).",
+  "expect": "error",
+  "packages": "packages"
+}

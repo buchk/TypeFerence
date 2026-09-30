@@ -58,6 +58,28 @@ const ReservedPackagePrefix = "typeference/builtin"
 // IsV6 reports whether the manifest declares the version 6 language.
 func (p *Project) IsV6() bool { return p != nil && p.SchemaVersion == 6 }
 
+// SplitPluginEntry splits a manifest plugins entry into the dependency that
+// owns the plugin and the plugin's path in it. A package's own plugin has no
+// package prefix (ADR-0034).
+func SplitPluginEntry(entry string) (pkg, path string) {
+	if idx := strings.Index(entry, ":"); idx >= 0 {
+		return entry[:idx], entry[idx+1:]
+	}
+	return "", entry
+}
+
+// OwnPlugins returns the paths of the plugin documents the package itself
+// contains, in manifest order.
+func (p *Project) OwnPlugins() []string {
+	own := []string{}
+	for _, entry := range p.Plugins {
+		if pkg, path := SplitPluginEntry(entry); pkg == "" {
+			own = append(own, path)
+		}
+	}
+	return own
+}
+
 func LoadProject(sourceDir string) (*Project, error) {
 	tferPath := filepath.Join(sourceDir, ManifestFileNameV5)
 	yamlPath := filepath.Join(sourceDir, ProjectManifestFile)
@@ -193,17 +215,35 @@ func parseV6Manifest(text string) (*Project, bool, error) {
 		return nil, true, Errorf("%s: a version 6 package must list at least one plugin or export", ManifestFile)
 	}
 	seen := map[string]bool{}
-	for _, path := range project.Plugins {
+	for _, entry := range project.Plugins {
+		pkg, path := SplitPluginEntry(entry)
 		if kind, _, ok := KindFromPath(path); !ok || kind != "plugin" {
-			return nil, true, Errorf("%s: plugins must list .plugin.tfer paths, got '%s'", ManifestFile, path)
+			return nil, true, Errorf("%s: plugins must list .plugin.tfer paths, got '%s'", ManifestFile, entry)
 		}
-		if seen[path] {
-			return nil, true, Errorf("%s: plugin '%s' is listed more than once", ManifestFile, path)
+		if pkg != "" {
+			if !packageName.MatchString(pkg) {
+				return nil, true, Errorf("%s: plugin '%s' names an invalid package", ManifestFile, entry)
+			}
+			if pkg == project.Name {
+				return nil, true, Errorf("%s: plugin '%s' names this package; write the path without a package prefix", ManifestFile, entry)
+			}
+			if _, declared := project.Dependencies[pkg]; !declared {
+				return nil, true, Errorf("%s: plugin '%s' names package %s, which the manifest does not declare as a dependency", ManifestFile, entry, pkg)
+			}
+			if err := ValidSourcePath(path); err != nil {
+				return nil, true, Errorf("%s: plugin '%s': %s", ManifestFile, entry, err.(*Error).Message)
+			}
 		}
-		seen[path] = true
+		if seen[entry] {
+			return nil, true, Errorf("%s: plugin '%s' is listed more than once", ManifestFile, entry)
+		}
+		seen[entry] = true
 	}
 	seen = map[string]bool{}
 	for _, path := range project.Exports {
+		if strings.Contains(path, ":") {
+			return nil, true, Errorf("%s: exports list this package's own documents, got '%s'", ManifestFile, path)
+		}
 		kind, _, ok := KindFromPath(path)
 		if !ok || kind == "plugin" {
 			return nil, true, Errorf("%s: exports must list resource paths other than plugins, got '%s'", ManifestFile, path)

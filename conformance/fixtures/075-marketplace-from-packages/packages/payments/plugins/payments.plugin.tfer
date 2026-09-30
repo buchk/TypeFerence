@@ -1,0 +1,8 @@
+---
+description: The payments agent, for engineers and release pipelines.
+agents:
+  - agents/payments-agent.agent.tfer
+modes:
+  - manual
+  - pipeline
+---

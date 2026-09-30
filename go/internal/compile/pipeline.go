@@ -44,8 +44,9 @@ func prepare(source, trustConfigPath string, options BuildOptions) (*compilation
 	return nil, resource.Errorf("Unknown source language: %s", options.Language)
 }
 
-// prepareCurrent loads a version 6 package: the closure of its manifest's
-// plugins and exports plus its locked dependencies (ADR-0030).
+// prepareCurrent loads a version 6 package: the closure of its manifest's own
+// plugins and exports, its locked dependencies, and the dependency plugins its
+// manifest ships (ADR-0030, ADR-0034).
 func prepareCurrent(source string, loaded *trust.Loaded, options BuildOptions) (*compilation, error) {
 	project, err := resource.LoadProject(source)
 	if err != nil {
@@ -54,11 +55,29 @@ func prepareCurrent(source string, loaded *trust.Loaded, options BuildOptions) (
 	if !project.IsV6() {
 		return nil, resource.Errorf("%s is not a version 6 package: TypeFerence builds sources whose %s declares schemaVersion 6 (docs/specification.md, ADR-0030)", source, resource.ManifestFile)
 	}
-	dependencies, err := packages.LoadDependencySet(source, options.PackagesDir)
+	var dependencies *packages.DependencySet
+	if options.Candidate != "" {
+		dependencies, err = packages.LoadDependencySetWithCandidate(source, options.PackagesDir, options.Candidate)
+	} else {
+		dependencies, err = packages.LoadDependencySet(source, options.PackagesDir)
+	}
 	if err != nil {
 		return nil, err
 	}
-	root, err := resource.LoadV6(source, resource.V6Options{Dependencies: project.Dependencies})
+	declared := project.Dependencies
+	candidate := dependencies.Candidate
+	if candidate != nil {
+		declared = map[string]string{}
+		for name, version := range project.Dependencies {
+			declared[name] = version
+		}
+		declared[candidate.Name] = candidate.Version
+	}
+	root, err := resource.LoadV6(source, resource.V6Options{Dependencies: declared})
+	if err != nil {
+		return nil, err
+	}
+	shipped, err := shippedDependencyPlugins(project, root, dependencies)
 	if err != nil {
 		return nil, err
 	}
@@ -67,8 +86,8 @@ func prepareCurrent(source string, loaded *trust.Loaded, options BuildOptions) (
 		all[id] = doc
 	}
 	for id, doc := range dependencies.Documents {
-		if doc.Kind == "plugin" {
-			continue // a dependency's plugins are its own build's business
+		if doc.Kind == "plugin" && !shipped[id] {
+			continue // a dependency's plugins ship only where a manifest lists them
 		}
 		if _, exists := all[id]; exists {
 			return nil, resource.Errorf("root resource cannot shadow locked dependency resource: %s", id)
@@ -111,7 +130,12 @@ func prepareCurrent(source string, loaded *trust.Loaded, options BuildOptions) (
 	for _, agent := range resolved {
 		byID[agent.ID] = agent
 	}
-	plugins, err := planPlugins(c, all, byID)
+	pluginIDs := append([]string{}, root.OwnPlugins...)
+	for id := range shipped {
+		pluginIDs = append(pluginIDs, id)
+	}
+	sort.Strings(pluginIDs)
+	plugins, err := planPlugins(c, all, byID, pluginIDs, ownerProvenance(c, dependencies.Locked))
 	if err != nil {
 		return nil, err
 	}
@@ -141,6 +165,69 @@ func prepareCurrent(source string, loaded *trust.Loaded, options BuildOptions) (
 		return nil, err
 	}
 	return c, nil
+}
+
+// shippedDependencyPlugins returns the dependency plugins a package ships: the
+// ones its manifest lists, each of which its owning package's manifest must
+// list among its own plugins (ADR-0034). When a candidate package is being
+// validated, its plugins replace the ones the manifest lists from it.
+func shippedDependencyPlugins(project *resource.Project, root *resource.V6Source, dependencies *packages.DependencySet) (map[string]bool, error) {
+	listed := map[string]map[string]bool{}
+	for pkg, ids := range dependencies.Plugins {
+		listed[pkg] = map[string]bool{}
+		for _, id := range ids {
+			listed[pkg][id] = true
+		}
+	}
+	shipped := map[string]bool{}
+	candidate := dependencies.Candidate
+	for _, plugin := range root.DependencyPlugins {
+		if candidate != nil && plugin.Package == candidate.Name {
+			continue
+		}
+		if !listed[plugin.Package][plugin.ID] {
+			return nil, resource.Errorf("%s ships %s, which package %s does not list among its plugins", project.Name, plugin.ID, plugin.Package)
+		}
+		shipped[plugin.ID] = true
+	}
+	if candidate != nil {
+		for _, id := range dependencies.Plugins[candidate.Name] {
+			shipped[id] = true
+		}
+	}
+	return shipped, nil
+}
+
+// ownerProvenance maps each package in the build to the provenance its plugin
+// artifacts record: the building package's own, or a locked package's digest
+// and the locked packages in its dependency closure (ADR-0034).
+func ownerProvenance(c *compilation, locked []packages.LockedPackage) map[string]buildProvenance {
+	byName := map[string]packages.LockedPackage{}
+	for _, item := range locked {
+		byName[item.Name] = item
+	}
+	owners := map[string]buildProvenance{c.project.Name: c.provenance}
+	for _, item := range locked {
+		closure := map[string]bool{}
+		var visit func(string)
+		visit = func(name string) {
+			for dependency := range byName[name].Dependencies {
+				if !closure[dependency] {
+					closure[dependency] = true
+					visit(dependency)
+				}
+			}
+		}
+		visit(item.Name)
+		dependencies := []packages.LockedPackage{}
+		for _, other := range locked {
+			if closure[other.Name] {
+				dependencies = append(dependencies, other)
+			}
+		}
+		owners[item.Name] = buildProvenance{SourceDigest: item.Digest, Dependencies: dependencies}
+	}
+	return owners
 }
 
 // prepareLegacy reproduces an archival build exactly as its language defined

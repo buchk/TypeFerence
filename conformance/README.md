@@ -32,6 +32,7 @@ conformance/fixtures/<NNN-name>/
 | `emitArd` | Optional ARD publisher domain; presence enables `--emit-ard`. |
 | `trustSignatures` | Optional signature map path relative to the fixture directory. |
 | `allowUnsignedTrust` | Optional; enables the unsigned-staging escape hatch. |
+| `packages` | Optional directory of dependency package sources. The runner packs each (after restoring its own dependencies) into a temporary filesystem feed and restores a copy of `source/` against it before building (ADR-0034); a restore failure counts as the fixture's failure. |
 | `generatorVersion` | Setup wizard fixtures only: the generator that produced the source (ADR-0028). |
 | `digests` | For `success` fixtures: the expected `typeference-directory-v1` digest of each emitted top-level directory (`agent-plugin`, `neutral`, `ard`), and `scaffold` for wizard fixtures. |
 
@@ -40,7 +41,7 @@ Current fixtures build `neutral` and `agent-plugin`; archival fixtures build
 `TestConformance` runs the current corpus, and `TestLegacyV5Golden` and
 `TestLegacyV3Golden` run the archival ones.
 
-Fixtures 058–074 are version 6 successes and 080–099 version 6 errors. Every
+Fixtures 058–075 are version 6 successes and 080–104 version 6 errors. Every
 fixture numbered below 058 is archival.
 
 The [specification evidence matrix](../docs/conformance-matrix.md) records which

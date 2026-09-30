@@ -1,0 +1,9 @@
+{
+  "description": "One marketplace built from three team packages (ADR-0034): dependency plugins ship because the marketplace manifest lists them, each artifact carries its owning package's version and provenance, the shared core skill ships identically in two plugins, and the compatibility report spans packages.",
+  "expect": "success",
+  "packages": "packages",
+  "digests": {
+    "agent-plugin": "sha256:831f38d3ff8de37635a2047f8c49e33792f674c13461bff44312a47d5c984bf9",
+    "neutral": "sha256:ddf9681a73baf806895386950bb64c56e0038cdc86fad5d970430ac3d50f2306"
+  }
+}
