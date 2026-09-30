@@ -107,6 +107,18 @@ type V6Source struct {
 	Qualified map[string][]string
 	// Exports are the identities of the manifest's exports, sorted.
 	Exports []string
+	// OwnPlugins are the identities of the plugins the package itself
+	// contains, sorted.
+	OwnPlugins []string
+	// DependencyPlugins are the plugins the manifest ships from direct
+	// dependencies (ADR-0034), sorted by identity.
+	DependencyPlugins []DependencyPlugin
+}
+
+// DependencyPlugin is a manifest entry that ships a dependency's plugin.
+type DependencyPlugin struct {
+	Package string
+	ID      string
 }
 
 type pendingRef struct {
@@ -151,9 +163,23 @@ func LoadV6(sourceDir string, options V6Options) (*V6Source, error) {
 	if l.deps == nil {
 		l.deps = project.Dependencies
 	}
-	for _, p := range project.Plugins {
-		l.enqueue(p, ManifestFile)
+	ownPlugins := []string{}
+	dependencyPlugins := []DependencyPlugin{}
+	for _, entry := range project.Plugins {
+		pkg, path := SplitPluginEntry(entry)
+		if pkg == "" {
+			l.enqueue(path, ManifestFile)
+			ownPlugins = append(ownPlugins, DeriveID(project.Name, project.Version, path))
+			continue
+		}
+		version, declared := l.deps[pkg]
+		if !declared {
+			return nil, Errorf("%s: plugin '%s' names package %s, which is not a dependency", ManifestFile, entry, pkg)
+		}
+		dependencyPlugins = append(dependencyPlugins, DependencyPlugin{Package: pkg, ID: DeriveID(pkg, version, path)})
 	}
+	sort.Strings(ownPlugins)
+	sort.Slice(dependencyPlugins, func(i, j int) bool { return dependencyPlugins[i].ID < dependencyPlugins[j].ID })
 	exports := []string{}
 	for _, p := range project.Exports {
 		l.enqueue(p, ManifestFile)
@@ -185,7 +211,10 @@ func LoadV6(sourceDir string, options V6Options) (*V6Source, error) {
 		sort.Strings(list)
 		qualified[pkg] = list
 	}
-	return &V6Source{Project: project, Documents: documents, Files: files, Qualified: qualified, Exports: exports}, nil
+	return &V6Source{
+		Project: project, Documents: documents, Files: files, Qualified: qualified, Exports: exports,
+		OwnPlugins: ownPlugins, DependencyPlugins: dependencyPlugins,
+	}, nil
 }
 
 func (l *loader6) enqueue(relative, from string) {

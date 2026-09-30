@@ -68,6 +68,10 @@ type BuildOptions struct {
 	// Language selects an archival source language. CLI, package, language
 	// server, and playground builds never set it.
 	Language string
+	// Candidate is an unpublished package's source directory, validated in
+	// place of its locked version (ADR-0034). Validation only: a build with a
+	// candidate is refused.
+	Candidate string
 }
 
 // Validate resolves every agent in a source directory.
@@ -85,23 +89,33 @@ func ValidateWithPackages(source, trustConfigPath, packagesDir string) ([]*resol
 	return c.resolved, nil
 }
 
-// Summary describes a validated package: its agents and the plugin artifacts
-// it would emit.
+// Summary describes a validated package: its agents, the plugin artifacts it
+// would emit, and the plugins that would compete when installed together.
 type Summary struct {
-	Agents  []*resolve.ResolvedAgent
-	Plugins []string
+	Agents    []*resolve.ResolvedAgent
+	Plugins   []string
+	Conflicts []Conflict
 }
 
 // Summarize validates a package and names what it would build.
 func Summarize(source, trustConfigPath, packagesDir string) (*Summary, error) {
-	c, err := prepare(source, trustConfigPath, BuildOptions{PackagesDir: packagesDir})
+	return SummarizeWithOptions(source, trustConfigPath, BuildOptions{PackagesDir: packagesDir})
+}
+
+// SummarizeWithOptions validates a package, optionally with a candidate
+// package substituted into its locked graph (ADR-0034), and names what it
+// would build.
+func SummarizeWithOptions(source, trustConfigPath string, options BuildOptions) (*Summary, error) {
+	c, err := prepare(source, trustConfigPath, options)
 	if err != nil {
 		return nil, err
 	}
 	summary := &Summary{Agents: c.resolved}
-	for _, artifact := range artifactsOf(c.plugins) {
+	artifacts := artifactsOf(c.plugins)
+	for _, artifact := range artifacts {
 		summary.Plugins = append(summary.Plugins, artifact.dir)
 	}
+	summary.Conflicts = compatibilityConflicts(artifacts)
 	return summary, nil
 }
 
@@ -115,6 +129,9 @@ func BuildWithOptions(source, output string, targets []Target, ard *ArdPublicati
 	trustConfigPath := ""
 	if ard != nil {
 		trustConfigPath = ard.TrustConfigPath
+	}
+	if options.Candidate != "" {
+		return nil, resource.Errorf("a candidate package is validated, never built; publish it and pin it to build (ADR-0034)")
 	}
 	c, err := prepare(source, trustConfigPath, options)
 	if err != nil {

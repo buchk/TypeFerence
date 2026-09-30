@@ -2,7 +2,7 @@
   "description": "Agent bodies are objectives inherited through embedding; a context document without a contextType is the built-in text type.",
   "expect": "success",
   "digests": {
-    "agent-plugin": "sha256:9b359efa3438c905b481d18082d1563a60ba4d0d29846bcc4f1a81087a07c9cd",
+    "agent-plugin": "sha256:dd8599d925ffc29b09cebfc934eebf5d8fd6cce6165c47c74256779735fedc6a",
     "neutral": "sha256:6ff8c056a7e78370d5146debbcf290e6841c4dbbedc57fc9be53e0dde4c1e281"
   }
 }

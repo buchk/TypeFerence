@@ -40,6 +40,7 @@ emitted bytes.
 | Unlinked build identity and deployment-only link changes | 059 | `internal/compile`: `TestBuildIsUnlinked`, `TestSourceDigestUnaffectedByResolverNormalization`; `internal/deploy`: linked-output ownership and tamper tests |
 | Import | — | `internal/importer`: all tests |
 | Setup wizard output | 058 | `internal/scaffold`: `TestGeneratedTreeCompilesWithOrdinaryCompiler`, `TestScaffoldProducesDeterministicTree` |
+| Organization marketplaces: dependency plugins, cross-package names, owner provenance, version skew, candidates | 075, 100, 101, 102, 103, 104 | `go/conformance`: `TestMarketplaceBumpRewritesOnlyTheOwnersPlugins`, `TestMarketplaceLinks`, `TestCandidate*`; `internal/resource`: `TestManifestShipsDeclaredDependencyPlugins` |
 | Committed reference and self-host output | Helio `dist/`; maintainer `dist-maintainer/` | `internal/compile`: `TestHelioParityWithCommittedOutput`, `TestDeterministicRebuild`; `make selfhost-check` |
 
 Rows without a golden fixture define no emitted bytes of their own or depend on

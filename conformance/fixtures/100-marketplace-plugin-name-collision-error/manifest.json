@@ -1,0 +1,5 @@
+{
+  "description": "Two packages ship different plugins under one name; the marketplace build fails rather than letting load order choose (ADR-0034).",
+  "expect": "error",
+  "packages": "packages"
+}

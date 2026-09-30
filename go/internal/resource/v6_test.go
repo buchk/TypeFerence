@@ -209,3 +209,28 @@ func TestManifestIsClosedAndV6Only(t *testing.T) {
 		}
 	}
 }
+
+func TestManifestShipsDeclaredDependencyPlugins(t *testing.T) {
+	root := t.TempDir()
+	writeV6(t, root, map[string]string{"typeference.tfer": "---\nschemaVersion: 6\nname: acme/marketplace\nversion: 1.0.0\ndependencies:\n  acme/team: 2.0.0\nplugins:\n  - acme/team:plugins/kit.plugin.tfer\n---\n"})
+	loaded, err := LoadV6(root, V6Options{})
+	if err != nil {
+		t.Fatalf("a manifest may ship a declared dependency's plugin: %v", err)
+	}
+	if len(loaded.OwnPlugins) != 0 || len(loaded.DependencyPlugins) != 1 ||
+		loaded.DependencyPlugins[0] != (DependencyPlugin{Package: "acme/team", ID: "acme/team/plugins/kit@2.0.0"}) {
+		t.Fatalf("the plugin belongs to its dependency, at the declared version: %+v %+v", loaded.OwnPlugins, loaded.DependencyPlugins)
+	}
+	for name, text := range map[string]string{
+		"undeclared package": "---\nschemaVersion: 6\nname: acme/marketplace\nversion: 1.0.0\nplugins:\n  - acme/team:plugins/kit.plugin.tfer\n---\n",
+		"own package prefix": "---\nschemaVersion: 6\nname: acme/marketplace\nversion: 1.0.0\nplugins:\n  - acme/marketplace:plugins/kit.plugin.tfer\n---\n",
+		"not a plugin":       "---\nschemaVersion: 6\nname: acme/marketplace\nversion: 1.0.0\ndependencies:\n  acme/team: 2.0.0\nplugins:\n  - acme/team:skills/s.skill.tfer\n---\n",
+		"qualified export":   "---\nschemaVersion: 6\nname: acme/marketplace\nversion: 1.0.0\ndependencies:\n  acme/team: 2.0.0\nexports:\n  - acme/team:skills/s.skill.tfer\n---\n",
+	} {
+		dir := t.TempDir()
+		writeV6(t, dir, map[string]string{"typeference.tfer": text})
+		if _, err := LoadProject(dir); err == nil {
+			t.Errorf("%s: manifest must be rejected", name)
+		}
+	}
+}

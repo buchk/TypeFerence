@@ -1,0 +1,5 @@
+---
+description: Report payments-service health with reconciliation evidence.
+extends: conformance/core:skills/status.skill.tfer
+---
+Also report reconciliation checks and rollback readiness.

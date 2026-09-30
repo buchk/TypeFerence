@@ -127,6 +127,21 @@ compatibility promises between minor versions.
   diagnostics, completion, go-to-definition, and document symbols for `.tfer`
   and `.yaml` sources.
 
+- **One organization marketplace, built from source packages**
+  ([ADR-0034](docs/decisions/0034-organization-marketplace-from-source-packages.md)).
+  A manifest's `plugins` may list `<package>:<path>` plugins of direct
+  dependencies, so a marketplace package that pins every team's published
+  package builds the whole marketplace at once. Plugin, agent, and skill
+  names are unique across teams; a shared skill ships identically wherever
+  it appears; the compatibility report spans the marketplace; and version
+  skew on a shared package fails at restore. Each plugin artifact carries
+  its owning package's version and provenance, so releasing one team's
+  package changes only that team's plugins. `typeference validate
+  --candidate <package-dir>` checks an unpublished package against the
+  marketplace without writing anything. Conformance fixtures can now carry
+  dependency packages (`packages`), which the runner publishes to a
+  temporary feed and restores (fixtures 075 and 100–104).
+
 ### Changed
 
 - **`description` is routing metadata** (supersedes ADR-0027 decision 3). It is
@@ -139,6 +154,10 @@ compatibility promises between minor versions.
   extension; the self-hosted maintainer
   also ships as an installable plugin; the setup wizard's generator (2.0.0)
   scaffolds a plugin set.
+- **The agent-plugin build index records each artifact's owning source
+  digest** (ADR-0034), and link verifies each artifact against its own
+  entry. The version 6 corpus's agent-plugin digests were regenerated for
+  this; no plugin directory, neutral, ARD, or archival digest changed.
 - **Archival corpora.** Version 5 and version 3 fixtures are labeled
   `legacy-v5` and `legacy-v3` and reproduce their recorded neutral output
   byte-for-byte through loaders used only by the conformance runner. Their

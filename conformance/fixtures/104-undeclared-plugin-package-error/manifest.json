@@ -1,0 +1,4 @@
+{
+  "description": "A plugins entry may name only a declared direct dependency (ADR-0034).",
+  "expect": "error"
+}

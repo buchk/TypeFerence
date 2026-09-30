@@ -1,0 +1,5 @@
+---
+description: The data platform agent.
+agents:
+  - agents/data-agent.agent.tfer
+---

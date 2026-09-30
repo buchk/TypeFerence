@@ -1,0 +1,9 @@
+---
+schemaVersion: 6
+name: conformance/team-b
+version: 1.0.0
+dependencies:
+  conformance/core: 2.0.0
+plugins:
+  - plugins/b-kit.plugin.tfer
+---
