@@ -1,9 +1,6 @@
 ---
-schemaVersion: 5
-kind: context
-id: helio/context/executive-rhythm@1.0.0
-contextType: helio/context-types/executive-rhythm@1.0.0
 displayName: Executive Rhythm
+contextType: context-types/executive-rhythm.contexttype.tfer
 ---
 # Executive rhythm
 

@@ -1,0 +1,9 @@
+---
+description: Extended A.
+extends: skills/a.skill.tfer
+variants:
+  manual:
+    instructions: A manual addition.
+  pipeline:
+    instructions: A pipeline addition.
+---

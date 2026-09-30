@@ -116,12 +116,12 @@ def hierarchy():
 
 def pipeline():
     d = Drawing(470, 165)
-    node(d, 0, 60, 90, 48, "Typed YAML", "agents + skills")
+    node(d, 0, 60, 90, 48, "Typed .tfer", "agents + skills")
     arrow(d, 90, 84, 120, 84)
     node(d, 120, 60, 90, 48, "Compose", "embedding + capabilities")
     arrow(d, 210, 84, 240, 84)
     node(d, 240, 55, 105, 58, "Resolved IR", "behavior + provenance", NAVY, NAVY, True)
-    for y, label in [(125,"Codex"),(72,"Copilot"),(19,"Cursor + Neutral")]:
+    for y, label in [(125,"Agent plugins"),(72,"Pipeline plugins"),(19,"Neutral bundles")]:
         arrow(d, 345, 84, 375, y+18)
         node(d, 375, y, 95, 36, label, fill=PALE, stroke=PURPLE)
     return d
@@ -130,8 +130,8 @@ def pipeline():
 def interoperability_stack():
     d = Drawing(470, 220)
     node(d, 150, 172, 170, 40, "TypeFerence source", "canonical + governed", NAVY, NAVY, True)
-    targets = [(0, "Codex bundle", "target-specific"), (125, "Copilot bundle", "target-specific"),
-               (250, "Cursor bundle", "target-specific"), (375, "Neutral bundle", "linkable target")]
+    targets = [(0, "Agent plugin", "manual mode"), (125, "Pipeline plugin", "CI mode"),
+               (250, "Skills pack", "no agent"), (375, "Neutral bundle", "linkable target")]
     catalog_ports = [125, 200, 270, 345]
     for (x, label, subtitle), port in zip(targets, catalog_ports):
         arrow(d, 235, 172, x + 47, 142)

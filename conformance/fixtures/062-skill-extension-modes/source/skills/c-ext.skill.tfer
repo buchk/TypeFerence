@@ -1,0 +1,9 @@
+---
+description: Extended C.
+extends: skills/c.skill.tfer
+variants:
+  manual:
+    instructions: |
+      C manual addition,
+      on two lines.
+---

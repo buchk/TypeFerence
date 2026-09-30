@@ -1,0 +1,9 @@
+---
+displayName: Safety policy
+embeds:
+  - context-types/policy.contexttype.tfer
+fields:
+  authority:
+    type: string
+    required: true
+---

@@ -1,7 +1,4 @@
 ---
-schemaVersion: 5
-kind: contextType
-id: helio/context-types/norms@1.0.0
 displayName: Norms
 body:
   type: text

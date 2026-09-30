@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 2,
+  "id": "helio/works/plugins/payments@1.0.0",
+  "kind": "plugin",
+  "target": "agent-plugin",
+  "mode": "manual",
+  "sourceDigest": "sha256:13dc1a9f2de11629cc876c1b3747ec9dc05023161fc891984048eb4e97ddb491",
+  "dependencies": [],
+  "modes": [
+    "a2a",
+    "manual",
+    "pipeline"
+  ],
+  "toolImports": [
+    {
+      "toolId": "helio/works/tools/repository-signals@1.0.0",
+      "skillId": "helio/works/skills/payments-repository-status@1.0.0",
+      "mode": "*"
+    }
+  ]
+}

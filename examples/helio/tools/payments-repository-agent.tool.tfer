@@ -1,7 +1,4 @@
 ---
-schemaVersion: 5
-kind: tool
-id: helio/tools/payments-repository-agent@1.0.0
 displayName: Payments Repository Agent
 description: Runtime import for evidence-backed payments repository status.
 inputSchema: '{"type":"object","properties":{"focus":{"type":"string"}},"additionalProperties":false}'

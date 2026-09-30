@@ -1,7 +1,4 @@
 ---
-schemaVersion: 5
-kind: contextType
-id: helio/context-types/organization@1.0.0
 displayName: Organization
 body:
   type: text

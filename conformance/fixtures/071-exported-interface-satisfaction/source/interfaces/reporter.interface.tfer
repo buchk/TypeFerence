@@ -1,0 +1,6 @@
+---
+requiresSlots:
+  evidence: context-types/evidence.contexttype.tfer
+requiresCapabilities:
+  - skills/report.skill.tfer
+---

@@ -1,0 +1,4 @@
+{
+  "description": "A quoted scalar is a string and never satisfies a boolean field (ADR-0032).",
+  "expect": "error"
+}

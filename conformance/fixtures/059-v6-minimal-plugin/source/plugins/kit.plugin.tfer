@@ -1,0 +1,5 @@
+---
+description: A minimal kit.
+agents:
+  - agents/helper.agent.tfer
+---

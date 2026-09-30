@@ -1,10 +1,8 @@
 {
   "description": "A unimodal .tfer skill body is the canonical instruction rendering in every target.",
+  "language": "legacy-v5",
   "expect": "success",
   "digests": {
-    "codex": "sha256:19e107cd6210748fd3cca2d63475c122e89b775d87c76bda583105935e874b3a",
-    "copilot": "sha256:c4c956380559efddaabfcbdfab8a55c47c20beb52c33f1f348787dfb58e87c4a",
-    "cursor": "sha256:3bcd9f6c7b5ee20bbafa2cd91eab00520cd22fa8f9718680e41f215be546dbd7",
     "neutral": "sha256:bc7ac861653ab462a2dee9f0dba99f432dc17718408c218a6a8f999cdee54b22"
   }
 }

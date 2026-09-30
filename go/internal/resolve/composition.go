@@ -185,7 +185,7 @@ func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded [
 				"%s: capability '%s' is sealed by %s and cannot be rebound",
 				id, capabilityID, source)
 		}
-		capability, err := r.require(capabilityID, "capability")
+		capability, err := r.requireCapability(capabilityID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -197,43 +197,107 @@ func (r *Resolver) mergeSkills(id string, current *resource.Document, embedded [
 				return nil, nil, err
 			}
 		}
-		inputSchema, err := canonicalJSON(implementation.InputSchema)
+		skill, err := r.buildSkill(implementation, capability, contexts)
 		if err != nil {
 			return nil, nil, err
 		}
-		outputSchema, err := canonicalJSON(implementation.OutputSchema)
-		if err != nil {
-			return nil, nil, err
-		}
-		instructions := implementation.Instructions
-		defaultInstructions, variants := resolveVariants(implementation.Variants)
-		if variants != nil {
-			instructions = defaultInstructions
-		}
-		result[capabilityID] = ResolvedSkill{
-			CapabilityID:               capabilityID,
-			ImplementationID:           implementation.ID,
-			Description:                implementation.Description,
-			Instructions:               instructions,
-			Variants:                   variants,
-			InputSchema:                inputSchema,
-			OutputSchema:               outputSchema,
-			ContextFiles:               distinct(append(append([]string{}, contexts...), normalizeAll(implementation.ContextFiles)...)),
-			RequiresContextTypes:       append([]string{}, implementation.RequiresContextTypes...),
-			RequiresTools:              append([]string{}, implementation.RequiresTools...),
-			VariantContextRequirements: variantContextRequirements(implementation),
-			VariantToolRequirements:    variantToolRequirements(implementation),
-			Exposed:                    capability.Visibility == "exposed",
-			Sealed:                     binding.Sealed,
-			Required:                   binding.Required,
-			Provenance: []ProvenanceEntry{
-				{Field: "skill.capability", Source: capabilityID},
-				{Field: "skill.implementation", Source: implementation.ID},
-			},
-		}
+		skill.Sealed = binding.Sealed
+		skill.Required = binding.Required
+		result[capabilityID] = skill
 		depths[capabilityID] = 0
 	}
 	return result, depths, nil
+}
+
+// buildSkill materializes one skill implementation against its capability.
+// Composition state (dispatch name, sealing, presence) is applied by callers.
+func (r *Resolver) buildSkill(implementation, capability *resource.Document, contexts []string) (ResolvedSkill, error) {
+	inputSchema, err := canonicalJSON(implementation.InputSchema)
+	if err != nil {
+		return ResolvedSkill{}, err
+	}
+	outputSchema, err := canonicalJSON(implementation.OutputSchema)
+	if err != nil {
+		return ResolvedSkill{}, err
+	}
+	instructions := implementation.Instructions
+	defaultInstructions, variants := resolveVariants(implementation.Variants)
+	if variants != nil {
+		instructions = defaultInstructions
+	}
+	skill := ResolvedSkill{
+		CapabilityID:               capability.ID,
+		ImplementationID:           implementation.ID,
+		Description:                implementation.Description,
+		Instructions:               instructions,
+		Variants:                   variants,
+		InputSchema:                inputSchema,
+		OutputSchema:               outputSchema,
+		ContextFiles:               distinct(append(append([]string{}, contexts...), normalizeAll(implementation.ContextFiles)...)),
+		RequiresContextTypes:       append([]string{}, implementation.RequiresContextTypes...),
+		RequiresTools:              append([]string{}, implementation.RequiresTools...),
+		VariantContextRequirements: variantContextRequirements(implementation),
+		VariantToolRequirements:    variantToolRequirements(implementation),
+		Exposed:                    capability.Visibility == "exposed",
+		Provenance: []ProvenanceEntry{
+			{Field: "skill.capability", Source: capability.ID},
+			{Field: "skill.implementation", Source: implementation.ID},
+		},
+	}
+	if len(implementation.Context) > 0 {
+		skill.ContextObjects = r.orderedContextObjects(implementation.Context)
+	}
+	return skill, nil
+}
+
+// ResolveSkill resolves a skill on its own, outside any agent: what a plugin
+// ships when it links a skill directly (ADR-0030).
+func (r *Resolver) ResolveSkill(id string) (ResolvedSkill, error) {
+	implementation, err := r.require(id, "skill")
+	if err != nil {
+		return ResolvedSkill{}, err
+	}
+	if err := r.validateSkillImplementation(implementation); err != nil {
+		return ResolvedSkill{}, err
+	}
+	capability, err := r.requireCapability(implementation.Binds)
+	if err != nil {
+		return ResolvedSkill{}, err
+	}
+	return r.buildSkill(implementation, capability, nil)
+}
+
+// ResolveProfile resolves a profile as a component.
+func (r *Resolver) ResolveProfile(id string) (*ResolvedAgent, error) {
+	if _, err := r.require(id, "profile"); err != nil {
+		return nil, err
+	}
+	return r.resolveComponent(id, map[string]bool{}, false)
+}
+
+// SkillIndependent reports whether a skill's own held context satisfies every
+// context type it requires in every mode. An independent skill works wherever
+// it is invoked; an agent-dependent one needs its composing agent's context
+// (ADR-0030).
+func (r *Resolver) SkillIndependent(skill ResolvedSkill) (bool, error) {
+	own := make([]string, 0, len(skill.ContextObjects))
+	for _, ref := range skill.ContextObjects {
+		own = append(own, ref.ID)
+	}
+	provided, err := r.providedContextTypes(own)
+	if err != nil {
+		return false, err
+	}
+	required := append([]string{}, skill.RequiresContextTypes...)
+	for _, mode := range sortedRequirementModes(skill) {
+		required = append(required, skill.VariantContextRequirements[mode]...)
+	}
+	for _, contextType := range required {
+		if !provided[contextType] {
+			return false, nil
+		}
+	}
+	return true, nil
 }
 
 // samePromotedSkill compares the semantic member carried through embedding.
@@ -274,7 +338,7 @@ func (r *Resolver) mergeRequired(id string, current *resource.Document, embedded
 			}
 			capabilityID = resolved
 		}
-		if _, err := r.require(capabilityID, "capability"); err != nil {
+		if _, err := r.requireCapability(capabilityID); err != nil {
 			return nil, nil, err
 		}
 		requiredBy[capabilityID] = id
@@ -323,9 +387,26 @@ func (r *Resolver) validateSkillImplementation(implementation *resource.Document
 	if isBlank(implementation.Binds) {
 		return resource.Errorf("Skill %s does not bind a capability", implementation.ID)
 	}
-	capability, err := r.require(implementation.Binds, "capability")
+	capability, err := r.requireCapability(implementation.Binds)
 	if err != nil {
 		return err
+	}
+	if implementation.SchemaVersion >= 6 {
+		for _, contextID := range implementation.Context {
+			if _, err := r.require(contextID, "context"); err != nil {
+				return resource.Errorf("%s: holds context %s, which is not a context document in this build", implementation.ID, contextID)
+			}
+		}
+		for _, contextType := range implementation.RequiresContextTypes {
+			if _, err := r.require(contextType, "contextType"); err != nil {
+				return resource.Errorf("%s: requires context type %s, which is not declared", implementation.ID, contextType)
+			}
+		}
+		for _, toolID := range implementation.RequiresTools {
+			if _, err := r.require(toolID, "tool"); err != nil {
+				return resource.Errorf("%s: requires tool %s, which is not declared", implementation.ID, toolID)
+			}
+		}
 	}
 	return ensureImplementsCapability(capability, implementation, implementation.ID)
 }

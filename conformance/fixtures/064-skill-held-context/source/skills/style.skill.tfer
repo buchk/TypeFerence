@@ -1,0 +1,8 @@
+---
+description: Edit prose to the house style.
+requiresContextTypes:
+  - context-types/guide.contexttype.tfer
+context:
+  - context/house-style.context.tfer
+---
+Edit the text to the house style.

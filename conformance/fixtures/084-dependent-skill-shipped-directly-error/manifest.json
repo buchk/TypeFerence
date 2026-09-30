@@ -1,0 +1,4 @@
+{
+  "description": "An agent-dependent skill ships only through an agent that holds its context (ADR-0030).",
+  "expect": "error"
+}

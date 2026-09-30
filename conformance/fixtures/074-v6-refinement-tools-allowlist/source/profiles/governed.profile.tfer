@@ -1,0 +1,6 @@
+---
+allowedContextTypes:
+  - context-types/policy.contexttype.tfer
+context:
+  - context/safety.context.tfer
+---

@@ -14,7 +14,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/buchk/TypeFerence/go/internal/compile"
@@ -24,6 +23,16 @@ import (
 )
 
 var deploymentName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
+
+// pluginCommand is what an Agent Plugins stdio server may run: a bare
+// executable token or a plugin-relative ./path.
+var (
+	bareCommand     = regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9._+-]*$`)
+	relativeCommand = regexp.MustCompile(`^\./[A-Za-z0-9._+/-]+$`)
+)
+
+// mcpSchemaURI identifies the Agent Plugins 1.0 MCP configuration schema.
+const mcpSchemaURI = "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json"
 
 type ArtifactBinding struct {
 	Modes []string `yaml:"modes"`
@@ -61,48 +70,81 @@ type File struct {
 	AgentEndpoints map[string]AgentEndpoint   `yaml:"agentEndpoints"`
 }
 
+type dependency struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
+	Digest  string `json:"digest"`
+}
+
+type toolImport struct {
+	ToolID  string `json:"toolId"`
+	SkillID string `json:"skillId"`
+	Mode    string `json:"mode"`
+}
+
+// requirementsV1 is a neutral artifact's link manifest.
+type requirementsV1 struct {
+	SchemaVersion int          `json:"schemaVersion"`
+	AgentID       string       `json:"agentId"`
+	Target        string       `json:"target"`
+	DefaultMode   string       `json:"defaultMode"`
+	SourceDigest  string       `json:"sourceDigest"`
+	Dependencies  []dependency `json:"dependencies"`
+	Modes         []string     `json:"modes"`
+	ToolImports   []toolImport `json:"toolImports"`
+}
+
+// requirementsV2 is a plugin artifact's link manifest (ADR-0029).
+type requirementsV2 struct {
+	SchemaVersion int          `json:"schemaVersion"`
+	ID            string       `json:"id"`
+	Kind          string       `json:"kind"`
+	Target        string       `json:"target"`
+	Mode          string       `json:"mode"`
+	SourceDigest  string       `json:"sourceDigest"`
+	Dependencies  []dependency `json:"dependencies"`
+	Modes         []string     `json:"modes"`
+	ToolImports   []toolImport `json:"toolImports"`
+}
+
+// requirements is either manifest version, normalized.
 type requirements struct {
-	SchemaVersion int    `json:"schemaVersion"`
-	AgentID       string `json:"agentId"`
-	Target        string `json:"target"`
-	DefaultMode   string `json:"defaultMode"`
-	SourceDigest  string `json:"sourceDigest"`
-	Dependencies  []struct {
-		Name    string `json:"name"`
-		Version string `json:"version"`
-		Digest  string `json:"digest"`
-	} `json:"dependencies"`
-	Modes       []string `json:"modes"`
-	ToolImports []struct {
-		ToolID  string `json:"toolId"`
-		SkillID string `json:"skillId"`
-		Mode    string `json:"mode"`
-	} `json:"toolImports"`
-	path string
-	slug string
+	schemaVersion int
+	ID            string
+	Target        string
+	// Mode is the one mode a fixed-mode artifact materializes; empty for the
+	// neutral artifact, which carries every mode.
+	Mode         string
+	SourceDigest string
+	Modes        []string
+	ToolImports  []toolImport
+	path         string
+	slug         string
+}
+
+func (r requirements) plugin() bool { return r.schemaVersion == 2 }
+
+type indexArtifact struct {
+	AgentID string `json:"agentId,omitempty"`
+	ID      string `json:"id,omitempty"`
+	Mode    string `json:"mode,omitempty"`
+	Path    string `json:"path"`
+	Digest  string `json:"digest"`
 }
 
 type buildIndex struct {
-	SchemaVersion int    `json:"schemaVersion"`
-	Target        string `json:"target"`
-	SourceDigest  string `json:"sourceDigest"`
-	Artifacts     []struct {
-		AgentID string `json:"agentId"`
-		Path    string `json:"path"`
-		Digest  string `json:"digest"`
-	} `json:"artifacts"`
+	SchemaVersion int             `json:"schemaVersion"`
+	Target        string          `json:"target"`
+	SourceDigest  string          `json:"sourceDigest"`
+	Artifacts     []indexArtifact `json:"artifacts"`
 }
 
 type linkProvenance struct {
-	SchemaVersion    int    `json:"schemaVersion"`
-	Environment      string `json:"environment"`
-	UnlinkedDigest   string `json:"unlinkedDigest"`
-	DeploymentDigest string `json:"deploymentDigest"`
-	Artifacts        []struct {
-		AgentID string `json:"agentId"`
-		Path    string `json:"path"`
-		Digest  string `json:"digest"`
-	} `json:"artifacts"`
+	SchemaVersion    int             `json:"schemaVersion"`
+	Environment      string          `json:"environment"`
+	UnlinkedDigest   string          `json:"unlinkedDigest"`
+	DeploymentDigest string          `json:"deploymentDigest"`
+	Artifacts        []indexArtifact `json:"artifacts"`
 }
 
 func Load(path string) (*File, []byte, error) {
@@ -122,17 +164,17 @@ func Load(path string) (*File, []byte, error) {
 	if strings.TrimSpace(deployment.Environment) == "" {
 		return nil, nil, resource.Errorf("deployment must name its environment")
 	}
-	for agent, artifact := range deployment.Artifacts {
-		if !resource.IsResourceID(agent) {
-			return nil, nil, resource.Errorf("invalid deployment artifact id: %s", agent)
+	for artifactID, artifact := range deployment.Artifacts {
+		if !resource.IsResourceID(artifactID) {
+			return nil, nil, resource.Errorf("invalid deployment artifact id: %s", artifactID)
 		}
 		seenModes := map[string]bool{}
 		for _, mode := range artifact.Modes {
 			if !deploymentName.MatchString(mode) {
-				return nil, nil, resource.Errorf("artifact %s has invalid mode %q", agent, mode)
+				return nil, nil, resource.Errorf("artifact %s has invalid mode %q", artifactID, mode)
 			}
 			if seenModes[mode] {
-				return nil, nil, resource.Errorf("artifact %s selects mode %s more than once", agent, mode)
+				return nil, nil, resource.Errorf("artifact %s selects mode %s more than once", artifactID, mode)
 			}
 			seenModes[mode] = true
 		}
@@ -215,9 +257,22 @@ func Link(input, deploymentPath, output string) ([]string, error) {
 	if err := verifyBuildIndex(inputAbs, reqs); err != nil {
 		return nil, err
 	}
+	if err := validatePluginModeSelection(reqs, deployment); err != nil {
+		return nil, err
+	}
 	for _, req := range reqs {
 		if err := validateBindings(req, deployment); err != nil {
 			return nil, err
+		}
+	}
+	mcpConfigs := map[string]string{}
+	for _, req := range reqs {
+		if req.plugin() {
+			config, err := mcpConfig(req, deployment)
+			if err != nil {
+				return nil, err
+			}
+			mcpConfigs[req.slug] = config
 		}
 	}
 	inputDigest, err := compile.HashDirectory(inputAbs)
@@ -248,51 +303,58 @@ func Link(input, deploymentPath, output string) ([]string, error) {
 	written = append(written, unlinkedIndexPath)
 	for _, req := range reqs {
 		bindings := toolBindingsJSON(req, deployment)
-		bindingsPath := filepath.Join(outputAbs, req.slug, ".typeference", "tool-bindings.json")
+		bindingsPath := filepath.Join(outputAbs, filepath.FromSlash(req.slug), ".typeference", "tool-bindings.json")
 		if err := write(bindingsPath, bindings); err != nil {
 			return nil, err
 		}
 		written = append(written, bindingsPath)
-		if req.Target == "codex" {
-			config, err := codexConfig(req, deployment)
-			if err != nil {
+		if config := mcpConfigs[req.slug]; config != "" {
+			path := filepath.Join(outputAbs, filepath.FromSlash(req.slug), "mcp.json")
+			if err := write(path, config); err != nil {
 				return nil, err
 			}
-			if config != "" {
-				path := filepath.Join(outputAbs, req.slug, ".codex", "config.toml")
-				if err := write(path, config); err != nil {
+			written = append(written, path)
+		}
+		if !req.plugin() {
+			if endpoint := deployment.AgentEndpoints[req.ID].A2AURL; endpoint != "" {
+				card, err := a2aCard(inputAbs, req, endpoint)
+				if err != nil {
+					return nil, err
+				}
+				path := filepath.Join(outputAbs, req.slug, ".typeference", "a2a-agent-card.json")
+				if err := write(path, card); err != nil {
 					return nil, err
 				}
 				written = append(written, path)
 			}
 		}
-		if endpoint := deployment.AgentEndpoints[req.AgentID].A2AURL; endpoint != "" {
-			card, err := a2aCard(inputAbs, req, endpoint)
-			if err != nil {
-				return nil, err
-			}
-			path := filepath.Join(outputAbs, req.slug, ".typeference", "a2a-agent-card.json")
-			if err := write(path, card); err != nil {
-				return nil, err
-			}
-			written = append(written, path)
-		}
 	}
 	deploymentDigest := sha256.Sum256(bytes.ReplaceAll(deploymentBytes, []byte("\r\n"), []byte("\n")))
+	schemaVersion := "1"
 	artifacts := jsonx.Arr{}
 	for _, req := range reqs {
-		digest, err := compile.HashDirectory(filepath.Join(outputAbs, req.slug))
+		digest, err := compile.HashDirectory(filepath.Join(outputAbs, filepath.FromSlash(req.slug)))
 		if err != nil {
 			return nil, err
 		}
+		if req.plugin() {
+			schemaVersion = "2"
+			artifacts = append(artifacts, jsonx.Obj{
+				{K: "id", V: jsonx.Str(req.ID)},
+				{K: "mode", V: jsonx.Str(req.Mode)},
+				{K: "path", V: jsonx.Str(req.slug)},
+				{K: "digest", V: jsonx.Str("sha256:" + digest)},
+			})
+			continue
+		}
 		artifacts = append(artifacts, jsonx.Obj{
-			{K: "agentId", V: jsonx.Str(req.AgentID)},
+			{K: "agentId", V: jsonx.Str(req.ID)},
 			{K: "path", V: jsonx.Str(req.slug)},
 			{K: "digest", V: jsonx.Str("sha256:" + digest)},
 		})
 	}
 	provenance := jsonx.Indented(jsonx.Obj{
-		{K: "schemaVersion", V: jsonx.Num("1")},
+		{K: "schemaVersion", V: jsonx.Num(schemaVersion)},
 		{K: "environment", V: jsonx.Str(deployment.Environment)},
 		{K: "unlinkedDigest", V: jsonx.Str("sha256:" + inputDigest)},
 		{K: "deploymentDigest", V: jsonx.Str("sha256:" + hex.EncodeToString(deploymentDigest[:]))},
@@ -373,23 +435,28 @@ func validLinkProvenance(path string) bool {
 	if err := decoder.Decode(&struct{}{}); err != io.EOF {
 		return false
 	}
-	if provenance.SchemaVersion != 1 || strings.TrimSpace(provenance.Environment) == "" ||
+	if (provenance.SchemaVersion != 1 && provenance.SchemaVersion != 2) || strings.TrimSpace(provenance.Environment) == "" ||
 		!validSHA256Digest(provenance.UnlinkedDigest) || !validSHA256Digest(provenance.DeploymentDigest) ||
 		len(provenance.Artifacts) == 0 {
 		return false
 	}
-	seenAgents := map[string]bool{}
 	seenPaths := map[string]bool{}
 	for _, artifact := range provenance.Artifacts {
-		if !resource.IsResourceID(artifact.AgentID) || artifact.Path == "" ||
-			filepath.Base(filepath.Clean(artifact.Path)) != artifact.Path || !validSHA256Digest(artifact.Digest) ||
-			seenAgents[artifact.AgentID] || seenPaths[artifact.Path] {
+		id := artifact.AgentID
+		if provenance.SchemaVersion == 2 {
+			id = artifact.ID
+		}
+		if !resource.IsResourceID(id) || !validArtifactPath(artifact.Path) || !validSHA256Digest(artifact.Digest) ||
+			seenPaths[artifact.Path] {
 			return false
 		}
-		seenAgents[artifact.AgentID] = true
 		seenPaths[artifact.Path] = true
 	}
 	return true
+}
+
+func validArtifactPath(path string) bool {
+	return path != "" && filepath.Base(filepath.Clean(path)) == path && path != "." && path != ".."
 }
 
 func validSHA256Digest(value string) bool {
@@ -409,62 +476,76 @@ func verifyBuildIndex(root string, reqs []requirements) error {
 	var index buildIndex
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(&index); err != nil || index.SchemaVersion != 1 {
+	if err := decoder.Decode(&index); err != nil || (index.SchemaVersion != 1 && index.SchemaVersion != 2) {
 		return resource.Errorf("Invalid build integrity index: %s", path)
 	}
-	type expectedArtifact struct {
-		path   string
-		digest string
-	}
-	expected := map[string]expectedArtifact{}
+	expected := map[string]indexArtifact{}
 	for _, artifact := range index.Artifacts {
-		if artifact.Path == "" || filepath.Base(filepath.Clean(artifact.Path)) != artifact.Path ||
-			!resource.IsResourceID(artifact.AgentID) || !validSHA256Digest(artifact.Digest) {
+		id := artifact.AgentID
+		if index.SchemaVersion == 2 {
+			id = artifact.ID
+		}
+		if !validArtifactPath(artifact.Path) || !resource.IsResourceID(id) || !validSHA256Digest(artifact.Digest) {
 			return resource.Errorf("Invalid artifact entry in build integrity index: %s", path)
 		}
-		if _, exists := expected[artifact.AgentID]; exists {
-			return resource.Errorf("Duplicate artifact %s in build integrity index", artifact.AgentID)
+		if _, exists := expected[artifact.Path]; exists {
+			return resource.Errorf("Duplicate artifact %s in build integrity index", artifact.Path)
 		}
-		expected[artifact.AgentID] = expectedArtifact{path: artifact.Path, digest: artifact.Digest}
+		expected[artifact.Path] = artifact
 	}
 	if len(expected) != len(reqs) {
 		return resource.Errorf("Build integrity index does not match its link manifests")
 	}
 	for _, req := range reqs {
-		if req.Target != index.Target || req.SourceDigest != index.SourceDigest {
-			return resource.Errorf("Link requirements for %s do not match the build integrity index", req.AgentID)
+		if req.schemaVersion != index.SchemaVersion || req.Target != index.Target || req.SourceDigest != index.SourceDigest {
+			return resource.Errorf("Link requirements for %s do not match the build integrity index", req.ID)
 		}
-		want, ok := expected[req.AgentID]
+		want, ok := expected[req.slug]
 		if !ok {
-			return resource.Errorf("Build integrity index does not include %s", req.AgentID)
+			return resource.Errorf("Build integrity index does not include %s", req.slug)
 		}
-		if want.path != req.slug {
-			return resource.Errorf("Build integrity index path does not match %s", req.AgentID)
+		id := want.AgentID
+		if index.SchemaVersion == 2 {
+			id = want.ID
 		}
-		digest, err := compile.HashDirectory(filepath.Join(root, req.slug))
+		if id != req.ID || want.Mode != req.Mode {
+			return resource.Errorf("Build integrity index entry %s does not match %s", req.slug, req.ID)
+		}
+		digest, err := compile.HashDirectory(filepath.Join(root, filepath.FromSlash(req.slug)))
 		if err != nil {
 			return err
 		}
-		if want.digest != "sha256:"+digest {
+		if want.Digest != "sha256:"+digest {
 			return resource.Errorf("Unlinked artifact digest mismatch for %s: expected %s, got sha256:%s",
-				req.AgentID, want.digest, digest)
+				req.slug, want.Digest, digest)
 		}
 	}
 	return nil
 }
 
-func toolBindingsJSON(req requirements, deployment *File) string {
+// selectedModes returns the modes an artifact materializes under a
+// deployment: a plugin artifact's one fixed mode, or a neutral artifact's
+// selection.
+func selectedModes(req requirements, deployment *File) map[string]bool {
 	selected := map[string]bool{}
-	selectedModes := append([]string{}, deployment.Artifacts[req.AgentID].Modes...)
-	sort.Strings(selectedModes)
-	for _, mode := range selectedModes {
+	if req.plugin() {
+		selected[req.Mode] = true
+		return selected
+	}
+	for _, mode := range deployment.Artifacts[req.ID].Modes {
 		selected[mode] = true
 	}
-	imports := append([]struct {
-		ToolID  string `json:"toolId"`
-		SkillID string `json:"skillId"`
-		Mode    string `json:"mode"`
-	}{}, req.ToolImports...)
+	return selected
+}
+
+func toolBindingsJSON(req requirements, deployment *File) string {
+	selected := selectedModes(req, deployment)
+	modes := make([]string, 0, len(selected))
+	for mode := range selected {
+		modes = append(modes, mode)
+	}
+	sort.Strings(modes)
+	imports := append([]toolImport{}, req.ToolImports...)
 	sort.Slice(imports, func(i, j int) bool {
 		if imports[i].ToolID != imports[j].ToolID {
 			return imports[i].ToolID < imports[j].ToolID
@@ -491,7 +572,7 @@ func toolBindingsJSON(req requirements, deployment *File) string {
 	return jsonx.Indented(jsonx.Obj{
 		{K: "schemaVersion", V: jsonx.Num("1")},
 		{K: "environment", V: jsonx.Str(deployment.Environment)},
-		{K: "selectedModes", V: stringArr(selectedModes)},
+		{K: "selectedModes", V: stringArr(modes)},
 		{K: "bindings", V: bindings},
 	}) + "\n"
 }
@@ -505,13 +586,10 @@ func stringArr(values []string) jsonx.Arr {
 }
 
 func a2aCard(inputRoot string, req requirements, endpoint string) (string, error) {
-	bundlePath := filepath.Join(inputRoot, req.slug, ".typeference", "bundle.json")
-	if req.Target == "neutral" {
-		bundlePath = filepath.Join(inputRoot, req.slug, "bundle.json")
-	}
+	bundlePath := filepath.Join(inputRoot, req.slug, "bundle.json")
 	data, err := os.ReadFile(bundlePath)
 	if err != nil {
-		return "", resource.Errorf("Cannot read bundle for A2A card: %s", req.AgentID)
+		return "", resource.Errorf("Cannot read bundle for A2A card: %s", req.ID)
 	}
 	var bundle struct {
 		DisplayName string `json:"displayName"`
@@ -525,7 +603,7 @@ func a2aCard(inputRoot string, req requirements, endpoint string) (string, error
 		} `json:"skills"`
 	}
 	if err := json.Unmarshal(data, &bundle); err != nil {
-		return "", resource.Errorf("Invalid bundle for A2A card: %s", req.AgentID)
+		return "", resource.Errorf("Invalid bundle for A2A card: %s", req.ID)
 	}
 	skills := jsonx.Arr{}
 	for _, skill := range bundle.Skills {
@@ -545,9 +623,9 @@ func a2aCard(inputRoot string, req requirements, endpoint string) (string, error
 		})
 	}
 	if len(skills) == 0 {
-		return "", resource.Errorf("deployment declares an A2A endpoint for %s, but it exposes no capabilities", req.AgentID)
+		return "", resource.Errorf("deployment declares an A2A endpoint for %s, but it exposes no capabilities", req.ID)
 	}
-	version := req.AgentID[strings.LastIndex(req.AgentID, "@")+1:]
+	version := req.ID[strings.LastIndex(req.ID, "@")+1:]
 	card := jsonx.Obj{
 		{K: "protocolVersion", V: jsonx.Str("0.3.0")},
 		{K: "name", V: jsonx.Str(bundle.DisplayName)},
@@ -584,56 +662,125 @@ func loadRequirements(root string) ([]requirements, error) {
 		if err != nil {
 			return err
 		}
-		var req requirements
-		decoder := json.NewDecoder(bytes.NewReader(data))
-		decoder.DisallowUnknownFields()
-		if err := decoder.Decode(&req); err != nil || req.SchemaVersion != 1 || !resource.IsResourceID(req.AgentID) {
+		req, err := decodeRequirements(data)
+		if err != nil {
 			return resource.Errorf("Invalid link requirements: %s", path)
 		}
-		agentRoot := filepath.Dir(filepath.Dir(path))
+		artifactRoot := filepath.Dir(filepath.Dir(path))
+		rel, err := filepath.Rel(root, artifactRoot)
+		if err != nil {
+			return err
+		}
 		req.path = path
-		req.slug = filepath.Base(agentRoot)
+		req.slug = filepath.ToSlash(rel)
 		result = append(result, req)
 		return nil
 	})
 	if err != nil {
+		if typed, ok := err.(*resource.Error); ok {
+			return nil, typed
+		}
 		return nil, resource.Errorf("Cannot inspect built target: %s", err)
 	}
-	sort.Slice(result, func(i, j int) bool { return result[i].AgentID < result[j].AgentID })
+	sort.Slice(result, func(i, j int) bool { return result[i].slug < result[j].slug })
 	return result, nil
 }
 
+func decodeRequirements(data []byte) (requirements, error) {
+	var peek struct {
+		SchemaVersion int `json:"schemaVersion"`
+	}
+	if err := json.Unmarshal(data, &peek); err != nil {
+		return requirements{}, err
+	}
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	switch peek.SchemaVersion {
+	case 1:
+		var v1 requirementsV1
+		if err := decoder.Decode(&v1); err != nil || !resource.IsResourceID(v1.AgentID) {
+			return requirements{}, resource.Errorf("invalid link requirements")
+		}
+		return requirements{schemaVersion: 1, ID: v1.AgentID, Target: v1.Target, Mode: v1.DefaultMode,
+			SourceDigest: v1.SourceDigest, Modes: v1.Modes, ToolImports: v1.ToolImports}, nil
+	case 2:
+		var v2 requirementsV2
+		if err := decoder.Decode(&v2); err != nil || !resource.IsResourceID(v2.ID) || v2.Kind != "plugin" || v2.Mode == "" {
+			return requirements{}, resource.Errorf("invalid link requirements")
+		}
+		return requirements{schemaVersion: 2, ID: v2.ID, Target: v2.Target, Mode: v2.Mode,
+			SourceDigest: v2.SourceDigest, Modes: v2.Modes, ToolImports: v2.ToolImports}, nil
+	}
+	return requirements{}, resource.Errorf("unsupported link requirements schemaVersion")
+}
+
+// validatePluginModeSelection requires a deployment to select, for every
+// plugin, exactly the modes that plugin was built in: a plugin's artifacts
+// link together, so no published marketplace lists an unlinked artifact.
+func validatePluginModeSelection(reqs []requirements, deployment *File) error {
+	built := map[string]map[string]bool{}
+	for _, req := range reqs {
+		if !req.plugin() {
+			continue
+		}
+		if built[req.ID] == nil {
+			built[req.ID] = map[string]bool{}
+		}
+		built[req.ID][req.Mode] = true
+	}
+	for id, modes := range built {
+		artifact, ok := deployment.Artifacts[id]
+		if !ok {
+			return resource.Errorf("deployment does not select plugin %s", id)
+		}
+		selected := map[string]bool{}
+		for _, mode := range artifact.Modes {
+			if !modes[mode] {
+				return resource.Errorf("plugin %s was not built in mode %s", id, mode)
+			}
+			selected[mode] = true
+		}
+		for mode := range modes {
+			if !selected[mode] {
+				return resource.Errorf("plugin %s was built in mode %s; the deployment must select every mode the plugin ships", id, mode)
+			}
+		}
+	}
+	return nil
+}
+
 func validateBindings(req requirements, deployment *File) error {
-	artifact, ok := deployment.Artifacts[req.AgentID]
+	artifact, ok := deployment.Artifacts[req.ID]
 	if !ok {
-		return resource.Errorf("deployment does not select artifact %s", req.AgentID)
+		return resource.Errorf("deployment does not select artifact %s", req.ID)
 	}
-	available := map[string]bool{}
-	for _, mode := range req.Modes {
-		available[mode] = true
-	}
-	selected := map[string]bool{}
-	for _, mode := range artifact.Modes {
-		if !available[mode] {
-			return resource.Errorf("artifact %s does not define selected mode %s", req.AgentID, mode)
+	if !req.plugin() {
+		available := map[string]bool{}
+		for _, mode := range req.Modes {
+			available[mode] = true
 		}
-		selected[mode] = true
-	}
-	if len(req.Modes) > 0 && req.DefaultMode != "" {
-		if len(artifact.Modes) != 1 || artifact.Modes[0] != req.DefaultMode {
-			return resource.Errorf("target %s materializes mode %s for %s; deployment must select exactly that mode",
-				req.Target, req.DefaultMode, req.AgentID)
+		for _, mode := range artifact.Modes {
+			if !available[mode] {
+				return resource.Errorf("artifact %s does not define selected mode %s", req.ID, mode)
+			}
+		}
+		if len(req.Modes) > 0 && req.Mode != "" {
+			if len(artifact.Modes) != 1 || artifact.Modes[0] != req.Mode {
+				return resource.Errorf("target %s materializes mode %s for %s; deployment must select exactly that mode",
+					req.Target, req.Mode, req.ID)
+			}
+		}
+		if len(req.Modes) > 0 && req.Mode == "" && len(artifact.Modes) == 0 {
+			return resource.Errorf("deployment must select at least one mode for multimodal artifact %s", req.ID)
 		}
 	}
-	if len(req.Modes) > 0 && req.DefaultMode == "" && len(artifact.Modes) == 0 {
-		return resource.Errorf("deployment must select at least one mode for multimodal artifact %s", req.AgentID)
-	}
-	if endpoint := deployment.AgentEndpoints[req.AgentID].A2AURL; endpoint != "" {
-		if req.Target != "neutral" {
-			return resource.Errorf("A2A endpoint for %s requires a neutral artifact, not %s", req.AgentID, req.Target)
+	selected := selectedModes(req, deployment)
+	if endpoint := deployment.AgentEndpoints[req.ID].A2AURL; endpoint != "" {
+		if req.plugin() || req.Target != "neutral" {
+			return resource.Errorf("A2A endpoint for %s requires a neutral artifact, not %s", req.ID, req.Target)
 		}
 		if len(req.Modes) > 0 && !selected["a2a"] {
-			return resource.Errorf("A2A endpoint for %s requires the a2a mode to be selected", req.AgentID)
+			return resource.Errorf("A2A endpoint for %s requires the a2a mode to be selected", req.ID)
 		}
 	}
 	for _, imported := range req.ToolImports {
@@ -642,7 +789,7 @@ func validateBindings(req requirements, deployment *File) error {
 		}
 		binding, ok := deployment.ToolBindings[imported.ToolID]
 		if !ok {
-			return resource.Errorf("artifact %s mode %s requires unbound tool %s", req.AgentID, imported.Mode, imported.ToolID)
+			return resource.Errorf("artifact %s mode %s requires unbound tool %s", req.ID, imported.Mode, imported.ToolID)
 		}
 		if _, ok := deployment.Providers[binding.Provider]; !ok {
 			return resource.Errorf("tool %s refers to missing provider %s", imported.ToolID, binding.Provider)
@@ -654,104 +801,65 @@ func validateBindings(req requirements, deployment *File) error {
 	return nil
 }
 
-func codexConfig(req requirements, deployment *File) (string, error) {
-	providerNames := map[string]bool{}
-	artifact := deployment.Artifacts[req.AgentID]
-	selected := map[string]bool{}
-	for _, mode := range artifact.Modes {
-		selected[mode] = true
-	}
+// mcpConfig materializes an Agent Plugins mcp.json for a plugin artifact from
+// the providers its selected tool imports use. The file holds no secret and
+// references no inherited environment variable: Agent Plugins forbids a plugin
+// from depending on one, so a deployment that forwards credentials through
+// the environment or a bearer-token variable fails closed (ADR-0029).
+func mcpConfig(req requirements, deployment *File) (string, error) {
+	selected := selectedModes(req, deployment)
+	names := map[string]bool{}
 	for _, imported := range req.ToolImports {
 		if imported.Mode != "*" && !selected[imported.Mode] {
 			continue
 		}
-		providerNames[deployment.ToolBindings[imported.ToolID].Provider] = true
+		names[deployment.ToolBindings[imported.ToolID].Provider] = true
 	}
-	names := make([]string, 0, len(providerNames))
-	for name := range providerNames {
-		names = append(names, name)
+	if len(names) == 0 {
+		return "", nil
 	}
-	sort.Strings(names)
-	var builder strings.Builder
-	for _, name := range names {
+	sorted := make([]string, 0, len(names))
+	for name := range names {
+		sorted = append(sorted, name)
+	}
+	sort.Strings(sorted)
+	servers := jsonx.Obj{}
+	for _, name := range sorted {
 		provider := deployment.Providers[name]
-		builder.WriteString("[mcp_servers." + tomlKey(name) + "]\n")
-		if provider.Transport == "stdio" {
-			builder.WriteString("command = " + tomlString(provider.Command) + "\n")
-			args := make([]string, len(provider.Args))
-			for i, arg := range provider.Args {
-				args[i] = tomlString(strings.ReplaceAll(arg, "{bundle}", ".typeference/bundle.json"))
-			}
-			builder.WriteString("args = [" + strings.Join(args, ", ") + "]\n")
+		switch provider.Transport {
+		case "stdio":
 			if len(provider.Environment) > 0 {
-				variables := make([]string, 0, len(provider.Environment))
-				for _, reference := range provider.Environment {
-					variables = append(variables, reference.FromEnvironment)
-				}
-				sort.Strings(variables)
-				quoted := make([]string, len(variables))
-				for i, variable := range variables {
-					quoted[i] = tomlString(variable)
-				}
-				builder.WriteString("env_vars = [" + strings.Join(quoted, ", ") + "]\n")
+				return "", resource.Errorf("provider %s forwards environment variables, which a plugin's mcp.json cannot reference (Agent Plugins forbids depending on inherited environment); have the server obtain its own credentials, or configure it outside the plugin", name)
 			}
-		} else {
-			builder.WriteString("url = " + tomlString(provider.URL) + "\n")
+			if !bareCommand.MatchString(provider.Command) && !(relativeCommand.MatchString(provider.Command) && !strings.Contains(provider.Command, "..")) {
+				return "", resource.Errorf("provider %s command %q must be a bare executable name or a plugin-relative ./path to be a plugin stdio server", name, provider.Command)
+			}
+			server := jsonx.Obj{
+				{K: "type", V: jsonx.Str("stdio")},
+				{K: "command", V: jsonx.Str(provider.Command)},
+			}
+			if len(provider.Args) > 0 {
+				args := jsonx.Arr{}
+				for _, arg := range provider.Args {
+					args = append(args, jsonx.Str(strings.ReplaceAll(arg, "{bundle}", "${PLUGIN_ROOT}/.typeference/bundle.json")))
+				}
+				server = append(server, jsonx.Member{K: "args", V: args})
+			}
+			servers = append(servers, jsonx.Member{K: name, V: server})
+		case "http":
 			if provider.BearerTokenEnvironment != "" {
-				builder.WriteString("bearer_token_env_var = " + tomlString(provider.BearerTokenEnvironment) + "\n")
+				return "", resource.Errorf("provider %s authenticates with a bearer token from the environment, which a plugin's mcp.json cannot express without embedding the secret; use a server whose authorization the client manages (OAuth)", name)
 			}
-		}
-		builder.WriteString("\n")
-	}
-	return builder.String(), nil
-}
-
-func tomlKey(value string) string {
-	safe := true
-	for _, r := range value {
-		if !(r >= 'A' && r <= 'Z') && !(r >= 'a' && r <= 'z') && !(r >= '0' && r <= '9') && r != '_' && r != '-' {
-			safe = false
-			break
+			servers = append(servers, jsonx.Member{K: name, V: jsonx.Obj{
+				{K: "type", V: jsonx.Str("streamable-http")},
+				{K: "url", V: jsonx.Str(provider.URL)},
+			}})
 		}
 	}
-	if safe && value != "" {
-		return value
-	}
-	return tomlString(value)
-}
-
-func tomlString(value string) string {
-	var builder strings.Builder
-	builder.WriteByte('"')
-	for _, r := range value {
-		switch r {
-		case '\\':
-			builder.WriteString(`\\`)
-		case '"':
-			builder.WriteString(`\"`)
-		case '\b':
-			builder.WriteString(`\b`)
-		case '\t':
-			builder.WriteString(`\t`)
-		case '\n':
-			builder.WriteString(`\n`)
-		case '\f':
-			builder.WriteString(`\f`)
-		case '\r':
-			builder.WriteString(`\r`)
-		default:
-			if r < 0x20 || r == 0x7f {
-				hexValue := strings.ToUpper(strconv.FormatInt(int64(r), 16))
-				builder.WriteString(`\u`)
-				builder.WriteString(strings.Repeat("0", 4-len(hexValue)))
-				builder.WriteString(hexValue)
-			} else {
-				builder.WriteRune(r)
-			}
-		}
-	}
-	builder.WriteByte('"')
-	return builder.String()
+	return jsonx.Indented(jsonx.Obj{
+		{K: "$schema", V: jsonx.Str(mcpSchemaURI)},
+		{K: "mcpServers", V: servers},
+	}) + "\n", nil
 }
 
 func validateHTTPS(raw, label string) error {

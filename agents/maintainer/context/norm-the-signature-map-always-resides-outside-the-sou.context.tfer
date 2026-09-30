@@ -1,8 +1,5 @@
 ---
-schemaVersion: 5
-kind: context
-id: typeference/context/norm-the-signature-map-always-resides-outside-the-sou@0.1.0
-contextType: typeference/context-types/norms@0.1.0
 displayName: The signature map always resides outside the source root; mo...
+contextType: context-types/norms.contexttype.tfer
 ---
 The signature map always resides outside the source root; moving it inside creates a digest/signature cycle and is forbidden.

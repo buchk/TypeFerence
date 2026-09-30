@@ -1,0 +1,17 @@
+---
+schemaVersion: 6
+name: helio/works
+version: 1.0.0
+publisher: helio.example
+marketplace:
+  name: helio-agents
+  owner: Helio Platform
+plugins:
+  - plugins/engineering-kit.plugin.tfer
+  - plugins/executive.plugin.tfer
+  - plugins/payments.plugin.tfer
+exports:
+  - interfaces/correspondent.interface.tfer
+  - interfaces/repository-observer.interface.tfer
+  - skills/repository-status.skill.tfer
+---

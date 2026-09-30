@@ -1,0 +1,5 @@
+---
+description: Specialist kit.
+agents:
+  - agents/specialist.agent.tfer
+---

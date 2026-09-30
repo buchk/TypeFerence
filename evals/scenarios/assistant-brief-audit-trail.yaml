@@ -1,6 +1,6 @@
 schemaVersion: 1
 id: evals/assistant-brief-audit-trail
-agent: helio/executive-assistant@1.0.0
+agent: helio/works/agents/executive-assistant@1.0.0
 skill: executive-assistant.prepare-brief
 task: |
   Prepare a short morning brief for the principal. Two items are ambiguous:

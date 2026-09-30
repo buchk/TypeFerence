@@ -1,0 +1,7 @@
+---
+description: The reporter.
+slots:
+  evidence: context/evidence.context.tfer
+skills:
+  - skills/report.skill.tfer
+---

@@ -37,5 +37,7 @@ The page needs no special headers; if your server does not send
 
 The status bar digest is `compile.HashDirectory` over the compiled artifact
 tree — the same code path as `typeference build`. Loading the Helio example
-must reproduce the digest of the committed `dist/`; the maintainer example
-must reproduce the repository-root `AGENTS.md` byte for byte.
+with ARD emission on must reproduce the digest of the committed `dist/`; the
+maintainer example must reproduce the repository-root `AGENTS.md` byte for
+byte. The setup wizard (`wizard/`) runs the same generator as
+`typeference init` and reports the digest `init --verify` checks.

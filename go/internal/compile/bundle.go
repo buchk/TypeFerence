@@ -33,30 +33,25 @@ func bundleValue(agent *resolve.ResolvedAgent) jsonx.Value {
 		{K: "satisfies", V: stringArr(agent.Satisfies)},
 		{K: "slots", V: slots},
 	}
+	// Objectives exist only in version 6; absent otherwise so archival
+	// bundles are unchanged (ADR-0030).
+	if len(agent.Objectives) > 0 {
+		objectives := jsonx.Arr{}
+		for _, objective := range agent.Objectives {
+			objectives = append(objectives, jsonx.Obj{
+				{K: "source", V: jsonx.Str(objective.Source)},
+				{K: "content", V: jsonx.Str(objective.Content)},
+			})
+		}
+		obj = append(obj, jsonx.Member{K: "objectives", V: objectives})
+	}
 	if len(agent.ContextFiles) > 0 {
 		obj = append(obj, jsonx.Member{K: "contextFiles", V: stringArr(agent.ContextFiles)})
 	}
 	// Typed context held by id. Absent when the agent holds none, so bundles
 	// that predate reference-by-id context are unchanged (ADR-0013).
 	if len(agent.ContextObjects) > 0 {
-		context := jsonx.Arr{}
-		for _, ref := range agent.ContextObjects {
-			values, err := jsonx.Parse(ref.ValuesJSON)
-			if err != nil {
-				values = jsonx.Obj{}
-			}
-			item := jsonx.Obj{
-				{K: "id", V: jsonx.Str(ref.ID)},
-				{K: "contextType", V: jsonx.Str(ref.ContextType)},
-				{K: "satisfies", V: stringArr(ref.Satisfies)},
-			}
-			if ref.ValuesJSON != "{}" {
-				item = append(item, jsonx.Member{K: "values", V: values})
-			}
-			item = append(item, jsonx.Member{K: "content", V: jsonx.Str(ref.Content)})
-			context = append(context, item)
-		}
-		obj = append(obj, jsonx.Member{K: "context", V: context})
+		obj = append(obj, jsonx.Member{K: "context", V: contextValue(agent.ContextObjects)})
 	}
 	obj = append(obj, jsonx.Member{K: "skills", V: skills})
 	obj = append(obj, jsonx.Member{K: "provenance", V: provenanceValue(agent.Provenance)})
@@ -101,6 +96,10 @@ func skillValue(skill resolve.ResolvedSkill) jsonx.Value {
 	if len(skill.RequiresTools) > 0 {
 		obj = append(obj, jsonx.Member{K: "requiresTools", V: stringArr(skill.RequiresTools)})
 	}
+	// A version 6 skill's own context; absent otherwise (ADR-0030).
+	if len(skill.ContextObjects) > 0 {
+		obj = append(obj, jsonx.Member{K: "context", V: contextValue(skill.ContextObjects)})
+	}
 	if skill.Exposed {
 		obj = append(obj, jsonx.Member{K: "exposed", V: jsonx.Bool(true)})
 	}
@@ -115,6 +114,71 @@ func skillValue(skill resolve.ResolvedSkill) jsonx.Value {
 	}
 	obj = append(obj, jsonx.Member{K: "provenance", V: provenanceValue(skill.Provenance)})
 	return obj
+}
+
+func contextValue(refs []resolve.ResolvedContextRef) jsonx.Arr {
+	context := jsonx.Arr{}
+	for _, ref := range refs {
+		values, err := jsonx.Parse(ref.ValuesJSON)
+		if err != nil {
+			values = jsonx.Obj{}
+		}
+		item := jsonx.Obj{
+			{K: "id", V: jsonx.Str(ref.ID)},
+			{K: "contextType", V: jsonx.Str(ref.ContextType)},
+			{K: "satisfies", V: stringArr(ref.Satisfies)},
+		}
+		if ref.ValuesJSON != "{}" {
+			item = append(item, jsonx.Member{K: "values", V: values})
+		}
+		item = append(item, jsonx.Member{K: "content", V: jsonx.Str(ref.Content)})
+		context = append(context, item)
+	}
+	return context
+}
+
+// pluginSkillValue is a shipped skill as a plugin bundle records it: the
+// skill itself, without any one agent's composition state.
+func pluginSkillValue(skill resolve.ResolvedSkill, mode string) jsonx.Value {
+	obj := jsonx.Obj{
+		{K: "name", V: jsonx.Str(skillName(skill))},
+		{K: "implementationId", V: jsonx.Str(skill.ImplementationID)},
+		{K: "capabilityId", V: jsonx.Str(skill.CapabilityID)},
+		{K: "description", V: jsonx.Str(skill.Description)},
+		{K: "instructions", V: jsonx.Str(skill.InstructionsFor(mode))},
+		{K: "inputSchema", V: jsonx.Str(skill.InputSchema)},
+		{K: "outputSchema", V: jsonx.Str(skill.OutputSchema)},
+	}
+	required := append([]string{}, skill.RequiresContextTypes...)
+	required = append(required, skill.VariantContextRequirements[mode]...)
+	if len(required) > 0 {
+		obj = append(obj, jsonx.Member{K: "requiresContextTypes", V: stringArr(distinctValues(required))})
+	}
+	tools := append([]string{}, skill.RequiresTools...)
+	tools = append(tools, skill.VariantToolRequirements[mode]...)
+	if len(tools) > 0 {
+		obj = append(obj, jsonx.Member{K: "requiresTools", V: stringArr(distinctValues(tools))})
+	}
+	if len(skill.ContextObjects) > 0 {
+		obj = append(obj, jsonx.Member{K: "context", V: contextValue(skill.ContextObjects)})
+	}
+	if skill.Exposed {
+		obj = append(obj, jsonx.Member{K: "exposed", V: jsonx.Bool(true)})
+	}
+	obj = append(obj, jsonx.Member{K: "provenance", V: provenanceValue(skill.Provenance)})
+	return obj
+}
+
+func distinctValues(values []string) []string {
+	seen := map[string]bool{}
+	out := []string{}
+	for _, value := range values {
+		if !seen[value] {
+			seen[value] = true
+			out = append(out, value)
+		}
+	}
+	return out
 }
 
 // provenanceJSON renders the canonical indented provenance.json.

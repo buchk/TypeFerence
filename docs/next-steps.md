@@ -11,7 +11,7 @@ remaining as stale unchecked tasks here.
   diagnostic text is intentionally not yet contractual.
 - [ ] Add a review check that every normative specification edit updates
   `docs/conformance-matrix.md` and, for canonicalization or composition, adds a
-  current v4 golden fixture.
+  current version 6 golden fixture.
 - [ ] Continue separating resolver phases behind narrow internal inputs and
   outputs. The first file-level decomposition keeps composition, context typing,
   interfaces, and dependency validation distinct; a later change can introduce
@@ -24,14 +24,27 @@ remaining as stale unchecked tasks here.
   semantic member identity once that identity is specified. The current
   comparison deliberately ignores only dispatch names and provenance and remains
   conservative for ambiguity detection.
-- [ ] Define a third-party target-adapter conformance contract before accepting
-  adapters as supported rather than experimental.
+- [ ] Run the Agent Plugins pilot that ADR-0029 requires before acceptance:
+  auto-install of repository-enabled plugins in non-interactive (`-p`) runs,
+  the `extraKnownMarketplaces` source object for a GitHub-hosted marketplace,
+  plugin versus repository agent parity, stdio MCP environment inheritance,
+  `--allow-tool` syntax for MCP tools, and plugin version comparison on update.
+- [ ] Decide how typed context field values reach hosts that read only
+  Markdown. Plugin agent files and `SKILL.md` render a context's title and text
+  body; its field values are carried only in `bundle.json`.
+- [ ] Move the trust configuration reader onto the closed grammar
+  (ADR-0032 decision 1 leaves it on its YAML-based reader).
+- [ ] Credentialed tool servers in plugins. Link refuses environment-forwarded
+  and bearer-token credentials for a plugin's `mcp.json` (ADR-0029 decision 7);
+  specify host-native configuration for credentialed CI use once the pilot
+  shows how Copilot supplies credentials to plugin MCP servers.
+- [ ] Decide whether `typeference import` should recover shared structure
+  (profiles, extensions) from near-duplicate imported skills, or leave that to
+  authors (ADR-0033).
 
 ## Corpus ownership
 
 - `examples/helio`: integrated product narrative and committed reference output.
-- `examples/repo-agent`: compact authoring example that exercises the object
-  model; it must not become a second Helio.
 - `agents/maintainer`: self-hosting definition and generated-artifact drift gate.
 - `conformance/fixtures`: small, isolated normative and canonical-byte cases.
 

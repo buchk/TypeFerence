@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 2,
+  "target": "agent-plugin",
+  "sourceDigest": "sha256:13dc1a9f2de11629cc876c1b3747ec9dc05023161fc891984048eb4e97ddb491",
+  "artifacts": [
+    {
+      "id": "helio/works/plugins/engineering-kit@1.0.0",
+      "mode": "manual",
+      "path": "engineering-kit",
+      "digest": "sha256:08b869cd405e7f86df0829c29b6aba7f99a2843e4135b382bf99e743cddde4f1"
+    },
+    {
+      "id": "helio/works/plugins/executive@1.0.0",
+      "mode": "manual",
+      "path": "executive",
+      "digest": "sha256:32051149a09825fca2c7b8f4ab9a49c59618f7caac27c90c33cb81d7662bd3c5"
+    },
+    {
+      "id": "helio/works/plugins/payments@1.0.0",
+      "mode": "manual",
+      "path": "payments",
+      "digest": "sha256:6d3d33f8216e3180d830119f9eb355500c312f3f03f0493392ad567adf6ce5f4"
+    },
+    {
+      "id": "helio/works/plugins/payments@1.0.0",
+      "mode": "pipeline",
+      "path": "payments-pipeline",
+      "digest": "sha256:c49b12ec629b67675c6b669a728a090a760f8af34a1a8379d0c382d519b74b14"
+    }
+  ]
+}

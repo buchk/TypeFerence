@@ -1,7 +1,4 @@
 ---
-schemaVersion: 5
-kind: contextType
-id: helio/context-types/principal@1.0.0
 displayName: Principal Preferences
 body:
   type: text

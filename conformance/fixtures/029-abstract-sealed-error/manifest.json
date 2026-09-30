@@ -1,4 +1,5 @@
 {
   "description": "An abstract required capability cannot be sealed because there is no implementation to protect.",
+  "language": "legacy-v5",
   "expect": "error"
 }

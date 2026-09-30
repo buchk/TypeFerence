@@ -44,14 +44,30 @@ type ResolvedSkill struct {
 	// above apply to every mode.
 	VariantContextRequirements map[string][]string
 	VariantToolRequirements    map[string][]string
-	Provenance                 []ProvenanceEntry
+	// ContextObjects is the context a version 6 skill holds itself. It travels
+	// with the skill wherever it ships (ADR-0030).
+	ContextObjects []ResolvedContextRef
+	Provenance     []ProvenanceEntry
+}
+
+// ResolvedObjective is one inherited block of an agent's identity and
+// objectives: the body of Source.
+type ResolvedObjective struct {
+	Source  string
+	Content string
 }
 
 // ResolvedAgent is a fully composed agent or profile.
 type ResolvedAgent struct {
-	ID                     string
-	DisplayName            string
-	Description            string
+	ID          string
+	DisplayName string
+	Description string
+	// Language is the source language version the component was written in;
+	// version 6 components render with version 6 rules.
+	Language int
+	// Objectives are the agent's identity and objectives: embedded agents'
+	// bodies in embedding order, then its own (ADR-0030).
+	Objectives             []ResolvedObjective
 	Emit                   bool
 	Embeds                 []string
 	Satisfies              []string
@@ -95,21 +111,49 @@ type interfaceContract struct {
 // source files and must never depend on these documents.
 type Resolver struct {
 	resources      map[string]*resource.Document
+	implied        map[string]*resource.Document
 	componentCache map[string]*ResolvedAgent
 	interfaceCache map[string]*interfaceContract
 	slotDepths     map[string]map[string]int
 	skillDepths    map[string]map[string]int
 }
 
-// New creates a Resolver over a loaded resource set.
+// New creates a Resolver over a loaded resource set. Version 6 root skills
+// that bind no capability document define an implied capability identified by
+// the skill itself (ADR-0030); it is synthesized here, never authored.
 func New(resources map[string]*resource.Document) *Resolver {
+	implied := map[string]*resource.Document{}
+	for id, doc := range resources {
+		if doc.Kind == "skill" && doc.ImpliedCapability && doc.Binds == id {
+			capability := resource.NewDocument()
+			capability.SchemaVersion = doc.SchemaVersion
+			capability.Kind = "capability"
+			capability.ID = id
+			capability.DisplayName = doc.DisplayName
+			capability.Description = doc.Description
+			capability.InputSchema = doc.InputSchema
+			capability.OutputSchema = doc.OutputSchema
+			capability.Visibility = "internal"
+			implied[id] = capability
+		}
+	}
 	return &Resolver{
 		resources:      resources,
+		implied:        implied,
 		componentCache: map[string]*ResolvedAgent{},
 		interfaceCache: map[string]*interfaceContract{},
 		slotDepths:     map[string]map[string]int{},
 		skillDepths:    map[string]map[string]int{},
 	}
+}
+
+// requireCapability finds a capability document or a skill's implied
+// capability.
+func (r *Resolver) requireCapability(id string) (*resource.Document, error) {
+	if capability, ok := r.implied[id]; ok {
+		return capability, nil
+	}
+	return r.require(id, "capability")
 }
 
 // ResolveAll validates every skill, interface, and profile, then returns all
@@ -129,7 +173,7 @@ func (r *Resolver) ResolveAll() ([]*ResolvedAgent, error) {
 		if _, err := r.contextTypeClosure(id, map[string]bool{}); err != nil {
 			return nil, err
 		}
-		if r.resources[id].SchemaVersion == 5 {
+		if r.resources[id].IsNative() {
 			if _, _, _, err := r.nativeContextShape(id); err != nil {
 				return nil, err
 			}
@@ -309,6 +353,23 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 		displayName = id
 	}
 
+	// Objectives inherit through embedding like held context: embedded agents'
+	// bodies in embedding order, then this agent's own, first-seen per source.
+	objectives := []ResolvedObjective{}
+	objectiveSources := map[string]bool{}
+	for _, component := range embedded {
+		for _, objective := range component.Objectives {
+			if !objectiveSources[objective.Source] {
+				objectiveSources[objective.Source] = true
+				objectives = append(objectives, objective)
+			}
+		}
+	}
+	if !isBlank(current.Objectives) && !objectiveSources[id] {
+		objectives = append(objectives, ResolvedObjective{Source: id, Content: current.Objectives})
+		provenance = append(provenance, ProvenanceEntry{Field: "objectives", Source: id})
+	}
+
 	sortedSkills := make([]ResolvedSkill, 0, len(skills))
 	dispatchOwners := map[string]string{}
 	capabilityIDs := make([]string, 0, len(skills))
@@ -330,6 +391,8 @@ func (r *Resolver) resolveComponent(id string, visiting map[string]bool, require
 		ID:                     id,
 		DisplayName:            displayName,
 		Description:            current.Description,
+		Language:               current.SchemaVersion,
+		Objectives:             objectives,
 		Emit:                   current.Emit,
 		Embeds:                 append([]string{}, current.Embeds...),
 		Satisfies:              satisfies,

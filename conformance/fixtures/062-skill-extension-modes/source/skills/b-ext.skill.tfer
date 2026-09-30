@@ -1,0 +1,5 @@
+---
+description: Extended B.
+extends: skills/b.skill.tfer
+---
+B addition for every mode.

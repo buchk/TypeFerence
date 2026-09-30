@@ -1,0 +1,11 @@
+{
+  "description": "A version 6 package's trust file is a source member; imported detached signatures cover the source entry, the neutral bundle, and the plugin artifact.",
+  "expect": "success",
+  "emitArd": "conformance.example",
+  "trustSignatures": "signatures.json",
+  "digests": {
+    "agent-plugin": "sha256:15ad65b064f65c602ef0e65ddf8da025b99f702888bac0b4377f5dbbb2092e4a",
+    "ard": "sha256:6f37e920c7be9f135eb247111f4d2aa75dd9ad4b632ccf68c5766fe26a298656",
+    "neutral": "sha256:fdba7773f8feb42d69a2bcff9f75605e31644aee443d65cf97d8229d09247957"
+  }
+}

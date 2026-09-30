@@ -35,7 +35,7 @@ func (r *Resolver) resolveInterface(id string, visiting map[string]bool) (*inter
 		skills = append(skills, embedded.skills...)
 	}
 	for _, capability := range current.RequiresCapabilities {
-		if _, capErr := r.require(capability, "capability"); capErr != nil {
+		if _, capErr := r.requireCapability(capability); capErr != nil {
 			return nil, capErr
 		}
 	}

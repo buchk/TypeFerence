@@ -1,8 +1,5 @@
 ---
-schemaVersion: 5
-kind: context
-id: typeference/context/norm-never-weaken-determinism-provenance-or-fail-clos@0.1.0
-contextType: typeference/context-types/norms@0.1.0
 displayName: Never weaken determinism, provenance, or fail-closed behavio...
+contextType: context-types/norms.contexttype.tfer
 ---
 Never weaken determinism, provenance, or fail-closed behavior to make a change easier.

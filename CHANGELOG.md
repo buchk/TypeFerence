@@ -2,9 +2,10 @@
 
 All notable changes to TypeFerence are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semantic
-versioning. Tool versions (this file) are independent of the typed-resource
-`schemaVersion` (currently 5) and the trust configuration `schemaVersion`
-(also 5), which only change when the source formats change incompatibly.
+versioning. Tool versions (this file) are independent of the source-package
+`schemaVersion` declared in the project manifest (currently 6) and the trust
+configuration `schemaVersion` (currently 5), which only change when the source
+formats change incompatibly.
 
 TypeFerence is an experimental reference implementation; pre-1.0 versions make no
 compatibility promises between minor versions.
@@ -13,6 +14,49 @@ compatibility promises between minor versions.
 
 ### Added
 
+- **GitHub Agent Plugins as the primary build target**
+  ([ADR-0029](docs/decisions/0029-agent-plugins-primary-target.md)). The new
+  `agent-plugin` target writes a marketplace repository root: one Agent
+  Plugins 1.0 package per plugin and mode (`plugin.json`, Copilot custom
+  agents under `com.github.copilot/agents/`, `skills/<name>/SKILL.md`), a
+  `.github/plugin/marketplace.json` index when the manifest declares a
+  `marketplace`, and `.typeference/compatibility.json`, which reports plugins
+  that ship competing members of one skill family. A plugin that lists the
+  `pipeline` mode also emits `<plugin>-pipeline` for CI installs. `link`
+  writes a credential-free `mcp.json` per plugin and fails closed on
+  environment-forwarded or bearer-token credentials. `build` emits
+  `agent-plugin` and `neutral` by default.
+- **Version 6 source language**
+  ([ADR-0030](docs/decisions/0030-plugin-documents-and-v6-authoring.md),
+  [ADR-0032](docs/decisions/0032-v6-grammar-and-schema-directed-scalars.md)).
+  Plugin documents (`.plugin.tfer`) state what ships together; the manifest
+  (`schemaVersion: 6`) lists plugins and exports, and source membership is the
+  closure of references from them. A document's kind comes from its file
+  suffix and its identity from its path, so documents carry no
+  `schemaVersion`, `kind`, or `id`; references are paths, or
+  `<package>:<path>` into a dependency's exports. A skill that binds no
+  capability defines one; skills may hold context, and a skill whose own
+  context satisfies its requirements ships without an agent. An agent's body
+  is its objectives, and a context without a `contextType` is built-in text.
+  Frontmatter is parsed only by the closed grammar, with schema-directed
+  scalar typing: plain text needs no quotes, and each field's declared type
+  decides what a value means.
+- **Additive skill extension**
+  ([ADR-0031](docs/decisions/0031-additive-skill-extension.md)). `extends`
+  appends a skill's instructions, per mode, to a shared base skill's, keeps the
+  base's contract, and accumulates requirements and context; `sealed: true`
+  on a skill forbids extending it.
+- **`typeference import`**
+  ([ADR-0033](docs/decisions/0033-import-copilot-customizations.md)) converts a
+  repository's custom agents and skills, a skill directory, or an existing
+  plugin into a version 6 package, failing with a list of everything it cannot
+  represent unless `--lossy` is passed.
+- **Version 6 conformance corpus.** Fixtures 058–074 and 080–099 pin plugins,
+  marketplaces, extension flattening and its mode rules, skills packs,
+  skill-held context, objectives, schema-directed scalars, the compatibility
+  report, closure membership, CRLF/BOM and Unicode handling, exported-interface
+  satisfaction, context refinement, allow-lists, mode-scoped tool imports,
+  signed and fail-closed trust publication, and every new error.
 - **Deterministic setup wizard** ([ADR-0028](docs/decisions/0028-deterministic-setup-wizard.md)).
   `typeference init --answers answers.json [--out DIR] [--verify sha256:...]`
   scaffolds a complete multilevel v5 suite — typed norm contexts, a profile
@@ -69,9 +113,6 @@ compatibility promises between minor versions.
   cross-implementation conformance suite becomes a single-implementation
   golden-file determinism suite over the same fixtures — the determinism
   guarantee is unchanged.
-
-### Added
-
 - **Locked source packages and enterprise restore**
   ([ADR-0021](docs/decisions/0021-restore-locked-source-packages.md)):
   `pack`, `restore`, and `update`, canonical `.tferpkg` archives and lockfiles,
@@ -85,6 +126,32 @@ compatibility promises between minor versions.
 - **Language server** (`typeference-lsp`): authoring and composition
   diagnostics, completion, go-to-definition, and document symbols for `.tfer`
   and `.yaml` sources.
+
+### Changed
+
+- **`description` is routing metadata** (supersedes ADR-0027 decision 3). It is
+  required on agents, skills, and plugins and is emitted only into routing
+  surfaces; the neutral `AGENTS.md` renders objectives instead of the agent
+  description, and its skill index names each `SKILL.md` path.
+- **Examples, maintainer, playground, and wizard moved to version 6.**
+  `examples/helio` is now a marketplace of three plugins (an agent with three
+  skills, a skills pack, and an agent with a pipeline variant) and a skill
+  extension; the self-hosted maintainer
+  also ships as an installable plugin; the setup wizard's generator (2.0.0)
+  scaffolds a plugin set.
+- **Archival corpora.** Version 5 and version 3 fixtures are labeled
+  `legacy-v5` and `legacy-v3` and reproduce their recorded neutral output
+  byte-for-byte through loaders used only by the conformance runner. Their
+  ARD digests were regenerated because the catalogs no longer list retired
+  targets.
+
+### Removed
+
+- **The Codex, Copilot, and Cursor build targets.** Requesting one fails with a
+  diagnostic naming ADR-0029; their digests are removed from the corpus.
+- **Version 5 input to product entry points.** The CLI, language server,
+  playground, and `pack` accept only version 6 packages. No migrator ships;
+  nothing outside this repository used version 5.
 
 ## [0.0.4] - 2026-07-15
 

@@ -1,0 +1,5 @@
+---
+description: Report team status.
+extends: skills/status.skill.tfer
+---
+Include the team's freeze.

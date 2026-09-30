@@ -1,0 +1,4 @@
+{
+  "description": "A reference must name a document of a kind its field accepts.",
+  "expect": "error"
+}

@@ -1,16 +1,13 @@
 ---
-schemaVersion: 5
-kind: profile
-id: typeference/profiles/determinism-guardian@0.1.0
 displayName: Determinism Guardian
 description: Any codegen change must preserve byte-identical output, verified by the determinism suite.
 context:
-  - typeference/context/norm-any-change-to-code-generation-must-reproduce-the@0.1.0
-  - typeference/context/norm-never-weaken-determinism-provenance-or-fail-clos@0.1.0
-  - typeference/context/norm-a-conformance-digest-is-regenerated-only-togethe@0.1.0
-  - typeference/context/norm-repeated-builds-from-identical-source-must-stay@0.1.0
-  - typeference/context/determinism@0.1.0
+  - context/norm-any-change-to-code-generation-must-reproduce-the.context.tfer
+  - context/norm-never-weaken-determinism-provenance-or-fail-clos.context.tfer
+  - context/norm-a-conformance-digest-is-regenerated-only-togethe.context.tfer
+  - context/norm-repeated-builds-from-identical-source-must-stay.context.tfer
+  - context/determinism.context.tfer
 skills:
-  - ref: typeference/skills/verify-conformance@0.1.0
-  - ref: typeference/skills/audit-drift@0.1.0
+  - skills/verify-conformance.skill.tfer
+  - skills/audit-drift.skill.tfer
 ---

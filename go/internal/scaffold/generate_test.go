@@ -55,17 +55,45 @@ func TestGeneratedTreeCompilesWithOrdinaryCompiler(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	docs, err := resource.Load(src, "")
+	loaded, err := resource.LoadV6(src, resource.V6Options{})
 	if err != nil {
-		t.Fatalf("generated tree must load with the ordinary v5 loader: %v", err)
+		t.Fatalf("generated tree must load as an ordinary version 6 package: %v", err)
 	}
-	if len(docs) < 5 {
-		t.Fatalf("expected at least 5 resources, got %d", len(docs))
+	if len(loaded.Documents) < 5 {
+		t.Fatalf("expected at least 5 documents, got %d", len(loaded.Documents))
 	}
 	out := t.TempDir()
-	targets, _ := compile.ParseTargets("neutral")
+	targets, _ := compile.ParseTargets("all")
 	if _, err := compile.Build(src, out, targets, nil); err != nil {
 		t.Fatalf("generated tree must compile: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(out, "agent-plugin", "ticket-bot", "plugin.json")); err != nil {
+		t.Fatalf("the generated plugin set must emit the agent's plugin: %v", err)
+	}
+}
+
+func TestMultiWordLevelNamesBecomePathSegments(t *testing.T) {
+	as := sample()
+	as.Levels = []TeamLevel{{Name: "Platform Team"}}
+	tree, _, err := Scaffold(as)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, f := range tree.Files {
+		if f.Path == "profiles/platform-team.profile.tfer" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("a multi-word level name must become a valid path segment")
+	}
+}
+
+func TestRetiredHostNamesStayAccepted(t *testing.T) {
+	raw := strings.Replace(validJSON(), `"hosts": ["neutral"]`, `"hosts": ["codex", "cursor"]`, 1)
+	if _, err := ParseAnswerSet([]byte(raw)); err != nil {
+		t.Fatalf("answer sets written before ADR-0029 must stay valid: %v", err)
 	}
 }
 
@@ -101,7 +129,7 @@ func TestMultilevelChainEmbedded(t *testing.T) {
 			profile = string(f.Bytes)
 		}
 	}
-	if profile == "" || !strings.Contains(profile, "profiles/platform@") {
+	if profile == "" || !strings.Contains(profile, "profiles/platform.profile.tfer") {
 		t.Fatalf("second level must embed the first; got:\n%s", profile)
 	}
 }

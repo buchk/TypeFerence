@@ -1,0 +1,4 @@
+{
+  "description": "Two skills cannot emit the same skill name: installed skills share one namespace (ADR-0029).",
+  "expect": "error"
+}

@@ -1,0 +1,6 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "typeference-maintainer",
+  "version": "0.1.0",
+  "description": "The TypeFerence repository\u0027s maintainer agent, with its conformance and self-host drift skills."
+}

@@ -26,11 +26,11 @@ func TestHelioParityWithCommittedOutput(t *testing.T) {
 		t.Skipf("examples/helio not available: %v", err)
 	}
 	out := t.TempDir()
-	if _, err := Build(source, out, []Target{Neutral, Codex, Copilot, Cursor},
+	if _, err := Build(source, out, []Target{Neutral, AgentPlugin},
 		&ArdPublicationOptions{PublisherDomain: "helio.example"}); err != nil {
 		t.Fatal(err)
 	}
-	for _, target := range []string{"neutral", "codex", "copilot", "cursor", "ard"} {
+	for _, target := range []string{"neutral", "agent-plugin", "ard"} {
 		expected := repoPath(t, "dist", target)
 		if _, err := os.Stat(expected); err != nil {
 			t.Fatalf("committed reference output missing: %s", expected)
@@ -56,7 +56,7 @@ func TestDeterministicRebuild(t *testing.T) {
 	first := t.TempDir()
 	second := t.TempDir()
 	for _, out := range []string{first, second} {
-		if _, err := Build(source, out, []Target{Neutral, Codex, Copilot, Cursor},
+		if _, err := Build(source, out, []Target{Neutral, AgentPlugin},
 			&ArdPublicationOptions{PublisherDomain: "helio.example"}); err != nil {
 			t.Fatal(err)
 		}
@@ -95,7 +95,7 @@ func TestUrnSegment(t *testing.T) {
 
 func TestParseTargets(t *testing.T) {
 	all, err := ParseTargets("ALL")
-	if err != nil || len(all) != 4 {
+	if err != nil || len(all) != 2 || all[0] != Neutral || all[1] != AgentPlugin {
 		t.Fatalf("ParseTargets(all) = %v, %v", all, err)
 	}
 	if _, err := ParseTargets("bogus"); err == nil || !strings.Contains(err.Error(), "Unknown target") {

@@ -1,9 +1,6 @@
 ---
-schemaVersion: 5
-kind: context
-id: helio/context/safety-policy@1.0.0
-contextType: helio/context-types/safety-policy@1.0.0
 displayName: Helio Safety Policy
+contextType: context-types/safety-policy.contexttype.tfer
 values:
   authority: explicit
 ---

@@ -1,0 +1,8 @@
+{
+  "description": "A plugin with no agents is a skills pack: a complete, context-free profile and a directly linked independent skill ship as SKILL.md files.",
+  "expect": "success",
+  "digests": {
+    "agent-plugin": "sha256:504ccc7eb6cd5b3b2df1b30db6b4e9fc29c93f32143c6aa5e6f70d439d593223",
+    "neutral": "sha256:3b09daf6ef780fd8e2b0e7c46075933e67cf4170c2ef754074d7eca730dbce3d"
+  }
+}

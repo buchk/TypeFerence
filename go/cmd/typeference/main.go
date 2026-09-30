@@ -1,6 +1,6 @@
 // Command typeference is the reference CLI. It produces deterministic artifacts
-// verified by the current-v4 conformance and legacy archival golden corpora under
-// conformance/.
+// verified by the current-language conformance corpus and the archival golden
+// corpora under conformance/.
 package main
 
 import (
@@ -38,6 +38,8 @@ func run(args []string) int {
 	switch args[0] {
 	case "init":
 		code, err = initCommand(args)
+	case "import":
+		code, err = importCommand(args)
 	case "validate":
 		code, err = validate(args)
 	case "build":
@@ -85,11 +87,11 @@ func validate(args []string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	agents, err := compile.ValidateWithPackages(source, trustConfig, packagesDir)
+	summary, err := compile.Summarize(source, trustConfig, packagesDir)
 	if err != nil {
 		return 0, err
 	}
-	fmt.Printf("Valid: %d agents resolved.\n", len(agents))
+	fmt.Printf("Valid: %d agents resolved; %d plugin artifacts.\n", len(summary.Agents), len(summary.Plugins))
 	return 0, nil
 }
 
@@ -136,7 +138,40 @@ func build(args []string) (int, error) {
 	}
 	fmt.Printf("Built %d files at %s\n", len(files), full)
 	fmt.Printf("SHA-256 %s\n", hash)
+	reportPluginConflicts(filepath.Join(output, compile.AgentPlugin.String(), ".typeference", "compatibility.json"))
 	return 0, nil
+}
+
+// reportPluginConflicts prints the build's compatibility report: plugins
+// that ship different skills for one capability compete for the same
+// requests when installed together (ADR-0031). It informs; it never fails a
+// build, because a team may ship competing packs on purpose.
+func reportPluginConflicts(path string) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+	var report struct {
+		Conflicts []struct {
+			Mode         string `json:"mode"`
+			CapabilityID string `json:"capabilityId"`
+			Members      []struct {
+				Plugin string `json:"plugin"`
+				Skill  string `json:"skill"`
+			} `json:"members"`
+		} `json:"conflicts"`
+	}
+	if json.Unmarshal(data, &report) != nil {
+		return
+	}
+	for _, conflict := range report.Conflicts {
+		members := make([]string, 0, len(conflict.Members))
+		for _, member := range conflict.Members {
+			members = append(members, member.Plugin+"/"+member.Skill)
+		}
+		fmt.Printf("note: %s plugins compete for %s when installed together: %s\n",
+			conflict.Mode, conflict.CapabilityID, strings.Join(members, ", "))
+	}
 }
 
 func pack(args []string) (int, error) {
@@ -498,7 +533,7 @@ func ardOptions(args []string, source string) (*compile.ArdPublicationOptions, e
 	}
 	allowUnsignedTrust := slices.Contains(args, "--allow-unsigned-trust")
 	emitArd := slices.Contains(args, "--emit-ard")
-	// A project manifest (typeference.yaml) with a publisher makes ARD emission
+	// A project manifest with a publisher makes ARD emission
 	// the default and supplies the publisher domain, so `compile -> pushable
 	// ai-catalog.json` needs no flags (ADR-0018).
 	project, projErr := resource.LoadProject(source)
@@ -512,7 +547,7 @@ func ardOptions(args []string, source string) (*compile.ArdPublicationOptions, e
 		}
 	}
 	if emitArd && publisherDomain == "" {
-		return nil, resource.Errorf("--emit-ard requires --publisher-domain (or a `publisher` in typeference.yaml)")
+		return nil, resource.Errorf("--emit-ard requires --publisher-domain (or a `publisher` in typeference.tfer)")
 	}
 	if !emitArd && publisherDomain != "" {
 		return nil, resource.Errorf("--publisher-domain requires --emit-ard")
@@ -565,18 +600,26 @@ func help() int {
 	fmt.Print(`TypeFerence - typed coherence for AI agents (Go implementation)
 
 Commands:
+  typeference init --answers <answers.json> [--out DIR] [--verify sha256:...]
+      (scaffolds a starter plugin set from a versioned answer set)
+  typeference import <copilot-source> --out <dir> [--name ns/name]
+      [--version x.y.z] [--plugin name] [--lossy]
+      (turns existing Copilot custom agents, Agent Skills, or an Agent Plugin
+       into a version 6 package; fails on anything it cannot represent
+       unless --lossy)
   typeference validate <source> [--trust-config path]
       [--packages-dir obj/typeference/packages]
   typeference pack <source> [--out package.tferpkg]
   typeference restore <source> --feeds <external-config> [--locked]
       [--packages-dir obj/typeference/packages]
-typeference update <source> --feeds <external-config>
+  typeference update <source> --feeds <external-config>
       [--packages-dir obj/typeference/packages]
-  typeference build <source> [--target all|neutral|codex|copilot|cursor] [--out dist]
+  typeference build <source> [--target all|agent-plugin|neutral] [--out dist]
       [--packages-dir obj/typeference/packages]
       [--emit-ard --publisher-domain example.com] [--trust-config path]
       [--trust-signatures signatures.json]
       [--allow-unsigned-trust]
+      (agent-plugin writes a GitHub Copilot plugin marketplace root)
   typeference inspect <agent-id> [--source path]
   typeference link <built-target-dir> --deployment <file> --out <linked-dir>
   typeference diff <source> --against <compiled-dir> [--target all]

@@ -1,0 +1,5 @@
+---
+description: The Ticket Bot agent with the acme defaults it inherits.
+agents:
+  - agents/ticket-bot.agent.tfer
+---

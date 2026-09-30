@@ -23,64 +23,76 @@ func field(n *Node, key string) *Node {
 	return nil
 }
 
-func TestBasicMappingAndScalars(t *testing.T) {
-	n := parse(t, "kind: \"skill\"\nid: \"a/b@1.0.0\"\ncount: 42\nratio: 0.50\nok: true\nnothing: null\n")
-	if got := field(n, "kind").Value; got.Kind != KindString || got.Text != "skill" {
-		t.Errorf("quoted kind is a string: %+v", got)
-	}
-	if got := field(n, "id").Value; got.Text != "a/b@1.0.0" || got.Kind != KindString {
-		t.Errorf("quoted id is a string: %+v", got)
-	}
-	if got := field(n, "count").Value; got.Kind != KindInteger || got.Text != "42" {
-		t.Errorf("integer: %+v", got)
-	}
-	if got := field(n, "ratio").Value; got.Kind != KindDecimal || got.Text != "0.50" {
-		t.Errorf("decimal lexeme must be preserved verbatim, got %+v", got)
-	}
-	if got := field(n, "ok").Value; got.Kind != KindBoolean {
-		t.Errorf("boolean: %+v", got)
-	}
-	if got := field(n, "nothing").Value; got.Kind != KindNull {
-		t.Errorf("null: %+v", got)
+func TestPlainScalarsAreUntypedText(t *testing.T) {
+	n := parse(t, "kind: skill\ncount: 42\nratio: 0.50\nok: true\nsays: Note: colons are fine\n")
+	for key, want := range map[string]string{
+		"kind": "skill", "count": "42", "ratio": "0.50", "ok": "true", "says": "Note: colons are fine",
+	} {
+		got := field(n, key).Value
+		if got.Kind != KindPlain || got.Text != want {
+			t.Errorf("%s: want plain %q, got %+v", key, want, got)
+		}
 	}
 }
 
-func TestQuotedIsAlwaysString(t *testing.T) {
-	n := parse(t, "a: \"42\"\nb: 'true'\n")
-	if got := field(n, "a").Value; got.Kind != KindString || got.Text != "42" {
-		t.Errorf("quoted digits are strings: %+v", got)
-	}
-	if got := field(n, "b").Value; got.Kind != KindString || got.Text != "true" {
-		t.Errorf("quoted true is a string: %+v", got)
-	}
-}
-
-func TestBareWordRejected(t *testing.T) {
-	if _, err := Parse("kind: skill\n"); err == nil || !strings.Contains(err.Error(), "bare word") {
-		t.Fatalf("expected bare-word error, got %v", err)
+func TestQuotedIsAlwaysAString(t *testing.T) {
+	n := parse(t, "a: \"42\"\nb: 'true'\nc: \"x \\\"y\\\" \\\\ \\n\\u00e9\\ud83d\\ude00\"\nd: 'it''s'\n")
+	cases := map[string]string{"a": "42", "b": "true", "c": "x \"y\" \\ \né😀", "d": "it's"}
+	for key, want := range cases {
+		got := field(n, key).Value
+		if got.Kind != KindQuoted || got.Text != want {
+			t.Errorf("%s: want quoted %q, got %+v", key, want, got)
+		}
 	}
 }
 
-func testCommentsInert(t *testing.T) {
-	n := parse(t, "# leading comment\nkind: agent # trailing\n# tail\n")
-	if len(n.Items) != 1 || n.Items[0].Key != "kind" {
-		t.Fatalf("comments must be inert: %+v", n.Items)
+func TestNullAndEmptyCollections(t *testing.T) {
+	n := parse(t, "a:\nb: null\nc: ~\nd: []\ne: {}\n")
+	for _, key := range []string{"a", "b", "c"} {
+		if got := field(n, key).Value; got.Kind != KindNull {
+			t.Errorf("%s must be null, got %+v", key, got)
+		}
+	}
+	if d := field(n, "d"); !d.IsSeq || len(d.Items) != 0 {
+		t.Errorf("[] must be the empty sequence: %+v", d)
+	}
+	if e := field(n, "e"); !e.IsMap || len(e.Items) != 0 {
+		t.Errorf("{} must be the empty mapping: %+v", e)
 	}
 }
 
-func TestDuplicateKeysError(t *testing.T) {
-	_, err := Parse("a: \"x\"\na: \"y\"\n")
-	if err == nil || !strings.Contains(err.Error(), "duplicate property 'a'") {
-		t.Fatalf("expected duplicate key error, got %v", err)
+func TestCommentsAreInert(t *testing.T) {
+	n := parse(t, "# leading\nkind: agent # trailing\nq: \"keep # this\"\nr: C#sharp\n# tail\n")
+	if got := field(n, "kind").Value.Text; got != "agent" {
+		t.Errorf("trailing comment must be stripped: %q", got)
+	}
+	if got := field(n, "q").Value.Text; got != "keep # this" {
+		t.Errorf("a # inside quotes is text: %q", got)
+	}
+	if got := field(n, "r").Value.Text; got != "C#sharp" {
+		t.Errorf("a # not preceded by whitespace is text: %q", got)
 	}
 }
 
-func TestFlowAnchorAliasTagRejected(t *testing.T) {
+func TestRejectedSyntax(t *testing.T) {
 	cases := map[string]string{
-		"flow":    "a: [1, 2]\n",
-		"anchor":  "a: &x \"y\"\nb: *x\n",
-		"tag":     "a: !!str hello\n",
-		"flowmap": "a: {b: \"c\"}\n",
+		"flow":       "a: [1, 2]\n",
+		"flowmap":    "a: {b: c}\n",
+		"anchor":     "a: &x y\n",
+		"alias":      "a: *x\n",
+		"tag":        "a: !!str hello\n",
+		"folded":     "a: >\n  folded\n",
+		"quotedKey":  "\"a\": b\n",
+		"tab":        "a:\n\tb: c\n",
+		"noSpace":    "a:b\n",
+		"duplicate":  "a: x\na: y\n",
+		"badKey":     "a b: c\n",
+		"badHeader":  "a: |x\n  y\n",
+		"unterminat": "a: \"open\n",
+		"badEscape":  "a: \"\\q\"\n",
+		"trailing":   "a: \"x\" y\n",
+		"indent":     "a: x\n  b: y\n",
+		"seqRoot":    "- a\n",
 	}
 	for name, src := range cases {
 		if _, err := Parse(src); err == nil {
@@ -89,77 +101,72 @@ func TestFlowAnchorAliasTagRejected(t *testing.T) {
 	}
 }
 
-func TestSequenceOfMaps(t *testing.T) {
-	src := "skills:\n  - ref: \"a@1.0.0\"\n    sealed: true\n  - ref: \"b@1.0.0\"\n"
-	n := parse(t, src)
-	seq := field(n, "skills")
-	if !seq.IsSeq || len(seq.Items) != 2 {
-		t.Fatalf("expected sequence of 2, got %+v", seq)
+func TestBlockScalars(t *testing.T) {
+	n := parse(t, "clip: |\n  one\n  # not a comment\n\n  two\n\n\nstrip: |-\n  no newline\nexplicit: |4\n      deeper\n    base\nafter: x\n")
+	if got := field(n, "clip").Value; got.Kind != KindBlock || got.Text != "one\n# not a comment\n\ntwo\n" {
+		t.Errorf("clip: %+v", got)
 	}
-	first := seq.Items[0]
-	ref := first.Items[0]
-	if ref.Key != "ref" || ref.Value.Text != "a@1.0.0" {
-		t.Errorf("first item ref: %+v", ref)
+	if got := field(n, "strip").Value.Text; got != "no newline" {
+		t.Errorf("strip: %q", got)
 	}
-	if sealed := first.Items[1]; sealed.Key != "sealed" || sealed.Value.Kind != KindBoolean {
-		t.Errorf("first item sealed: %+v", sealed)
+	if got := field(n, "explicit").Value.Text; got != "  deeper\nbase\n" {
+		t.Errorf("explicit indentation: %q", got)
 	}
-}
-
-func TestBlockScalarClipChomping(t *testing.T) {
-	src := "body: |\n  line one\n  line two\nkind: \"x\"\n"
-	n := parse(t, src)
-	got := field(n, "body").Value.Text
-	want := "line one\nline two\n"
-	if got != want {
-		t.Errorf("clip chomp: got %q want %q", got, want)
+	if got := field(n, "after").Value.Text; got != "x" {
+		t.Errorf("parsing resumes after a block: %q", got)
 	}
 }
 
-func TestBlockScalarStripChomping(t *testing.T) {
-	src := "body: |-\n  no trailing\nkind: \"x\"\n"
+func TestSequences(t *testing.T) {
+	src := "skills:\n  - skills/a.skill.tfer\n  - skill: skills/b.skill.tfer\n    sealed: true\n    tags:\n      - x\n  - dep/pkg:skills/c.skill.tfer\nsame:\n- one\n- two\nnested:\n  -\n    k: v\n"
 	n := parse(t, src)
-	if got := field(n, "body").Value.Text; got != "no trailing" {
-		t.Errorf("strip chomp: got %q", got)
+	skills := field(n, "skills")
+	if !skills.IsSeq || len(skills.Items) != 3 {
+		t.Fatalf("skills: %+v", skills)
+	}
+	if got := skills.Items[0].Value; got.Kind != KindPlain || got.Text != "skills/a.skill.tfer" {
+		t.Errorf("path item: %+v", got)
+	}
+	mapping := skills.Items[1]
+	if !mapping.IsMap || len(mapping.Items) != 3 {
+		t.Fatalf("inline mapping item: %+v", mapping)
+	}
+	if field(mapping, "sealed").Value.Text != "true" || len(field(mapping, "tags").Items) != 1 {
+		t.Errorf("inline mapping members: %+v", mapping)
+	}
+	if got := skills.Items[2].Value.Text; got != "dep/pkg:skills/c.skill.tfer" {
+		t.Errorf("a package-qualified path is one scalar: %q", got)
+	}
+	if same := field(n, "same"); !same.IsSeq || len(same.Items) != 2 {
+		t.Errorf("a sequence may align with its key: %+v", same)
+	}
+	if nested := field(n, "nested"); len(nested.Items) != 1 || field(nested.Items[0], "k").Value.Text != "v" {
+		t.Errorf("a bare dash introduces a nested block: %+v", nested)
 	}
 }
 
-func TestBlockScalarPreservesBlankLines(t *testing.T) {
-	src := "body: |\n  para one\n\n  para two\n"
-	n := parse(t, src)
-	got := field(n, "body").Value.Text
-	if got != "para one\n\npara two\n" {
-		t.Errorf("blank lines preserved: %q", got)
-	}
-}
-
-func TestTabIndentationRejected(t *testing.T) {
-	if _, err := Parse("a:\n\tb: \"x\"\n"); err == nil || !strings.Contains(err.Error(), "tab") {
-		t.Fatalf("tab indentation must be rejected, got %v", err)
-	}
-}
-
-func TestNestedMappingTwoSpaceIndent(t *testing.T) {
-	src := "fields:\n  owner:\n    type: \"string\"\n    required: true\n"
-	n := parse(t, src)
+func TestNestedMappings(t *testing.T) {
+	n := parse(t, "fields:\n  owner:\n    type: string\n    required: true\n  count:\n    type: integer\n")
 	fields := field(n, "fields")
-	owner := fields.Items[0]
-	if owner.Key != "owner" {
-		t.Fatalf("owner: %+v", owner)
+	if !fields.IsMap || len(fields.Items) != 2 {
+		t.Fatalf("fields: %+v", fields)
 	}
-	typ := owner.Items[0]
-	if typ.Value.Text != "string" || typ.Value.Kind != KindString {
-		t.Errorf("type value: %+v", typ.Value)
-	}
-	req := owner.Items[1]
-	if req.Value.Kind != KindBoolean {
-		t.Errorf("required: %+v", req.Value)
+	owner := field(fields, "owner")
+	if field(owner, "type").Value.Text != "string" || field(owner, "required").Value.Text != "true" {
+		t.Errorf("owner: %+v", owner)
 	}
 }
 
-func TestEmptyValueIsNull(t *testing.T) {
-	n := parse(t, "key:\nother: \"v\"\n")
-	if got := field(n, "key").Value; got.Kind != KindNull {
-		t.Errorf("empty value: %+v", got)
+func TestErrorsCarryLines(t *testing.T) {
+	_, err := Parse("a: x\nb: [1]\n")
+	if err == nil || !strings.HasPrefix(err.Error(), "line 2:") {
+		t.Fatalf("expected a line-2 error, got %v", err)
+	}
+}
+
+func TestEmptyInput(t *testing.T) {
+	n, err := Parse("\n# only a comment\n")
+	if err != nil || n != nil {
+		t.Fatalf("empty frontmatter parses to nil, got %+v %v", n, err)
 	}
 }

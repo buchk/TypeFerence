@@ -1,0 +1,30 @@
+schemaVersion: 1
+environment: local
+artifacts:
+  helio/works/plugins/engineering-kit@1.0.0:
+    modes: [manual]
+  helio/works/plugins/executive@1.0.0:
+    modes: [manual]
+  helio/works/plugins/payments@1.0.0:
+    modes: [manual, pipeline]
+providers:
+  # Authorization for an HTTP server is managed by the client (for example
+  # OAuth); a plugin's mcp.json never carries a token.
+  payments-agent:
+    kind: mcp
+    transport: http
+    url: https://agents.helio.example/payments-repo-agent/mcp
+  # A plugin cannot forward environment variables, so this server obtains its
+  # own credentials; {bundle} resolves to the plugin's bundle at runtime.
+  repository-signals:
+    kind: mcp
+    transport: stdio
+    command: helio-repository-signals
+    args: [--bundle, "{bundle}"]
+toolBindings:
+  helio/works/tools/payments-repository-agent@1.0.0:
+    provider: payments-agent
+    remoteName: repository_status
+  helio/works/tools/repository-signals@1.0.0:
+    provider: repository-signals
+    remoteName: repository_signals

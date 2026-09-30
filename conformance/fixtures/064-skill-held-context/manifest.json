@@ -1,0 +1,8 @@
+{
+  "description": "A skill holds typed context that satisfies its own requirement, so it is independent: the context renders into its SKILL.md and it ships directly.",
+  "expect": "success",
+  "digests": {
+    "agent-plugin": "sha256:2ab5bc010a46c00d6ef7ce9c339a2bbdcb53c55146ed93a0cb059b3a4e8d343a",
+    "neutral": "sha256:4f7e52253b65308dd2c0316f053618a4ee3fae478ead6505c0e957f0b03cea5d"
+  }
+}

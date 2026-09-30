@@ -1,0 +1,7 @@
+---
+description: Review skills for any team.
+profiles:
+  - profiles/review.profile.tfer
+skills:
+  - skills/lint.skill.tfer
+---

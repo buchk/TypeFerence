@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "agentId": "helio/payments-repo-agent@1.0.0",
+  "agentId": "helio/works/agents/payments-repo-agent@1.0.0",
   "target": "neutral",
   "defaultMode": "",
-  "sourceDigest": "sha256:a3601445a5afb5e977072066bf73b7b1f3443404bf2e394f13ba01cfc79422eb",
+  "sourceDigest": "sha256:13dc1a9f2de11629cc876c1b3747ec9dc05023161fc891984048eb4e97ddb491",
   "dependencies": [],
   "modes": [
     "a2a",
@@ -12,8 +12,8 @@
   ],
   "toolImports": [
     {
-      "toolId": "helio/tools/repository-signals@1.0.0",
-      "skillId": "helio/skills/payments-repository-status@1.0.0",
+      "toolId": "helio/works/tools/repository-signals@1.0.0",
+      "skillId": "helio/works/skills/payments-repository-status@1.0.0",
       "mode": "*"
     }
   ]

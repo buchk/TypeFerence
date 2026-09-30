@@ -1,4 +1,5 @@
 {
   "description": "Duplicate YAML keys are rejected instead of silently selecting one value.",
+  "language": "legacy-v5",
   "expect": "error"
 }

@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "organization": {"name": "acme", "version": "1.0.0"},
+  "norms": [
+    {"id": "review-before-merge", "text": "Pull requests require one reviewer before merge."},
+    {"id": "ci-only-deploys", "text": "Production deploys go through CI only."}
+  ],
+  "levels": [{"name": "Platform"}],
+  "agent": {"name": "ticket-bot"},
+  "targets": {"hosts": ["neutral"]}
+}

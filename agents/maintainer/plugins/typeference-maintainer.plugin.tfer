@@ -1,0 +1,5 @@
+---
+description: The TypeFerence repository's maintainer agent, with its conformance and self-host drift skills.
+agents:
+  - agents/typeference-maintainer.agent.tfer
+---

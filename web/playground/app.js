@@ -218,12 +218,14 @@ function renderFileList() {
 
 function initFilePane() {
   els.addFile.addEventListener("click", () => {
-    const path = prompt("New file path (e.g. skills/triage.skill.yaml):");
+    const path = prompt("New file path (e.g. skills/triage.skill.tfer):");
     if (!path || state.files.has(path)) return;
     const clean = path.replace(/^\/+/, "");
+    // The file name decides the kind; link the new document from a plugin
+    // (or from something a plugin ships) so it becomes part of the build.
     const template = clean.endsWith(".md")
       ? "# Notes\n"
-      : "schemaVersion: 3\nkind: skill\nid: acme/skills/new-skill@1.0.0\nbinds: acme/capabilities/change-me@1.0.0\ndescription: Describe the implementation.\ninstructions: |\n  Say what this skill does.\n";
+      : "---\ndescription: Say what this does and when to use it.\n---\nWrite the instructions here.\n";
     state.files.set(clean, template);
     openFile(clean);
     scheduleCompile();
@@ -326,8 +328,8 @@ function openArtifact(path) {
 
 /* ---------------------------------------------------------------- graph */
 
-const KIND_COLORS = { agent: "--kind-agent", profile: "--kind-profile", skill: "--kind-skill", capability: "--kind-capability", interface: "--kind-interface" };
-const EDGE_KIND_COLOR = { embeds: "--text-dim", satisfies: "--kind-interface", skill: "--kind-skill", binds: "--kind-skill", capability: "--kind-capability", requires: "--kind-capability" };
+const KIND_COLORS = { plugin: "--kind-plugin", agent: "--kind-agent", profile: "--kind-profile", skill: "--kind-skill", capability: "--kind-capability", interface: "--kind-interface" };
+const EDGE_KIND_COLOR = { embeds: "--text-dim", satisfies: "--kind-interface", skill: "--kind-skill", binds: "--kind-skill", extends: "--kind-skill", ships: "--kind-plugin", capability: "--kind-capability", requires: "--kind-capability" };
 
 const shortName = (id) => {
   const noVersion = id.split("@")[0];
@@ -363,7 +365,7 @@ function renderGraph(result) {
     if (!changed) break;
   }
 
-  const KIND_ORDER = { agent: 0, profile: 1, interface: 2, skill: 3, capability: 4 };
+  const KIND_ORDER = { plugin: 0, agent: 1, profile: 2, interface: 3, skill: 4, capability: 5 };
   const rows = [];
   for (const node of nodes) {
     const d = depth.get(node.id);

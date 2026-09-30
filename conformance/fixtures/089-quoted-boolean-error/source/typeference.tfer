@@ -1,0 +1,7 @@
+---
+schemaVersion: 6
+name: conformance/quoted-boolean
+version: 1.0.0
+plugins:
+  - plugins/kit.plugin.tfer
+---

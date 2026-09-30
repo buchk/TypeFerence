@@ -1,7 +1,4 @@
 ---
-schemaVersion: 5
-kind: capability
-id: helio/capabilities/prepare-brief@1.0.0
 displayName: Prepare Brief
 description: Capability slot for assembling decision-oriented executive briefs.
 visibility: exposed

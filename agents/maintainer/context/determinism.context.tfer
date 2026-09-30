@@ -1,9 +1,6 @@
 ---
-schemaVersion: 5
-kind: context
-id: typeference/context/determinism@0.1.0
-contextType: typeference/context-types/determinism@0.1.0
 displayName: Determinism Guarantees
+contextType: context-types/determinism.contexttype.tfer
 ---
 # Determinism guarantees
 

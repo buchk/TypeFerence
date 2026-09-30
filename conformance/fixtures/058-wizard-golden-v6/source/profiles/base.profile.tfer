@@ -1,0 +1,7 @@
+---
+displayName: Base Defaults
+description: Organization-wide defaults for acme.
+context:
+  - context/norm-review-before-merge.context.tfer
+  - context/norm-ci-only-deploys.context.tfer
+---

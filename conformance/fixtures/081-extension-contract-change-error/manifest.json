@@ -1,0 +1,4 @@
+{
+  "description": "An extension cannot change its base's schemas (ADR-0031).",
+  "expect": "error"
+}

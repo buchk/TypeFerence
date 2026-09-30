@@ -26,7 +26,7 @@ jobs:
           CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /tmp/typeference-lsp ./cmd/typeference-lsp
         working-directory: go
       - name: Go binary reproduces committed reference output byte-for-byte
-        run: /tmp/typeference diff examples/helio --against dist --emit-ard --publisher-domain helio.example
+        run: /tmp/typeference diff examples/helio --against dist
       - name: Eval harness dry run (no API key, no network)
         run: /tmp/typeference eval examples/helio --scenarios evals/scenarios --out /tmp/eval-dry-run
       - name: Playground builds (js/wasm bridge and example packer)
@@ -35,10 +35,10 @@ jobs:
           go run ./cmd/playground-pack -root .. -out /tmp/examples.json
         working-directory: go
 
-  # Determinism suite: the Go compiler compiles the shared fixture corpus in
-  # conformance/ and must reproduce the committed digests. This is the
-  # single-implementation successor to the cross-implementation suite; the
-  # fixtures and canonicalization rulings (ADR-0004) are unchanged (ADR-0014).
+  # Determinism suite: the Go compiler compiles the fixture corpora in
+  # conformance/ (the current language plus the archived legacy-v5 and
+  # legacy-v3 corpora) and must reproduce the committed digests on every
+  # platform (ADR-0014).
   determinism:
     strategy:
       fail-fast: false
@@ -66,7 +66,7 @@ jobs:
           go-version: stable
           cache-dependency-path: go/go.sum
       - name: Recompile maintainer definition and diff committed artifacts
-        run: go run ./cmd/typeference diff ../agents/maintainer --against ../dist-maintainer --target neutral --emit-ard --publisher-domain typeference.example
+        run: go run ./cmd/typeference diff ../agents/maintainer --against ../dist-maintainer
         working-directory: go
       - name: Root AGENTS.md is the compiled artifact
         run: cmp AGENTS.md dist-maintainer/neutral/typeference-maintainer/AGENTS.md

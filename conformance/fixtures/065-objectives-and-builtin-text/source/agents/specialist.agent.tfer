@@ -1,0 +1,6 @@
+---
+description: A specialist.
+embeds:
+  - agents/generalist.agent.tfer
+---
+You specialize in release notes.

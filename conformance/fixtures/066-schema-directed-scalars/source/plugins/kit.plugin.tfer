@@ -1,0 +1,5 @@
+---
+description: 'Settings kit: it''s typed.'
+agents:
+  - agents/configured.agent.tfer
+---

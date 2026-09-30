@@ -1,0 +1,4 @@
+{
+  "description": "An emitted skill name must satisfy the Agent Skills grammar; names are never rewritten (ADR-0029).",
+  "expect": "error"
+}

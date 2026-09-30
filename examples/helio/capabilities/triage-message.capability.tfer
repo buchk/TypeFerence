@@ -1,7 +1,4 @@
 ---
-schemaVersion: 5
-kind: capability
-id: helio/capabilities/triage-message@1.0.0
 displayName: Triage Message
 description: Capability slot for classifying inbound messages and selecting accountable next actions.
 visibility: exposed

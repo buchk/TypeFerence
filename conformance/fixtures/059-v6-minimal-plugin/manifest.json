@@ -1,0 +1,8 @@
+{
+  "description": "Smallest version 6 package: identity from paths, an implied capability, and one plugin shipping one agent and its skill.",
+  "expect": "success",
+  "digests": {
+    "agent-plugin": "sha256:39f99f882c9c3c73955acbe2f597852263348aba08d8f15f357f63b7f8411c6f",
+    "neutral": "sha256:7f8e6286da3e9a18abdf85d4e9fc17f3d609702419bcc7fa704345fbb568cd82"
+  }
+}

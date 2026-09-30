@@ -4,6 +4,7 @@ package resolve
 import (
 	"encoding/json"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -11,6 +12,10 @@ import (
 	"github.com/buchk/TypeFerence/go/internal/jsonx"
 	"github.com/buchk/TypeFerence/go/internal/resource"
 )
+
+// decimalLexeme is the JSON number grammar: a decimal value is preserved as
+// its written lexeme and emitted as the same JSON number token.
+var decimalLexeme = regexp.MustCompile(`^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?$`)
 
 func (r *Resolver) contextTypeClosure(id string, visiting map[string]bool) ([]string, error) {
 	ct, ok := r.resources[id]
@@ -57,7 +62,7 @@ func (r *Resolver) providedContextTypes(objectIDs []string) (map[string]bool, er
 // (and every type it refines): required fields are present, and each declared
 // field's structural type matches (ADR-0013).
 func (r *Resolver) validateContextFields(obj *resource.Document) error {
-	if obj.SchemaVersion == 5 {
+	if obj.IsNative() {
 		return r.validateNativeContext(obj)
 	}
 	closure, err := r.contextTypeClosure(obj.ContextType, map[string]bool{})
@@ -215,7 +220,7 @@ func (r *Resolver) nativeContextShapeFrom(id string, visiting map[string]bool) (
 	if visiting[id] {
 		return nil, false, false, resource.Errorf("ContextType refinement cycle detected at %s", id)
 	}
-	if ct.SchemaVersion != 5 {
+	if !ct.IsNative() {
 		return nil, false, false, resource.Errorf("native contextType %s cannot use legacy schemaVersion %d type %s", id, ct.SchemaVersion, ct.ID)
 	}
 	visiting[id] = true
@@ -307,10 +312,19 @@ func (r *Resolver) validateNativeValue(value resource.FieldValue, typ resource.T
 }
 
 func (r *Resolver) materializeNativeValue(value resource.FieldValue, typ resource.TypeExpr, field string) (resource.FieldValue, error) {
+	// A version 6 quoted scalar is a string by construction: it never
+	// satisfies a boolean, integer, or decimal field (ADR-0032).
+	if value.Quoted && (typ.Kind == "boolean" || typ.Kind == "integer" || typ.Kind == "decimal") {
+		return value, resource.Errorf("field %q must be an unquoted %s; a quoted value is a string", field, typ.Kind)
+	}
 	switch typ.Kind {
 	case "string", "text":
 		if value.Kind != "scalar" {
 			return value, resource.Errorf("field %q must be %s, got %s", field, typ.Kind, value.Kind)
+		}
+	case "decimal":
+		if value.Kind != "scalar" || !decimalLexeme.MatchString(value.Scalar) {
+			return value, resource.Errorf("field %q must be a decimal number", field)
 		}
 	case "boolean":
 		if value.Kind != "scalar" || (value.Scalar != "true" && value.Scalar != "false") {
@@ -513,6 +527,14 @@ func (r *Resolver) checkAllowedContext(agentID string, contextRefs, allowed []st
 // sorted by id for deterministic emission. Ids that do not resolve to a context
 // object are skipped (agent-level checks surface missing context elsewhere).
 func (r *Resolver) resolveContextObjects(contextRefs []string) []ResolvedContextRef {
+	refs := r.orderedContextObjects(contextRefs)
+	sort.Slice(refs, func(i, j int) bool { return refs[i].ID < refs[j].ID })
+	return refs
+}
+
+// orderedContextObjects resolves context ids in the given order. A skill's
+// own context keeps its authored order, base first (ADR-0031).
+func (r *Resolver) orderedContextObjects(contextRefs []string) []ResolvedContextRef {
 	refs := []ResolvedContextRef{}
 	for _, id := range contextRefs {
 		if obj, ok := r.resources[id]; ok && obj.Kind == "context" {
@@ -528,12 +550,11 @@ func (r *Resolver) resolveContextObjects(contextRefs []string) []ResolvedContext
 			})
 		}
 	}
-	sort.Slice(refs, func(i, j int) bool { return refs[i].ID < refs[j].ID })
 	return refs
 }
 
 func (r *Resolver) contextValuesJSON(obj *resource.Document) string {
-	if obj.SchemaVersion != 5 {
+	if !obj.IsNative() {
 		return "{}"
 	}
 	fields, _, _, err := r.nativeContextShape(obj.ContextType)
@@ -555,7 +576,7 @@ func (r *Resolver) nativeValueJSON(value resource.FieldValue, typ resource.TypeE
 	switch typ.Kind {
 	case "boolean":
 		return jsonx.Bool(value.Scalar == "true")
-	case "integer", "number":
+	case "integer", "number", "decimal":
 		parsed, err := jsonx.Parse(value.Scalar)
 		if err == nil {
 			return parsed
@@ -600,7 +621,7 @@ func cloneFieldValues(values map[string]resource.FieldValue) map[string]resource
 }
 
 func cloneFieldValue(value resource.FieldValue) resource.FieldValue {
-	cloned := resource.FieldValue{Kind: value.Kind, Scalar: value.Scalar}
+	cloned := resource.FieldValue{Kind: value.Kind, Scalar: value.Scalar, Quoted: value.Quoted}
 	if value.List != nil {
 		cloned.List = make([]resource.FieldValue, len(value.List))
 		for i, item := range value.List {

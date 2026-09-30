@@ -1,0 +1,7 @@
+---
+displayName: Safety policy
+contextType: context-types/safety.contexttype.tfer
+values:
+  authority: explicit
+---
+Never approve a release without explicit authority.

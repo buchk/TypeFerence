@@ -1,0 +1,5 @@
+---
+description: Team kit.
+agents:
+  - agents/team.agent.tfer
+---

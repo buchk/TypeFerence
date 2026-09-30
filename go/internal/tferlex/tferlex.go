@@ -1,461 +1,645 @@
 // Package tferlex implements the closed TypeFerence frontmatter grammar
-// specified in docs/specification.md ("Frontmatter grammar", ADR-0026).
+// specified in docs/specification.md ("Frontmatter grammar", ADR-0032).
 //
-// The grammar is deliberately tiny: two-space indentation nesting, flow-free
-// sequences, single- or double-quoted strings, literal block scalars with
-// YAML 1.2 chomping/indentation semantics, inert comments, and syntactic
-// scalar typing with no implicit resolution. Anchors, aliases, tags, flow
-// collections, and multi-document streams are hard errors.
+// The grammar is deliberately tiny: indentation-nested mappings and
+// sequences, single- and double-quoted strings, literal block scalars with
+// YAML 1.2 clip/strip chomping and an optional explicit indentation
+// indicator, inert comments, and the two empty-collection tokens `[]` and
+// `{}`. Anchors, aliases, tags, flow collections, folded scalars, quoted keys,
+// and multi-document streams are hard errors.
+//
+// Scalar typing is schema-directed and happens in exactly one layer: this
+// package never guesses a type. An unquoted scalar is returned as KindPlain
+// with its exact text, and the consumer's declared field type decides what it
+// means (a string field keeps the text verbatim; a boolean field accepts only
+// `true` or `false`; and so on). A quoted scalar or block scalar is always a
+// string. There is no implicit resolution anywhere.
 package tferlex
 
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
-// Kind classifies a parsed scalar per the v5 syntactic rules.
+// Kind classifies a scalar token.
 type Kind int
 
 const (
-	KindString Kind = iota // quoted
-	KindInteger
-	KindDecimal
-	KindBoolean
+	// KindPlain is an unquoted scalar. Its meaning is decided by the field it
+	// is assigned to, never by its spelling.
+	KindPlain Kind = iota
+	// KindQuoted is a single- or double-quoted scalar: always a string.
+	KindQuoted
+	// KindBlock is a literal block scalar: always a string.
+	KindBlock
+	// KindNull is an empty value, `null`, or `~`.
 	KindNull
-	KindBare // unquoted bare word: an error wherever a value is required
 )
 
-// Value is one typed scalar token.
+// Value is one scalar token.
 type Value struct {
-	Text string // the canonical content (quotes stripped, block scalar folded)
+	Text string // content: quotes removed and escapes decoded
 	Kind Kind
 	Line int // 1-based line for diagnostics
 }
 
-// Node is a mapping, sequence, or scalar in the parsed tree.
+// Node is a mapping, sequence, or scalar in the parsed tree. Mapping entries
+// and sequence items are both stored in Items; mapping entries carry Key.
 type Node struct {
 	Key      string
 	KeyLine  int
-	Value    Value   // valid when IsScalar
-	Items    []*Node // sequence items or mapping entries (entries carry Key)
+	Line     int
+	Value    Value // valid when IsScalar
+	Items    []*Node
 	IsMap    bool
 	IsSeq    bool
 	IsScalar bool
 }
 
-type line struct {
-	indent  int
-	text    string // comment-stripped, right-trimmed; empty for blank/comment lines
-	num     int    // 1-based source line number
-	rawText string // text after indent, before comment stripping (for block scalars)
+// Error is a positioned grammar error.
+type Error struct {
+	Line    int
+	Message string
 }
 
-// Parse parses frontmatter text into a mapping node.
-func Parse(text string) (*Node, error) {
-	lines, err := scanLines(text)
-	if err != nil {
-		return nil, err
+func (e *Error) Error() string {
+	if e.Line > 0 {
+		return fmt.Sprintf("line %d: %s", e.Line, e.Message)
 	}
-	if len(lines) == 0 {
+	return e.Message
+}
+
+func errorf(line int, format string, args ...any) error {
+	return &Error{Line: line, Message: fmt.Sprintf(format, args...)}
+}
+
+// KeyPattern is the closed key grammar: identifiers, slot and field names,
+// mode names, and package names (which contain '/').
+var KeyPattern = regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9_./-]*$`)
+
+type line struct {
+	num     int
+	raw     string // full line without its line terminator
+	indent  int    // leading spaces; -1 for blank or comment-only lines
+	content string // text after the indent with any comment removed, right-trimmed
+}
+
+// Parse parses frontmatter text into its root mapping. Empty or
+// comment-only input returns (nil, nil).
+func Parse(text string) (*Node, error) {
+	if !utf8.ValidString(text) {
+		return nil, errorf(0, "frontmatter is not valid UTF-8")
+	}
+	p := &parser{lines: scanLines(text)}
+	p.skipBlank()
+	if p.pos >= len(p.lines) {
 		return nil, nil
 	}
-	pos := 0
-	root, err := parseBlock(lines, &pos, lines[0].indent)
+	first := p.lines[p.pos]
+	if err := structural(first); err != nil {
+		return nil, err
+	}
+	if first.indent != 0 {
+		return nil, errorf(first.num, "the frontmatter mapping must start at column 1")
+	}
+	if isSequenceItem(first.content) {
+		return nil, errorf(first.num, "frontmatter must be a mapping, not a sequence")
+	}
+	root, err := p.mapping(0)
 	if err != nil {
 		return nil, err
 	}
-	if pos != len(lines) {
-		return nil, fmt.Errorf("line %d: unexpected indentation (deeper than any enclosing mapping)", lines[pos].num)
-	}
-	if !root.IsMap {
-		return nil, fmt.Errorf("frontmatter must be a mapping")
+	p.skipBlank()
+	if p.pos < len(p.lines) {
+		return nil, errorf(p.lines[p.pos].num, "unexpected indentation")
 	}
 	return root, nil
 }
 
-// scanLines strips comments (respecting quotes), records indents, and drops
-// blank/comment-only lines. Tab indentation is an error; two-space increments
-// are not enforced here but inconsistent dedents are caught by parseBlock.
-func scanLines(text string) ([]line, error) {
-	var out []line
-	for i, raw := range strings.Split(text, "\n") {
-		if i > 0 && i == len(strings.Split(text, "\n"))-1 && raw == "" {
-			break // trailing newline of the document, not a blank body line
-		}
-		raw = strings.TrimRight(raw, "\r")
+func scanLines(text string) []line {
+	parts := strings.Split(text, "\n")
+	if len(parts) > 0 && parts[len(parts)-1] == "" {
+		parts = parts[:len(parts)-1]
+	}
+	out := make([]line, 0, len(parts))
+	for i, raw := range parts {
+		raw = strings.TrimSuffix(raw, "\r")
 		indent := 0
 		for indent < len(raw) && raw[indent] == ' ' {
 			indent++
 		}
-		body := raw[indent:]
-		if strings.HasPrefix(body, "\t") {
-			return nil, fmt.Errorf("line %d: tab indentation is not allowed; use spaces", i+1)
+		rest := raw[indent:]
+		l := line{num: i + 1, raw: raw, indent: indent}
+		if strings.TrimSpace(rest) == "" || strings.HasPrefix(rest, "#") {
+			l.indent = -1
+		} else {
+			l.content = stripComment(rest)
 		}
-		stripped := stripComment(body)
-		if stripped == "" {
-			// Keep blank lines: readBlockScalar needs them to preserve
-			// paragraph breaks; mapping parsers skip indent<0 entries.
-			out = append(out, line{indent: -1, text: "", num: i + 1, rawText: body})
-			continue
-		}
-		out = append(out, line{indent: indent, text: stripped, num: i + 1, rawText: body})
+		out = append(out, l)
 	}
-	return out, nil
+	return out
 }
 
-// stripComment removes an inline comment: a '#' at line start or preceded by
-// whitespace, outside quotes.
+// stripComment removes an inline comment: a '#' at the start of the text or
+// preceded by whitespace, outside quotes. Double-quoted text honors backslash
+// escapes; in single-quoted text, two single quotes are a literal quote.
 func stripComment(s string) string {
 	inSingle, inDouble := false, false
 	for i := 0; i < len(s); i++ {
-		switch s[i] {
-		case '\'':
-			if !inDouble {
-				inSingle = !inSingle
+		c := s[i]
+		switch {
+		case inDouble:
+			if c == '\\' {
+				i++
+			} else if c == '"' {
+				inDouble = false
 			}
-		case '"':
-			if !inSingle {
-				inDouble = !inDouble
-			}
-		case '#':
-			if !inSingle && !inDouble && (i == 0 || s[i-1] == ' ') {
-				return strings.TrimRight(s[:i], " ")
-			}
-		}
-	}
-	return strings.TrimRight(s, " ")
-}
-
-func isBlockScalar(l line) bool {
-	return strings.HasSuffix(l.text, "|") || strings.HasSuffix(l.text, "|-") ||
-		strings.HasPrefix(l.text, "|2 ") || l.text == "|2" ||
-		strings.HasSuffix(l.text, ">") || strings.HasSuffix(l.text, ">-")
-}
-
-func parseBlock(lines []line, pos *int, indent int) (*Node, error) {
-	if *pos >= len(lines) {
-		return nil, fmt.Errorf("unexpected end of frontmatter")
-	}
-	if strings.HasPrefix(lines[*pos].text, "- ") || lines[*pos].text == "-" {
-		return parseSequence(lines, pos, indent)
-	}
-	return parseMapping(lines, pos, indent)
-}
-
-func parseMapping(lines []line, pos *int, indent int) (*Node, error) {
-	node := &Node{IsMap: true}
-	seen := map[string]bool{}
-	for *pos < len(lines) {
-		l := lines[*pos]
-		if l.indent < 0 {
-			*pos++
-			continue
-		}
-		if l.indent < indent {
-			return node, nil
-		}
-		if l.indent > indent {
-			return nil, fmt.Errorf("line %d: bad indentation (expected %d spaces)", l.num, indent)
-		}
-		if strings.HasPrefix(l.text, "- ") || l.text == "-" {
-			return nil, fmt.Errorf("line %d: sequence item inside a mapping", l.num)
-		}
-		key, rest, err := splitKey(l)
-		if err != nil {
-			return nil, err
-		}
-		if seen[key] {
-			return nil, fmt.Errorf("line %d: duplicate property '%s'", l.num, key)
-		}
-		seen[key] = true
-		*pos++
-
-		if rest != "" {
-			// Block scalar: consume following more-indented lines verbatim.
-			if rest == "|" || rest == "|-" || rest == "|2" || rest == ">" || rest == ">-" {
-				content, err := readBlockScalar(lines, pos, indent, rest)
-				if err != nil {
-					return nil, err
-				}
-				node.Items = append(node.Items, &Node{Key: key, KeyLine: l.num,
-					Value: Value{Text: content, Kind: KindString, Line: l.num}, IsScalar: true})
-				continue
-			}
-			v, err := classifyScalar(rest, l.num)
-			if err != nil {
-				return nil, err
-			}
-			node.Items = append(node.Items, &Node{Key: key, KeyLine: l.num, Value: v, IsScalar: true})
-			continue
-		}
-		// Nested block value on following lines.
-		if *pos < len(lines) && lines[*pos].indent > indent {
-			child, err := parseBlock(lines, pos, lines[*pos].indent)
-			if err != nil {
-				return nil, err
-			}
-			child.Key = key
-			child.KeyLine = l.num
-			node.Items = append(node.Items, child)
-		} else if *pos < len(lines) && lines[*pos].indent == indent &&
-			(strings.HasPrefix(lines[*pos].text, "- ") || lines[*pos].text == "-") {
-			// A sequence may sit at the same indent as its key.
-			child, err := parseSequence(lines, pos, indent)
-			if err != nil {
-				return nil, err
-			}
-			child.Key = key
-			child.KeyLine = l.num
-			node.Items = append(node.Items, child)
-		} else {
-			// Empty value: null.
-			node.Items = append(node.Items, &Node{Key: key, KeyLine: l.num,
-				Value: Value{Kind: KindNull, Line: l.num}, IsScalar: true})
-		}
-	}
-	return node, nil
-}
-
-func parseSequence(lines []line, pos *int, indent int) (*Node, error) {
-	node := &Node{IsSeq: true}
-	for *pos < len(lines) {
-		l := lines[*pos]
-		if l.indent < 0 {
-			*pos++
-			continue
-		}
-		if l.indent < indent || !(strings.HasPrefix(l.text, "- ") || l.text == "-") {
-			return node, nil
-		}
-		if l.indent > indent {
-			return nil, fmt.Errorf("line %d: bad indentation in sequence", l.num)
-		}
-		item := strings.TrimSpace(strings.TrimPrefix(l.text, "-"))
-		*pos++
-		if item == "" {
-			// Nested structure under the dash.
-			if *pos < len(lines) && lines[*pos].indent > indent {
-				child, err := parseBlock(lines, pos, lines[*pos].indent)
-				if err != nil {
-					return nil, err
-				}
-				node.Items = append(node.Items, child)
-				continue
-			}
-			node.Items = append(node.Items, &Node{Value: Value{Kind: KindNull, Line: l.num}, IsScalar: true})
-			continue
-		}
-		// Inline "key: value" under a dash starts a nested mapping whose
-		// members continue on subsequent lines at indent+2.
-		if k, rest, err := splitKeyText(item, l.num); err == nil {
-			entry := &Node{IsMap: true, Key: "", KeyLine: l.num}
-			seen := map[string]bool{}
-			if err := addMapEntry(entry, seen, k, rest, lines, pos, indent+2, l); err != nil {
-				return nil, err
-			}
-			// Continue collecting sibling keys of this map entry.
-			for *pos < len(lines) && lines[*pos].indent == indent+2 &&
-				!strings.HasPrefix(lines[*pos].text, "- ") {
-				k2, rest2, err := splitKey(lines[*pos])
-				if err != nil {
-					return nil, err
-				}
-				if seen[k2] {
-					return nil, fmt.Errorf("line %d: duplicate property '%s'", lines[*pos].num, k2)
-				}
-				seen[k2] = true
-				cur := lines[*pos]
-				*pos++
-				if err := addMapEntry(entry, seen, k2, rest2, lines, pos, indent+2, cur); err != nil {
-					return nil, err
+		case inSingle:
+			if c == '\'' {
+				if i+1 < len(s) && s[i+1] == '\'' {
+					i++
+				} else {
+					inSingle = false
 				}
 			}
-			node.Items = append(node.Items, entry)
-			continue
+		default:
+			switch c {
+			case '"':
+				if opensScalar(s, i) {
+					inDouble = true
+				}
+			case '\'':
+				if opensScalar(s, i) {
+					inSingle = true
+				}
+			case '#':
+				if i == 0 || s[i-1] == ' ' || s[i-1] == '\t' {
+					return strings.TrimRight(s[:i], " \t")
+				}
+			}
 		}
-		v, err := classifyScalar(item, l.num)
-		if err != nil {
-			return nil, err
-		}
-		node.Items = append(node.Items, &Node{Value: v, IsScalar: true})
 	}
-	return node, nil
+	return strings.TrimRight(s, " \t")
 }
 
-// addMapEntry appends one key/rest pair to a mapping embedded in a sequence
-// item, handling nested blocks that follow.
-func addMapEntry(entry *Node, seen map[string]bool, key, rest string, lines []line, pos *int, childIndent int, cur line) error {
-	if rest != "" {
-		if rest == "|" || rest == "|-" || rest == "|2" || rest == ">" || rest == ">-" {
-			content, err := readBlockScalar(lines, pos, childIndent-2, rest)
-			if err != nil {
-				return err
-			}
-			entry.Items = append(entry.Items, &Node{Key: key, KeyLine: cur.num,
-				Value: Value{Text: content, Kind: KindString, Line: cur.num}, IsScalar: true})
-			return nil
-		}
-		v, err := classifyScalar(rest, cur.num)
-		if err != nil {
-			return err
-		}
-		entry.Items = append(entry.Items, &Node{Key: key, KeyLine: cur.num, Value: v, IsScalar: true})
-		return nil
+// opensScalar reports whether a quote at position i opens a quoted scalar: it
+// must begin a value (after "key: ", after "- ", or at the start of the
+// text). A quote inside a plain scalar (don't, say "x") is ordinary text.
+func opensScalar(s string, i int) bool {
+	prefix := strings.TrimRight(s[:i], " ")
+	return prefix == "" || prefix == "-" || strings.HasSuffix(prefix, ":")
+}
+
+type parser struct {
+	lines []line
+	pos   int
+}
+
+func (p *parser) skipBlank() {
+	for p.pos < len(p.lines) && p.lines[p.pos].indent < 0 {
+		p.pos++
 	}
-	if *pos < len(lines) && lines[*pos].indent > childIndent {
-		child, err := parseBlock(lines, pos, lines[*pos].indent)
-		if err != nil {
-			return err
-		}
-		child.Key = key
-		child.KeyLine = cur.num
-		entry.Items = append(entry.Items, child)
-	} else if *pos < len(lines) && lines[*pos].indent == childIndent &&
-		(strings.HasPrefix(lines[*pos].text, "- ") || lines[*pos].text == "-") {
-		child, err := parseSequence(lines, pos, childIndent)
-		if err != nil {
-			return err
-		}
-		child.Key = key
-		child.KeyLine = cur.num
-		entry.Items = append(entry.Items, child)
-	} else {
-		entry.Items = append(entry.Items, &Node{Key: key, KeyLine: cur.num,
-			Value: Value{Kind: KindNull, Line: cur.num}, IsScalar: true})
+}
+
+func isSequenceItem(content string) bool {
+	return content == "-" || strings.HasPrefix(content, "- ")
+}
+
+// structural rejects tab indentation on lines that carry structure. Tabs
+// inside block-scalar content are ordinary characters and never reach here.
+func structural(l line) error {
+	if strings.HasPrefix(l.content, "\t") {
+		return errorf(l.num, "tab indentation is not allowed; indent with spaces")
 	}
 	return nil
 }
 
-// splitKey splits "key: rest" honoring quotes and requires exactly one colon.
-func splitKey(l line) (key, rest string, err error) {
-	return splitKeyText(l.text, l.num)
+// mapping parses consecutive "key: value" entries at exactly indent.
+func (p *parser) mapping(indent int) (*Node, error) {
+	node := &Node{IsMap: true}
+	if p.pos < len(p.lines) {
+		node.Line = p.lines[p.pos].num
+	}
+	seen := map[string]bool{}
+	for {
+		p.skipBlank()
+		if p.pos >= len(p.lines) {
+			return node, nil
+		}
+		l := p.lines[p.pos]
+		if l.indent < indent {
+			return node, nil
+		}
+		if err := structural(l); err != nil {
+			return nil, err
+		}
+		if l.indent > indent {
+			return nil, errorf(l.num, "unexpected indentation")
+		}
+		if isSequenceItem(l.content) {
+			return node, nil
+		}
+		key, rest, err := splitKey(l.content, l.num)
+		if err != nil {
+			return nil, err
+		}
+		if seen[key] {
+			return nil, errorf(l.num, "duplicate property '%s'", key)
+		}
+		seen[key] = true
+		p.pos++
+		entry, err := p.value(key, rest, l.num, indent)
+		if err != nil {
+			return nil, err
+		}
+		node.Items = append(node.Items, entry)
+	}
 }
 
-func splitKeyText(text string, num int) (string, string, error) {
-	inSingle, inDouble := false, false
-	for i := 0; i < len(text); i++ {
-		switch text[i] {
-		case '\'':
-			if !inDouble {
-				inSingle = !inSingle
+// value parses the value of a mapping entry whose key sits at keyIndent.
+func (p *parser) value(key, rest string, num, keyIndent int) (*Node, error) {
+	if rest != "" {
+		if isBlockHeader(rest) {
+			text, err := p.blockScalar(rest, keyIndent, num)
+			if err != nil {
+				return nil, err
 			}
-		case '"':
-			if !inSingle {
-				inDouble = !inDouble
+			return &Node{Key: key, KeyLine: num, Line: num, IsScalar: true,
+				Value: Value{Text: text, Kind: KindBlock, Line: num}}, nil
+		}
+		child, err := inlineValue(rest, num)
+		if err != nil {
+			return nil, err
+		}
+		child.Key, child.KeyLine = key, num
+		return child, nil
+	}
+	// No inline value: a nested block follows, or the value is null.
+	p.skipBlank()
+	if p.pos < len(p.lines) {
+		next := p.lines[p.pos]
+		if next.indent > keyIndent {
+			if err := structural(next); err != nil {
+				return nil, err
 			}
-		case ':':
-			if !inSingle && !inDouble {
-				if i+1 < len(text) && text[i+1] != ' ' {
-					return "", "", fmt.Errorf("line %d: expected a space after ':'", num)
-				}
-				key := strings.TrimSpace(text[:i])
-				rest := strings.TrimSpace(text[i+1:])
-				if key == "" {
-					return "", "", fmt.Errorf("line %d: empty key", num)
-				}
-				if strings.ContainsAny(key, ":{}[],&*!>") {
-					return "", "", fmt.Errorf("line %d: invalid character in key '%s'", num, key)
-				}
-				return key, rest, nil
+			var child *Node
+			var err error
+			if isSequenceItem(next.content) {
+				child, err = p.sequence(next.indent)
+			} else {
+				child, err = p.mapping(next.indent)
 			}
-		case '{', '[', '&', '*', '!':
-			if !inSingle && !inDouble {
-				return "", "", fmt.Errorf("line %d: flow collections, anchors, aliases, and tags do not exist in the TypeFerence grammar", num)
+			if err != nil {
+				return nil, err
 			}
+			child.Key, child.KeyLine = key, num
+			return child, nil
+		}
+		if next.indent == keyIndent && isSequenceItem(next.content) {
+			// A sequence may sit at the same indentation as its key.
+			child, err := p.sequence(keyIndent)
+			if err != nil {
+				return nil, err
+			}
+			child.Key, child.KeyLine = key, num
+			return child, nil
 		}
 	}
-	return "", "", fmt.Errorf("line %d: expected 'key: value'", num)
+	return &Node{Key: key, KeyLine: num, Line: num, IsScalar: true,
+		Value: Value{Kind: KindNull, Line: num}}, nil
 }
 
-// readBlockScalar consumes the more-indented body lines of a block scalar and
-// applies YAML 1.2 clip (|) / strip (-) chomping with the explicit |2
-// indentation indicator.
-func readBlockScalar(lines []line, pos *int, keyIndent int, header string) (string, error) {
-	chompStrip := strings.Contains(header, "-")
-	explicitIndent := 0
-	if strings.HasPrefix(header, "|2") {
-		explicitIndent = 2
-	}
-	var body []string
-	contentIndent := -1 // absolute column where scalar content starts
-	for *pos < len(lines) {
-		l := lines[*pos]
-		if l.indent < 0 {
-			// Blank line inside the block scalar: preserved as empty.
-			body = append(body, "")
-			*pos++
+// sequence parses consecutive "- item" lines at exactly indent.
+func (p *parser) sequence(indent int) (*Node, error) {
+	node := &Node{IsSeq: true, Line: p.lines[p.pos].num}
+	for {
+		p.skipBlank()
+		if p.pos >= len(p.lines) {
+			return node, nil
+		}
+		l := p.lines[p.pos]
+		if l.indent < indent || (l.indent == indent && !isSequenceItem(l.content)) {
+			return node, nil
+		}
+		if err := structural(l); err != nil {
+			return nil, err
+		}
+		if l.indent > indent {
+			return nil, errorf(l.num, "unexpected indentation in sequence")
+		}
+		p.pos++
+		afterDash := strings.TrimPrefix(l.content, "-")
+		item := strings.TrimLeft(afterDash, " ")
+		if item == "" {
+			p.skipBlank()
+			if p.pos < len(p.lines) && p.lines[p.pos].indent > indent {
+				next := p.lines[p.pos]
+				if err := structural(next); err != nil {
+					return nil, err
+				}
+				var child *Node
+				var err error
+				if isSequenceItem(next.content) {
+					child, err = p.sequence(next.indent)
+				} else {
+					child, err = p.mapping(next.indent)
+				}
+				if err != nil {
+					return nil, err
+				}
+				child.Line = l.num
+				node.Items = append(node.Items, child)
+				continue
+			}
+			node.Items = append(node.Items, &Node{Line: l.num, IsScalar: true,
+				Value: Value{Kind: KindNull, Line: l.num}})
 			continue
 		}
-		if l.indent <= keyIndent {
+		if key, rest, ok := inlineKey(item); ok {
+			// "- key: value" opens a mapping whose further keys align with key.
+			entryIndent := indent + 1 + (len(afterDash) - len(item))
+			mapping := &Node{IsMap: true, Line: l.num}
+			first, err := p.value(key, rest, l.num, entryIndent)
+			if err != nil {
+				return nil, err
+			}
+			mapping.Items = append(mapping.Items, first)
+			seen := map[string]bool{key: true}
+			for {
+				p.skipBlank()
+				if p.pos >= len(p.lines) {
+					break
+				}
+				next := p.lines[p.pos]
+				if next.indent < entryIndent {
+					break
+				}
+				if err := structural(next); err != nil {
+					return nil, err
+				}
+				if next.indent > entryIndent || isSequenceItem(next.content) {
+					return nil, errorf(next.num, "unexpected indentation")
+				}
+				k, r, err := splitKey(next.content, next.num)
+				if err != nil {
+					return nil, err
+				}
+				if seen[k] {
+					return nil, errorf(next.num, "duplicate property '%s'", k)
+				}
+				seen[k] = true
+				p.pos++
+				entry, err := p.value(k, r, next.num, entryIndent)
+				if err != nil {
+					return nil, err
+				}
+				mapping.Items = append(mapping.Items, entry)
+			}
+			node.Items = append(node.Items, mapping)
+			continue
+		}
+		if isBlockHeader(item) {
+			return nil, errorf(l.num, "a block scalar cannot be a sequence item; use a quoted string")
+		}
+		child, err := inlineValue(item, l.num)
+		if err != nil {
+			return nil, err
+		}
+		node.Items = append(node.Items, child)
+	}
+}
+
+// inlineKey reports whether a sequence item's text is "key: value" or "key:".
+func inlineKey(item string) (string, string, bool) {
+	if item[0] == '"' || item[0] == '\'' {
+		return "", "", false
+	}
+	idx := strings.Index(item, ":")
+	if idx <= 0 || (idx+1 < len(item) && item[idx+1] != ' ') {
+		return "", "", false
+	}
+	key := item[:idx]
+	if !KeyPattern.MatchString(key) {
+		return "", "", false
+	}
+	return key, strings.TrimSpace(item[idx+1:]), true
+}
+
+// splitKey splits "key: rest" (or "key:") at the first colon.
+func splitKey(content string, num int) (string, string, error) {
+	switch content[0] {
+	case '"', '\'':
+		return "", "", errorf(num, "quoted keys do not exist; write the key unquoted")
+	case '?', '&', '*', '!', '%', '@', '`', '[', '{', '|', '>':
+		return "", "", errorf(num, "expected 'key: value'")
+	}
+	idx := strings.Index(content, ":")
+	if idx < 0 {
+		return "", "", errorf(num, "expected 'key: value'")
+	}
+	if idx+1 < len(content) && content[idx+1] != ' ' {
+		return "", "", errorf(num, "expected a space after ':' in '%s'", content)
+	}
+	key := content[:idx]
+	if !KeyPattern.MatchString(key) {
+		return "", "", errorf(num, "invalid key '%s': keys use letters, digits, '_', '.', '/', and '-'", key)
+	}
+	return key, strings.TrimSpace(content[idx+1:]), nil
+}
+
+func isBlockHeader(rest string) bool {
+	return rest[0] == '|' || rest[0] == '>'
+}
+
+// blockScalar consumes the raw lines of a literal block scalar. Content is
+// every following line indented deeper than the key; comment characters
+// inside the block are ordinary text.
+func (p *parser) blockScalar(header string, keyIndent, num int) (string, error) {
+	if header[0] == '>' {
+		return "", errorf(num, "folded block scalars ('>') do not exist; use a literal block ('|')")
+	}
+	strip := false
+	body := header[1:]
+	if strings.HasSuffix(body, "-") {
+		strip = true
+		body = strings.TrimSuffix(body, "-")
+	}
+	contentIndent := -1
+	if body != "" {
+		n, err := strconv.Atoi(body)
+		if err != nil || n < 1 || n > 9 {
+			return "", errorf(num, "invalid block scalar header '%s'; use |, |-, |N, or |N-", header)
+		}
+		contentIndent = keyIndent + n
+	}
+	var lines []string
+	for p.pos < len(p.lines) {
+		raw := p.lines[p.pos].raw
+		indent := 0
+		for indent < len(raw) && raw[indent] == ' ' {
+			indent++
+		}
+		if strings.TrimSpace(raw) == "" {
+			lines = append(lines, "")
+			p.pos++
+			continue
+		}
+		if indent <= keyIndent {
 			break
 		}
 		if contentIndent < 0 {
-			if explicitIndent > 0 {
-				contentIndent = keyIndent + explicitIndent
-				if l.indent < contentIndent {
-					return "", fmt.Errorf("line %d: block scalar content less indented than the explicit indicator", l.num)
-				}
-			} else {
-				contentIndent = l.indent
-			}
+			contentIndent = indent
 		}
-		// l.text is comment-stripped text at the line's own indent; re-add
-		// any indentation deeper than the scalar's base indent so internal
-		// structure is preserved.
-		extra := l.indent - contentIndent
-		if extra > 0 {
-			body = append(body, strings.Repeat(" ", extra)+l.text)
-		} else {
-			body = append(body, l.text)
+		if indent < contentIndent {
+			return "", errorf(p.lines[p.pos].num, "block scalar line is less indented than the block's content")
 		}
-		*pos++
+		lines = append(lines, raw[contentIndent:])
+		p.pos++
 	}
-	// YAML 1.2 clip: single trailing newline; strip: none. Leading/trailing
-	// blank lines within the body are preserved by construction above.
-	content := strings.Join(body, "\n")
-	if !chompStrip && content != "" {
-		content += "\n"
+	// Trailing blank lines are not content under clip or strip chomping.
+	for len(lines) > 0 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
 	}
-	return content, nil
+	text := strings.Join(lines, "\n")
+	if !strip && text != "" {
+		text += "\n"
+	}
+	return text, nil
 }
 
-var (
-	intRe    = regexp.MustCompile(`^[+-]?[0-9]+$`)
-	decRe    = regexp.MustCompile(`^[+-]?([0-9]+\.[0-9]*|\.[0-9]+|[0-9]+)([eE][+-]?[0-9]+)?$`)
-	boolRe   = regexp.MustCompile(`^(true|false)$`)
-	floatExp = regexp.MustCompile(`[eE.]`)
-)
-
-// classifyScalar applies the v5 syntactic typing rules to one scalar token.
-func classifyScalar(raw string, num int) (Value, error) {
-	if raw == "" {
-		return Value{Kind: KindNull, Line: num}, nil
+// inlineValue parses a scalar or empty-collection token that follows "key: "
+// or "- ".
+func inlineValue(rest string, num int) (*Node, error) {
+	switch rest {
+	case "[]":
+		return &Node{IsSeq: true, Line: num}, nil
+	case "{}":
+		return &Node{IsMap: true, Line: num}, nil
+	case "null", "~":
+		return &Node{Line: num, IsScalar: true, Value: Value{Kind: KindNull, Line: num}}, nil
 	}
-	if len(raw) >= 2 && raw[0] == '"' && raw[len(raw)-1] == '"' {
-		unq := raw[1 : len(raw)-1]
-		if strings.Contains(unq, "\"\"") {
-			unq = strings.ReplaceAll(unq, "\"\"", "\"")
+	switch rest[0] {
+	case '[', '{':
+		return nil, errorf(num, "flow collections do not exist in the TypeFerence grammar; only the empty tokens [] and {} are allowed")
+	case '&', '*':
+		return nil, errorf(num, "anchors and aliases do not exist in the TypeFerence grammar")
+	case '!':
+		return nil, errorf(num, "tags do not exist in the TypeFerence grammar")
+	case '"':
+		text, err := decodeDouble(rest, num)
+		if err != nil {
+			return nil, err
 		}
-		return Value{Text: unq, Kind: KindString, Line: num}, nil
+		return &Node{Line: num, IsScalar: true, Value: Value{Text: text, Kind: KindQuoted, Line: num}}, nil
+	case '\'':
+		text, err := decodeSingle(rest, num)
+		if err != nil {
+			return nil, err
+		}
+		return &Node{Line: num, IsScalar: true, Value: Value{Text: text, Kind: KindQuoted, Line: num}}, nil
 	}
-	if len(raw) >= 2 && raw[0] == '\'' && raw[len(raw)-1] == '\'' {
-		unq := raw[1 : len(raw)-1]
-		unq = strings.ReplaceAll(unq, "''", "'")
-		return Value{Text: unq, Kind: KindString, Line: num}, nil
+	return &Node{Line: num, IsScalar: true, Value: Value{Text: rest, Kind: KindPlain, Line: num}}, nil
+}
+
+// decodeDouble decodes a double-quoted scalar using JSON string escapes.
+func decodeDouble(token string, num int) (string, error) {
+	var b strings.Builder
+	for i := 1; i < len(token); i++ {
+		c := token[i]
+		if c == '"' {
+			if strings.TrimSpace(token[i+1:]) != "" {
+				return "", errorf(num, "unexpected text after a quoted string")
+			}
+			return b.String(), nil
+		}
+		if c != '\\' {
+			b.WriteByte(c)
+			continue
+		}
+		i++
+		if i >= len(token) {
+			break
+		}
+		switch token[i] {
+		case '"':
+			b.WriteByte('"')
+		case '\\':
+			b.WriteByte('\\')
+		case '/':
+			b.WriteByte('/')
+		case 'b':
+			b.WriteByte('\b')
+		case 'f':
+			b.WriteByte('\f')
+		case 'n':
+			b.WriteByte('\n')
+		case 'r':
+			b.WriteByte('\r')
+		case 't':
+			b.WriteByte('\t')
+		case 'u':
+			r, consumed, err := decodeUnicodeEscape(token, i, num)
+			if err != nil {
+				return "", err
+			}
+			b.WriteRune(r)
+			i += consumed
+		default:
+			return "", errorf(num, "invalid escape '\\%c' in a quoted string", token[i])
+		}
 	}
-	if raw == "null" || raw == "~" {
-		return Value{Kind: KindNull, Line: num}, nil
+	return "", errorf(num, "unterminated quoted string")
+}
+
+// decodeUnicodeEscape decodes \uXXXX (and a following low surrogate) where
+// token[i] is the 'u'. It returns the rune and how many bytes after the 'u'
+// were consumed.
+func decodeUnicodeEscape(token string, i, num int) (rune, int, error) {
+	hex := func(at int) (rune, bool) {
+		if at+4 > len(token) {
+			return 0, false
+		}
+		v, err := strconv.ParseUint(token[at:at+4], 16, 32)
+		return rune(v), err == nil
 	}
-	if boolRe.MatchString(raw) {
-		return Value{Text: raw, Kind: KindBoolean, Line: num}, nil
+	r, ok := hex(i + 1)
+	if !ok {
+		return 0, 0, errorf(num, "invalid \\u escape in a quoted string")
 	}
-	if intRe.MatchString(raw) {
-		return Value{Text: raw, Kind: KindInteger, Line: num}, nil
+	consumed := 4
+	if r >= 0xD800 && r <= 0xDBFF && i+6 < len(token) && token[i+5] == '\\' && token[i+6] == 'u' {
+		if low, lowOK := hex(i + 7); lowOK && low >= 0xDC00 && low <= 0xDFFF {
+			r = (r-0xD800)<<10 + (low - 0xDC00) + 0x10000
+			consumed = 10
+		}
 	}
-	if decRe.MatchString(raw) && floatExp.MatchString(raw) {
-		return Value{Text: raw, Kind: KindDecimal, Line: num}, nil
+	if r >= 0xD800 && r <= 0xDFFF {
+		return 0, 0, errorf(num, "unpaired surrogate escape in a quoted string")
 	}
-	return Value{Text: raw, Kind: KindBare, Line: num},
-		fmt.Errorf("line %d: bare word '%s' is not allowed; quote it to make it a string", num, raw)
+	return r, consumed, nil
+}
+
+// decodeSingle decodes a single-quoted scalar, where two single quotes are a
+// literal quote.
+func decodeSingle(token string, num int) (string, error) {
+	var b strings.Builder
+	for i := 1; i < len(token); i++ {
+		if token[i] != '\'' {
+			b.WriteByte(token[i])
+			continue
+		}
+		if i+1 < len(token) && token[i+1] == '\'' {
+			b.WriteByte('\'')
+			i++
+			continue
+		}
+		if strings.TrimSpace(token[i+1:]) != "" {
+			return "", errorf(num, "unexpected text after a quoted string")
+		}
+		return b.String(), nil
+	}
+	return "", errorf(num, "unterminated quoted string")
 }

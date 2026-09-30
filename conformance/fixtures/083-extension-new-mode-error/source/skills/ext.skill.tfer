@@ -1,0 +1,7 @@
+---
+description: Extension.
+extends: skills/base.skill.tfer
+variants:
+  pipeline:
+    instructions: New mode.
+---

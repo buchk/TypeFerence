@@ -5,9 +5,9 @@ files with the `tfer` language (YAML frontmatter highlighted as YAML, the body a
 markdown) and launches `typeference-lsp` to provide:
 
 - shape and workspace-composition diagnostics,
-- completion of resource kinds and field names,
-- go-to-definition on resource ids,
-- document symbols.
+- completion of each document kind's field names and of reference paths,
+- go-to-definition on reference paths,
+- document symbols named by each document's derived identity.
 
 ## Prerequisites
 
