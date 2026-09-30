@@ -31,7 +31,7 @@ their decision.
 | [0018](0018-callable-resource-card-and-publishing.md) | Callable-resource card and publishing | Accepted | Runtime boundary completed by [0022](0022-build-link-and-source-identity.md) |
 | [0019](0019-context-lifecycles-two-doors.md) | Context lifecycles: the two doors | Accepted | Raw-path compatibility closed by [0020](0020-close-the-source-language.md) |
 | [0020](0020-close-the-source-language.md) | Close the source language and preserve modes | Accepted | Mode-selection timing clarified by [0024](0024-clarify-v4-type-and-composition-boundaries.md) |
-| [0021](0021-restore-locked-source-packages.md) | Restore exact, locked source packages | Accepted | — |
+| [0021](0021-restore-locked-source-packages.md) | Restore exact, locked source packages | Accepted | Extended to organization marketplaces by [0034](0034-organization-marketplace-from-source-packages.md) |
 | [0022](0022-build-link-and-source-identity.md) | Separate build, link, and source identity | Accepted | — |
 | [0023](0023-tfer-source-format.md) | Define the `.tfer` source format | Accepted | Dual-format acceptance superseded by [0026](0026-v5-closed-frontmatter-grammar.md) |
 | [0024](0024-clarify-v4-type-and-composition-boundaries.md) | Clarify version 4 type and composition boundaries | Accepted | — |
@@ -44,3 +44,4 @@ their decision.
 | [0031](0031-additive-skill-extension.md) | Additive skill extension | Proposed | — |
 | [0032](0032-v6-grammar-and-schema-directed-scalars.md) | v6: the closed grammar as the only parser, and schema-directed scalars | Proposed | — |
 | [0033](0033-import-copilot-customizations.md) | Import existing GitHub Copilot customizations | Proposed | — |
+| [0034](0034-organization-marketplace-from-source-packages.md) | One organization marketplace, built from source packages | Proposed | — |

@@ -6,7 +6,7 @@ Its resource documents carry no schema version, kind, or identity field; the
 manifest and each document's path supply them. Unsupported fields and schema
 versions are errors rather than extension points.
 
-Version 6 changes from version 5 (ADR-0029 through ADR-0033):
+Version 6 changes from version 5 (ADR-0029 through ADR-0034):
 
 1. GitHub Agent Plugins 1.0 is the primary build target (`agent-plugin`). The
    Codex, Copilot, and Cursor adapters are retired; `neutral` remains the
@@ -27,6 +27,8 @@ Version 6 changes from version 5 (ADR-0029 through ADR-0033):
    spelling of a value, decides what an unquoted scalar means.
 8. `typeference import` converts existing GitHub Copilot customizations into
    version 6 source.
+9. A package can ship plugins its dependencies define, so an organization's
+   one marketplace is one build over every team's source package.
 
 Version 5 and earlier sources are archival (see "Archival languages").
 
@@ -108,9 +110,11 @@ on itself.
   lowercase letters, digits, `.`, and `-`, starting and ending with a letter or
   digit, and `owner` is a required non-empty display name. Build then emits the
   marketplace index (see "Build targets"); it never invents either value.
-- `plugins` lists the package's plugin documents (`.plugin.tfer` paths).
-- `exports` lists the documents, other than plugins, that other packages may
-  reference.
+- `plugins` lists the plugins the package ships: its own plugin documents
+  (`.plugin.tfer` paths), and plugins of direct dependencies written
+  `<package>:<path>` (see "Organization marketplaces").
+- `exports` lists the package's own documents, other than plugins, that other
+  packages may reference.
 
 A manifest lists at least one plugin or export and names each at most once.
 Unknown fields, deployment fields, feed addresses, and credentials are errors. A
@@ -165,9 +169,9 @@ A reference names a document by path:
   a reference with the referencing package's own name is an error.
 
 Each reference field accepts the kinds listed for it below, checked by suffix;
-a reference to any other kind is an error. Plugins are listed only by the
-manifest and are never referenced. A reference list names each document at most
-once.
+a reference to any other kind is an error. Plugins are listed only by a
+manifest and are never referenced from a document. A reference list names each
+document at most once.
 
 Resolution is exact. It never searches, never selects a similarly named
 document, and never lets a root document shadow a dependency's: an identity
@@ -341,6 +345,10 @@ A plugin ships:
 - each linked skill, after flattening its extension chain.
 
 A skill reached more than once ships once.
+
+A plugin's **owning package** is the package that contains its document. Its
+artifacts carry the owning package's version and provenance, whichever build
+ships them (see "The agent-plugin target").
 
 A plugin's name is its identity leaf. It MUST satisfy the Agent Plugins name
 grammar: at most 64 characters of lowercase letters, digits, `.`, and `-`,
@@ -701,8 +709,9 @@ never source.
 Build reads only the source root, lockfile, and a supplied materialized package
 directory. It verifies locked digests and performs no network access. Missing,
 undeclared, conflicting, or corrupt dependencies are errors. A package-qualified
-reference MUST name a document its package exports. A dependency's plugin
-documents belong to that package's own build and never ship in a dependent's.
+reference MUST name a document its package exports. A dependency's plugins ship
+in a dependent's build only when the dependent's manifest lists them (see
+"Organization marketplaces").
 
 ## Source membership and digests
 
@@ -712,8 +721,9 @@ are:
 
 - the project manifest;
 - the lockfile and the root trust file `typeference.trust.tfer`, when present;
-- every document in the closure of references from the manifest's plugins and
-  exports.
+- every document in the closure of references from the manifest's own plugins
+  and its exports. A dependency's plugin that the manifest lists is a member of
+  that dependency's package, not of this one.
 
 Files outside the closure are not members: they are neither parsed nor hashed.
 The set excludes `.git`, `dist`, `bin`, `obj`, restored packages, deployment
@@ -754,8 +764,9 @@ unresolved `${TOKEN}` text in active configuration, or environment defaults.
 Across a build, every emitted name denotes one thing: an emitted skill name one
 skill (among the skills the build's agents bind and its plugins ship), a custom
 agent name one agent, a plugin artifact name one plugin mode, and a neutral
-agent directory one agent. If two distinct resources collapse to one emitted
-name, compilation fails rather than overwriting either.
+agent directory one agent. The rule spans packages: it covers every plugin the
+build ships, whichever package owns it. If two distinct resources collapse to
+one emitted name, compilation fails rather than overwriting either.
 
 ### The agent-plugin target
 
@@ -777,8 +788,8 @@ Each plugin mode is one artifact directory: `manual` emits `<plugin>` and
 
 - `plugin.json` holds exactly `$schema`
   (`https://agent-plugins.org/schemas/1.0.0/plugin.schema.json`), `name` (the
-  artifact name), `version` (the package version), and `description` (the
-  plugin's), in that order.
+  artifact name), `version` (the owning package's version), and `description`
+  (the plugin's), in that order.
 - `com.github.copilot/agents/<agent>.agent.md` is emitted for each linked
   agent: frontmatter `name` (the agent's identity leaf) and `description`;
   a body of the `# displayName` title and the resolved objectives, then, when
@@ -792,19 +803,28 @@ Each plugin mode is one artifact directory: `manual` emits `<plugin>` and
   artifact name, mode, version, description, the resolved agents, and the
   shipped skills.
 - `.typeference/link.json` (`schemaVersion` 2) records the plugin identity,
-  `kind: plugin`, target, mode, source digest, locked dependencies, the modes
-  the shipped skills define, and the tool imports: every shipped skill's base
-  tools under mode `*`, plus the artifact mode's variant tools.
+  `kind: plugin`, target, mode, the owning package's provenance, the modes the
+  shipped skills define, and the tool imports: every shipped skill's base tools
+  under mode `*`, plus the artifact mode's variant tools. The owning package's
+  provenance is its source digest (the build's source digest when the building
+  package owns the plugin, the locked digest otherwise) and the locked packages
+  in its dependency closure, in lock order.
 
 Frontmatter descriptions are double-quoted, escaping `\` and `"`.
 
+A plugin artifact is therefore a function of its plugin, its mode, its owning
+package, and that package's locked dependency closure. Nothing else in the
+build, including the building package's own identity or other packages it
+ships, reaches an artifact's bytes.
+
 The target root holds `.typeference/build.json` (`schemaVersion` 2: target,
-source digest, and each artifact's plugin identity, mode, path, and directory
-digest) and `.typeference/compatibility.json` (`schemaVersion` 1). When the
-manifest declares `marketplace`, it also holds `.github/plugin/marketplace.json`:
-`name`; `owner` with `name`; `metadata` with the package `version`; and
-`plugins`, one entry per artifact with `name`, `source` (`./<artifact>`),
-`description`, and `version`. The target directory is therefore publishable as
+the build's source digest, and each artifact's plugin identity, mode, path,
+owning package source digest, and directory digest) and
+`.typeference/compatibility.json` (`schemaVersion` 1). When the manifest
+declares `marketplace`, it also holds `.github/plugin/marketplace.json`:
+`name`; `owner` with `name`; `metadata` with the building package's `version`;
+and `plugins`, one entry per artifact with `name`, `source` (`./<artifact>`),
+`description`, and `version` (the owning package's). The target directory is therefore publishable as
 a marketplace repository root.
 
 The compatibility report lists, for each mode, every capability that more than
@@ -832,6 +852,80 @@ when non-empty, a `## Context slots` list, a `## Context` section, and an
 (`<agent leaf>.<capability leaf>`), its `SKILL.md` path, and its description.
 The skill index is the neutral bundle's routing surface. The agent's own
 description is not rendered in `AGENTS.md`.
+
+## Organization marketplaces
+
+An organization publishes one marketplace, but its agents and skills are
+authored in many repositories. The marketplace is therefore the build of one
+package, the **marketplace package**, whose manifest lists the plugins of its
+direct dependencies:
+
+```text
+---
+schemaVersion: 6
+name: acme/marketplace
+version: 2026.10.1
+marketplace:
+  name: acme-agents
+  owner: Acme Platform
+dependencies:
+  acme/core: 3.1.0
+  acme/payments-agents: 2.4.0
+  acme/data-agents: 1.0.2
+plugins:
+  - acme/core:plugins/engineering-kit.plugin.tfer
+  - acme/payments-agents:plugins/payments.plugin.tfer
+  - acme/data-agents:plugins/data.plugin.tfer
+---
+```
+
+A manifest entry `<package>:<path>` names a plugin that the direct dependency
+`<package>` lists in its own manifest; the entry denotes the identity derived
+from that package, its declared version, and the path. Naming a package the
+manifest does not declare, a path that is not a `.plugin.tfer` document, or a
+plugin that the package's manifest does not list is an error. A package ships a
+dependency's plugin only when its manifest lists it.
+
+Because the marketplace is one build, every rule of a build holds across the
+whole marketplace, whichever package owns each plugin:
+
+- every emitted skill name, custom agent name, and plugin artifact name
+  denotes one thing (see "Build targets"). Two packages that ship different
+  skills, agents, or plugins under one name fail the build, naming both;
+- a skill that several plugins ship is one skill, emitted identically in each
+  for a given mode, so installing several plugins that carry it is harmless;
+- the compatibility report covers every plugin in the marketplace;
+- the locked graph holds one version of each package, and restore rejects a
+  graph that would require two (see "Packages, restore, and lockfiles"). Two
+  teams that depend on different versions of a shared package cannot both
+  ship until one of them moves.
+
+A plugin's artifacts carry its owning package's version and provenance, so a
+change to one package's pin changes only that package's artifacts, the
+marketplace index, the build index, and the compatibility report.
+
+`typeference validate <marketplace> --candidate <package-dir>` checks whether a
+package that is not yet published fits the marketplace. It validates the
+marketplace package, with its locked graph, after these substitutions:
+
+- the candidate, a version 6 source directory, replaces the locked package of
+  the same name, or joins the graph as a direct dependency when the
+  marketplace does not yet depend on it;
+- every dependency the candidate declares MUST be locked by the marketplace at
+  the declared version, and every locked package that declares a dependency on
+  the candidate's name MUST declare the candidate's version;
+- the plugins validated are those the marketplace lists from other packages,
+  plus every plugin the candidate's manifest lists.
+
+Candidate validation writes nothing, and a candidate is never input to build
+or link: a candidate reaches the marketplace only as a published, locked
+package.
+
+The published marketplace repository holds only compiler output: the
+marketplace package's `agent-plugin` target, linked when its plugins import
+tools. Publication replaces the repository's contents with that output, so
+anything else in the repository is drift. Where the repository lives, who may
+write to it, and how hosts are told about it are deployment facts.
 
 ## Deployment files and link
 
@@ -878,7 +972,8 @@ meaning in deployment schema version 1; other argument text remains literal.
 
 `typeference link <built-target> --deployment <file> --out <dir>`:
 
-1. verifies the unlinked target digest against its build index;
+1. verifies each artifact against its build index entry: its link
+   requirements' identity, mode, and source digest, and its directory digest;
 2. selects the artifact modes;
 3. validates every effective tool import and endpoint requirement;
 4. emits a canonical binding manifest per artifact that preserves the
