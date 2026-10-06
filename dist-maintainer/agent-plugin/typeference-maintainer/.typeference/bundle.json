@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "typeference/maintainer/plugins/typeference-maintainer@0.2.0",
   "name": "typeference-maintainer",
   "mode": "manual",
@@ -95,6 +95,10 @@
         "audit-drift",
         "verify-conformance"
       ],
+      "rules": [],
+      "commands": [],
+      "hooks": [],
+      "servers": [],
       "provenance": [
         {
           "field": "objectives",
@@ -223,5 +227,9 @@
       ]
     }
   ],
-  "servers": []
+  "servers": [],
+  "rules": [],
+  "commands": [],
+  "hooks": [],
+  "lspServers": []
 }

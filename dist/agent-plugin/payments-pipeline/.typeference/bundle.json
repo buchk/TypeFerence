@@ -1,16 +1,16 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "helio/payments/plugins/payments@2.4.0",
   "name": "payments-pipeline",
   "mode": "pipeline",
   "version": "2.4.0",
   "description": "The Helio payments operations agent, for engineers and release pipelines.",
-  "sourceDigest": "sha256:054cead84aae38dcf97e09e6013eb4784016436673d92a64301a0115d8fae89c",
+  "sourceDigest": "sha256:2d7265cbea73646f28fa710aa258976dcbe758e24226ecea0dee45dc85ff0073",
   "dependencies": [
     {
       "name": "helio/core",
       "version": "3.1.0",
-      "digest": "sha256:10ca0368a904463ae13efcb13c7bb96bd7cac823524c25d42009b2a9c95058f3"
+      "digest": "sha256:0887f5deff78efb00c40b8a1232c78f33150c28cf9ac50a098190c433711b874"
     }
   ],
   "agents": [
@@ -42,25 +42,51 @@
           "content": "You support the Payments team\u0027s engineers and release pipelines. Lead with evidence,\nand keep changes small enough to review in one sitting.\n"
         }
       ],
-      "documents": [
-        {
-          "id": "helio/core/docs/enterprise-norms@3.1.0",
-          "render": "inline"
-        }
-      ],
+      "documents": [],
       "skills": [
         "payments-onboard-teammate",
         "payments-queue-summary",
         "payments-self-heal"
       ],
+      "rules": [
+        {
+          "name": "working-norms",
+          "id": "helio/core/rules/working-norms@3.1.0",
+          "templateId": "",
+          "bindings": []
+        }
+      ],
+      "commands": [
+        {
+          "name": "payments-standup",
+          "id": "helio/core/commands/standup@3.1.0",
+          "templateId": "helio/core/commands/standup@3.1.0",
+          "bindings": [
+            {
+              "parameter": "team",
+              "data": "helio/payments/data/payments-team@2.4.0",
+              "contextType": "helio/core/context-types/team@3.1.0",
+              "values": {
+                "id": "payments",
+                "name": "Payments",
+                "onCall": "payments-oncall",
+                "queue": "PAY-OPS",
+                "tier": "critical"
+              }
+            }
+          ]
+        }
+      ],
+      "hooks": [
+        "helio/core/hooks/policy-check@3.1.0"
+      ],
+      "servers": [
+        "helio/payments/servers/helio-ledger@2.4.0"
+      ],
       "provenance": [
         {
           "field": "objectives",
           "source": "helio/payments/agents/payments-ops@2.4.0"
-        },
-        {
-          "field": "context",
-          "source": "helio/core/profiles/team-ops@3.1.0"
         },
         {
           "field": "embeds",
@@ -69,6 +95,18 @@
         {
           "field": "with",
           "source": "helio/payments/agents/payments-ops@2.4.0"
+        },
+        {
+          "field": "rules",
+          "source": "helio/core/profiles/team-ops@3.1.0"
+        },
+        {
+          "field": "commands",
+          "source": "helio/core/profiles/team-ops@3.1.0"
+        },
+        {
+          "field": "hooks",
+          "source": "helio/core/profiles/team-ops@3.1.0"
         }
       ]
     }
@@ -198,5 +236,38 @@
   "servers": [
     "helio/core/servers/helio-builds@3.1.0",
     "helio/core/servers/helio-tickets@3.1.0"
-  ]
+  ],
+  "rules": [
+    {
+      "name": "working-norms",
+      "id": "helio/core/rules/working-norms@3.1.0",
+      "templateId": "",
+      "bindings": []
+    }
+  ],
+  "commands": [
+    {
+      "name": "payments-standup",
+      "id": "helio/core/commands/standup@3.1.0",
+      "templateId": "helio/core/commands/standup@3.1.0",
+      "bindings": [
+        {
+          "parameter": "team",
+          "data": "helio/payments/data/payments-team@2.4.0",
+          "contextType": "helio/core/context-types/team@3.1.0",
+          "values": {
+            "id": "payments",
+            "name": "Payments",
+            "onCall": "payments-oncall",
+            "queue": "PAY-OPS",
+            "tier": "critical"
+          }
+        }
+      ]
+    }
+  ],
+  "hooks": [
+    "helio/core/hooks/policy-check@3.1.0"
+  ],
+  "lspServers": []
 }

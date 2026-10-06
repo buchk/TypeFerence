@@ -560,7 +560,7 @@ func (d *documentDecoder) decodeKind(n *tferlex.Node) error {
 	switch doc.Kind {
 	case "agent":
 		return d.decode(n, with(map[string]func(*tferlex.Node) error{
-			"embeds":  d.refListInto(&doc.Embeds, "profile", "agent"),
+			"embeds":   d.refListInto(&doc.Embeds, "profile", "agent"),
 			"context":  d.contextEntries(false),
 			"skills":   d.bindings,
 			"with":     d.withField(),
