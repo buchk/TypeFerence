@@ -1,6 +1,0 @@
----
-fields:
-  count:
-    type: integer
-    required: true
----

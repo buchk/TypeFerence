@@ -1,5 +1,0 @@
-{
-  "description": "Slot names are a canonical key space and must be ASCII identifiers; a non-ASCII slot name fails validation.",
-  "language": "legacy-v3",
-  "expect": "error"
-}

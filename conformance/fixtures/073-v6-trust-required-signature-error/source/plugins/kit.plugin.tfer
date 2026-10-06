@@ -1,5 +1,0 @@
----
-description: A signed plugin.
-agents:
-  - agents/signed.agent.tfer
----

@@ -1,7 +1,0 @@
----
-schemaVersion: 6
-name: conformance/marketplace
-version: 1.0.0
-plugins:
-  - conformance/team-a:plugins/kit.plugin.tfer
----

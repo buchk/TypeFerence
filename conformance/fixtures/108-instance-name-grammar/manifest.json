@@ -1,0 +1,4 @@
+{
+  "description": "The instance-name field's value must satisfy the Agent Skills name grammar.",
+  "expect": "error"
+}

@@ -1,7 +1,0 @@
----
-schemaVersion: 5
-kind: skill
-id: conformance/skills/no-trailing-newline-v4@1.0.0
-binds: conformance/capabilities/no-trailing-newline-v4@1.0.0
----
-This body ends without a newline.

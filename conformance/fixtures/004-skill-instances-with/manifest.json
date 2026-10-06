@@ -1,0 +1,4 @@
+{
+  "description": "Skill instances without an agent (ADR-0036): two skills extend one template and bind it with 'with', shipping in a skills-only plugin under their own names; an optional field's default fills a reference.",
+  "expect": "success"
+}

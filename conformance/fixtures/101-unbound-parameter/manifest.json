@@ -1,0 +1,4 @@
+{
+  "description": "An agent that embeds a template profile must bind its parameters.",
+  "expect": "error"
+}

@@ -1,0 +1,4 @@
+{
+  "description": "Data reaches output only through field references; holding a data document is an error.",
+  "expect": "error"
+}

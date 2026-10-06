@@ -1,0 +1,4 @@
+{
+  "description": "Two embedded profiles binding different implementations of one capability at the same depth are ambiguous unless bound locally.",
+  "expect": "error"
+}

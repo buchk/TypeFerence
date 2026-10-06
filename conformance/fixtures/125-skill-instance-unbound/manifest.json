@@ -1,0 +1,4 @@
+{
+  "description": "A skill instance must bind every parameter of its template.",
+  "expect": "error"
+}

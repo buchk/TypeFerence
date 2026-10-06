@@ -1,0 +1,4 @@
+{
+  "description": "An embedding graph must not contain a cycle.",
+  "expect": "error"
+}

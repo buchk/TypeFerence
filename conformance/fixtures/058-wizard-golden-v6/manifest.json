@@ -1,9 +1,0 @@
-{
-  "description": "Golden wizard fixture: the canonical answer set's generated version 6 plugin set (ADR-0028). The scaffold digest pins generator 2.0.0 x answer schema 1 to these bytes; the runner regenerates the tree from answers.json, and the tree must also build through the ordinary compiler.",
-  "expect": "success",
-  "answerSet": "answers.json",
-  "generatorVersion": "2.0.0",
-  "digests": {
-    "scaffold": "sha256:81f6e0df169856b1319605c226b9021144f0644d99d12bae09629d1d4ad9db43"
-  }
-}

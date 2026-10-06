@@ -1,5 +1,0 @@
----
-displayName: signatureIntent.required fails closed; the unsigned-staging ...
-contextType: context-types/norms.contexttype.tfer
----
-signatureIntent.required fails closed; the unsigned-staging option exists solely to emit payloads for an external signer.

@@ -1,0 +1,16 @@
+---
+fields:
+  system:
+    type: string
+    required: true
+  owner:
+    type: string
+    required: true
+  dataClass:
+    type: string
+    default: internal
+    choices:
+      - public
+      - internal
+      - restricted
+---

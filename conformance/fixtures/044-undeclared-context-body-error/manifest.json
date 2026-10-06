@@ -1,5 +1,0 @@
-{
-  "description": "A context .tfer body is rejected when its contextType does not declare a text body.",
-  "language": "legacy-v5",
-  "expect": "error"
-}

@@ -1,0 +1,12 @@
+---
+description: Triage a failed run.
+requiresServers:
+  - servers/acme-tickets.server.tfer
+variants:
+  manual:
+    instructions: Walk the engineer through the evidence.
+  pipeline:
+    instructions: Return JSON only.
+    requiresServers:
+      - servers/acme-builds.server.tfer
+---

@@ -1,0 +1,4 @@
+{
+  "description": "A string value must be one of its field's choices.",
+  "expect": "error"
+}

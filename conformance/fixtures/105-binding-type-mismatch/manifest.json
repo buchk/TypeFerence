@@ -1,0 +1,4 @@
+{
+  "description": "'with' must bind data of the parameter's context type.",
+  "expect": "error"
+}

@@ -1,0 +1,6 @@
+---
+description: Ext.
+extends: skills/base.skill.tfer
+outputSchema: '{"type":"object"}'
+---
+Ext.

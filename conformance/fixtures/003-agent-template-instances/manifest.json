@@ -1,0 +1,4 @@
+{
+  "description": "A template profile instantiated by an agent (ADR-0036): the agent binds team data, template skills are emitted as <instance>-<leaf> with field references resolved, a parameterized document renders as a reference file, an escaped reference stays literal, a document without parameters keeps {{ }} text, and a plain skill keeps its own name.",
+  "expect": "success"
+}

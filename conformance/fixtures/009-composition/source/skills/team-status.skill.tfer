@@ -1,0 +1,5 @@
+---
+description: Summarize the team's repositories.
+extends: skills/status.skill.tfer
+---
+Include every team repository.

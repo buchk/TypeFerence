@@ -26,9 +26,10 @@ type Manifest struct {
 	SchemaVersion    int    `json:"schemaVersion"`
 }
 
-// Scaffold maps a validated AnswerSet to an ordinary version 6 package: norm
-// statements as prose context documents, a profile embedding chain, one
-// concrete agent, and the plugin that ships it. The output contains only
+// Scaffold maps a validated AnswerSet to an ordinary version 7 package: norm
+// statements as Markdown documents, a team contract and a template skill, a
+// profile embedding chain, one concrete agent that binds its team's data, and
+// the plugin that ships it. The output contains only
 // constructs a human could hand-author. No wizard-only syntax, no hidden
 // metadata (ADR-0028).
 func Scaffold(as *AnswerSet) (*SourceTree, Manifest, error) {
@@ -44,8 +45,8 @@ func Scaffold(as *AnswerSet) (*SourceTree, Manifest, error) {
 		tree.Files = append(tree.Files, File{Path: path, Bytes: []byte(content)})
 	}
 
-	// One prose context document per norm statement: the built-in text type,
-	// so a norm is just its sentence.
+	// One Markdown document per norm statement, so a norm is just its
+	// sentence.
 	var normPaths []string
 	for _, n := range as.Norms {
 		id := n.ID
@@ -59,57 +60,71 @@ func Scaffold(as *AnswerSet) (*SourceTree, Manifest, error) {
 		)+strings.TrimSpace(n.Text)+"\n")
 	}
 
-	// Base profile holds the norms; each team level embeds its parent and
-	// fills a scope slot; the agent completes the chain. This is deliberately
-	// the simplest composition that demonstrates multilevel embedding.
+	// The team contract: what the agent's team supplies. Its id names the
+	// team's skill instances (ADR-0036).
+	add("context-types/team.contexttype.tfer", fence(
+		"displayName: Team",
+		"description: What a team supplies to instantiate the starter kit.",
+		"instanceName: id",
+		"fields:",
+		"  id:",
+		"    type: string",
+		"    required: true",
+		"    displayName: Team identifier",
+		"    description: Lowercase and hyphenated; prefixes the team's skill names.",
+		"  name:",
+		"    type: string",
+		"    required: true",
+		"    displayName: Team name",
+	))
+
+	// A starter template skill the base profile binds.
+	add("skills/status.skill.tfer", fence(
+		"description: Summarize where {{team.name}}'s work stands.",
+		"parameters:",
+		"  team: context-types/team.contexttype.tfer",
+	)+"Summarize where {{team.name}}'s work stands: what shipped, what is blocked,\nand the next accountable action. Mark anything you could not check.\n")
+
+	// Base profile holds the norms and declares the team contract; each team
+	// level embeds its parent; the agent completes the chain and binds its
+	// team's data.
 	add("profiles/base.profile.tfer", fence(
 		"displayName: Base Defaults",
 		fmt.Sprintf("description: Organization-wide defaults for %s.", org),
+		"parameters:",
+		"  team: context-types/team.contexttype.tfer",
 		listField("context", normPaths),
+		listField("skills", []string{"skills/status.skill.tfer"}),
 	))
 
 	parent := "profiles/base.profile.tfer"
-	prevSlot, prevScope := "", ""
-	for i, lvl := range as.Levels {
+	for _, lvl := range as.Levels {
 		name := slug(lvl.Name)
-		slot := "domain"
-		if i > 0 {
-			slot = name + "-scope"
-		}
-		scope := fmt.Sprintf("context/%s-scope.context.tfer", slot)
 		path := fmt.Sprintf("profiles/%s.profile.tfer", name)
 		add(path, fence(
 			fmt.Sprintf("displayName: %s Defaults", titleize(name)),
 			fmt.Sprintf("description: %s-level defaults embedding the parent profile.", titleize(name)),
 			listField("embeds", []string{parent}),
-			"slots:",
-			fmt.Sprintf("  %s: %s", slot, scope),
 		))
-		add(scope, fence(
-			fmt.Sprintf("displayName: %s Scope", titleize(name)),
-			"contextType: context-types/scope.contexttype.tfer",
-		))
-		parent, prevSlot, prevScope = path, slot, scope
+		parent = path
 	}
 
-	// Scope context type for slot values.
-	add("context-types/scope.contexttype.tfer", fence(
-		"displayName: Scope",
-		"fields:",
-		"  owner:",
-		"    type: string",
+	dataPath := fmt.Sprintf("data/%s-team.context.tfer", agentName)
+	add(dataPath, fence(
+		"contextType: context-types/team.contexttype.tfer",
+		"values:",
+		fmt.Sprintf("  id: %s", agentName),
+		fmt.Sprintf("  name: %s", titleize(agentName)),
 	))
 
-	agentLines := []string{
+	agentPath := fmt.Sprintf("agents/%s.agent.tfer", agentName)
+	add(agentPath, fence(
 		fmt.Sprintf("displayName: %s", titleize(agentName)),
 		"description: Generated from a setup answer set; edit freely.",
 		listField("embeds", []string{parent}),
-	}
-	if prevSlot != "" {
-		agentLines = append(agentLines, "slots:", fmt.Sprintf("  %s: %s", prevSlot, prevScope))
-	}
-	agentPath := fmt.Sprintf("agents/%s.agent.tfer", agentName)
-	add(agentPath, fence(agentLines...))
+		"with:",
+		fmt.Sprintf("  team: %s", dataPath),
+	))
 
 	pluginPath := fmt.Sprintf("plugins/%s.plugin.tfer", agentName)
 	add(pluginPath, fence(
@@ -118,7 +133,7 @@ func Scaffold(as *AnswerSet) (*SourceTree, Manifest, error) {
 	))
 
 	add("typeference.tfer", fence(
-		"schemaVersion: 6",
+		"schemaVersion: 7",
 		fmt.Sprintf("name: %s/starter-suite", org),
 		fmt.Sprintf("version: %s", ver),
 		listField("plugins", []string{pluginPath}),

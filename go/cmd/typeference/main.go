@@ -1,21 +1,16 @@
-// Command typeference is the reference CLI. It produces deterministic artifacts
-// verified by the current-language conformance corpus and the archival golden
-// corpora under conformance/.
+// Command typeference is the reference CLI. It produces deterministic Copilot
+// plugin artifacts verified by the conformance corpus under conformance/.
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 
 	"github.com/buchk/TypeFerence/go/internal/compile"
-	"github.com/buchk/TypeFerence/go/internal/deploy"
-	"github.com/buchk/TypeFerence/go/internal/eval"
 	"github.com/buchk/TypeFerence/go/internal/jsonx"
 	"github.com/buchk/TypeFerence/go/internal/packages"
 	"github.com/buchk/TypeFerence/go/internal/resource"
@@ -50,18 +45,12 @@ func run(args []string) int {
 		code, err = restore(args, false)
 	case "update":
 		code, err = restore(args, true)
-	case "link":
-		code, err = link(args)
 	case "inspect":
 		code, err = inspect(args)
 	case "diff":
 		code, err = diff(args)
-	case "publish":
-		code, err = publish(args)
-	case "eval":
-		code, err = evalCommand(args)
-	case "equivalence":
-		code, err = equivalenceCommand(args)
+	case "link", "publish", "eval", "equivalence":
+		return fail(fmt.Sprintf("the %s command was removed in version 7 (ADR-0035)", args[0]))
 	case "version", "--version":
 		fmt.Printf("typeference %s\n", version)
 		return 0
@@ -79,10 +68,6 @@ func validate(args []string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	trustConfig, err := option(args, "--trust-config")
-	if err != nil {
-		return 0, err
-	}
 	packagesDir, err := option(args, "--packages-dir")
 	if err != nil {
 		return 0, err
@@ -91,8 +76,7 @@ func validate(args []string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	summary, err := compile.SummarizeWithOptions(source, trustConfig,
-		compile.BuildOptions{PackagesDir: packagesDir, Candidate: candidate})
+	summary, err := compile.Summarize(source, compile.BuildOptions{PackagesDir: packagesDir, Candidate: candidate})
 	if err != nil {
 		return 0, err
 	}
@@ -116,25 +100,16 @@ func build(args []string) (int, error) {
 	} else if v != "" {
 		output = v
 	}
-	target := "all"
-	if v, err := option(args, "--target"); err != nil {
+	if target, err := option(args, "--target"); err != nil {
 		return 0, err
-	} else if v != "" {
-		target = v
-	}
-	ard, err := ardOptions(args, source)
-	if err != nil {
-		return 0, err
-	}
-	targets, err := compile.ParseTargets(target)
-	if err != nil {
+	} else if err := compile.CheckTarget(target); err != nil {
 		return 0, err
 	}
 	packagesDir, err := option(args, "--packages-dir")
 	if err != nil {
 		return 0, err
 	}
-	files, err := compile.BuildWithOptions(source, output, targets, ard, compile.BuildOptions{PackagesDir: packagesDir})
+	files, err := compile.Build(source, output, compile.BuildOptions{PackagesDir: packagesDir})
 	if err != nil {
 		return 0, err
 	}
@@ -148,7 +123,7 @@ func build(args []string) (int, error) {
 	}
 	fmt.Printf("Built %d files at %s\n", len(files), full)
 	fmt.Printf("SHA-256 %s\n", hash)
-	reportPluginConflicts(filepath.Join(output, compile.AgentPlugin.String(), ".typeference", "compatibility.json"))
+	reportPluginConflicts(filepath.Join(output, compile.TargetName, ".typeference", "compatibility.json"))
 	return 0, nil
 }
 
@@ -253,33 +228,6 @@ func restore(args []string, update bool) (int, error) {
 	return 0, nil
 }
 
-func link(args []string) (int, error) {
-	input, err := requiredArg(args, 1, "built target")
-	if err != nil {
-		return 0, err
-	}
-	deployment, err := option(args, "--deployment")
-	if err != nil {
-		return 0, err
-	}
-	if deployment == "" {
-		return 0, resource.Errorf("--deployment is required")
-	}
-	output, err := option(args, "--out")
-	if err != nil {
-		return 0, err
-	}
-	if output == "" {
-		return 0, resource.Errorf("--out is required")
-	}
-	files, err := deploy.Link(input, deployment, output)
-	if err != nil {
-		return 0, err
-	}
-	fmt.Printf("Linked %d files at %s\n", len(files), output)
-	return 0, nil
-}
-
 func inspect(args []string) (int, error) {
 	source := "."
 	if v, err := option(args, "--source"); err != nil {
@@ -295,7 +243,7 @@ func inspect(args []string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	agents, err := compile.ValidateWithPackages(source, "", packagesDir)
+	agents, err := compile.ValidateWithPackages(source, packagesDir)
 	if err != nil {
 		return 0, err
 	}
@@ -326,25 +274,11 @@ func diff(args []string) (int, error) {
 	}
 	defer os.RemoveAll(temp)
 
-	ard, err := ardOptions(args, source)
-	if err != nil {
-		return 0, err
-	}
-	target := "all"
-	if v, err := option(args, "--target"); err != nil {
-		return 0, err
-	} else if v != "" {
-		target = v
-	}
-	targets, err := compile.ParseTargets(target)
-	if err != nil {
-		return 0, err
-	}
 	packagesDir, err := option(args, "--packages-dir")
 	if err != nil {
 		return 0, err
 	}
-	if _, err := compile.BuildWithOptions(source, temp, targets, ard, compile.BuildOptions{PackagesDir: packagesDir}); err != nil {
+	if _, err := compile.Build(source, temp, compile.BuildOptions{PackagesDir: packagesDir}); err != nil {
 		return 0, err
 	}
 	result, err := compile.CompareDirs(against, temp)
@@ -378,221 +312,12 @@ func diff(args []string) (int, error) {
 	return 0, nil
 }
 
-// publish registers a compiled ARD catalog with a registry. It is the
-// deployment edge, not the deterministic core (ADR-0018): registry lifecycle is
-// disclaimed by core semantics, so this is an optional, side-effecting verb.
-// Without --registry it is a dry run that only summarizes the catalog.
-func publish(args []string) (int, error) {
-	dir, err := requiredArg(args, 1, "ard directory")
-	if err != nil {
-		return 0, err
-	}
-	catalogPath := filepath.Join(dir, "ai-catalog.json")
-	data, readErr := os.ReadFile(catalogPath)
-	if readErr != nil {
-		return 0, resource.Errorf("No ai-catalog.json under %s; build with --emit-ard first", dir)
-	}
-	var catalog struct {
-		Entries []struct {
-			Identifier string `json:"identifier"`
-			Type       string `json:"type"`
-		} `json:"entries"`
-	}
-	if json.Unmarshal(data, &catalog) != nil {
-		return 0, resource.Errorf("Invalid ai-catalog.json: %s", catalogPath)
-	}
-	registry, err := option(args, "--registry")
-	if err != nil {
-		return 0, err
-	}
-	if registry == "" {
-		fmt.Printf("Dry run: %d catalog entries in %s (pass --registry <url> to publish)\n", len(catalog.Entries), catalogPath)
-		for _, e := range catalog.Entries {
-			fmt.Printf("  %s  %s\n", entryKind(e.Type), e.Identifier)
-		}
-		return 0, nil
-	}
-	resp, postErr := http.Post(registry, "application/json", bytes.NewReader(data))
-	if postErr != nil {
-		return 0, resource.Errorf("Publish failed: %s", postErr)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		return 1, resource.Errorf("Registry returned %s", resp.Status)
-	}
-	fmt.Printf("Published %d entries to %s (%s)\n", len(catalog.Entries), registry, resp.Status)
-	return 0, nil
-}
-
-// entryKind maps an ARD entry media type to a short label.
-func entryKind(mediaType string) string {
-	switch {
-	case strings.Contains(mediaType, "a2a-agent-card"):
-		return "a2a    "
-	case strings.Contains(mediaType, "mcp-server"):
-		return "mcp    "
-	case strings.Contains(mediaType, "source-package"):
-		return "source "
-	case strings.Contains(mediaType, "target-bundle"):
-		return "bundle "
-	default:
-		return "entry  "
-	}
-}
-
-func evalCommand(args []string) (int, error) {
-	source, err := requiredArg(args, 1, "source")
-	if err != nil {
-		return 0, err
-	}
-	scenarios, err := option(args, "--scenarios")
-	if err != nil {
-		return 0, err
-	}
-	if scenarios == "" {
-		return 0, resource.Errorf("--scenarios is required")
-	}
-	model, err := option(args, "--model")
-	if err != nil {
-		return 0, err
-	}
-	outDir, err := option(args, "--out")
-	if err != nil {
-		return 0, err
-	}
-	live := slices.Contains(args, "--live")
-
-	opts := eval.Options{Model: model, Live: live, OutDir: outDir}
-	if live {
-		apiKey := os.Getenv("ANTHROPIC_API_KEY")
-		if apiKey == "" {
-			return 0, resource.Errorf("--live requires ANTHROPIC_API_KEY in the environment; run without --live for a dry run")
-		}
-		opts.Backend = &eval.AnthropicBackend{APIKey: apiKey}
-	}
-	return eval.Run(source, scenarios, opts)
-}
-
-func equivalenceCommand(args []string) (int, error) {
-	subcommand, err := requiredArg(args, 1, "subcommand (pack or score)")
-	if err != nil {
-		return 0, err
-	}
-	switch subcommand {
-	case "pack":
-		source, err := requiredArg(args, 2, "source")
-		if err != nil {
-			return 0, err
-		}
-		scenarios, err := option(args, "--scenarios")
-		if err != nil {
-			return 0, err
-		}
-		if scenarios == "" {
-			return 0, resource.Errorf("--scenarios is required")
-		}
-		outDir, err := option(args, "--out")
-		if err != nil {
-			return 0, err
-		}
-		if outDir == "" {
-			return 0, resource.Errorf("--out is required")
-		}
-		target := "all"
-		if v, err := option(args, "--target"); err != nil {
-			return 0, err
-		} else if v != "" {
-			target = v
-		}
-		targets, err := eval.ParseTargetList(target)
-		if err != nil {
-			return 0, err
-		}
-		return eval.Pack(source, scenarios, outDir, eval.PackOptions{Targets: targets})
-	case "score":
-		runDir, err := requiredArg(args, 2, "run directory")
-		if err != nil {
-			return 0, err
-		}
-		model, err := option(args, "--model")
-		if err != nil {
-			return 0, err
-		}
-		live := slices.Contains(args, "--live")
-		opts := eval.ScoreOptions{Model: model, Live: live}
-		if live {
-			apiKey := os.Getenv("ANTHROPIC_API_KEY")
-			if apiKey == "" {
-				return 0, resource.Errorf("--live requires ANTHROPIC_API_KEY in the environment; run without --live to emit judge payloads")
-			}
-			opts.Backend = &eval.AnthropicBackend{APIKey: apiKey}
-		}
-		return eval.Score(runDir, opts)
-	default:
-		return 0, resource.Errorf("Unknown equivalence subcommand: %s (expected pack or score)", subcommand)
-	}
-}
-
 func stringArr(values []string) jsonx.Arr {
 	arr := jsonx.Arr{}
 	for _, v := range values {
 		arr = append(arr, jsonx.Str(v))
 	}
 	return arr
-}
-
-func ardOptions(args []string, source string) (*compile.ArdPublicationOptions, error) {
-	publisherDomain, err := option(args, "--publisher-domain")
-	if err != nil {
-		return nil, err
-	}
-	trustConfig, err := option(args, "--trust-config")
-	if err != nil {
-		return nil, err
-	}
-	trustSignatures, err := option(args, "--trust-signatures")
-	if err != nil {
-		return nil, err
-	}
-	allowUnsignedTrust := slices.Contains(args, "--allow-unsigned-trust")
-	emitArd := slices.Contains(args, "--emit-ard")
-	// A project manifest with a publisher makes ARD emission
-	// the default and supplies the publisher domain, so `compile -> pushable
-	// ai-catalog.json` needs no flags (ADR-0018).
-	project, projErr := resource.LoadProject(source)
-	if projErr != nil {
-		return nil, projErr
-	}
-	if project != nil && strings.TrimSpace(project.Publisher) != "" {
-		emitArd = true
-		if publisherDomain == "" {
-			publisherDomain = project.Publisher
-		}
-	}
-	if emitArd && publisherDomain == "" {
-		return nil, resource.Errorf("--emit-ard requires --publisher-domain (or a `publisher` in typeference.tfer)")
-	}
-	if !emitArd && publisherDomain != "" {
-		return nil, resource.Errorf("--publisher-domain requires --emit-ard")
-	}
-	if !emitArd && trustConfig != "" {
-		return nil, resource.Errorf("--trust-config requires --emit-ard")
-	}
-	if !emitArd && trustSignatures != "" {
-		return nil, resource.Errorf("--trust-signatures requires --emit-ard")
-	}
-	if !emitArd && allowUnsignedTrust {
-		return nil, resource.Errorf("--allow-unsigned-trust requires --emit-ard")
-	}
-	if !emitArd {
-		return nil, nil
-	}
-	return &compile.ArdPublicationOptions{
-		PublisherDomain:     publisherDomain,
-		TrustConfigPath:     trustConfig,
-		TrustSignaturesPath: trustSignatures,
-		AllowUnsignedTrust:  allowUnsignedTrust,
-	}, nil
 }
 
 func requiredArg(args []string, index int, name string) (string, error) {
@@ -620,18 +345,18 @@ func fail(message string) int {
 }
 
 func help() int {
-	fmt.Print(`TypeFerence - typed coherence for AI agents (Go implementation)
+	fmt.Print(`TypeFerence - authoring and reuse for GitHub Copilot plugins (Go implementation)
 
 Commands:
   typeference init --answers <answers.json> [--out DIR] [--verify sha256:...]
-      (scaffolds a starter plugin set from a versioned answer set)
+      (scaffolds a starter package from a versioned answer set)
   typeference import <copilot-source> --out <dir> [--name ns/name]
       [--version x.y.z] [--plugin name] [--lossy]
       (turns existing Copilot custom agents, Agent Skills, or an Agent Plugin
-       into a version 6 package; fails on anything it cannot represent
+       into a version 7 package; fails on anything it cannot represent
        unless --lossy)
-  typeference validate <source> [--trust-config path]
-      [--packages-dir obj/typeference/packages] [--candidate <package-dir>]
+  typeference validate <source> [--packages-dir obj/typeference/packages]
+      [--candidate <package-dir>]
       (--candidate checks an unpublished package against a marketplace
        package's locked graph without writing anything)
   typeference pack <source> [--out package.tferpkg]
@@ -639,31 +364,11 @@ Commands:
       [--packages-dir obj/typeference/packages]
   typeference update <source> --feeds <external-config>
       [--packages-dir obj/typeference/packages]
-  typeference build <source> [--target all|agent-plugin|neutral] [--out dist]
+  typeference build <source> [--out dist] [--packages-dir obj/typeference/packages]
+      (writes <out>/agent-plugin: a GitHub Copilot plugin marketplace root)
+  typeference inspect <agent-id> [--source path] [--packages-dir dir]
+  typeference diff <source> --against <compiled-dir> [--json]
       [--packages-dir obj/typeference/packages]
-      [--emit-ard --publisher-domain example.com] [--trust-config path]
-      [--trust-signatures signatures.json]
-      [--allow-unsigned-trust]
-      (agent-plugin writes a GitHub Copilot plugin marketplace root)
-  typeference inspect <agent-id> [--source path]
-  typeference link <built-target-dir> --deployment <file> --out <linked-dir>
-  typeference diff <source> --against <compiled-dir> [--target all]
-      [--emit-ard --publisher-domain example.com] [--trust-config path]
-      [--trust-signatures signatures.json] [--json]
-      [--allow-unsigned-trust]
-  typeference publish <ard-dir> [--registry <url>]
-      (deployment edge, not core: summarizes the compiled ARD catalog; with
-       --registry POSTs it to a registry. A dry run without --registry.)
-  typeference eval <source> --scenarios <file-or-dir> [--live] [--model id] [--out dir]
-      (dry run by default: validates scenarios and emits exact request
-       payloads without calling any API; --live reads ANTHROPIC_API_KEY)
-  typeference equivalence pack <source> --scenarios <file-or-dir> --out <run-dir>
-      [--target all|<name>[,<name>...]]
-      (lays out one cell per scenario x surface: compiled bundle, context,
-       and prompt; an operator collects one host response per cell)
-  typeference equivalence score <run-dir> [--live] [--model id]
-      (judges collected responses and writes the equivalence scorecard;
-       without --live it emits judge payloads and stays offline)
   typeference version
 `)
 	return 0

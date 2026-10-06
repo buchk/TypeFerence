@@ -1,0 +1,4 @@
+{
+  "description": "Server values cannot depend on environment variables other than the plugin path variables.",
+  "expect": "error"
+}

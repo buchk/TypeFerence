@@ -1,0 +1,4 @@
+{
+  "description": "Two server documents cannot emit one MCP server name.",
+  "expect": "error"
+}

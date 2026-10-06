@@ -1,0 +1,8 @@
+---
+description: Reporting kit.
+skills:
+  - skills/report.skill.tfer
+  - skills/audit.skill.tfer
+modes:
+  - pipeline
+---

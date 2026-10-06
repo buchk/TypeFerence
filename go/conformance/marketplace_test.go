@@ -1,22 +1,20 @@
 package conformance
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/buchk/TypeFerence/go/internal/compile"
-	"github.com/buchk/TypeFerence/go/internal/deploy"
 )
 
-// marketplaceFixture copies fixture 075 so a test can change it, applying
+// marketplaceFixture copies the marketplace fixture so a test can change it, applying
 // edits (path relative to the fixture, old text, new text) to the copy.
 func marketplaceFixture(t *testing.T, edits ...[3]string) (string, manifest) {
 	t.Helper()
 	dir := filepath.Join(t.TempDir(), "fixture")
-	copyTree(t, filepath.Join(fixturesRoot(t), "075-marketplace-from-packages"), dir)
+	copyTree(t, filepath.Join(fixturesRoot(t), "001-marketplace-from-packages"), dir)
 	for _, edit := range edits {
 		path := filepath.Join(dir, filepath.FromSlash(edit[0]))
 		data, err := os.ReadFile(path)
@@ -40,7 +38,7 @@ func buildMarketplace(t *testing.T, dir string, m manifest) string {
 		t.Fatal(err)
 	}
 	out := t.TempDir()
-	if _, err := compile.Build(source, out, []compile.Target{compile.AgentPlugin}, nil); err != nil {
+	if _, err := compile.Build(source, out, compile.BuildOptions{}); err != nil {
 		t.Fatal(err)
 	}
 	return filepath.Join(out, "agent-plugin")
@@ -81,56 +79,33 @@ func TestMarketplaceBumpRewritesOnlyTheOwnersPlugins(t *testing.T) {
 	}
 }
 
-// Link verifies each plugin artifact against its own build index entry, so a
-// marketplace whose plugins belong to several packages links.
-func TestMarketplaceLinks(t *testing.T) {
-	dir, m := marketplaceFixture(t)
+// A server shipped by plugins of two packages is one configuration, and a
+// marketplace whose packages declare two different servers under one name
+// fails rather than letting Copilot pick whichever loaded last.
+func TestMarketplaceServerNamesDenoteOneConfiguration(t *testing.T) {
+	dir, m := marketplaceFixture(t,
+		[3]string{"packages/payments/skills/payments-status.skill.tfer", "extends: conformance/core:skills/status.skill.tfer", "extends: conformance/core:skills/status.skill.tfer\nrequiresServers:\n  - servers/conformance-tickets.server.tfer"},
+	)
+	server := "---\ntransport: streamable-http\nurl: https://payments.example/mcp\n---\n"
+	path := filepath.Join(dir, "packages", "payments", "servers", "conformance-tickets.server.tfer")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(server), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	built := buildMarketplace(t, dir, m)
-	deployment := filepath.Join(t.TempDir(), "deployment.yaml")
-	content := "schemaVersion: 1\nenvironment: test\nartifacts:\n" +
-		"  conformance/core/plugins/engineering-kit@1.0.0:\n    modes: [manual]\n" +
-		"  conformance/data/plugins/data@1.1.0:\n    modes: [manual]\n" +
-		"  conformance/payments/plugins/payments@2.0.0:\n    modes: [manual, pipeline]\n"
-	if err := os.WriteFile(deployment, []byte(content), 0o644); err != nil {
-		t.Fatal(err)
+	config, err := os.ReadFile(filepath.Join(built, "payments", "mcp.json"))
+	if err != nil || !strings.Contains(string(config), `"conformance-tickets"`) {
+		t.Fatalf("the payments plugin ships the server its skill requires: %v\n%s", err, config)
 	}
-	if _, err := deploy.Link(built, deployment, filepath.Join(t.TempDir(), "linked")); err != nil {
-		t.Fatalf("a marketplace build must link: %v", err)
-	}
-	// Attributing an artifact to another package's valid source digest is
-	// caught: the index entry must agree with the artifact's own provenance.
-	indexPath := filepath.Join(built, ".typeference", "build.json")
-	data, err := os.ReadFile(indexPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var index struct {
-		SchemaVersion int              `json:"schemaVersion"`
-		Target        string           `json:"target"`
-		SourceDigest  string           `json:"sourceDigest"`
-		Artifacts     []map[string]any `json:"artifacts"`
-	}
-	if err := json.Unmarshal(data, &index); err != nil {
-		t.Fatal(err)
-	}
-	if index.Artifacts[0]["sourceDigest"] == index.Artifacts[1]["sourceDigest"] {
-		t.Fatal("the first two artifacts must belong to different packages")
-	}
-	index.Artifacts[0]["sourceDigest"] = index.Artifacts[1]["sourceDigest"]
-	tampered, err := json.Marshal(index)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(indexPath, tampered, 0o644); err != nil {
-		t.Fatal(err)
-	}
-	_, err = deploy.Link(built, deployment, filepath.Join(t.TempDir(), "linked"))
-	if err == nil || !strings.Contains(err.Error(), "do not match the build integrity index") {
-		t.Fatalf("link must reject an artifact attributed to another package, got %v", err)
+	if _, err := os.Stat(filepath.Join(built, "data", "mcp.json")); err == nil {
+		t.Fatal("a plugin whose skills require no server ships no mcp.json")
 	}
 }
 
-// candidate stages fixture 075 and writes a candidate package beside it.
+// candidate stages the marketplace fixture and writes a candidate package
+// beside it.
 func candidate(t *testing.T, files map[string]string) (string, string) {
 	t.Helper()
 	dir, m := marketplaceFixture(t)
@@ -151,7 +126,7 @@ func candidate(t *testing.T, files map[string]string) (string, string) {
 	return source, pkg
 }
 
-const candidateManifest = "---\nschemaVersion: 6\nname: conformance/data\nversion: 1.2.0\ndependencies:\n  conformance/core: 1.0.0\nplugins:\n  - plugins/data.plugin.tfer\n---\n"
+const candidateManifest = "---\nschemaVersion: 7\nname: conformance/data\nversion: 1.2.0\ndependencies:\n  conformance/core: 1.0.0\nplugins:\n  - plugins/data.plugin.tfer\n---\n"
 
 func TestCandidateThatFitsValidates(t *testing.T) {
 	source, pkg := candidate(t, map[string]string{
@@ -159,15 +134,14 @@ func TestCandidateThatFitsValidates(t *testing.T) {
 		"plugins/data.plugin.tfer":     "---\ndescription: The data platform agent.\nagents:\n  - agents/data-agent.agent.tfer\n---\n",
 		"agents/data-agent.agent.tfer": "---\ndescription: Data agent.\nembeds:\n  - conformance/core:profiles/engineering.profile.tfer\n---\nHelp the data team.\n",
 	})
-	summary, err := compile.SummarizeWithOptions(source, "", compile.BuildOptions{Candidate: pkg})
+	summary, err := compile.Summarize(source, compile.BuildOptions{Candidate: pkg})
 	if err != nil {
 		t.Fatalf("a candidate that fits must validate: %v", err)
 	}
 	if strings.Join(summary.Plugins, ",") != "data,engineering-kit,payments,payments-pipeline" {
 		t.Fatalf("the candidate's plugins replace the ones the marketplace ships from it: %v", summary.Plugins)
 	}
-	if _, err := compile.BuildWithOptions(source, t.TempDir(), []compile.Target{compile.AgentPlugin}, nil,
-		compile.BuildOptions{Candidate: pkg}); err == nil {
+	if _, err := compile.Build(source, t.TempDir(), compile.BuildOptions{Candidate: pkg}); err == nil {
 		t.Fatal("a candidate must never be built")
 	}
 }
@@ -180,7 +154,7 @@ func TestCandidateCollisionIsReported(t *testing.T) {
 		"plugins/data.plugin.tfer": "---\ndescription: The data kit.\nskills:\n  - skills/status.skill.tfer\n---\n",
 		"skills/status.skill.tfer": "---\ndescription: Data pipeline status.\n---\nReport pipeline status.\n",
 	})
-	_, err := compile.SummarizeWithOptions(source, "", compile.BuildOptions{Candidate: pkg})
+	_, err := compile.Summarize(source, compile.BuildOptions{Candidate: pkg})
 	if err == nil || !strings.Contains(err.Error(), "both emit the skill name 'status'") {
 		t.Fatalf("the preflight must report the collision, got %v", err)
 	}
@@ -189,10 +163,10 @@ func TestCandidateCollisionIsReported(t *testing.T) {
 func TestCandidateVersionSkewIsReported(t *testing.T) {
 	// Releasing a new core while payments and data still pin the old one.
 	source, pkg := candidate(t, map[string]string{
-		"typeference.tfer":         "---\nschemaVersion: 6\nname: conformance/core\nversion: 1.1.0\nexports:\n  - skills/status.skill.tfer\n---\n",
+		"typeference.tfer":         "---\nschemaVersion: 7\nname: conformance/core\nversion: 1.1.0\nexports:\n  - skills/status.skill.tfer\n---\n",
 		"skills/status.skill.tfer": "---\ndescription: Status.\n---\nReport status.\n",
 	})
-	_, err := compile.SummarizeWithOptions(source, "", compile.BuildOptions{Candidate: pkg})
+	_, err := compile.Summarize(source, compile.BuildOptions{Candidate: pkg})
 	if err == nil || !strings.Contains(err.Error(), "must move with it") {
 		t.Fatalf("the preflight must name the packages that have to move with a core release, got %v", err)
 	}
@@ -200,11 +174,11 @@ func TestCandidateVersionSkewIsReported(t *testing.T) {
 
 func TestCandidateDependenciesMustBeLocked(t *testing.T) {
 	source, pkg := candidate(t, map[string]string{
-		"typeference.tfer":                  "---\nschemaVersion: 6\nname: conformance/data\nversion: 1.2.0\ndependencies:\n  conformance/core: 2.0.0\nplugins:\n  - plugins/data.plugin.tfer\n---\n",
+		"typeference.tfer":                  "---\nschemaVersion: 7\nname: conformance/data\nversion: 1.2.0\ndependencies:\n  conformance/core: 2.0.0\nplugins:\n  - plugins/data.plugin.tfer\n---\n",
 		"plugins/data.plugin.tfer":          "---\ndescription: The data kit.\nskills:\n  - skills/pipeline-status.skill.tfer\n---\n",
 		"skills/pipeline-status.skill.tfer": "---\ndescription: Pipeline status.\n---\nReport pipeline status.\n",
 	})
-	_, err := compile.SummarizeWithOptions(source, "", compile.BuildOptions{Candidate: pkg})
+	_, err := compile.Summarize(source, compile.BuildOptions{Candidate: pkg})
 	if err == nil || !strings.Contains(err.Error(), "but conformance/marketplace locks conformance/core@1.0.0") {
 		t.Fatalf("a candidate must use the locked versions of its dependencies, got %v", err)
 	}

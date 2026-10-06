@@ -1,5 +1,0 @@
-{
-  "description": "A marketplace ships only plugins that the owning package lists in its own manifest (ADR-0034).",
-  "expect": "error",
-  "packages": "packages"
-}

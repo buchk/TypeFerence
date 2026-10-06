@@ -1,0 +1,4 @@
+{
+  "description": "'sealed' was removed in version 7.",
+  "expect": "error"
+}

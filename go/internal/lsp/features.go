@@ -14,31 +14,25 @@ import (
 // manifestKind is the completion vocabulary of the package manifest.
 const manifestKind = "manifest"
 
-// kindFields lists the fields each version 6 document kind accepts, offered
+// kindFields lists the fields each version 7 document kind accepts, offered
 // as completions in a key position.
 var kindFields = map[string][]string{
-	"agent":       {"displayName", "description", "embeds", "slots", "context", "allowedContextTypes", "skills"},
-	"profile":     {"displayName", "description", "embeds", "slots", "context", "allowedContextTypes", "skills"},
-	"interface":   {"displayName", "description", "embeds", "requiresSlots", "requiresCapabilities"},
-	"capability":  {"displayName", "description", "visibility", "inputSchema", "outputSchema"},
-	"skill":       {"displayName", "description", "binds", "extends", "sealed", "inputSchema", "outputSchema", "requiresContextTypes", "requiresTools", "context", "variants"},
-	"tool":        {"displayName", "description", "inputSchema", "outputSchema"},
-	"contextType": {"displayName", "description", "embeds", "fields", "body"},
-	"context":     {"displayName", "description", "contextType", "values"},
+	"agent":       {"displayName", "description", "embeds", "context", "skills", "with", "copilot"},
+	"profile":     {"displayName", "description", "embeds", "parameters", "context", "skills"},
+	"capability":  {"displayName", "description", "inputSchema", "outputSchema"},
+	"skill":       {"displayName", "description", "binds", "extends", "parameters", "with", "inputSchema", "outputSchema", "context", "files", "requiresServers", "variants", "copilot"},
+	"server":      {"displayName", "description", "transport", "command", "args", "env", "cwd", "url", "headers"},
+	"contextType": {"displayName", "description", "instanceName", "fields"},
+	"context":     {"displayName", "description", "parameters", "contextType", "values"},
 	"plugin":      {"description", "agents", "profiles", "skills", "modes"},
-	manifestKind:  {"schemaVersion", "name", "version", "publisher", "marketplace", "dependencies", "plugins", "exports"},
+	manifestKind:  {"schemaVersion", "name", "version", "marketplace", "dependencies", "plugins", "exports"},
 }
 
 // referenceKinds maps a reference field to the document kinds it accepts.
 func referenceKinds(docKind, field string) []string {
 	switch field {
 	case "embeds":
-		switch docKind {
-		case "interface":
-			return []string{"interface"}
-		case "contextType":
-			return []string{"contextType"}
-		case "profile":
+		if docKind == "profile" {
 			return []string{"profile"}
 		}
 		return []string{"profile", "agent"}
@@ -46,14 +40,14 @@ func referenceKinds(docKind, field string) []string {
 		return []string{"skill"}
 	case "binds":
 		return []string{"capability"}
-	case "capability", "requiresCapabilities":
+	case "capability":
 		return []string{"capability", "skill"}
 	case "context":
 		return []string{"context"}
-	case "contextType", "requiresContextTypes", "allowedContextTypes":
+	case "contextType":
 		return []string{"contextType"}
-	case "requiresTools":
-		return []string{"tool"}
+	case "requiresServers":
+		return []string{"server"}
 	case "agents":
 		return []string{"agent"}
 	case "profiles":
@@ -61,17 +55,19 @@ func referenceKinds(docKind, field string) []string {
 	case "plugins":
 		return []string{"plugin"}
 	case "exports":
-		return []string{"agent", "profile", "interface", "capability", "skill", "tool", "contextType", "context"}
+		return []string{"agent", "profile", "capability", "skill", "server", "contextType", "context"}
 	}
 	return nil
 }
 
 var enumValues = map[string][]string{
-	"modes":      {"manual", "pipeline"},
-	"visibility": {"internal", "exposed"},
-	"sealed":     {"true", "false"},
-	"required":   {"true", "false"},
-	"type":       {"string", "text", "boolean", "integer", "decimal", "list<string>", "map<string>"},
+	"modes":                  {"manual", "pipeline"},
+	"required":               {"true", "false"},
+	"render":                 {"inline", "file"},
+	"transport":              {"stdio", "streamable-http"},
+	"userInvocable":          {"true", "false"},
+	"disableModelInvocation": {"true", "false"},
+	"type":                   {"string", "text", "boolean", "integer", "list<string>"},
 }
 
 // documentKind derives a document's kind from its file name.
@@ -220,13 +216,13 @@ func tokenAt(text string, line, char int) string {
 	return ""
 }
 
-// packageRoot finds the version 6 package containing a file: the nearest
-// ancestor directory whose typeference.tfer declares schemaVersion 6.
+// packageRoot finds the version 7 package containing a file: the nearest
+// ancestor directory whose typeference.tfer declares schemaVersion 7.
 func packageRoot(path string) (string, *resource.Project) {
 	dir := filepath.Dir(path)
 	for {
 		if _, err := os.Stat(filepath.Join(dir, resource.ManifestFile)); err == nil {
-			if project, err := resource.LoadProject(dir); err == nil && project.IsV6() {
+			if project, err := resource.LoadProject(dir); err == nil && project.IsCurrent() {
 				return dir, project
 			}
 		}

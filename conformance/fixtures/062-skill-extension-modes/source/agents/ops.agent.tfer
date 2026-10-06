@@ -1,7 +1,0 @@
----
-description: Operations agent.
-skills:
-  - skills/a-ext.skill.tfer
-  - skills/b-ext.skill.tfer
-  - skills/c-ext.skill.tfer
----

@@ -44,7 +44,7 @@ func TestImportRepositoryRoundTrips(t *testing.T) {
 		t.Errorf("repository-wide instructions are noted, not imported: %v", result.Notes)
 	}
 	built := t.TempDir()
-	if _, err := compile.Build(out, built, []compile.Target{compile.AgentPlugin}, nil); err != nil {
+	if _, err := compile.Build(out, built, compile.BuildOptions{}); err != nil {
 		t.Fatalf("imported sources must build: %v", err)
 	}
 	skill, err := os.ReadFile(filepath.Join(built, "agent-plugin", "team", "skills", "code-review", "SKILL.md"))
@@ -63,10 +63,10 @@ func TestImportRepositoryRoundTrips(t *testing.T) {
 
 func TestImportFailsClosedOnUnrepresentableContent(t *testing.T) {
 	repo := repository(t)
-	write(t, repo, ".github/agents/reviewer.agent.md", "---\ndescription: Reviews pull requests.\ntools: ['read']\n---\nReview.\n")
-	write(t, repo, ".github/skills/code-review/scripts/run.sh", "echo hi\n")
+	write(t, repo, ".github/agents/reviewer.agent.md", "---\ndescription: Reviews pull requests.\nhandoffs: ['planner']\n---\nReview.\n")
+	write(t, repo, ".github/skills/code-review/notes.txt", "loose file\n")
 	_, err := Import(repo, Options{Plugin: "team"})
-	if err == nil || !strings.Contains(err.Error(), "frontmatter field 'tools'") || !strings.Contains(err.Error(), "skill resource file") {
+	if err == nil || !strings.Contains(err.Error(), "frontmatter field 'handoffs'") || !strings.Contains(err.Error(), "references/, scripts/, or assets/") {
 		t.Fatalf("unrepresentable content must fail and be listed, got %v", err)
 	}
 	result, err := Import(repo, Options{Plugin: "team", Lossy: true})
@@ -74,8 +74,57 @@ func TestImportFailsClosedOnUnrepresentableContent(t *testing.T) {
 		t.Fatalf("--lossy imports without the listed content: %v", err)
 	}
 	dropped := strings.Join(result.Notes, "\n")
-	if !strings.Contains(dropped, "dropped: .github/agents/reviewer.agent.md: frontmatter field 'tools'") {
+	if !strings.Contains(dropped, "dropped: .github/agents/reviewer.agent.md: frontmatter field 'handoffs'") {
 		t.Fatalf("a lossy import lists what it dropped:\n%s", dropped)
+	}
+}
+
+func TestImportCarriesFilesServersAndCopilotFields(t *testing.T) {
+	plugin := t.TempDir()
+	write(t, plugin, "plugin.json", `{"$schema":"https://agent-plugins.org/schemas/1.0.0/plugin.schema.json","name":"team-kit","description":"Our team kit."}`)
+	write(t, plugin, "skills/code-review/SKILL.md", "---\nname: code-review\ndescription: Review a diff.\nargument-hint: \"[pr]\"\nuser-invocable: false\n---\n"+skillBody)
+	write(t, plugin, "skills/code-review/references/checklist.md", "- Correctness first.\n")
+	write(t, plugin, "skills/code-review/scripts/diff.sh", "git diff\n")
+	write(t, plugin, "com.github.copilot/agents/reviewer.agent.md", "---\ndescription: Reviews pull requests.\ntools: ['read', 'search']\n---\nReview.\n")
+	write(t, plugin, "mcp.json", `{"$schema":"https://agent-plugins.org/schemas/1.0.0/mcp.schema.json","mcpServers":{"team-tickets":{"type":"streamable-http","url":"https://tickets.example/mcp"}}}`)
+	result, err := Import(plugin, Options{Name: "acme/team", Version: "1.0.0"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := t.TempDir()
+	if err := Write(result.Files, out); err != nil {
+		t.Fatal(err)
+	}
+	built := t.TempDir()
+	if _, err := compile.Build(out, built, compile.BuildOptions{}); err != nil {
+		t.Fatalf("imported sources must build: %v", err)
+	}
+	root := filepath.Join(built, "agent-plugin", "team-kit")
+	skill, err := os.ReadFile(filepath.Join(root, "skills", "code-review", "SKILL.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(skill), `argument-hint: "[pr]"`) || !strings.Contains(string(skill), "user-invocable: false") {
+		t.Fatalf("Copilot skill fields survive the round trip:\n%s", skill)
+	}
+	for _, rel := range []string{"skills/code-review/references/checklist.md", "skills/code-review/scripts/diff.sh", "mcp.json"} {
+		if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(rel))); err != nil {
+			t.Fatalf("%s must survive the round trip: %v", rel, err)
+		}
+	}
+	agent, err := os.ReadFile(filepath.Join(root, "com.github.copilot", "agents", "reviewer.agent.md"))
+	if err != nil || !strings.Contains(string(agent), "tools:\n  - \"read\"\n  - \"search\"") {
+		t.Fatalf("Copilot agent fields survive the round trip: %v\n%s", err, agent)
+	}
+}
+
+func TestImportRejectsGenericServerNames(t *testing.T) {
+	plugin := t.TempDir()
+	write(t, plugin, "plugin.json", `{"$schema":"https://agent-plugins.org/schemas/1.0.0/plugin.schema.json","name":"team-kit","description":"Our team kit."}`)
+	write(t, plugin, "skills/code-review/SKILL.md", "---\nname: code-review\ndescription: Review a diff.\n---\n"+skillBody)
+	write(t, plugin, "mcp.json", `{"mcpServers":{"github":{"type":"stdio","command":"github-mcp"}}}`)
+	if _, err := Import(plugin, Options{}); err == nil || !strings.Contains(err.Error(), "two hyphen-separated") {
+		t.Fatalf("a generic server name must fail rather than be rewritten, got %v", err)
 	}
 }
 

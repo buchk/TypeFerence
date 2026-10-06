@@ -1,0 +1,9 @@
+---
+description: Payments operations.
+embeds:
+  - profiles/team-ops.profile.tfer
+with:
+  team: data/payments.context.tfer
+  extra: data/payments.context.tfer
+---
+Help.

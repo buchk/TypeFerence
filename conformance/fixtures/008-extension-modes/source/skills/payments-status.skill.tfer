@@ -1,0 +1,9 @@
+---
+description: Summarize payments repository health.
+extends: skills/status.skill.tfer
+variants:
+  manual:
+    instructions: Explain reconciliation results.
+  pipeline:
+    instructions: Emit reconciliation results as JSON.
+---

@@ -1,0 +1,8 @@
+---
+description: Helper kit.
+agents:
+  - agents/helper.agent.tfer
+skills:
+  - skills/hidden.skill.tfer
+  - skills/visible.skill.tfer
+---

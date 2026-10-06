@@ -1,0 +1,7 @@
+---
+instanceName: code
+fields:
+  code:
+    type: string
+    required: true
+---

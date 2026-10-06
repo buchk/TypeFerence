@@ -1,5 +1,0 @@
-{
-  "description": "Two files declare the same resource id: compilation fails.",
-  "language": "legacy-v3",
-  "expect": "error"
-}

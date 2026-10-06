@@ -18,13 +18,13 @@ func feedPackages(t *testing.T) string {
 	t.Helper()
 	feed := t.TempDir()
 	base := t.TempDir()
-	write(t, base, "typeference.tfer", "---\nschemaVersion: 6\nname: acme/base\nversion: 1.0.0\nexports:\n  - profiles/base.profile.tfer\n---\n")
+	write(t, base, "typeference.tfer", "---\nschemaVersion: 7\nname: acme/base\nversion: 1.0.0\nexports:\n  - profiles/base.profile.tfer\n---\n")
 	write(t, base, "profiles/base.profile.tfer", "---\ncontext:\n  - context/norm.context.tfer\n---\n")
 	write(t, base, "context/norm.context.tfer", "---\ndisplayName: Base norm\n---\nCite evidence.\n")
 	packToFeed(t, base, feed, "acme/base", "1.0.0", "base")
 
 	foundations := t.TempDir()
-	write(t, foundations, "typeference.tfer", "---\nschemaVersion: 6\nname: acme/foundations\nversion: 2.0.0\ndependencies:\n  acme/base: 1.0.0\nexports:\n  - profiles/foundations.profile.tfer\n  - skills/review.skill.tfer\n---\n")
+	write(t, foundations, "typeference.tfer", "---\nschemaVersion: 7\nname: acme/foundations\nversion: 2.0.0\ndependencies:\n  acme/base: 1.0.0\nexports:\n  - profiles/foundations.profile.tfer\n  - skills/review.skill.tfer\n---\n")
 	write(t, foundations, "profiles/foundations.profile.tfer", "---\nembeds:\n  - acme/base:profiles/base.profile.tfer\nskills:\n  - skills/review.skill.tfer\n---\n")
 	write(t, foundations, "skills/review.skill.tfer", reviewSkill)
 	write(t, foundations, "skills/internal.skill.tfer", "---\ndescription: Not exported.\n---\nInternal.\n")
@@ -36,7 +36,7 @@ func feedPackages(t *testing.T) string {
 func TestRestoreMaterializesTransitiveGraphForOfflineBuild(t *testing.T) {
 	feed := feedPackages(t)
 	root := t.TempDir()
-	write(t, root, "typeference.tfer", "---\nschemaVersion: 6\nname: acme/agents\nversion: 1.0.0\ndependencies:\n  acme/foundations: 2.0.0\nplugins:\n  - plugins/payments.plugin.tfer\n---\n")
+	write(t, root, "typeference.tfer", "---\nschemaVersion: 7\nname: acme/agents\nversion: 1.0.0\ndependencies:\n  acme/foundations: 2.0.0\nplugins:\n  - plugins/payments.plugin.tfer\n---\n")
 	write(t, root, "plugins/payments.plugin.tfer", "---\ndescription: Payments kit.\nagents:\n  - agents/payments.agent.tfer\n---\n")
 	write(t, root, "agents/payments.agent.tfer", "---\ndescription: Payments agent.\nembeds:\n  - acme/foundations:profiles/foundations.profile.tfer\nskills:\n  - skills/payments-review.skill.tfer\n---\n")
 	// A skill may extend an exported skill of a dependency (ADR-0031).
@@ -56,8 +56,7 @@ func TestRestoreMaterializesTransitiveGraphForOfflineBuild(t *testing.T) {
 		t.Fatalf("expected complete transitive graph, got %+v", lock.Packages)
 	}
 	out := t.TempDir()
-	if _, err := compile.BuildWithOptions(root, out, []compile.Target{compile.Neutral, compile.AgentPlugin}, nil,
-		compile.BuildOptions{PackagesDir: packagesDir}); err != nil {
+	if _, err := compile.Build(root, out, compile.BuildOptions{PackagesDir: packagesDir}); err != nil {
 		t.Fatalf("offline build could not consume restored graph: %v", err)
 	}
 	skill, err := os.ReadFile(filepath.Join(out, "agent-plugin", "payments", "skills", "payments-review", "SKILL.md"))
@@ -79,10 +78,10 @@ func TestRestoreMaterializesTransitiveGraphForOfflineBuild(t *testing.T) {
 func TestReferenceToUnexportedDependencyResourceFails(t *testing.T) {
 	feed := feedPackages(t)
 	root := t.TempDir()
-	write(t, root, "typeference.tfer", "---\nschemaVersion: 6\nname: acme/agents\nversion: 1.0.0\ndependencies:\n  acme/foundations: 2.0.0\nplugins:\n  - plugins/kit.plugin.tfer\n---\n")
+	write(t, root, "typeference.tfer", "---\nschemaVersion: 7\nname: acme/agents\nversion: 1.0.0\ndependencies:\n  acme/foundations: 2.0.0\nplugins:\n  - plugins/kit.plugin.tfer\n---\n")
 	write(t, root, "plugins/kit.plugin.tfer", "---\ndescription: Kit.\nskills:\n  - acme/foundations:skills/internal.skill.tfer\n---\n")
 	restoreProject(t, root, feed)
-	if _, err := compile.Build(root, t.TempDir(), []compile.Target{compile.AgentPlugin}, nil); err == nil ||
+	if _, err := compile.Build(root, t.TempDir(), compile.BuildOptions{}); err == nil ||
 		!strings.Contains(err.Error(), "does not export") {
 		t.Fatalf("a reference to an unexported dependency resource must fail, got %v", err)
 	}
@@ -90,9 +89,9 @@ func TestReferenceToUnexportedDependencyResourceFails(t *testing.T) {
 
 func TestReferenceToUndeclaredPackageFails(t *testing.T) {
 	root := t.TempDir()
-	write(t, root, "typeference.tfer", "---\nschemaVersion: 6\nname: acme/agents\nversion: 1.0.0\nplugins:\n  - plugins/kit.plugin.tfer\n---\n")
+	write(t, root, "typeference.tfer", "---\nschemaVersion: 7\nname: acme/agents\nversion: 1.0.0\nplugins:\n  - plugins/kit.plugin.tfer\n---\n")
 	write(t, root, "plugins/kit.plugin.tfer", "---\ndescription: Kit.\nskills:\n  - acme/other:skills/review.skill.tfer\n---\n")
-	if _, err := compile.Build(root, t.TempDir(), []compile.Target{compile.AgentPlugin}, nil); err == nil ||
+	if _, err := compile.Build(root, t.TempDir(), compile.BuildOptions{}); err == nil ||
 		!strings.Contains(err.Error(), "does not declare as a dependency") {
 		t.Fatalf("a reference to an undeclared package must fail, got %v", err)
 	}
@@ -114,7 +113,7 @@ func restoreProject(t *testing.T, source, feed string) {
 func minimalPackage(t *testing.T) string {
 	t.Helper()
 	source := t.TempDir()
-	write(t, source, "typeference.tfer", "---\nschemaVersion: 6\nname: acme/package\nversion: 1.0.0\nplugins:\n  - plugins/kit.plugin.tfer\nexports:\n  - skills/review.skill.tfer\n---\n")
+	write(t, source, "typeference.tfer", "---\nschemaVersion: 7\nname: acme/package\nversion: 1.0.0\nplugins:\n  - plugins/kit.plugin.tfer\nexports:\n  - skills/review.skill.tfer\n---\n")
 	write(t, source, "plugins/kit.plugin.tfer", "---\ndescription: Kit.\nskills:\n  - skills/review.skill.tfer\n---\n")
 	write(t, source, "skills/review.skill.tfer", reviewSkill)
 	return source
@@ -177,7 +176,7 @@ func TestBuildAndPackRejectStaleLockForEmptyDependencyGraph(t *testing.T) {
 	}
 	write(t, source, packages.LockFile, string(packages.EncodeLock(lock)))
 
-	if _, err := compile.Build(source, t.TempDir(), []compile.Target{compile.Neutral}, nil); err == nil ||
+	if _, err := compile.Build(source, t.TempDir(), compile.BuildOptions{}); err == nil ||
 		!strings.Contains(err.Error(), "unreachable") {
 		t.Fatalf("build must reject an undeclared locked package, got %v", err)
 	}
@@ -203,5 +202,74 @@ func write(t *testing.T, root, name, content string) {
 	}
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestBinarySkillFilesPackByteForByte(t *testing.T) {
+	source := t.TempDir()
+	write(t, source, "typeference.tfer", "---
+schemaVersion: 7
+name: acme/assets
+version: 1.0.0
+plugins:
+  - plugins/kit.plugin.tfer
+---
+")
+	write(t, source, "plugins/kit.plugin.tfer", "---
+description: Kit.
+skills:
+  - skills/logo.skill.tfer
+---
+")
+	write(t, source, "skills/logo.skill.tfer", "---
+description: Use the logo.
+files:
+  - path: files/logo.bin
+    as: assets/logo.bin
+  - files/notes.md
+---
+Use assets/logo.bin.
+")
+	binary := []byte{0xff, 0xfe, 0x00, 0x10, 0x0d, 0x0a}
+	if err := os.MkdirAll(filepath.Join(source, "files"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(source, "files", "logo.bin"), binary, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	write(t, source, "files/notes.md", "Line one
+Line two
+")
+	files, err := packages.SourceFiles(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := map[string]packages.File{}
+	for _, file := range files {
+		found[file.Path] = file
+	}
+	logo, ok := found["files/logo.bin"]
+	if !ok || logo.Encoding != "base64" {
+		t.Fatalf("a non-UTF-8 skill file must be a base64 member, got %+v", logo)
+	}
+	data, err := logo.Bytes()
+	if err != nil || string(data) != string(binary) {
+		t.Fatalf("binary member must round-trip exactly, got %v (%v)", data, err)
+	}
+	if notes := found["files/notes.md"]; notes.Encoding != "" || notes.Content != "Line one
+Line two
+" {
+		t.Fatalf("a UTF-8 skill file must be normalized text, got %+v", notes)
+	}
+	out := t.TempDir()
+	if _, err := compile.Build(source, out, compile.BuildOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	emitted, err := os.ReadFile(filepath.Join(out, "agent-plugin", "kit", "skills", "logo", "assets", "logo.bin"))
+	if err != nil || string(emitted) != string(binary) {
+		t.Fatalf("binary skill file must be emitted byte for byte, got %v (%v)", emitted, err)
+	}
+	if _, err := os.Stat(filepath.Join(out, "agent-plugin", "kit", "skills", "logo", "references", "notes.md")); err != nil {
+		t.Fatalf("a files entry without 'as' ships under references/: %v", err)
 	}
 }

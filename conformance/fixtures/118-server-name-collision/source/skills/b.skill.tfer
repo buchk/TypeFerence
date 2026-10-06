@@ -1,0 +1,6 @@
+---
+description: B.
+requiresServers:
+  - servers/b/acme-tickets.server.tfer
+---
+B.

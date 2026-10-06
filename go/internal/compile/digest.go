@@ -48,9 +48,13 @@ func HashSource(source string) (string, error) {
 	}
 	h := sha256.New()
 	for _, file := range files {
+		data, err := file.Bytes()
+		if err != nil {
+			return "", err
+		}
 		h.Write([]byte(file.Path))
 		h.Write([]byte{0})
-		h.Write([]byte(file.Content))
+		h.Write(data)
 		h.Write([]byte{0})
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil

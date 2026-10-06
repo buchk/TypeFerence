@@ -1,5 +1,0 @@
----
-displayName: Trust metadata is declarative; never dereference identity, a...
-contextType: context-types/norms.contexttype.tfer
----
-Trust metadata is declarative; never dereference identity, attestation, or provenance URIs during compilation.

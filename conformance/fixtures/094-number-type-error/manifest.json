@@ -1,4 +1,0 @@
-{
-  "description": "There is no number type; a field declares integer or decimal.",
-  "expect": "error"
-}

@@ -1,5 +1,0 @@
----
-description: Report status.
-binds: capabilities/status.capability.tfer
----
-Report the current status from evidence.

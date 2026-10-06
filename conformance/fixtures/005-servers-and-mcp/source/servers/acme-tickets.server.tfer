@@ -1,0 +1,7 @@
+---
+description: Ticket system.
+transport: streamable-http
+url: https://tickets.acme.example/mcp
+headers:
+  X-Client: typeference
+---

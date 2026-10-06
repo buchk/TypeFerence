@@ -1,0 +1,5 @@
+{
+  "description": "One marketplace built from three team packages: dependency plugins ship because the marketplace manifest lists them, each artifact carries its owning package's version and provenance, the shared core skill ships identically in two plugins, and the compatibility report spans packages.",
+  "expect": "success",
+  "packages": "packages"
+}

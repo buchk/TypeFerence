@@ -1,0 +1,4 @@
+{
+  "description": "An agent that instantiates template skills needs bound data whose context type declares instanceName.",
+  "expect": "error"
+}

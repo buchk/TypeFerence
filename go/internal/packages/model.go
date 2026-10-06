@@ -4,6 +4,7 @@ package packages
 
 import (
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"os"
@@ -20,9 +21,25 @@ const LockFile = "typeference.lock"
 
 var packageDigest = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
 
+// File is one source member. Text members carry normalized UTF-8 content;
+// a skill file that is not valid UTF-8 carries base64 content and Encoding
+// "base64".
 type File struct {
-	Path    string `json:"path"`
-	Content string `json:"content"`
+	Path     string `json:"path"`
+	Content  string `json:"content"`
+	Encoding string `json:"encoding,omitempty"`
+}
+
+// Bytes returns the member's bytes.
+func (f File) Bytes() ([]byte, error) {
+	if f.Encoding == "base64" {
+		data, err := base64.StdEncoding.DecodeString(f.Content)
+		if err != nil {
+			return nil, resource.Errorf("package file %s has invalid base64 content", f.Path)
+		}
+		return data, nil
+	}
+	return []byte(f.Content), nil
 }
 
 type Archive struct {
@@ -60,10 +77,14 @@ func EncodeArchive(archive Archive) []byte {
 	}
 	files := jsonx.Arr{}
 	for _, file := range archive.Files {
-		files = append(files, jsonx.Obj{
+		entry := jsonx.Obj{
 			{K: "path", V: jsonx.Str(file.Path)},
 			{K: "content", V: jsonx.Str(file.Content)},
-		})
+		}
+		if file.Encoding != "" {
+			entry = append(entry, jsonx.Member{K: "encoding", V: jsonx.Str(file.Encoding)})
+		}
+		files = append(files, entry)
 	}
 	return []byte(jsonx.Indented(jsonx.Obj{
 		{K: "schemaVersion", V: jsonx.Num("1")},
@@ -99,6 +120,9 @@ func DecodeArchive(data []byte) (*Archive, error) {
 		}
 		if last != "" && file.Path <= last {
 			return nil, resource.Errorf("package files are not in unique canonical order")
+		}
+		if file.Encoding != "" && file.Encoding != "base64" {
+			return nil, resource.Errorf("package file %s has unsupported encoding %q", file.Path, file.Encoding)
 		}
 		last = file.Path
 	}
@@ -215,7 +239,7 @@ func validateExports(exports []string) error {
 func validateArchiveManifest(archive *Archive) error {
 	var manifest *File
 	for i := range archive.Files {
-		if archive.Files[i].Path == resource.ProjectManifestFile || archive.Files[i].Path == resource.ManifestFileNameV5 {
+		if archive.Files[i].Path == resource.ManifestFile {
 			manifest = &archive.Files[i]
 			break
 		}
@@ -223,7 +247,7 @@ func validateArchiveManifest(archive *Archive) error {
 	if manifest == nil {
 		return resource.Errorf("package is missing %s", resource.ManifestFile)
 	}
-	project, err := resource.ParseProjectManifest(manifest.Path, manifest.Content)
+	project, err := resource.ParseProjectManifest(manifest.Content)
 	if err != nil {
 		return resource.Errorf("package contains an invalid %s: %s", manifest.Path, err)
 	}

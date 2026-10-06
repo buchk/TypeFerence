@@ -1,4 +1,0 @@
-{
-  "description": "Flow collections do not exist in the frontmatter grammar (ADR-0032).",
-  "expect": "error"
-}

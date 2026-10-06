@@ -1,0 +1,4 @@
+{
+  "description": "A skill file cannot ship at the path of an emitted schema.",
+  "expect": "error"
+}

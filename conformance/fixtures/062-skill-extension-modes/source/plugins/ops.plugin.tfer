@@ -1,8 +1,0 @@
----
-description: Operations kit.
-agents:
-  - agents/ops.agent.tfer
-modes:
-  - manual
-  - pipeline
----

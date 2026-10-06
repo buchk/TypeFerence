@@ -1,5 +1,0 @@
----
-description: The Helio executive assistant with its briefing, triage, and reply-drafting skills.
-agents:
-  - agents/executive-assistant.agent.tfer
----

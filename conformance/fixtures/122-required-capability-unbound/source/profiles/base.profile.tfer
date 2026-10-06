@@ -1,0 +1,5 @@
+---
+skills:
+  - capability: capabilities/audit.capability.tfer
+    required: true
+---

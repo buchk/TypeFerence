@@ -1,6 +1,6 @@
-// Package compile deterministically emits TypeFerence target artifacts
-// (docs/specification.md, "Build targets"): the neutral canonical bundle and
-// GitHub Agent Plugins, plus optional ARD catalog publication.
+// Package compile deterministically emits the agent-plugin target: Agent
+// Plugins 1.0 packages and a Copilot marketplace index
+// (docs/specification.md, "The agent-plugin target").
 package compile
 
 import (
@@ -13,76 +13,39 @@ import (
 	"github.com/buchk/TypeFerence/go/internal/resource"
 )
 
-// Target is a compilation target.
-type Target int
+// TargetName is the only build target.
+const TargetName = "agent-plugin"
 
-// Targets in canonical order.
-const (
-	Neutral Target = iota
-	AgentPlugin
-)
-
-var targetNames = map[Target]string{Neutral: "neutral", AgentPlugin: "agent-plugin"}
-
-func (t Target) String() string { return targetNames[t] }
-
-// retiredTargets name the host adapters ADR-0029 retired, so a request for
-// one fails with a pointer rather than as an unknown word.
-var retiredTargets = map[string]bool{"codex": true, "copilot": true, "cursor": true}
-
-// ParseTargets parses the CLI --target value.
-func ParseTargets(value string) ([]Target, error) {
+// CheckTarget accepts the CLI --target value. agent-plugin is the only
+// target; "all" is accepted as a synonym.
+func CheckTarget(value string) error {
 	switch strings.ToLower(value) {
-	case "all":
-		return []Target{Neutral, AgentPlugin}, nil
-	case "neutral":
-		return []Target{Neutral}, nil
-	case "agent-plugin":
-		return []Target{AgentPlugin}, nil
+	case "", "all", TargetName:
+		return nil
+	case "neutral", "codex", "copilot", "cursor":
+		return resource.Errorf("The %s target was removed (ADR-0035); agent-plugin is the only target", strings.ToLower(value))
 	}
-	if retiredTargets[strings.ToLower(value)] {
-		return nil, resource.Errorf("The %s target was retired (ADR-0029); build agent-plugin for GitHub Copilot or neutral for the canonical bundle", strings.ToLower(value))
-	}
-	return nil, resource.Errorf("Unknown target: %s", value)
+	return resource.Errorf("Unknown target: %s", value)
 }
 
-// ArdPublicationOptions configures optional ARD catalog emission.
-type ArdPublicationOptions struct {
-	PublisherDomain     string
-	TrustConfigPath     string
-	TrustSignaturesPath string
-	AllowUnsignedTrust  bool
-}
-
-// Source languages a build can read. Product entry points read only the
-// current language; the archival languages exist so the historical
-// conformance corpora stay reproducible.
-const (
-	LanguageCurrent  = ""
-	LanguageLegacyV5 = "legacy-v5"
-	LanguageLegacyV3 = "legacy-v3"
-)
-
+// BuildOptions configures a build or validation.
 type BuildOptions struct {
 	PackagesDir string
-	// Language selects an archival source language. CLI, package, language
-	// server, and playground builds never set it.
-	Language string
 	// Candidate is an unpublished package's source directory, validated in
-	// place of its locked version (ADR-0034). Validation only: a build with a
+	// place of its locked version. Validation only: a build with a
 	// candidate is refused.
 	Candidate string
 }
 
 // Validate resolves every agent in a source directory.
-func Validate(source, trustConfigPath string) ([]*resolve.ResolvedAgent, error) {
-	return ValidateWithPackages(source, trustConfigPath, "")
+func Validate(source string) ([]*resolve.ResolvedAgent, error) {
+	return ValidateWithPackages(source, "")
 }
 
-// ValidateWithPackages resolves every agent and plans every plugin, reporting
-// the first composition or packaging error.
-func ValidateWithPackages(source, trustConfigPath, packagesDir string) ([]*resolve.ResolvedAgent, error) {
-	c, err := prepare(source, trustConfigPath, BuildOptions{PackagesDir: packagesDir})
+// ValidateWithPackages resolves every agent and plans every plugin,
+// reporting the first composition or packaging error.
+func ValidateWithPackages(source, packagesDir string) ([]*resolve.ResolvedAgent, error) {
+	c, err := prepare(source, BuildOptions{PackagesDir: packagesDir})
 	if err != nil {
 		return nil, err
 	}
@@ -97,16 +60,10 @@ type Summary struct {
 	Conflicts []Conflict
 }
 
-// Summarize validates a package and names what it would build.
-func Summarize(source, trustConfigPath, packagesDir string) (*Summary, error) {
-	return SummarizeWithOptions(source, trustConfigPath, BuildOptions{PackagesDir: packagesDir})
-}
-
-// SummarizeWithOptions validates a package, optionally with a candidate
-// package substituted into its locked graph (ADR-0034), and names what it
-// would build.
-func SummarizeWithOptions(source, trustConfigPath string, options BuildOptions) (*Summary, error) {
-	c, err := prepare(source, trustConfigPath, options)
+// Summarize validates a package, optionally with a candidate package
+// substituted into its locked graph, and names what it would build.
+func Summarize(source string, options BuildOptions) (*Summary, error) {
+	c, err := prepare(source, options)
 	if err != nil {
 		return nil, err
 	}
@@ -119,27 +76,15 @@ func SummarizeWithOptions(source, trustConfigPath string, options BuildOptions) 
 	return summary, nil
 }
 
-// Build compiles a source directory into the requested targets beneath
-// output, returning the canonical sorted list of written files.
-func Build(source, output string, targets []Target, ard *ArdPublicationOptions) ([]string, error) {
-	return BuildWithOptions(source, output, targets, ard, BuildOptions{})
-}
-
-func BuildWithOptions(source, output string, targets []Target, ard *ArdPublicationOptions, options BuildOptions) ([]string, error) {
-	trustConfigPath := ""
-	if ard != nil {
-		trustConfigPath = ard.TrustConfigPath
-	}
+// Build compiles a source directory into <output>/agent-plugin, returning the
+// canonical sorted list of written files.
+func Build(source, output string, options BuildOptions) ([]string, error) {
 	if options.Candidate != "" {
-		return nil, resource.Errorf("a candidate package is validated, never built; publish it and pin it to build (ADR-0034)")
+		return nil, resource.Errorf("a candidate package is validated, never built; publish it and pin it to build")
 	}
-	c, err := prepare(source, trustConfigPath, options)
+	c, err := prepare(source, options)
 	if err != nil {
 		return nil, err
-	}
-	requested := distinctSortedTargets(targets)
-	if len(requested) == 0 {
-		return nil, resource.Errorf("At least one compilation target is required")
 	}
 	root, err := filepath.Abs(output)
 	if err != nil {
@@ -159,65 +104,19 @@ func BuildWithOptions(source, output string, targets []Target, ard *ArdPublicati
 			return nil, resource.Errorf("Output beneath the source root must be under dist, bin, or obj: %s", output)
 		}
 	}
-	for _, target := range requested {
-		if target == AgentPlugin && !c.current() {
-			return nil, resource.Errorf("The agent-plugin target requires a version 6 package")
-		}
+	targetRoot := filepath.Join(root, TargetName)
+	if err := os.RemoveAll(targetRoot); err != nil {
+		return nil, resource.Errorf("Cannot reset target directory: %s", targetRoot)
 	}
-	if err := os.MkdirAll(root, 0o755); err != nil {
-		return nil, resource.Errorf("Cannot create output directory: %s", root)
+	if err := os.MkdirAll(targetRoot, 0o755); err != nil {
+		return nil, resource.Errorf("Cannot create target directory: %s", targetRoot)
 	}
 	written := []string{}
-	for _, target := range requested {
-		targetRoot := filepath.Join(root, target.String())
-		if err := os.RemoveAll(targetRoot); err != nil {
-			return nil, resource.Errorf("Cannot reset target directory: %s", targetRoot)
-		}
-		if err := os.MkdirAll(targetRoot, 0o755); err != nil {
-			return nil, resource.Errorf("Cannot create target directory: %s", targetRoot)
-		}
-		switch target {
-		case Neutral:
-			err = c.writeNeutral(targetRoot, &written)
-		case AgentPlugin:
-			err = c.writeAgentPlugins(targetRoot, &written)
-		}
-		if err != nil {
-			return nil, err
-		}
-	}
-	if ard != nil {
-		if err := c.writeArd(root, requested, ard, &written); err != nil {
-			return nil, err
-		}
+	if err := c.writeAgentPlugins(targetRoot, &written); err != nil {
+		return nil, err
 	}
 	sort.Strings(written)
 	return written, nil
-}
-
-func validateAgentArtifactNames(agents []*resolve.ResolvedAgent) error {
-	owners := map[string]string{}
-	for _, agent := range agents {
-		slug := resolve.Leaf(agent.ID)
-		if prior, duplicate := owners[slug]; duplicate {
-			return resource.Errorf("agents %s and %s produce the same target artifact path %s", prior, agent.ID, slug)
-		}
-		owners[slug] = agent.ID
-	}
-	return nil
-}
-
-func distinctSortedTargets(targets []Target) []Target {
-	seen := map[Target]bool{}
-	result := []Target{}
-	for _, t := range targets {
-		if !seen[t] {
-			seen[t] = true
-			result = append(result, t)
-		}
-	}
-	sort.Slice(result, func(i, j int) bool { return result[i] < result[j] })
-	return result
 }
 
 func isBeneath(root, path string) bool {
@@ -242,23 +141,16 @@ func escapeYAML(value string) string {
 }
 
 func writeFile(path, content string, written *[]string) error {
+	return writeBytes(path, []byte(strings.ReplaceAll(content, "\r\n", "\n")), written)
+}
+
+func writeBytes(path string, content []byte, written *[]string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return resource.Errorf("Cannot create directory: %s", filepath.Dir(path))
 	}
-	content = strings.ReplaceAll(content, "\r\n", "\n")
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(path, content, 0o644); err != nil {
 		return resource.Errorf("Cannot write file: %s", path)
 	}
 	*written = append(*written, path)
 	return nil
-}
-
-// sortedModes returns a variant map's mode names in canonical order.
-func sortedModes(variants map[string]string) []string {
-	modes := make([]string, 0, len(variants))
-	for mode := range variants {
-		modes = append(modes, mode)
-	}
-	sort.Strings(modes)
-	return modes
 }

@@ -1,7 +1,0 @@
-schemaVersion: 3
-kind: agent
-id: conformance/deep-agent@1.0.0
-displayName: Deep Agent
-description: Promotes members through a five-level embedding chain.
-embeds:
-  - conformance/profiles/l1@1.0.0

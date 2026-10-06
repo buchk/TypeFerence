@@ -1,4 +1,0 @@
-{
-  "description": "Two documents that derive the same identity are an error (ADR-0030).",
-  "expect": "error"
-}

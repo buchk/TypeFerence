@@ -1,0 +1,9 @@
+---
+description: Operations kit.
+parameters:
+  team: context-types/team.contexttype.tfer
+context:
+  - data/payments.context.tfer
+skills:
+  - skills/summary.skill.tfer
+---

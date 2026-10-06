@@ -1,0 +1,4 @@
+{
+  "description": "MCP servers as source (ADR-0037): each artifact's mcp.json holds exactly the servers its skills require in that mode, stdio and streamable-http entries in canonical member order, a pipeline variant adding a server, and plugin path variables kept verbatim.",
+  "expect": "success"
+}

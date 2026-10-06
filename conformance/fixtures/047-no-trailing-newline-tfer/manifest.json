@@ -1,8 +1,0 @@
-{
-  "description": "A version 4 .tfer body without a trailing newline remains distinguishable in canonical output.",
-  "language": "legacy-v5",
-  "expect": "success",
-  "digests": {
-    "neutral": "sha256:64118eb7c2b20db4294340de16b4f1ca85ba39109ac52c59b80bae0b97eaa547"
-  }
-}

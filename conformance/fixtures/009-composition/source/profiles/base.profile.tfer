@@ -1,0 +1,9 @@
+---
+description: Base defaults.
+context:
+  - docs/base-norm.context.tfer
+skills:
+  - skills/status.skill.tfer
+  - capability: capabilities/audit.capability.tfer
+    required: true
+---

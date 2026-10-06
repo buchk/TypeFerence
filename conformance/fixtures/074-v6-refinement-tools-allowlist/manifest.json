@@ -1,8 +1,0 @@
-{
-  "description": "Composition rules carried into version 6: a context satisfies the base type it refines, allow-lists intersect through embedding and admit refinements, and a multimodal skill's base and variant tool imports stay mode-scoped in each plugin artifact's link requirements.",
-  "expect": "success",
-  "digests": {
-    "agent-plugin": "sha256:2e0a92d76918040d209d02e9c67a230daebf656c800fdb8617c02ab44169b073",
-    "neutral": "sha256:450b2a25ba868821b7f19d1b42d928e5a6a4fcea75f4df093aae1e6ec5da01c6"
-  }
-}

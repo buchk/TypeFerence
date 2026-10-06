@@ -1,0 +1,12 @@
+---
+transport: stdio
+command: npx
+args:
+  - -y
+  - "@acme/builds-mcp"
+  - --cache
+  - ${PLUGIN_DATA}/builds
+env:
+  LOG_LEVEL: warn
+cwd: ${PLUGIN_ROOT}
+---

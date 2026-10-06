@@ -1,8 +1,0 @@
-{
-  "description": "Only documents reachable from the manifest are source members: an unreferenced, malformed document and a stray file change neither the build nor the source digest (ADR-0030).",
-  "expect": "success",
-  "digests": {
-    "agent-plugin": "sha256:36e783c2763c617d83951a11cf0f4f58fdf6ef703a62293a57b507bc02966b8d",
-    "neutral": "sha256:014e235514b8257ffc5d52de0a7c8bb972fb296029b4f90142299266e65fea32"
-  }
-}

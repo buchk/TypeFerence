@@ -1,4 +1,0 @@
-{
-  "description": "A sealed skill cannot be extended (ADR-0031).",
-  "expect": "error"
-}

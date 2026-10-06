@@ -1,7 +1,0 @@
----
-schemaVersion: 5
-kind: agent
-id: conformance/agents/typed-slot@1.0.0
-slots:
-  evidence: conformance/context/value@1.0.0
----

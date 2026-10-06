@@ -1,0 +1,4 @@
+{
+  "description": "Additive extension across modes: a unimodal base followed by a multimodal extension yields one rendering per extension mode, each starting with the base text.",
+  "expect": "success"
+}

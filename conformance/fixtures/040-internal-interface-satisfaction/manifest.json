@@ -1,8 +1,0 @@
-{
-  "description": "An internal capability participates in composition and structurally satisfies an interface without becoming public.",
-  "language": "legacy-v5",
-  "expect": "success",
-  "digests": {
-    "neutral": "sha256:03b8eeb956e88bc2b96ca5558c12b456fc30e7fe4338d485f389597eff3e4d55"
-  }
-}

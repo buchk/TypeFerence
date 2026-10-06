@@ -1,0 +1,4 @@
+---
+transport: stdio
+command: github-mcp
+---

@@ -1,7 +1,0 @@
-schemaVersion: 5
-kind: contextType
-id: conformance/context-types/governed@1.0.0
-fields:
-  owner:
-    type: string
-    required: true

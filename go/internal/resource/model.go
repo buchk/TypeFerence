@@ -1,167 +1,205 @@
-// Package resource loads and validates TypeFerence typed resources.
+// Package resource loads and validates version 7 TypeFerence source packages
+// (docs/specification.md).
 package resource
 
 import "fmt"
 
-// Document is one typed YAML resource as authored.
+// Document is one version 7 source document as authored, after reference
+// paths have been converted to identities.
 type Document struct {
-	SchemaVersion        int
-	Kind                 string
-	ID                   string
-	DisplayName          string
-	Description          string
-	Binds                string
-	Emit                 bool
-	Embeds               []string
-	RequiresSlots        []string
-	RequiredSlotTypes    map[string]string
-	RequiresCapabilities []string
-	Slots                map[string]string
-	ContextFiles         []string
-	Skills               []SkillBinding
-	Instructions         string
-	InputSchema          string
-	OutputSchema         string
-	// ContextType is the id of the contextType a `kind: context` object
-	// instantiates (ADR-0013).
-	ContextType string
-	// Schema is an optional JSON Schema over a `kind: contextType`'s
-	// frontmatter (ADR-0013).
-	Schema string
-	// Content is a `.tfer` markdown body materialized onto a resource: a
-	// skill's instructions or a context object's content (ADR-0013 format).
-	Content string
-	// ContextFields holds a `kind: context` object's schema-typed frontmatter
-	// fields (those beyond the standard keys). The declaring contextType's schema
-	// validates their presence and type (ADR-0013).
-	ContextFields map[string]FieldValue
-	// ContextTypeFields and ContextBody define the closed schemaVersion 4 native
-	// context language. Schema remains only for legacy schemaVersion 3 input.
-	ContextTypeFields map[string]ContextField
-	ContextBody       *ContextBody
-	// RequiresContextTypes are contextType ids a skill needs; the holding
-	// agent must supply context satisfying each (ADR-0013).
-	RequiresContextTypes []string
-	// Context are context-object ids an agent or profile holds by reference
-	// rather than by path (ADR-0013 reference-by-id).
-	Context []string
-	// AllowedContextTypes whitelists the contextType ids a component (and
-	// anything embedding it) may hold; empty means unrestricted. Intersects
-	// through embeds — the most restrictive ancestor wins (ADR-0013).
-	AllowedContextTypes []string
-	// HasAllowedContextTypes distinguishes an omitted allow-list (unrestricted)
-	// from an explicit empty list (deny all).
-	HasAllowedContextTypes bool
-	// RequiresTools are tool ids a skill depends on; each must be declared and
-	// its interface shape-checked (ADR-0017).
-	RequiresTools []string
-	// Visibility is "internal" (default) or "exposed" for a capability
-	// (ADR-0015). Empty means internal.
-	Visibility string
-	// Variants holds mode-specific renderings for a multimodal skill
-	// (ADR-0012): mode name -> variant. A skill declares either Instructions
-	// or Variants, never both.
-	Variants map[string]Variant
+	Kind        string
+	ID          string
+	Path        string
+	Package     string
+	DisplayName string
+	Description string
 
-	// Version 6 (ADR-0030, ADR-0031). Path is the source-relative path the
-	// identity was derived from; Package is the owning package name.
-	Path    string
-	Package string
-	// Extends names the base skill an extension appends to; Sealed on a
-	// skill document forbids any extension of it.
-	Extends string
-	Sealed  bool
-	// HasInputSchema/HasOutputSchema record whether a skill declared its
-	// schemas, so undeclared ones can be inherited from the capability or base.
+	// Agents and profiles.
+	Embeds []string
+	Skills []SkillBinding
+	// Objectives is an agent's body.
+	Objectives string
+
+	// Agents, profiles, and skills hold documents.
+	Context []ContextRef
+
+	// Profiles, skills, and documents declare parameters: name to context
+	// type identity (ADR-0036).
+	Parameters map[string]string
+	// OwnParameters records the parameters a skill declared itself, before
+	// its extension chain was flattened.
+	OwnParameters map[string]string
+	// Agents and skills bind parameters: name to data identity.
+	With map[string]string
+	// OwnWith records the bindings a skill declared itself.
+	OwnWith map[string]string
+
+	// Capabilities and skills.
+	Binds           string
+	Extends         string
+	InputSchema     string
+	OutputSchema    string
 	HasInputSchema  bool
 	HasOutputSchema bool
-	// ImpliedCapability marks a skill whose capability is defined by the skill
-	// itself (it binds no capability document); Binds then names the root of
-	// its extension chain.
+	// ImpliedCapability marks a skill whose capability is the skill itself
+	// (or the root of its extension chain).
 	ImpliedCapability bool
-	// Flattened marks a skill whose extension chain has been materialized.
-	Flattened bool
-	// Objectives is an agent's body: its identity and objectives, a built-in
-	// text value inherited through embedding.
-	Objectives string
-	// Plugin documents link, they do not compose.
+	Flattened         bool
+
+	// Skills.
+	Instructions    string
+	Variants        map[string]Variant
+	Files           []SkillFile
+	RequiresServers []string
+	Copilot         CopilotFields
+
+	// Servers (ADR-0037).
+	Server *ServerConfig
+
+	// Context types (ADR-0036).
+	Fields       []ContextField
+	InstanceName string
+
+	// Contexts: a document (Content) or data (ContextType and Values).
+	ContextType string
+	Values      map[string]FieldValue
+	Content     string
+
+	// Plugins link; they do not compose.
 	PluginAgents   []string
 	PluginProfiles []string
 	PluginSkills   []string
 	PluginModes    []string
 }
 
-// IsNative reports whether the document uses the closed native context
-// language (schemaVersion 5 and later).
-func (d *Document) IsNative() bool { return d.SchemaVersion >= 5 }
+// IsData reports whether a context document is typed data rather than a
+// Markdown document.
+func (d *Document) IsData() bool { return d.Kind == "context" && d.ContextType != "" }
 
-// SkillBinding attaches a skill implementation (and optionally the capability
-// it must satisfy) to an agent or profile. Sealed marks the binding as
-// non-overridable by embedders; Required marks it mandatory (ADR-0016).
+// IsTemplate reports whether a skill or document still has unbound
+// parameters after its extension chain is flattened.
+func (d *Document) IsTemplate() bool {
+	for name := range d.Parameters {
+		if _, bound := d.With[name]; !bound {
+			return true
+		}
+	}
+	return false
+}
+
+// SkillBinding attaches a skill implementation, or an abstract capability
+// requirement, to an agent or profile.
 type SkillBinding struct {
 	Ref        string
 	Capability *string
-	Sealed     bool
 	Required   bool
 }
 
-// FieldValue is a context object's frontmatter field: its structural Kind
-// ("scalar", "sequence", or "mapping") and, for scalars, the text value. Kind
-// lets the contextType schema check declared field types (ADR-0013).
+// ContextRef is a held document and how a skill renders it.
+type ContextRef struct {
+	ID string
+	// Render is "inline" (the default) or "file".
+	Render string
+}
+
+// SkillFile is a package file shipped in a skill directory.
+type SkillFile struct {
+	// Source is the package-relative path of the file.
+	Source string
+	// Package is the package that contains the file.
+	Package string
+	// As is the destination relative to the skill directory.
+	As string
+	// Data holds the file's bytes: normalized text when Text is set, the
+	// exact bytes otherwise.
+	Data []byte
+	Text bool
+}
+
+// Variant is a mode-specific rendering of a multimodal skill.
+type Variant struct {
+	Instructions    string
+	RequiresServers []string
+}
+
+// ServerConfig is one MCP server declaration.
+type ServerConfig struct {
+	Transport string
+	Command   string
+	Args      []string
+	Env       map[string]string
+	Cwd       string
+	URL       string
+	Headers   map[string]string
+}
+
+// CopilotFields are the opt-in Copilot-only frontmatter fields of a skill or
+// agent (ADR-0037). Nil pointers and nil slices are absent fields.
+type CopilotFields struct {
+	ArgumentHint           *string
+	UserInvocable          *bool
+	DisableModelInvocation *bool
+	AllowedTools           []string
+	Model                  *string
+	Tools                  []string
+}
+
+// Empty reports whether no Copilot field is set.
+func (c CopilotFields) Empty() bool {
+	return c.ArgumentHint == nil && c.UserInvocable == nil && c.DisableModelInvocation == nil &&
+		c.AllowedTools == nil && c.Model == nil && c.Tools == nil
+}
+
+// Overlay returns base with every field the receiver sets replacing base's.
+func (c CopilotFields) Overlay(base CopilotFields) CopilotFields {
+	out := base
+	if c.ArgumentHint != nil {
+		out.ArgumentHint = c.ArgumentHint
+	}
+	if c.UserInvocable != nil {
+		out.UserInvocable = c.UserInvocable
+	}
+	if c.DisableModelInvocation != nil {
+		out.DisableModelInvocation = c.DisableModelInvocation
+	}
+	if c.AllowedTools != nil {
+		out.AllowedTools = append([]string{}, c.AllowedTools...)
+	}
+	if c.Model != nil {
+		out.Model = c.Model
+	}
+	if c.Tools != nil {
+		out.Tools = append([]string{}, c.Tools...)
+	}
+	return out
+}
+
+// ContextField declares one field of a context type, in authored order.
+type ContextField struct {
+	Name        string
+	Type        string
+	Required    bool
+	HasDefault  bool
+	Default     FieldValue
+	DisplayName string
+	Description string
+	Choices     []string
+}
+
+// FieldValue is a data value as authored, before its declared type decides
+// what its scalars mean (schema-directed typing).
 type FieldValue struct {
+	// Kind is "scalar", "list", "map", or "null".
 	Kind   string
 	Scalar string
 	List   []FieldValue
-	Map    map[string]FieldValue
-	// Quoted records a version 6 quoted scalar, which is always a string and
-	// never satisfies a boolean, integer, or decimal field (ADR-0032).
+	// Quoted records a quoted or block scalar, which is always a string.
 	Quoted bool
+	Line   int
 }
 
-// TypeExpr is one closed native context type expression.
-type TypeExpr struct {
-	Kind string
-	Elem *TypeExpr
-	Ref  string
-}
-
-// ContextField declares one schemaVersion 4 context field.
-type ContextField struct {
-	Type       TypeExpr
-	Required   bool
-	HasDefault bool
-	Default    FieldValue
-}
-
-// ContextBody declares the optional typed prose body of a contextType.
-type ContextBody struct {
-	Type     string
-	Required bool
-}
-
-// Variant is a mode-specific rendering of a multimodal skill (ADR-0012). It
-// varies instructions and may narrow requirements; the capability contract
-// (schemas) is invariant.
-type Variant struct {
-	Instructions         string
-	RequiresContextTypes []string
-	RequiresTools        []string
-}
-
-// NewDocument returns a Document carrying the spec-defined defaults.
-func NewDocument() *Document {
-	return &Document{
-		Emit:              true,
-		Slots:             map[string]string{},
-		RequiredSlotTypes: map[string]string{},
-		ContextTypeFields: map[string]ContextField{},
-		InputSchema:       `{"type":"object","additionalProperties":false}`,
-		OutputSchema:      `{"type":"object"}`,
-	}
-}
-
-// Error is a diagnostic failure. It mirrors the reference implementation's
-// TypeFerenceException: one human-readable message describing what to fix.
+// Error is a diagnostic failure: one human-readable message describing what
+// to fix.
 type Error struct{ Message string }
 
 func (e *Error) Error() string { return e.Message }

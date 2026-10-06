@@ -1,8 +1,0 @@
-{
-  "description": "A manifest that declares marketplace identity emits .github/plugin/marketplace.json listing every plugin artifact.",
-  "expect": "success",
-  "digests": {
-    "agent-plugin": "sha256:7e06a0f7ea96f7ac2e0159a546d60212d0c6ed23cf1055b7ad55b89c9bc8cec1",
-    "neutral": "sha256:d2b9351b3980c83845a5c3af48d752575c9e7cb3d4cd109b344abd64966a63bb"
-  }
-}

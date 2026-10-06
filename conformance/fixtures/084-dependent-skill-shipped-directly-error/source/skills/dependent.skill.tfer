@@ -1,6 +1,0 @@
----
-description: Needs team context.
-requiresContextTypes:
-  - context-types/team.contexttype.tfer
----
-Use the team context.

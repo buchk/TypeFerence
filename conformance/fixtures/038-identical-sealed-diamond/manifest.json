@@ -1,8 +1,0 @@
-{
-  "description": "The same sealed capability implementation promoted through two equal-depth paths converges as one member.",
-  "language": "legacy-v5",
-  "expect": "success",
-  "digests": {
-    "neutral": "sha256:3fee75141f91e096c62561b926e786878b668af8b02bbf6022b4c3a97b9e9640"
-  }
-}

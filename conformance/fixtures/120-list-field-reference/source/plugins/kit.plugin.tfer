@@ -1,0 +1,5 @@
+---
+description: Operations kit.
+agents:
+  - agents/payments-ops.agent.tfer
+---

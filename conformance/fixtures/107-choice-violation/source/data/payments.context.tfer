@@ -1,0 +1,11 @@
+---
+contextType: context-types/team.contexttype.tfer
+values:
+  id: payments
+  name: Payments
+  queue: PAY-OPS
+  tier: urgent
+  members:
+    - Ari
+    - Sam
+---

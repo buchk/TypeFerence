@@ -1,9 +1,0 @@
----
-schemaVersion: 5
-kind: context
-id: acme/context/norm-review-before-merge@1.0.0
-contextType: acme/context-types/norms@1.0.0
-displayName: Review Before Merge
-values: {}
----
-Pull requests require one reviewer before merge.

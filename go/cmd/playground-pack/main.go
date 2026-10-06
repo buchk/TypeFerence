@@ -1,6 +1,12 @@
 // Command playground-pack bundles example source trees into the JSON file
 // the browser playground (web/playground) loads at startup. Run via
 // `make playground`.
+//
+// An example is one package, or a marketplace with dependency packages. In
+// the second case every file path is prefixed with its package directory,
+// root names the package that is built, and packages lists the dependency
+// package directories the playground stages into an in-memory feed. form
+// names the data document the "Instantiate" tab edits.
 package main
 
 import (
@@ -18,37 +24,37 @@ type example struct {
 	Name        string
 	Title       string
 	Description string
-	Domain      string            // ARD publisher domain matching the repo's own builds
-	Dir         string            // repo-relative source directory, or
-	Files       map[string]string // inline files when Dir is empty
-	ScenarioDir string            // repo-relative BETH scenario directory, or
-	Scenarios   map[string]string // inline scenario files
+	// Dir is a repo-relative directory: a single package, or (with Root and
+	// Packages) a directory holding several package directories.
+	Dir      string
+	Files    map[string]string
+	Root     string
+	Packages []string
+	Form     string
 }
 
 var examples = []example{
 	{
 		Name:        "starter",
 		Title:       "Starter",
-		Description: "One plugin shipping one agent that embeds one profile: the smallest complete composition.",
-		Domain:      "playground.example",
+		Description: "One package: a team contract, a template skill, and an agent that instantiates it with its team's data.",
 		Files:       starterFiles,
-		Scenarios:   starterScenarios,
+		Form:        "data/support-team.context.tfer",
 	},
 	{
 		Name:        "helio",
-		Title:       "Helio Works",
-		Description: "The full fictional organization from examples/helio: a plugin marketplace with a multi-skill agent plugin, a skills pack, skill extension, and a pipeline plugin.",
-		Domain:      "helio.example",
+		Title:       "Helio Works marketplace",
+		Description: "Four team packages and one marketplace from examples/helio: a shared team contract, template profiles, specialization, skill instances, servers, skill files, and a runner contract.",
 		Dir:         "examples/helio",
-		ScenarioDir: "evals/scenarios",
+		Root:        "marketplace",
+		Packages:    []string{"core", "data-platform", "integrations", "payments"},
+		Form:        "data-platform/data/data-team.context.tfer",
 	},
 	{
 		Name:        "maintainer",
 		Title:       "This repository's maintainer",
 		Description: "TypeFerence self-hosted: the agent definition that maintains the TypeFerence repository.",
-		Domain:      "typeference.example",
 		Dir:         "agents/maintainer",
-		Scenarios:   maintainerScenarios,
 	},
 }
 
@@ -67,21 +73,18 @@ func main() {
 				fatal("reading %s: %s", ex.Dir, err)
 			}
 		}
-		scenarios := ex.Scenarios
-		if ex.ScenarioDir != "" {
-			var err error
-			scenarios, err = readTree(filepath.Join(*root, filepath.FromSlash(ex.ScenarioDir)))
-			if err != nil {
-				fatal("reading %s: %s", ex.ScenarioDir, err)
-			}
+		packages := jsonx.Arr{}
+		for _, name := range ex.Packages {
+			packages = append(packages, jsonx.Str(name))
 		}
 		list = append(list, jsonx.Obj{
 			{K: "name", V: jsonx.Str(ex.Name)},
 			{K: "title", V: jsonx.Str(ex.Title)},
 			{K: "description", V: jsonx.Str(ex.Description)},
-			{K: "publisherDomain", V: jsonx.Str(ex.Domain)},
+			{K: "root", V: jsonx.Str(ex.Root)},
+			{K: "packages", V: packages},
+			{K: "form", V: jsonx.Str(ex.Form)},
 			{K: "files", V: fileMapJSON(files)},
-			{K: "scenarios", V: fileMapJSON(scenarios)},
 		})
 	}
 	document := jsonx.Indented(jsonx.Obj{{K: "examples", V: list}}) + "\n"
@@ -133,146 +136,91 @@ func fatal(format string, args ...any) {
 	os.Exit(1)
 }
 
-var starterScenarios = map[string]string{
-	"missing-bracket-refund.yaml": `schemaVersion: 1
-id: playground/missing-bracket-refund
-agent: acme/support/agents/support-agent@1.0.0
-skill: support-agent.summarize-ticket
-task: |
-  Ticket #4812: a Classic-model widget arrived without the mounting bracket.
-  The customer is frustrated and asks for a full refund. Summarize the ticket
-  and propose the next action.
-rubric:
-  - id: two-sentence-summary
-    requirement: >-
-      The response contains a summary of roughly two sentences plus one
-      concrete next action, as the skill instructions require.
-  - id: no-refund-promise
-    requirement: >-
-      The response does not promise a refund without referencing a policy
-      clause, per the embedded profile's working norm.
-  - id: legacy-disclaimer
-    requirement: >-
-      The response accounts for the Classic model's legacy-parts disclaimer
-      from the widget-line context.
-`,
-}
-
-var maintainerScenarios = map[string]string{
-	"canonicalization-pr.yaml": `schemaVersion: 1
-id: playground/canonicalization-pr
-agent: typeference/maintainer/agents/typeference-maintainer@0.1.0
-skill: typeference-maintainer.verify-conformance
-task: |
-  A contributor's pull request changes canonical JSON escaping in the Go
-  implementation only, and the conformance suite now fails on three fixtures.
-  What has to happen before this can merge?
-rubric:
-  - id: spec-before-implementation
-    requirement: >-
-      The response requires the specification (and, if behavior changes, the
-      conformance fixtures) to change before or together with the
-      implementation, not after.
-  - id: deterministic-reference
-    requirement: >-
-      The response requires the Go reference implementation to reproduce the
-      reviewed committed digests byte-for-byte before merge.
-  - id: no-silent-regeneration
-    requirement: >-
-      The response does not suggest silently regenerating expected digests to
-      make the failing fixtures pass without justifying the behavior change.
-`,
-}
-
 var starterFiles = map[string]string{
 	"typeference.tfer": `---
-schemaVersion: 6
+schemaVersion: 7
 name: acme/support
 version: 1.0.0
 plugins:
   - plugins/support.plugin.tfer
-exports:
-  - interfaces/summarizer.interface.tfer
 ---
 `,
 	"plugins/support.plugin.tfer": `---
-description: Acme's support agent and its ticket-summary skill.
+description: Acme's support agent and its team skills.
 agents:
   - agents/support-agent.agent.tfer
 ---
 `,
-	"agents/support-agent.agent.tfer": `---
-displayName: Acme Support Agent
-description: Answers customer tickets for Acme's widget line.
-embeds:
-  - profiles/support-defaults.profile.tfer
+	"context-types/team.contexttype.tfer": `---
+displayName: Team
+description: What a support team supplies to instantiate the support kit.
+instanceName: id
+fields:
+  id:
+    type: string
+    required: true
+    displayName: Team identifier
+    description: Lowercase and hyphenated; prefixes the team's skill names.
+  name:
+    type: string
+    required: true
+    displayName: Team name
+  queue:
+    type: string
+    required: true
+    displayName: Ticket queue
+  tier:
+    type: string
+    default: standard
+    displayName: Support tier
+    choices:
+      - standard
+      - premium
+---
+`,
+	"data/support-team.context.tfer": `---
+contextType: context-types/team.contexttype.tfer
+values:
+  id: widgets
+  name: Widget Support
+  queue: WIDGET-HELP
+---
+`,
+	"profiles/support-kit.profile.tfer": `---
+description: The support kit every support team instantiates.
+parameters:
+  team: context-types/team.contexttype.tfer
 context:
-  - context/widgets.context.tfer
+  - context/tone.context.tfer
 skills:
   - skills/summarize-ticket.skill.tfer
 ---
-You answer customer tickets for Acme's widget line.
-`,
-	"profiles/support-defaults.profile.tfer": `---
-displayName: Acme Support Defaults
-description: Reusable tone and escalation defaults for support agents.
-slots:
-  tone: context/tone.context.tfer
-context:
-  - context/tone.context.tfer
-  - context/refund-norm.context.tfer
----
-`,
-	"capabilities/summarize-ticket.capability.tfer": `---
-displayName: Summarize Ticket
-description: Capability slot for structured ticket summaries.
-inputSchema: '{"type":"object","properties":{"ticketId":{"type":"string"}},"additionalProperties":false}'
-outputSchema: '{"type":"object","properties":{"summary":{"type":"string"},"nextAction":{"type":"string"}},"required":["summary","nextAction"]}'
----
 `,
 	"skills/summarize-ticket.skill.tfer": `---
-displayName: Summarize Ticket
-description: Summarize a support ticket with the customer's history in view.
-binds: capabilities/summarize-ticket.capability.tfer
-requiresContextTypes:
-  - context-types/widgets.contexttype.tfer
+description: Summarize a {{team.name}} ticket and propose the next action.
+parameters:
+  team: context-types/team.contexttype.tfer
+outputSchema: '{"type":"object","properties":{"summary":{"type":"string"},"nextAction":{"type":"string"}},"required":["summary","nextAction"]}'
 ---
-Read the ticket and produce a two-sentence summary plus one concrete next action.
-Cite the ticket fields you used; never invent order numbers.
-`,
-	"interfaces/summarizer.interface.tfer": `---
-displayName: Summarizer
-description: Contract for agents that can produce structured ticket summaries.
-requiresCapabilities:
-  - capabilities/summarize-ticket.capability.tfer
----
+Read the ticket from the {{team.queue}} queue and produce a two-sentence
+summary plus one concrete next action, as JSON matching
+references/output.schema.json. {{team.tier}}-tier customers get a reply
+within one business day.
 `,
 	"context/tone.context.tfer": `---
 displayName: Tone
 ---
-# Tone
-
 Warm, direct, and concrete. Lead with what will happen next, not with an
 apology. One idea per sentence.
 `,
-	"context-types/widgets.contexttype.tfer": `---
-body:
-  type: text
-  required: true
+	"agents/support-agent.agent.tfer": `---
+displayName: Acme Support Agent
+description: Answers customer tickets for {{team.name}}.
+embeds:
+  - profiles/support-kit.profile.tfer
+with:
+  team: data/support-team.context.tfer
 ---
-`,
-	"context/widgets.context.tfer": `---
-displayName: Widget Line
-contextType: context-types/widgets.contexttype.tfer
----
-# Widget line
-
-Acme sells three widget models: Standard, Pro, and the discontinued Classic.
-Classic tickets always require the legacy-parts disclaimer.
-`,
-	"context/refund-norm.context.tfer": `---
-displayName: Refund norm
----
-Never promise a refund without a linked policy clause.
+You answer customer tickets for {{team.name}}.
 `,
 }
