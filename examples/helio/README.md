@@ -6,9 +6,8 @@ version 7 of the language (ADR-0035 through ADR-0037).
 The reference test (`go test ./internal/compile -run TestHelioReference`)
 stages the four team packages into a temporary feed, restores the marketplace,
 builds it, and byte-compares the result with the committed `dist/`; `make
-reference` rewrites `dist/`. The output excerpts below are derived from the
-specification by hand: until `dist/` is regenerated with a Go toolchain on this
-branch, they are the prediction the generated output will be reviewed against.
+reference` rewrites `dist/`. The excerpts below were first derived from the
+specification by hand; the compiler's output in `dist/` matches them.
 
 ## Packages
 

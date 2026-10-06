@@ -6,15 +6,11 @@ TypeFerence is an experimental authoring and reuse layer for [Agent Plugins](htt
 
 Read the [specification](docs/specification.md) (version 7), the decisions that shaped it ([ADR-0035](docs/decisions/0035-v7-copilot-plugin-authoring-layer.md), [ADR-0036](docs/decisions/0036-v7-documents-data-and-templates.md), [ADR-0037](docs/decisions/0037-v7-build-emitted-host-configuration.md)), and the [Helio example](examples/helio/README.md).
 
-> **Branch status (`feat/v7-plugin-authoring`).** Version 7 is implemented in
-> the Go compiler on this branch, but it was written without a local Go
-> toolchain. Before it merges, someone with Go 1.24+ must run `go vet ./...`
-> and `go test ./...` from `go/`, regenerate the conformance digests
-> (`go test ./conformance -update`), the Helio reference output (`make
-> reference`), the maintainer plugin and root `AGENTS.md` (`make selfhost`),
-> and the playground (`make playground`), and then review the artifact diffs.
-> The root `AGENTS.md` was rendered by hand from the maintainer definition in
-> the meantime.
+> **Branch status (`feat/v7-plugin-authoring`).** Version 7 is implemented
+> and CI is green on Linux, macOS, and Windows. Its committed artifacts
+> (conformance digests, `dist/`, `dist-maintainer/`, the root `AGENTS.md`)
+> were produced by CI's Go toolchain. The rebuilt playground has not yet been
+> exercised by hand.
 
 ## The problem it solves
 

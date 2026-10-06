@@ -7,19 +7,10 @@ remaining as stale unchecked tasks here.
 
 ## Version 7 verification
 
-The version 7 implementation landed on `feat/v7-plugin-authoring` without a
-local Go toolchain. Before merging:
-
-1. `go vet ./...` and `go test ./...` from `go/`; fix compile errors and
-   failures.
-2. `go test ./conformance -update`, then review every success fixture's
-   output and confirm every error fixture fails for the stated reason (`-v`
-   logs each diagnostic).
-3. `make reference` to write `dist/`, and review it against
-   `examples/helio/README.md`'s predicted output.
-4. `make selfhost` to write `dist-maintainer/` and the root `AGENTS.md`, and
-   compare the result with the hand-rendered `AGENTS.md` on the branch.
-5. `make playground` and exercise the Helio example and the Instantiate tab.
+CI verified the branch: tests, vet, gofmt, the conformance corpus on three
+platforms, the Helio reference build, and self-host drift. Still to do by
+hand: `make playground`, then exercise the Helio example and the Instantiate
+tab in a browser.
 
 ## Version 7 follow-ups
 
