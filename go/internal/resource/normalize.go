@@ -147,10 +147,11 @@ func (f *flattener) flatten(id string) error {
 func checkFiles(doc *Document) error {
 	seen := map[string]string{}
 	for _, file := range doc.Files {
-		if prior, exists := seen[file.As]; exists {
-			return Errorf("%s: files %s and %s both ship as %s", doc.Path, prior, file.Source, file.As)
+		key := strings.ToLower(file.As)
+		if prior, exists := seen[key]; exists {
+			return Errorf("%s: files %s and %s both ship as %s (destinations that differ only in letter case collide)", doc.Path, prior, file.Source, file.As)
 		}
-		seen[file.As] = file.Source
+		seen[key] = file.Source
 	}
 	return nil
 }

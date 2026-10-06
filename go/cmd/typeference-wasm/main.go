@@ -86,6 +86,7 @@ func compileFunc(_ js.Value, args []js.Value) (result any) {
 	// documents so they can be shown even when resolution fails.
 	graph := map[string]any{"nodes": []any{}, "edges": []any{}}
 	contextTypes := []any{}
+	data := []any{}
 	if loaded, err := resource.LoadPackage(sourceRoot, resource.PackageOptions{}); err == nil {
 		docs := loaded.Documents
 		if set, setErr := packages.LoadDependencySet(sourceRoot, ""); setErr == nil {
@@ -95,10 +96,11 @@ func compileFunc(_ js.Value, args []js.Value) (result any) {
 		}
 		graph = buildGraph(docs)
 		contextTypes = formShapes(docs)
+		data = dataEntries(docs)
 	}
 
 	fail := func(message string) map[string]any {
-		return map[string]any{"ok": false, "error": message, "graph": graph, "contextTypes": contextTypes}
+		return map[string]any{"ok": false, "error": message, "graph": graph, "contextTypes": contextTypes, "data": data}
 	}
 	agents, err := compile.Validate(sourceRoot)
 	if err != nil {
@@ -130,7 +132,42 @@ func compileFunc(_ js.Value, args []js.Value) (result any) {
 		"hash":         hash,
 		"graph":        graph,
 		"contextTypes": contextTypes,
+		"data":         data,
 	}
+}
+
+// dataEntries returns every data document's authored values as the
+// compiler parsed them, keyed by package and path, so the Instantiate form
+// starts from the compiler's reading of the file rather than its own parse.
+func dataEntries(docs map[string]*resource.Document) []any {
+	entries := []any{}
+	for _, id := range resource.SortedKeys(docs) {
+		doc := docs[id]
+		if !doc.IsData() {
+			continue
+		}
+		values := map[string]any{}
+		for _, name := range resource.SortedKeys(doc.Values) {
+			value := doc.Values[name]
+			switch value.Kind {
+			case "scalar":
+				values[name] = value.Scalar
+			case "list":
+				items := make([]any, 0, len(value.List))
+				for _, item := range value.List {
+					items = append(items, item.Scalar)
+				}
+				values[name] = items
+			}
+		}
+		entries = append(entries, map[string]any{
+			"package":     doc.Package,
+			"path":        doc.Path,
+			"contextType": doc.ContextType,
+			"values":      values,
+		})
+	}
+	return entries
 }
 
 // stagePackages writes each dependency package beneath the work tree, packs

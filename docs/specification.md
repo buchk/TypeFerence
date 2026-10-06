@@ -286,8 +286,9 @@ marketplace entries, and bundle metadata, never in an instruction body.
 | context (data) | `displayName`, `description`, `contextType` (context type), `values` |
 | plugin | `description`, `agents` (agents), `profiles` (profiles), `skills` (skills), `modes` |
 
-`description` is required on agents, skills, and plugins, and is at most 1024
-characters after field references are resolved. Schemas are JSON Schema
+`description` is required on agents, skills, and plugins, is at most 1024
+characters after field references are resolved, and must remain a single line
+without control characters after they are resolved. Schemas are JSON Schema
 documents written as string values and canonicalized as JSON.
 
 ## Plugins
@@ -366,15 +367,23 @@ Resolution proceeds from embedded resources toward the embedding resource:
 
 1. Display name and description belong to their declaring resource.
 2. Held document references append in embedding order and deduplicate in
-   first-seen order. Provenance records each contributing profile or agent for
-   every held document.
-3. Capability bindings promote by capability identity. The shallowest
-   compatible implementation wins. At the same depth, bindings with the same
-   resolved implementation converge as one member; different implementations
-   are ambiguous unless bound locally. Provenance retains every contributing
-   path.
+   first-seen order. Provenance records every contributing profile or agent for
+   every held document, including each contributor of a document several
+   layers hold.
+3. Capability bindings promote by capability identity. Requirements
+   accumulate: a capability is required when any layer at any depth requires
+   it, and an abstract requirement (a binding with no skill) adds that
+   obligation without selecting, replacing, or erasing an implementation.
+   Among implementations, the shallowest wins. At the same depth, bindings with
+   the same resolved implementation converge as one member and provenance
+   retains every contributor; different implementations are ambiguous unless
+   bound by a shallower layer.
 4. Parameter declarations promote by name. Declarations of one name MUST name
-   one context type; otherwise the composition is an error.
+   one context type; otherwise the composition is an error. An agent's
+   parameter bindings (`with`) promote from the agents it embeds by the same
+   rule as capability bindings: the shallowest binding of a name wins,
+   identical bindings at one depth converge, and different bindings at one
+   depth are ambiguous unless a shallower layer binds the name.
 5. Objectives inherit: an agent's resolved objectives are its embedded agents'
    objectives in embedding order, then its own body, each source at most once
    in first-seen order.
@@ -606,14 +615,18 @@ parameter, MUST NOT bind a name that is not a parameter, and MUST NOT declare
 `parameters` of its own. Its emitted name is its own identity leaf.
 
 **Agent instances.** An agent's `with` maps parameter names to data documents.
-After composition, the agent's parameterized members are the templates among
-its resolved skills, those skills' held documents, and its held documents. The
-agent's `with`:
+Its bindings are its own `with` together with those promoted from the agents
+it embeds (rule 4 of "Composition"), so embedding an agent and binding a name
+re-points the embedded agent at other data, while embedding it without binding
+keeps the embedded agent's data. Every objective, including an embedded
+agent's, renders with the embedding agent's bindings. After composition, the
+agent's parameterized members are the templates among its resolved skills,
+those skills' held documents, and its held documents. The agent's bindings:
 
 - MUST bind every parameter those members and its embedded profiles declare,
   with data of the declared context type;
-- MUST NOT bind a name that is neither declared by something it composes nor
-  referenced by its own objectives or description.
+- MUST NOT, in its own `with`, bind a name that is neither declared by
+  something it composes nor referenced by its objectives or description.
 
 Each template skill the agent resolves to is emitted as an instance named
 `<instance name>-<skill leaf>`. The instance name is the value of the
@@ -663,6 +676,8 @@ destination relative to the skill directory and defaults to
 `references/<file name>`. A destination MUST be a clean path whose first segment
 is `references`, `scripts`, or `assets`, and MUST NOT collide with another
 file, a rendered document, or an emitted schema in the same skill directory.
+Two destinations collide when they are equal after lowercasing, because they
+name one file on case-insensitive filesystems (ADR-0038).
 
 Skill files are source members. A file whose bytes are valid UTF-8 is
 normalized like source text (BOM removed, CRLF to LF) and emitted normalized;
@@ -824,9 +839,11 @@ valid UTF-8, and the exact bytes of any other skill file. Target provenance reco
 dependency digests, and target adapter identity. Release metadata belongs to the
 distributed compiler binary, not the reproducible source-derived artifact.
 
-`typeference-directory-v1` remains the target-directory digest: recursively sort
-forward-slash paths, then hash `path`, NUL, normalized text, NUL. It applies only
-to already-defined artifact directories, not source identity.
+`typeference-directory-v1` is the target-directory digest: recursively sort
+forward-slash paths, then hash `path`, NUL, content, NUL, where content is
+normalized text (byte order mark removed, CRLF to LF) for a file whose bytes are
+valid UTF-8 and the exact bytes of any other file (ADR-0038). It applies only to
+already-defined artifact directories, not source identity.
 
 
 ## The agent-plugin target
@@ -1076,7 +1093,9 @@ validate.
 
 ## Diff and security
 
-`typeference diff` compares relative paths and normalized content. Exit code `0`
+`typeference diff` compares relative paths and content as
+`typeference-directory-v1` defines it: normalized text for valid UTF-8 files,
+exact bytes for any other file. Exit code `0`
 means identical, `1` changed, and `2` validation/execution failure.
 
 References and skill files MUST resolve beneath an authorized package root.

@@ -201,6 +201,97 @@ func TestCopilotFieldsRenderInTableOrder(t *testing.T) {
 	}
 }
 
+// Binary artifacts are compared byte for byte; text still tolerates a
+// checkout's line-ending conversion (ADR-0038).
+func TestDiffAndDigestAreExactForBinaryFiles(t *testing.T) {
+	expected, actual := t.TempDir(), t.TempDir()
+	if err := os.WriteFile(filepath.Join(expected, "logo.bin"), []byte{0xEF, 0xBB, 0xBF, 0xFF, 0x0D, 0x0A}, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(actual, "logo.bin"), []byte{0xFF, 0x0D, 0x0A}, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	result, err := compile.CompareDirs(expected, actual)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.Different {
+		t.Fatal("a binary file that lost its leading bytes must differ")
+	}
+	left, _ := compile.HashDirectory(expected)
+	right, _ := compile.HashDirectory(actual)
+	if left == right {
+		t.Fatal("the directory digest must change when binary bytes change")
+	}
+	textA, textB := t.TempDir(), t.TempDir()
+	write(t, textA, map[string]string{"a.md": "one\r\ntwo\r\n"})
+	write(t, textB, map[string]string{"a.md": "one\ntwo\n"})
+	if result, _ := compile.CompareDirs(textA, textB); result.Different {
+		t.Fatal("UTF-8 text compares after line-ending normalization")
+	}
+	a, _ := compile.HashDirectory(textA)
+	b, _ := compile.HashDirectory(textB)
+	if a != b {
+		t.Fatal("UTF-8 text digests after line-ending normalization")
+	}
+}
+
+func TestProvenanceKeepsEveryContributor(t *testing.T) {
+	source := t.TempDir()
+	write(t, source, map[string]string{
+		"typeference.tfer":          manifest,
+		"plugins/kit.plugin.tfer":   "---\ndescription: Kit.\nagents:\n  - agents/a.agent.tfer\n---\n",
+		"docs/norm.context.tfer":    "---\ndisplayName: Norm\n---\nCite evidence.\n",
+		"skills/review.skill.tfer":  "---\ndescription: Review.\n---\nReview the change.\n",
+		"profiles/left.profile.tfer":  "---\ncontext:\n  - docs/norm.context.tfer\nskills:\n  - skills/review.skill.tfer\n---\n",
+		"profiles/right.profile.tfer": "---\ncontext:\n  - docs/norm.context.tfer\nskills:\n  - skills/review.skill.tfer\n---\n",
+		"agents/a.agent.tfer":       "---\ndescription: A.\nembeds:\n  - profiles/left.profile.tfer\n  - profiles/right.profile.tfer\n---\nHelp.\n",
+	})
+	agents, err := compile.Validate(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contributors := func(entries []string) string { return strings.Join(entries, ",") }
+	context, binding := []string{}, []string{}
+	for _, entry := range agents[0].Provenance {
+		if entry.Field == "context" {
+			context = append(context, entry.Source)
+		}
+	}
+	for _, entry := range agents[0].Skills[0].Provenance {
+		if entry.Field == "binding" {
+			binding = append(binding, entry.Source)
+		}
+	}
+	want := "test/case/profiles/left@1.0.0,test/case/profiles/right@1.0.0"
+	if contributors(context) != want {
+		t.Errorf("a document held by two profiles records both: %v", context)
+	}
+	if contributors(binding) != want {
+		t.Errorf("identical bindings that converge record both contributors: %v", binding)
+	}
+}
+
+func TestEmbeddedAgentBindingsShallowestWins(t *testing.T) {
+	repo, err := filepath.Abs(filepath.Join("..", "..", "..", "conformance", "fixtures", "013-embedded-agent-bindings", "source"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := t.TempDir()
+	if _, err := compile.Build(repo, out, compile.BuildOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	root := filepath.Join(out, compile.TargetName, "kit")
+	override := read(t, root, "com.github.copilot/agents/override.agent.md")
+	if !strings.Contains(override, "You support Beta.") || !strings.Contains(override, "- beta-summary") {
+		t.Errorf("binding the name re-points the embedded agent:\n%s", override)
+	}
+	inherit := read(t, root, "com.github.copilot/agents/inherit.agent.md")
+	if !strings.Contains(inherit, "You support Alpha.") || !strings.Contains(inherit, "- alpha-summary") || !strings.Contains(inherit, "Also escalate blocked requests.") {
+		t.Errorf("embedding without binding keeps the embedded agent's data:\n%s", inherit)
+	}
+}
+
 func TestRemovedTargetsPointAtTheADR(t *testing.T) {
 	if err := compile.CheckTarget("neutral"); err == nil || !strings.Contains(err.Error(), "ADR-0035") {
 		t.Fatalf("the neutral target is removed, got %v", err)

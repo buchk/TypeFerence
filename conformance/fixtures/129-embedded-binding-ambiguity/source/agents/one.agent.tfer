@@ -1,0 +1,6 @@
+---
+description: One.
+with:
+  team: data/alpha.context.tfer
+---
+You support {{team.name}}.

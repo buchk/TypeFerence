@@ -15,20 +15,21 @@ tests cover diagnostics, internal invariants, and rendered content.
 | Manifest, version 7 only | 116 | `internal/compile`: every build test; `internal/lsp`: `TestServerReportsDocumentsOutsideAPackage` |
 | Kinds from suffixes; removed kinds | 115 | `internal/resource` decoding through every fixture |
 | Removed fields (`sealed`, `a2a`) | 123, 126 | — |
+| Descriptions after rendering | 128 | — |
 | Frontmatter grammar | 010 | `internal/tferlex`: all tests; `internal/lsp`: `TestServerDiagnostics` |
 | Plugins, modes, artifact layout | 002, 005, 008 | `internal/compile`: `TestServersShipWithTheirSkillsPerMode` |
-| Composition: promotion, shallowest wins, rebinding, required capabilities, objectives | 009, 121, 122, 124 | — |
+| Composition: promotion, shallowest wins, rebinding, required capabilities, objectives | 009, 012, 121, 122, 124 | `internal/compile`: `TestProvenanceKeepsEveryContributor` |
 | Additive extension across modes | 008, 113 | `internal/packages`: `TestRestoreMaterializesTransitiveGraphForOfflineBuild` |
 | Documents and data; context types | 003, 004, 106, 107, 108, 114 | `internal/compile`: `TestContractChangeFailsEveryInstance` |
 | Parameters and field references | 003, 004, 102, 120 | `internal/compile`: `TestAgentInstantiatesTemplates`, `TestOptionalFieldWithoutValueCannotBeReferenced` |
-| Instances and instance names | 003, 004, 101, 103, 104, 105, 111, 119, 125 | `internal/compile`: `TestAgentInstantiatesTemplates` |
+| Instances and instance names; embedded agents' bindings | 003, 004, 013, 101, 103, 104, 105, 111, 119, 125, 129 | `internal/compile`: `TestAgentInstantiatesTemplates`, `TestEmbeddedAgentBindingsShallowestWins` |
 | Rendering held documents | 003 | `internal/compile`: `TestAgentInstantiatesTemplates` |
-| Skill files and schemas | 006, 112 | `internal/compile`: `TestSchemasAndFilesShipBesideTheSkill`; `internal/packages`: `TestBinarySkillFilesPackByteForByte` |
+| Skill files and schemas; portable destinations | 006, 011, 112, 127 | `internal/compile`: `TestSchemasAndFilesShipBesideTheSkill`; `internal/packages`: `TestBinarySkillFilesPackByteForByte` |
 | Servers and `mcp.json` | 005, 109, 110, 118 | `internal/compile`: `TestServersShipWithTheirSkillsPerMode`; `go/conformance`: `TestMarketplaceServerNamesDenoteOneConfiguration` |
 | Copilot fields | 007 | `internal/compile`: `TestCopilotFieldsRenderInTableOrder`; `internal/importer`: `TestImportCarriesFilesServersAndCopilotFields` |
 | Build-wide name uniqueness | 117, 118 | `go/conformance`: `TestCandidateCollisionIsReported` |
 | Packages, restore, lockfiles, Git routes | 001 | `internal/packages`: all tests |
 | Organization marketplaces and candidates | 001 | `go/conformance`: `TestMarketplaceBumpRewritesOnlyTheOwnersPlugins`, `TestCandidate*` |
-| Canonical text | 010 | `internal/jsonx`: all tests |
+| Canonical text; binary-safe digests and diff | 010, 011 | `internal/jsonx`: all tests; `internal/compile`: `TestDiffAndDigestAreExactForBinaryFiles` |
 | Import | — | `internal/importer`: all tests |
 | Reference output | — | `internal/compile`: `TestHelioReference` |

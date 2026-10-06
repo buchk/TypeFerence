@@ -6,12 +6,26 @@ import (
 	"github.com/buchk/TypeFerence/go/internal/resource"
 )
 
-// candidate is the winning binding for one capability so far.
+// candidate is the composition state of one capability: the winning
+// implementation so far and whether any layer requires one. An abstract
+// requirement adds an obligation; it never selects or erases an
+// implementation.
 type candidate struct {
-	skill     string
-	required  bool
+	skill    string
+	required bool
+	depth    int
+	// sources are the resources that bound the winning implementation, in
+	// first-seen order. Identical bindings at one depth converge and keep
+	// every contributor.
+	sources   []string
+	ambiguous []string
+}
+
+// paramBinding is an agent's parameter binding during composition.
+type paramBinding struct {
+	data      string
 	depth     int
-	source    string
+	sources   []string
 	ambiguous []string
 }
 
@@ -19,13 +33,16 @@ type candidate struct {
 type composite struct {
 	id             string
 	documents      []string
-	documentSource map[string]string
+	documentSource map[string][]string
 	bindings       map[string]*candidate
 	// declared are the parameters profiles declare as their contract.
 	declared       map[string]string
 	declaredSource map[string]string
-	objectives     []Objective
-	bindingSource  map[string]string
+	// with are an agent's parameter bindings: its own and those of the
+	// agents it embeds, shallowest first.
+	with          map[string]*paramBinding
+	objectives    []Objective
+	bindingSource map[string][]string
 }
 
 // compose resolves an agent or profile's embedding graph from embedded
@@ -46,11 +63,12 @@ func (r *Resolver) compose(id string, stack []string) (*composite, error) {
 	stack = append(stack, id)
 	c := &composite{
 		id:             id,
-		documentSource: map[string]string{},
+		documentSource: map[string][]string{},
 		bindings:       map[string]*candidate{},
 		declared:       map[string]string{},
 		declaredSource: map[string]string{},
-		bindingSource:  map[string]string{},
+		with:           map[string]*paramBinding{},
+		bindingSource:  map[string][]string{},
 	}
 	seenObjective := map[string]bool{}
 	for _, embedID := range doc.Embeds {
@@ -66,18 +84,26 @@ func (r *Resolver) compose(id string, stack []string) (*composite, error) {
 			return nil, err
 		}
 		for _, docID := range sub.documents {
-			c.addDocument(docID, sub.documentSource[docID])
+			c.addDocument(docID, sub.documentSource[docID]...)
 		}
 		for _, capability := range resource.SortedKeys(sub.bindings) {
 			promoted := *sub.bindings[capability]
 			promoted.depth++
 			promoted.ambiguous = nil
+			promoted.sources = append([]string{}, promoted.sources...)
 			c.merge(capability, &promoted)
 		}
 		for _, name := range resource.SortedKeys(sub.declared) {
 			if err := c.declare(doc.Path, name, sub.declared[name], sub.declaredSource[name]); err != nil {
 				return nil, err
 			}
+		}
+		for _, name := range resource.SortedKeys(sub.with) {
+			promoted := *sub.with[name]
+			promoted.depth++
+			promoted.ambiguous = nil
+			promoted.sources = append([]string{}, promoted.sources...)
+			c.mergeWith(name, &promoted)
 		}
 		for _, objective := range sub.objectives {
 			if !seenObjective[objective.Source] {
@@ -109,11 +135,22 @@ func (r *Resolver) compose(id string, stack []string) (*composite, error) {
 			return nil, resource.Errorf("%s: binds capability %s more than once", doc.Path, capability)
 		}
 		local[capability] = true
-		required := binding.Required
-		if existing, ok := c.bindings[capability]; ok {
-			required = required || existing.required
+		existing, ok := c.bindings[capability]
+		if binding.Ref == "" {
+			// An abstract requirement adds an obligation and keeps whatever
+			// implementation an embedded layer supplies.
+			if ok {
+				existing.required = true
+			} else {
+				c.bindings[capability] = &candidate{required: true}
+			}
+			continue
 		}
-		c.bindings[capability] = &candidate{skill: binding.Ref, required: required, depth: 0, source: id}
+		required := binding.Required || (ok && existing.required)
+		c.bindings[capability] = &candidate{skill: binding.Ref, required: required, depth: 0, sources: []string{id}}
+	}
+	for _, name := range resource.SortedKeys(doc.With) {
+		c.with[name] = &paramBinding{data: doc.With[name], depth: 0, sources: []string{id}}
 	}
 	for _, capability := range resource.SortedKeys(c.bindings) {
 		cand := c.bindings[capability]
@@ -121,7 +158,13 @@ func (r *Resolver) compose(id string, stack []string) (*composite, error) {
 			return nil, resource.Errorf("%s: capability %s is ambiguous between %s and %s at the same embedding depth; bind one locally", doc.Path, capability, cand.skill, strings.Join(cand.ambiguous, ", "))
 		}
 		if cand.skill != "" {
-			c.bindingSource[cand.skill] = cand.source
+			c.bindingSource[cand.skill] = cand.sources
+		}
+	}
+	for _, name := range resource.SortedKeys(c.with) {
+		b := c.with[name]
+		if len(b.ambiguous) > 0 {
+			return nil, resource.Errorf("%s: parameter '%s' is bound to %s and %s by agents embedded at the same depth; bind it with 'with'", doc.Path, name, b.data, strings.Join(b.ambiguous, ", "))
 		}
 	}
 	if doc.Kind == "agent" && strings.TrimSpace(doc.Objectives) != "" && !seenObjective[id] {
@@ -136,12 +179,13 @@ func (r *Resolver) compose(id string, stack []string) (*composite, error) {
 	return c, nil
 }
 
-func (c *composite) addDocument(id, source string) {
-	if _, seen := c.documentSource[id]; seen {
-		return
+// addDocument holds a document once and records every resource that
+// contributed it.
+func (c *composite) addDocument(id string, sources ...string) {
+	if _, seen := c.documentSource[id]; !seen {
+		c.documents = append(c.documents, id)
 	}
-	c.documentSource[id] = source
-	c.documents = append(c.documents, id)
+	c.documentSource[id] = appendDistinct(c.documentSource[id], sources...)
 }
 
 func (c *composite) declare(where, name, typeID, source string) error {
@@ -154,8 +198,9 @@ func (c *composite) declare(where, name, typeID, source string) error {
 	return nil
 }
 
-// merge promotes a binding from an embedded resource: the shallowest
-// implementation wins; at one depth, different implementations are
+// merge promotes a binding from an embedded resource. Requirements
+// accumulate at every depth. Among implementations, the shallowest wins; at
+// one depth, identical implementations converge and different ones are
 // ambiguous unless a shallower binding resolves them.
 func (c *composite) merge(capability string, cand *candidate) {
 	existing, ok := c.bindings[capability]
@@ -163,19 +208,48 @@ func (c *composite) merge(capability string, cand *candidate) {
 		c.bindings[capability] = cand
 		return
 	}
-	required := existing.required || cand.required
+	existing.required = existing.required || cand.required
 	switch {
-	case cand.depth < existing.depth:
-		*existing = *cand
+	case cand.skill == "":
+		return
+	case existing.skill == "" || cand.depth < existing.depth:
+		existing.skill, existing.depth, existing.sources, existing.ambiguous = cand.skill, cand.depth, cand.sources, nil
+	case cand.depth == existing.depth && cand.skill == existing.skill:
+		existing.sources = appendDistinct(existing.sources, cand.sources...)
 	case cand.depth == existing.depth:
-		switch {
-		case existing.skill == "":
-			existing.skill, existing.source = cand.skill, cand.source
-		case cand.skill != "" && cand.skill != existing.skill:
-			existing.ambiguous = append(existing.ambiguous, cand.skill)
+		existing.ambiguous = append(existing.ambiguous, cand.skill)
+	}
+}
+
+// mergeWith promotes a parameter binding from an embedded agent with the same
+// rule as capability bindings: the shallowest binding wins, identical
+// bindings at one depth converge, and different ones are ambiguous.
+func (c *composite) mergeWith(name string, b *paramBinding) {
+	existing, ok := c.with[name]
+	switch {
+	case !ok || b.depth < existing.depth:
+		c.with[name] = b
+	case b.depth == existing.depth && b.data == existing.data:
+		existing.sources = appendDistinct(existing.sources, b.sources...)
+	case b.depth == existing.depth:
+		existing.ambiguous = append(existing.ambiguous, b.data)
+	}
+}
+
+func appendDistinct(values []string, more ...string) []string {
+	for _, value := range more {
+		found := false
+		for _, existing := range values {
+			if existing == value {
+				found = true
+				break
+			}
+		}
+		if !found {
+			values = append(values, value)
 		}
 	}
-	existing.required = required
+	return values
 }
 
 // finalSkills returns the skills a composition binds, in capability order,

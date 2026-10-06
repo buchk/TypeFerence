@@ -1,0 +1,9 @@
+---
+description: S.
+files:
+  - path: files/upper.txt
+    as: references/A.txt
+  - path: files/lower.txt
+    as: references/a.txt
+---
+S.

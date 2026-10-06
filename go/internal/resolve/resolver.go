@@ -319,8 +319,11 @@ func (r *Resolver) ResolveAgent(id string) (*ResolvedAgent, error) {
 			}
 		}
 	}
+	// The agent's bindings are its own 'with' plus those of the agents it
+	// embeds, shallowest first (composite.with).
+	template := len(c.with) > 0
 	referenced := map[string]bool{}
-	if len(doc.With) > 0 {
+	if template {
 		for _, objective := range c.objectives {
 			for _, name := range referencedNames(objective.Content) {
 				referenced[name] = true
@@ -331,10 +334,11 @@ func (r *Resolver) ResolveAgent(id string) (*ResolvedAgent, error) {
 		}
 	}
 	bindings := map[string]*Binding{}
-	for _, name := range resource.SortedKeys(doc.With) {
-		dataID := doc.With[name]
+	for _, name := range resource.SortedKeys(c.with) {
+		dataID := c.with[name].data
 		typeID, needed := need[name]
-		if !needed && !referenced[name] {
+		_, own := doc.With[name]
+		if own && !needed && !referenced[name] {
 			return nil, resource.Errorf("%s: 'with' binds '%s', but nothing the agent composes declares that parameter and its objectives do not reference it", doc.Path, name)
 		}
 		if err := r.checkData(doc.Path, name, dataID, typeID); err != nil {
@@ -363,7 +367,6 @@ func (r *Resolver) ResolveAgent(id string) (*ResolvedAgent, error) {
 		}
 	}
 
-	template := len(doc.With) > 0
 	agent := &ResolvedAgent{
 		ID:           id,
 		DisplayName:  doc.DisplayName,
@@ -377,6 +380,9 @@ func (r *Resolver) ResolveAgent(id string) (*ResolvedAgent, error) {
 	}
 	if len([]rune(agent.Description)) > 1024 {
 		return nil, resource.Errorf("%s: description exceeds 1024 characters", doc.Path)
+	}
+	if !singleLine(agent.Description) {
+		return nil, resource.Errorf("%s: description must stay a single line after field references are resolved", doc.Path)
 	}
 	for _, objective := range c.objectives {
 		content, err := r.render(objective.Content, objective.Source, template, bindings)
@@ -392,13 +398,18 @@ func (r *Resolver) ResolveAgent(id string) (*ResolvedAgent, error) {
 			return nil, err
 		}
 		agent.Documents = append(agent.Documents, resolved)
-		agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "context", Source: c.documentSource[docID]})
+		for _, source := range c.documentSource[docID] {
+			agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "context", Source: source})
+		}
 	}
 	for _, embed := range doc.Embeds {
 		agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "embeds", Source: embed})
 	}
 	for _, name := range resource.SortedKeys(bindings) {
 		agent.Bindings = append(agent.Bindings, bindings[name])
+		for _, source := range c.with[name].sources {
+			agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "with", Source: source})
+		}
 	}
 	for _, skillID := range skillIDs {
 		skill, err := r.resolveSkill(skillID, bindings, instanceName, c.bindingSource[skillID])
@@ -426,7 +437,7 @@ func (r *Resolver) ResolveSkill(id string) (ResolvedSkill, error) {
 	if skill.IsTemplate() {
 		return ResolvedSkill{}, resource.Errorf("%s is a template (it has unbound parameters), so it ships only as an instance: through an agent's 'with', or a skill that extends it and supplies 'with'", skill.Path)
 	}
-	return r.resolveSkill(id, nil, "", "")
+	return r.resolveSkill(id, nil, "", nil)
 }
 
 // ResolveProfile resolves a profile shipped without an agent. It must be
@@ -463,7 +474,7 @@ func (r *Resolver) ResolveProfile(id string) (*ResolvedProfile, error) {
 
 // resolveSkill renders one skill. agentBindings supply the parameters the
 // skill leaves unbound; a template is named after the instance.
-func (r *Resolver) resolveSkill(id string, agentBindings map[string]*Binding, instanceName, boundBy string) (ResolvedSkill, error) {
+func (r *Resolver) resolveSkill(id string, agentBindings map[string]*Binding, instanceName string, boundBy []string) (ResolvedSkill, error) {
 	skill := r.docs[id]
 	bindings := map[string]*Binding{}
 	for _, name := range resource.SortedKeys(skill.Parameters) {
@@ -553,8 +564,8 @@ func (r *Resolver) resolveSkill(id string, agentBindings map[string]*Binding, in
 			break
 		}
 	}
-	if boundBy != "" {
-		resolved.Provenance = append(resolved.Provenance, ProvenanceEntry{Field: "binding", Source: boundBy})
+	for _, source := range boundBy {
+		resolved.Provenance = append(resolved.Provenance, ProvenanceEntry{Field: "binding", Source: source})
 	}
 	return resolved, nil
 }

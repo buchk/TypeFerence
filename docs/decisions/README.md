@@ -48,3 +48,4 @@ their decision.
 | [0035](0035-v7-copilot-plugin-authoring-layer.md) | Version 7: an authoring and reuse layer for Copilot plugins | Proposed | — |
 | [0036](0036-v7-documents-data-and-templates.md) | Version 7: documents, typed data, and templates | Proposed | — |
 | [0037](0037-v7-build-emitted-host-configuration.md) | Version 7: MCP servers and Copilot fields emitted by build | Proposed | — |
+| [0038](0038-v7-review-rulings.md) | Version 7 review rulings: portable bytes, requirements, provenance, and inherited bindings | Proposed | — |

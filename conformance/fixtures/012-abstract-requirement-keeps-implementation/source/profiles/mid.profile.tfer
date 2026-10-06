@@ -1,0 +1,7 @@
+---
+embeds:
+  - profiles/base.profile.tfer
+skills:
+  - capability: capabilities/report.capability.tfer
+    required: true
+---

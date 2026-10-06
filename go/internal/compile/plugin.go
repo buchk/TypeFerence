@@ -221,11 +221,14 @@ type skillEntry struct {
 func skillDirectory(skill resolve.ResolvedSkill) ([]skillEntry, error) {
 	entries := []skillEntry{}
 	owners := map[string]string{}
+	// Destinations that differ only in letter case are one file on
+	// case-insensitive filesystems, so they collide everywhere (ADR-0038).
 	claim := func(path, owner string, data []byte) error {
-		if prior, exists := owners[path]; exists {
-			return resource.Errorf("skill %s: %s and %s both ship as %s", skill.Name, prior, owner, path)
+		key := strings.ToLower(path)
+		if prior, exists := owners[key]; exists {
+			return resource.Errorf("skill %s: %s and %s both ship as %s (destinations that differ only in letter case collide)", skill.Name, prior, owner, path)
 		}
-		owners[path] = owner
+		owners[key] = owner
 		entries = append(entries, skillEntry{path: path, data: data})
 		return nil
 	}

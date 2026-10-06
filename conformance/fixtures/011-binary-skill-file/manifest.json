@@ -1,0 +1,4 @@
+{
+  "description": "A skill file that is not valid UTF-8 ships byte for byte and is digested as exact bytes (ADR-0038).",
+  "expect": "success"
+}

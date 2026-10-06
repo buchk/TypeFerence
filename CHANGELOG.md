@@ -42,6 +42,17 @@ compatibility promises between minor versions.
   Copilot fields.
 - The playground builds multi-package marketplaces and generates an
   "Instantiate" form from a context type.
+- **Review rulings** ([ADR-0038](docs/decisions/0038-v7-review-rulings.md)):
+  - skill-file destinations that differ only in case collide;
+  - target digests and `diff` compare non-UTF-8 files byte for byte;
+  - abstract requirements accumulate without erasing inherited
+    implementations;
+  - agent descriptions are checked after rendering;
+  - provenance keeps every contributor;
+  - an agent's bindings include those of the agents it embeds, shallowest
+    first;
+  - the playground form reads the compiler's values and quotes multiline
+    text.
 
 ### Removed
 

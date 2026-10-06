@@ -522,41 +522,37 @@ function initExamples() {
 // that binds it. The form knows no TypeFerence rules; the compiler is still
 // the validator.
 
-// parseValues reads a data document's values with the small subset of the
-// grammar data documents use: scalar entries and string lists.
-function parseValues(text) {
-  const values = {};
-  const lines = text.split("\n");
-  let inValues = false, listKey = null;
-  for (const line of lines) {
-    if (/^values:\s*$/.test(line)) { inValues = true; continue; }
-    if (!inValues) continue;
-    if (/^\S/.test(line)) break;
-    const item = line.match(/^ {4}- (.*)$/);
-    if (item && listKey) { values[listKey].push(unquote(item[1])); continue; }
-    const kv = line.match(/^ {2}([A-Za-z][A-Za-z0-9_]*):\s*(.*)$/);
-    if (kv) {
-      if (kv[2] === "") { listKey = kv[1]; values[kv[1]] = []; }
-      else { listKey = null; values[kv[1]] = unquote(kv[2]); }
-    }
-  }
-  return values;
+// The form starts from the compiler's own reading of each data document
+// (result.data), never from a hand-written parser, so every value the
+// grammar allows, including multiline text, round-trips.
+
+// packageNameFor reads the package name a directory's manifest declares.
+function packageNameFor(dir) {
+  const manifest = state.files.get(dir ? dir + "/typeference.tfer" : "typeference.tfer") || "";
+  const m = manifest.match(/^name: (.*)$/m);
+  return m ? m[1].trim() : null;
 }
 
-function unquote(value) {
-  const v = value.trim();
-  if (v.startsWith('"') && v.endsWith('"')) {
-    try { return JSON.parse(v); } catch { return v.slice(1, -1); }
-  }
-  if (v.startsWith("'") && v.endsWith("'")) return v.slice(1, -1).replace(/''/g, "'");
-  return v;
+// locate maps an editable path to the package that owns it and the path
+// within that package.
+function locate(path) {
+  const example = state.examples.find((e) => e.name === state.example);
+  if (!example?.root) return { pkg: packageNameFor(""), rel: path };
+  const slash = path.indexOf("/");
+  return { pkg: packageNameFor(path.slice(0, slash)), rel: path.slice(slash + 1) };
+}
+
+function dataEntryFor(path, result) {
+  const { pkg, rel } = locate(path);
+  return (result.data || []).find((e) => e.package === pkg && e.path === rel) || null;
 }
 
 // scalarText writes a value as a plain scalar when that is unambiguous for
-// a string field, and quotes it otherwise.
+// a string field, and as a double-quoted string (JSON escapes, so line
+// breaks become \n) otherwise.
 function scalarText(value, type) {
   if (type === "boolean" || type === "integer") return value;
-  const plainSafe = /^[A-Za-z0-9_./(][^#:]*$/.test(value) && value === value.trim() &&
+  const plainSafe = /^[A-Za-z0-9_./(][^#:\r\n]*$/.test(value) && value === value.trim() &&
     !["null", "~", "[]", "{}"].includes(value);
   return plainSafe ? value : JSON.stringify(value);
 }
@@ -583,15 +579,11 @@ function dataFiles() {
   return [...state.files.keys()].filter((p) => p.endsWith(".context.tfer") && /^contextType: /m.test(state.files.get(p))).sort();
 }
 
-// contextTypeFor maps a data document's contextType reference to the loaded
-// context type shape.
-function contextTypeFor(path, shapes) {
+// contextTypeRef reads the contextType reference as written, so the
+// regenerated data document keeps the author's spelling of it.
+function contextTypeRef(path) {
   const text = state.files.get(path) || "";
-  const ref = (text.match(/^contextType: (.*)$/m) || [])[1];
-  if (!ref) return { ref: null, shape: null };
-  const target = ref.includes(":") ? ref.slice(ref.indexOf(":") + 1) : ref;
-  const shape = shapes.find((s) => s.path === target.trim()) || null;
-  return { ref: ref.trim(), shape };
+  return ((text.match(/^contextType: (.*)$/m) || [])[1] || "").trim();
 }
 
 function renderForm(result) {
@@ -611,10 +603,13 @@ function renderForm(result) {
     return;
   }
   els.formFile.value = state.formFile;
-  const { ref, shape } = contextTypeFor(state.formFile, result.contextTypes || []);
-  if (!shape) {
+  const entry = dataEntryFor(state.formFile, result);
+  const shape = entry ? (result.contextTypes || []).find((t) => t.id === entry.contextType) : null;
+  const ref = contextTypeRef(state.formFile);
+  if (!entry || !shape) {
     els.formFields.innerHTML = "";
-    els.formHint.textContent = "The context type for this data document did not load; fix the diagnostics first.";
+    els.formFields.dataset.signature = "";
+    els.formHint.textContent = "The compiler could not read this data document or its context type; fix the diagnostics first.";
     return;
   }
   // Re-render only when the shape or file changes, so typing keeps focus.
@@ -625,7 +620,7 @@ function renderForm(result) {
   els.formHint.innerHTML = `A form generated from <b>${escapeHTML(shape.displayName || shape.path)}</b>` +
     (shape.description ? ` — ${escapeHTML(shape.description)}` : "") +
     (shape.instanceName ? `. The <code>${escapeHTML(shape.instanceName)}</code> field names this team's skill instances.` : ".");
-  const values = parseValues(state.files.get(state.formFile) || "");
+  const values = entry.values || {};
   els.formFields.innerHTML = "";
   for (const field of shape.fields) {
     const row = document.createElement("label");
