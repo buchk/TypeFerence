@@ -879,8 +879,9 @@ Each plugin mode is one artifact directory: `manual` emits `<plugin>` and
 - `.typeference/bundle.json` (`schemaVersion` 2) records the plugin identity,
   artifact name, mode, version, description, the owning package's provenance,
   the resolved agents, the shipped skills with, for each instance, the template
-  identity and each bound parameter's data identity and canonical values, and
-  the shipped servers. The owning package's provenance is its source digest
+  identity (`templateId`, empty for a skill that is not an instance) and each
+  bound parameter's data identity and canonical values, and the shipped
+  servers. The owning package's provenance is its source digest
   (the build's source digest when the building package owns the plugin, the
   locked digest otherwise) and the locked packages in its dependency closure,
   in lock order.
@@ -911,11 +912,14 @@ and `plugins`, one entry per artifact with `name`, `source` (`./<artifact>`),
 `description`, and `version` (the owning package's). The target directory is
 therefore publishable as a marketplace repository root.
 
-The compatibility report lists, for each mode, every capability that more than
-one distinct emitted skill implements across the build's artifacts, with each
-member's artifact and skill name. Instances of one template implement one
-capability and are reported as a family. Plugins that ship different members of
-one family compete for the same requests when installed together.
+The compatibility report lists, for each mode, every capability whose emitted
+skills across the build's artifacts come from more than one implementation,
+with each member's artifact and skill name. A skill's implementation is the
+template it instantiates when it is an instance, and the skill itself
+otherwise: instances of one template are distinguished by their data by design
+and never compete with each other. Plugins that ship members of one family from
+different implementations, such as a team's specialization beside the shared
+skill, compete for the same requests when installed together.
 
 Build never emits hooks, commands, rules, LSP configuration, or repository or
 enterprise settings. Where a marketplace repository lives, and which

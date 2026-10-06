@@ -34,7 +34,11 @@ type ResolvedSkill struct {
 	// instance name for an agent instance.
 	Name             string
 	ImplementationID string
-	CapabilityID     string
+	// TemplateID is the template an instance instantiates: the skill itself
+	// for an agent instance, the nearest template ancestor for a skill
+	// instance, and empty for a skill that binds no parameters.
+	TemplateID   string
+	CapabilityID string
 	Description      string
 	Instructions     string
 	// Variants maps mode to rendered instructions for a multimodal skill.
@@ -481,9 +485,22 @@ func (r *Resolver) resolveSkill(id string, agentBindings map[string]*Binding, in
 		name = instanceName + "-" + name
 	}
 	template := len(skill.Parameters) > 0
+	templateID := ""
+	if skill.IsTemplate() {
+		templateID = id
+	} else if len(skill.OwnWith) > 0 {
+		base := r.docs[skill.Extends]
+		for base != nil && !base.IsTemplate() {
+			base = r.docs[base.Extends]
+		}
+		if base != nil {
+			templateID = base.ID
+		}
+	}
 	resolved := ResolvedSkill{
 		Name:             name,
 		ImplementationID: id,
+		TemplateID:       templateID,
 		CapabilityID:     skill.Binds,
 		Servers:          append([]string{}, skill.RequiresServers...),
 		InputSchema:      skill.InputSchema,

@@ -562,6 +562,7 @@ func skillValue(skill resolve.ResolvedSkill, mode string) jsonx.Obj {
 	return jsonx.Obj{
 		{K: "name", V: jsonx.Str(skill.Name)},
 		{K: "implementationId", V: jsonx.Str(skill.ImplementationID)},
+		{K: "templateId", V: jsonx.Str(skill.TemplateID)},
 		{K: "capabilityId", V: jsonx.Str(skill.CapabilityID)},
 		{K: "description", V: jsonx.Str(skill.Description)},
 		{K: "bindings", V: bindingsValue(skill.Bindings)},
@@ -696,29 +697,35 @@ type ConflictMember struct {
 }
 
 // compatibilityConflicts computes the compatibility report: per mode, every
-// capability with more than one distinct emitted skill, members sorted by
-// plugin artifact and skill.
+// capability implemented by skills from more than one implementation,
+// members sorted by plugin artifact and skill. Instances of one template are
+// one implementation: their data distinguishes them by design.
 func compatibilityConflicts(artifacts []pluginArtifact) []Conflict {
 	conflicts := []Conflict{}
 	for _, mode := range []string{"manual", "pipeline"} {
 		families := map[string][]ConflictMember{}
+		implementations := map[string]map[string]bool{}
 		for _, artifact := range artifacts {
 			if artifact.mode != mode {
 				continue
 			}
 			for _, skill := range artifact.plan.Skills {
 				families[skill.CapabilityID] = append(families[skill.CapabilityID], ConflictMember{artifact.dir, skill.Name})
+				if implementations[skill.CapabilityID] == nil {
+					implementations[skill.CapabilityID] = map[string]bool{}
+				}
+				key := skill.ImplementationID
+				if skill.TemplateID != "" {
+					key = skill.TemplateID
+				}
+				implementations[skill.CapabilityID][key] = true
 			}
 		}
 		for _, capability := range resource.SortedKeys(families) {
-			members := families[capability]
-			distinct := map[string]bool{}
-			for _, m := range members {
-				distinct[m.Skill] = true
-			}
-			if len(distinct) < 2 {
+			if len(implementations[capability]) < 2 {
 				continue
 			}
+			members := families[capability]
 			sort.Slice(members, func(i, j int) bool {
 				if members[i].Plugin != members[j].Plugin {
 					return members[i].Plugin < members[j].Plugin
