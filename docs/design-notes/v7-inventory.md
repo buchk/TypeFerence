@@ -1,7 +1,15 @@
 # Design note: version 7 keep / change / add / cut inventory
 
-Status: inventory drafted 2026-10-06 against commit `0391377`. Input to a
-framing ADR and a version 7 specification; it decides nothing by itself.
+Status: inventory drafted 2026-10-06 against commit `0391377`. Its decisions
+are recorded in ADR-0035 through ADR-0037 and the version 7 specification. The
+compiler implementation follows the landing order at the end of this note.
+
+Decisions made after drafting:
+
+- **Instance names come from data.** A context type names an `instanceName`
+  field, so the agent has no `prefix` field.
+- **One value per parameter name per agent.** Binding two teams' data in one
+  agent is deferred.
 
 ## The frame
 

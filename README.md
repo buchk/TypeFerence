@@ -1,5 +1,24 @@
 # TypeFerence
 
+> **Version 7 in progress (branch `feat/v7-plugin-authoring`).** On this branch,
+> TypeFerence is narrowed to an authoring and reuse layer for Copilot plugins.
+> - Documents are free Markdown, data is typed, and context types are the
+>   contracts teams instantiate shared templates against.
+> - MCP servers and extra skill files are source, and build emits complete
+>   plugins.
+> - The neutral, ARD, A2A, link, trust, interface, and evaluation surfaces are
+>   removed.
+>
+> Read [ADR-0035](docs/decisions/0035-v7-copilot-plugin-authoring-layer.md),
+> [ADR-0036](docs/decisions/0036-v7-documents-data-and-templates.md),
+> [ADR-0037](docs/decisions/0037-v7-build-emitted-host-configuration.md), the
+> amended [specification](docs/specification.md), and the
+> [Helio v7 example](examples/helio-v7/README.md).
+>
+> **The compiler, tests, and committed `dist/` still implement version 6.**
+> The rest of this README describes version 6 until the implementation
+> catches up.
+
 **Define your organization's agents and skills once. Compose them with types. Ship them as GitHub Agent Plugins that people install once and use in every repository and pipeline.**
 
 TypeFerence is an experimental reference implementation of a typed definition and compilation layer for AI agents. It replaces copied, drifting agent files with Go-like composition: reusable profiles, agent embedding, skills that extend shared skills, structurally satisfied interfaces, typed context, deterministic compilation, provenance, and artifact diffing. Its primary output is a marketplace of [Agent Plugins](https://agent-plugins.org/) for GitHub Copilot.

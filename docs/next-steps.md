@@ -5,6 +5,24 @@ important but not required to make the current branch semantically coherent.
 Completed merge requirements belong in the pull request and changelog instead of
 remaining as stale unchecked tasks here.
 
+## Version 7 implementation
+
+ADR-0035 through ADR-0037 and the version 7 specification are ahead of the
+compiler. Implement them in the order recorded in
+`docs/design-notes/v7-inventory.md`:
+
+1. Remove the cut surfaces in one change.
+2. Add skill files and MCP servers with the build-emitted `mcp.json`.
+3. Add parameters, field references, and instances.
+4. Add Copilot fields and emitted output schemas.
+5. Expand `import`.
+6. Build `examples/helio-v7` as the committed reference. It replaces
+   `examples/helio` and `dist/`.
+7. Rework the playground around the Helio v7 example and a form generated from
+   a context type.
+
+Each step regenerates the conformance corpus and the maintainer distribution.
+
 ## Near term
 
 - [ ] Define stable diagnostic codes for CLI, LSP, and conformance consumers;
