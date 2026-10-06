@@ -1,0 +1,67 @@
+name: regenerate
+
+# Temporary: the version 7 branch was written without a local Go toolchain.
+# This job formats the Go sources and regenerates every committed artifact
+# with the real compiler, then uploads them for review and commit. Remove it
+# once the branch's artifacts are committed.
+
+on:
+  push:
+    branches: [feat/v7-plugin-authoring]
+  workflow_dispatch:
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache-dependency-path: go/go.sum
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: gofmt
+        run: gofmt -w .
+        working-directory: go
+      - name: go vet
+        run: go vet ./... 2>&1 | tee ../vet.txt
+        working-directory: go
+        continue-on-error: true
+      - name: Conformance digests
+        run: go test ./conformance -update -v 2>&1 | tee ../conformance.txt
+        working-directory: go
+        continue-on-error: true
+      - name: Helio reference output
+        run: go test ./internal/compile -run TestHelioReference -update -v 2>&1 | tee ../reference.txt
+        working-directory: go
+        continue-on-error: true
+      - name: Self-host
+        run: make selfhost 2>&1 | tee selfhost.txt
+        continue-on-error: true
+      - name: Full test suite after regeneration
+        run: go test ./... 2>&1 | tee ../tests.txt
+        working-directory: go
+        continue-on-error: true
+      - name: Whitepaper
+        run: |
+          pip install -r tools/requirements-docs.txt
+          python tools/render_whitepaper.py 2>&1 | tee whitepaper.txt
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: regenerated
+          path: |
+            go/**/*.go
+            conformance/fixtures/*/manifest.json
+            dist/
+            dist-maintainer/
+            AGENTS.md
+            output/pdf/
+            vet.txt
+            conformance.txt
+            reference.txt
+            selfhost.txt
+            tests.txt
+            whitepaper.txt

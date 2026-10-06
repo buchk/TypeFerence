@@ -207,29 +207,9 @@ func write(t *testing.T, root, name, content string) {
 
 func TestBinarySkillFilesPackByteForByte(t *testing.T) {
 	source := t.TempDir()
-	write(t, source, "typeference.tfer", "---
-schemaVersion: 7
-name: acme/assets
-version: 1.0.0
-plugins:
-  - plugins/kit.plugin.tfer
----
-")
-	write(t, source, "plugins/kit.plugin.tfer", "---
-description: Kit.
-skills:
-  - skills/logo.skill.tfer
----
-")
-	write(t, source, "skills/logo.skill.tfer", "---
-description: Use the logo.
-files:
-  - path: files/logo.bin
-    as: assets/logo.bin
-  - files/notes.md
----
-Use assets/logo.bin.
-")
+	write(t, source, "typeference.tfer", "---\nschemaVersion: 7\nname: acme/assets\nversion: 1.0.0\nplugins:\n  - plugins/kit.plugin.tfer\n---\n")
+	write(t, source, "plugins/kit.plugin.tfer", "---\ndescription: Kit.\nskills:\n  - skills/logo.skill.tfer\n---\n")
+	write(t, source, "skills/logo.skill.tfer", "---\ndescription: Use the logo.\nfiles:\n  - path: files/logo.bin\n    as: assets/logo.bin\n  - files/notes.md\n---\nUse assets/logo.bin.\n")
 	binary := []byte{0xff, 0xfe, 0x00, 0x10, 0x0d, 0x0a}
 	if err := os.MkdirAll(filepath.Join(source, "files"), 0o755); err != nil {
 		t.Fatal(err)
@@ -237,9 +217,7 @@ Use assets/logo.bin.
 	if err := os.WriteFile(filepath.Join(source, "files", "logo.bin"), binary, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	write(t, source, "files/notes.md", "Line one
-Line two
-")
+	write(t, source, "files/notes.md", "Line one\r\nLine two\r\n")
 	files, err := packages.SourceFiles(source)
 	if err != nil {
 		t.Fatal(err)
@@ -256,9 +234,7 @@ Line two
 	if err != nil || string(data) != string(binary) {
 		t.Fatalf("binary member must round-trip exactly, got %v (%v)", data, err)
 	}
-	if notes := found["files/notes.md"]; notes.Encoding != "" || notes.Content != "Line one
-Line two
-" {
+	if notes := found["files/notes.md"]; notes.Encoding != "" || notes.Content != "Line one\nLine two\n" {
 		t.Fatalf("a UTF-8 skill file must be normalized text, got %+v", notes)
 	}
 	out := t.TempDir()
