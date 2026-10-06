@@ -1,0 +1,5 @@
+---
+command: acme-config-lsp
+fileExtensions:
+  .ts: typescript
+---

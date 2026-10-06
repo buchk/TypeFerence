@@ -38,6 +38,11 @@ type pluginPlan struct {
 	// profile's skills, and every directly linked skill, one per emitted
 	// name, ordered by name.
 	Skills []resolve.ResolvedSkill
+	// Native Copilot components (ADR-0040), one per emitted name.
+	Rules    []resolve.ResolvedRule
+	Commands []resolve.ResolvedCommand
+	Hooks    []string
+	LSP      []string
 }
 
 // pluginArtifact is one emitted directory: a plugin rendered in one mode.
@@ -128,11 +133,13 @@ func planPlugin(c *compilation, doc *resource.Document, agents map[string]*resol
 			}
 		}
 	}
+	profiles := []*resolve.ResolvedProfile{}
 	for _, profileID := range doc.PluginProfiles {
 		profile, err := c.resolver.ResolveProfile(profileID)
 		if err != nil {
 			return nil, err
 		}
+		profiles = append(profiles, profile)
 		for _, skill := range profile.Skills {
 			if err := add(skill); err != nil {
 				return nil, err
@@ -165,6 +172,9 @@ func planPlugin(c *compilation, doc *resource.Document, agents map[string]*resol
 		}
 		plan.Skills = append(plan.Skills, skill)
 	}
+	if err := planNative(c, doc, plan, profiles); err != nil {
+		return nil, err
+	}
 	return plan, nil
 }
 
@@ -177,7 +187,29 @@ func validateLibraryNames(c *compilation) error {
 	agentNames := map[string]string{}
 	artifactNames := map[string]string{}
 	servers := map[string]string{}
+	rules := map[string]string{}
+	commands := map[string]string{}
+	lspServers := map[string]string{}
 	for _, plan := range c.plugins {
+		for _, rule := range plan.Rules {
+			if prior, exists := rules[rule.Name]; exists && prior != rule.Key() {
+				return resource.Errorf("%s and %s both emit the rule name '%s'", prior, rule.Key(), rule.Name)
+			}
+			rules[rule.Name] = rule.Key()
+		}
+		for _, command := range plan.Commands {
+			if prior, exists := commands[command.Name]; exists && prior != command.Key() {
+				return resource.Errorf("%s and %s both emit the command name '%s'", prior, command.Key(), command.Name)
+			}
+			commands[command.Name] = command.Key()
+		}
+		for _, id := range plan.LSP {
+			name := resource.Leaf(id)
+			if prior, exists := lspServers[name]; exists && prior != id {
+				return resource.Errorf("LSP servers %s and %s both emit the name '%s'", prior, id, name)
+			}
+			lspServers[name] = id
+		}
 		for _, skill := range plan.Skills {
 			if prior, exists := skills[skill.Name]; exists && prior != skill.Key() {
 				return resource.Errorf("%s and %s both emit the skill name '%s'; installed skills share one namespace, so rename one", prior, skill.Key(), skill.Name)
@@ -201,6 +233,11 @@ func validateLibraryNames(c *compilation) error {
 			agentNames[name] = agent.ID
 		}
 	}
+	for _, name := range resource.SortedKeys(commands) {
+		if _, clash := skills[name]; clash {
+			return resource.Errorf("command '%s' has the name of a skill in this build; Copilot lets the skill hide the command, so rename one", name)
+		}
+	}
 	for _, artifact := range artifactsOf(c.plugins) {
 		if prior, exists := artifactNames[artifact.dir]; exists {
 			return resource.Errorf("plugins %s and %s both emit the plugin name '%s'", prior, artifact.plan.ID, artifact.dir)
@@ -220,15 +257,11 @@ type skillEntry struct {
 // documents, plain files, and schemas, failing on any collision.
 func skillDirectory(skill resolve.ResolvedSkill) ([]skillEntry, error) {
 	entries := []skillEntry{}
-	owners := map[string]string{}
-	// Destinations that differ only in letter case are one file on
-	// case-insensitive filesystems, so they collide everywhere (ADR-0038).
+	var paths resource.SkillPaths
 	claim := func(path, owner string, data []byte) error {
-		key := strings.ToLower(path)
-		if prior, exists := owners[key]; exists {
-			return resource.Errorf("skill %s: %s and %s both ship as %s (destinations that differ only in letter case collide)", skill.Name, prior, owner, path)
+		if err := paths.Claim(path, owner); err != nil {
+			return resource.Errorf("skill %s: %s", skill.Name, err)
 		}
-		owners[key] = owner
 		entries = append(entries, skillEntry{path: path, data: data})
 		return nil
 	}
@@ -323,7 +356,7 @@ func (c *compilation) writePluginArtifact(root string, artifact pluginArtifact, 
 	}
 	for _, agent := range artifact.plan.Agents {
 		path := filepath.Join(dir, "com.github.copilot", "agents", resource.Leaf(agent.ID)+".agent.md")
-		if err := writeFile(path, renderAgent(agent), written); err != nil {
+		if err := writeFile(path, renderAgent(agent, c.docs), written); err != nil {
 			return err
 		}
 	}
@@ -341,6 +374,9 @@ func (c *compilation) writePluginArtifact(root string, artifact pluginArtifact, 
 				return err
 			}
 		}
+	}
+	if err := c.writeNative(dir, artifact, written); err != nil {
+		return err
 	}
 	return writeFile(filepath.Join(dir, ".typeference", "bundle.json"), bundleJSON(artifact, servers)+"\n", written)
 }
@@ -431,10 +467,11 @@ func frontmatterFields(b *strings.Builder, c resource.CopilotFields, skill bool)
 
 // renderAgent renders a Copilot custom agent profile: identity and
 // objectives, held documents, and the names of the skills it uses.
-func renderAgent(agent *resolve.ResolvedAgent) string {
+func renderAgent(agent *resolve.ResolvedAgent, docs map[string]*resource.Document) string {
 	var b strings.Builder
 	b.WriteString("---\nname: " + resource.Leaf(agent.ID) + "\ndescription: " + escapeYAML(agent.Description) + "\n")
 	frontmatterFields(&b, agent.Copilot, false)
+	agentServersFrontmatter(&b, docs, agent.Servers)
 	b.WriteString("---\n\n# " + agent.DisplayName + "\n\n")
 	for _, objective := range agent.Objectives {
 		if content := strings.TrimSpace(objective.Content); content != "" {
@@ -510,6 +547,10 @@ func agentValue(agent *resolve.ResolvedAgent) jsonx.Obj {
 		{K: "objectives", V: objectives},
 		{K: "documents", V: documentsValue(agent.Documents)},
 		{K: "skills", V: skills},
+		{K: "rules", V: rulesValue(agent.Rules)},
+		{K: "commands", V: commandsValue(agent.Commands)},
+		{K: "hooks", V: stringArr(agent.Hooks)},
+		{K: "servers", V: stringArr(agent.Servers)},
 		{K: "provenance", V: provenanceValue(agent.Provenance)},
 	}
 }
@@ -603,7 +644,7 @@ func bundleJSON(artifact pluginArtifact, servers []*resource.Document) string {
 	}
 	provenance := artifact.plan.Provenance
 	return jsonx.Indented(jsonx.Obj{
-		{K: "schemaVersion", V: jsonx.Num("2")},
+		{K: "schemaVersion", V: jsonx.Num("3")},
 		{K: "id", V: jsonx.Str(artifact.plan.ID)},
 		{K: "name", V: jsonx.Str(artifact.dir)},
 		{K: "mode", V: jsonx.Str(artifact.mode)},
@@ -614,6 +655,10 @@ func bundleJSON(artifact pluginArtifact, servers []*resource.Document) string {
 		{K: "agents", V: agents},
 		{K: "skills", V: skills},
 		{K: "servers", V: stringArr(serverIDs)},
+		{K: "rules", V: rulesValue(artifact.plan.Rules)},
+		{K: "commands", V: commandsValue(artifact.plan.Commands)},
+		{K: "hooks", V: stringArr(artifact.plan.Hooks)},
+		{K: "lspServers", V: stringArr(artifact.plan.LSP)},
 	})
 }
 

@@ -17,14 +17,18 @@ const manifestKind = "manifest"
 // kindFields lists the fields each version 7 document kind accepts, offered
 // as completions in a key position.
 var kindFields = map[string][]string{
-	"agent":       {"displayName", "description", "embeds", "context", "skills", "with", "copilot"},
-	"profile":     {"displayName", "description", "embeds", "parameters", "context", "skills"},
+	"agent":       {"displayName", "description", "embeds", "context", "skills", "with", "copilot", "rules", "commands", "hooks", "servers"},
+	"profile":     {"displayName", "description", "embeds", "parameters", "context", "skills", "rules", "commands", "hooks"},
 	"capability":  {"displayName", "description", "inputSchema", "outputSchema"},
 	"skill":       {"displayName", "description", "binds", "extends", "parameters", "with", "inputSchema", "outputSchema", "context", "files", "requiresServers", "variants", "copilot"},
 	"server":      {"displayName", "description", "transport", "command", "args", "env", "cwd", "url", "headers"},
 	"contextType": {"displayName", "description", "instanceName", "fields"},
 	"context":     {"displayName", "description", "parameters", "contextType", "values"},
-	"plugin":      {"description", "agents", "profiles", "skills", "modes"},
+	"plugin":      {"description", "agents", "profiles", "skills", "modes", "rules", "commands", "hooks", "lspServers"},
+	"rule":        {"displayName", "description", "parameters", "paths"},
+	"command":     {"displayName", "description", "parameters", "argumentHint", "allowedTools", "disableModelInvocation"},
+	"hook":        {"displayName", "description", "event", "matcher", "type", "bash", "powershell", "command", "exec", "args", "cwd", "env", "timeoutSec", "url", "headers", "allowedEnvVars", "prompt"},
+	"lsp":         {"displayName", "description", "command", "bash", "powershell", "args", "env", "cwd", "fileExtensions", "rootUri", "initializationOptions"},
 	manifestKind:  {"schemaVersion", "name", "version", "marketplace", "dependencies", "plugins", "exports"},
 }
 
@@ -46,8 +50,16 @@ func referenceKinds(docKind, field string) []string {
 		return []string{"context"}
 	case "contextType":
 		return []string{"contextType"}
-	case "requiresServers":
+	case "requiresServers", "servers":
 		return []string{"server"}
+	case "rules":
+		return []string{"rule"}
+	case "commands":
+		return []string{"command"}
+	case "hooks":
+		return []string{"hook"}
+	case "lspServers":
+		return []string{"lsp"}
 	case "agents":
 		return []string{"agent"}
 	case "profiles":
@@ -55,7 +67,7 @@ func referenceKinds(docKind, field string) []string {
 	case "plugins":
 		return []string{"plugin"}
 	case "exports":
-		return []string{"agent", "profile", "capability", "skill", "server", "contextType", "context"}
+		return []string{"agent", "profile", "capability", "skill", "server", "contextType", "context", "rule", "command", "hook", "lsp"}
 	}
 	return nil
 }
@@ -65,6 +77,7 @@ var enumValues = map[string][]string{
 	"required":               {"true", "false"},
 	"render":                 {"inline", "file"},
 	"transport":              {"stdio", "streamable-http"},
+	"event":                  {"agentStop", "errorOccurred", "notification", "permissionRequest", "postToolUse", "postToolUseFailure", "preCompact", "preToolUse", "sessionEnd", "sessionStart", "subagentStart", "subagentStop", "userPromptSubmitted", "userPromptTransformed"},
 	"userInvocable":          {"true", "false"},
 	"disableModelInvocation": {"true", "false"},
 	"type":                   {"string", "text", "boolean", "integer", "list<string>"},

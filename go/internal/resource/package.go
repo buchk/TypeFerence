@@ -26,6 +26,10 @@ var kindSuffixes = []struct {
 	{".contexttype.tfer", "contextType"},
 	{".context.tfer", "context"},
 	{".plugin.tfer", "plugin"},
+	{".rule.tfer", "rule"},
+	{".command.tfer", "command"},
+	{".hook.tfer", "hook"},
+	{".lsp.tfer", "lsp"},
 }
 
 // removedSuffixes name the document kinds version 7 removed, so a stray file
@@ -557,10 +561,14 @@ func (d *documentDecoder) decodeKind(n *tferlex.Node) error {
 	case "agent":
 		return d.decode(n, with(map[string]func(*tferlex.Node) error{
 			"embeds":  d.refListInto(&doc.Embeds, "profile", "agent"),
-			"context": d.contextEntries(false),
-			"skills":  d.bindings,
-			"with":    d.withField(),
-			"copilot": d.copilot(false),
+			"context":  d.contextEntries(false),
+			"skills":   d.bindings,
+			"with":     d.withField(),
+			"copilot":  d.copilot(false),
+			"rules":    d.refListInto(&doc.Rules, "rule"),
+			"commands": d.refListInto(&doc.Commands, "command"),
+			"hooks":    d.refListInto(&doc.Hooks, "hook"),
+			"servers":  d.refListInto(&doc.Servers, "server"),
 		}))
 	case "profile":
 		return d.decode(n, with(map[string]func(*tferlex.Node) error{
@@ -568,6 +576,9 @@ func (d *documentDecoder) decodeKind(n *tferlex.Node) error {
 			"parameters": d.parametersField(),
 			"context":    d.contextEntries(false),
 			"skills":     d.bindings,
+			"rules":      d.refListInto(&doc.Rules, "rule"),
+			"commands":   d.refListInto(&doc.Commands, "command"),
+			"hooks":      d.refListInto(&doc.Hooks, "hook"),
 		}))
 	case "capability":
 		return d.decode(n, with(map[string]func(*tferlex.Node) error{
@@ -651,7 +662,105 @@ func (d *documentDecoder) decodeKind(n *tferlex.Node) error {
 			"profiles":    d.refListInto(&doc.PluginProfiles, "profile"),
 			"skills":      d.refListInto(&doc.PluginSkills, "skill"),
 			"modes":       d.stringListInto(&doc.PluginModes),
+			"rules":       d.refListInto(&doc.Rules, "rule"),
+			"commands":    d.refListInto(&doc.Commands, "command"),
+			"hooks":       d.refListInto(&doc.Hooks, "hook"),
+			"lspServers":  d.refListInto(&doc.PluginLSP, "lsp"),
 		})
+	case "rule":
+		return d.decode(n, with(map[string]func(*tferlex.Node) error{
+			"parameters": d.parametersField(),
+			"paths":      d.stringInto(&doc.RulePaths),
+		}))
+	case "command":
+		return d.decode(n, with(map[string]func(*tferlex.Node) error{
+			"parameters":             d.parametersField(),
+			"argumentHint":           d.optionalString(&doc.ArgumentHint),
+			"disableModelInvocation": d.optionalBool(&doc.DisableModelInvocation),
+			"allowedTools": func(n *tferlex.Node) error {
+				items, err := d.stringList(n)
+				if err != nil {
+					return err
+				}
+				if len(items) == 0 {
+					return d.errorf(n, "'allowedTools' must list at least one tool; omit it otherwise")
+				}
+				doc.AllowedTools = items
+				return nil
+			},
+		}))
+	case "hook":
+		hook := &HookConfig{}
+		doc.Hook = hook
+		return d.decode(n, with(map[string]func(*tferlex.Node) error{
+			"event":      d.stringInto(&hook.Event),
+			"matcher":    d.stringInto(&hook.Matcher),
+			"type":       d.stringInto(&hook.Type),
+			"bash":       d.stringInto(&hook.Bash),
+			"powershell": d.stringInto(&hook.PowerShell),
+			"command":    d.stringInto(&hook.Command),
+			"exec":       d.stringInto(&hook.Exec),
+			"args": func(n *tferlex.Node) error {
+				items, err := d.stringList(n)
+				hook.Args = items
+				return err
+			},
+			"cwd": d.stringInto(&hook.Cwd),
+			"env": func(n *tferlex.Node) error {
+				values, err := d.stringMap(n)
+				hook.Env = values
+				return err
+			},
+			"timeoutSec": d.stringInto(&hook.TimeoutSec),
+			"url":        d.stringInto(&hook.URL),
+			"headers": func(n *tferlex.Node) error {
+				values, err := d.stringMap(n)
+				hook.Headers = values
+				return err
+			},
+			"allowedEnvVars": func(n *tferlex.Node) error {
+				items, err := d.stringList(n)
+				hook.AllowedEnvVars = items
+				return err
+			},
+			"prompt": d.stringInto(&hook.Prompt),
+		}))
+	case "lsp":
+		lsp := &LSPConfig{}
+		doc.LSP = lsp
+		return d.decode(n, with(map[string]func(*tferlex.Node) error{
+			"command":    d.stringInto(&lsp.Command),
+			"bash":       d.stringInto(&lsp.Bash),
+			"powershell": d.stringInto(&lsp.PowerShell),
+			"args": func(n *tferlex.Node) error {
+				items, err := d.stringList(n)
+				lsp.Args = items
+				return err
+			},
+			"env": func(n *tferlex.Node) error {
+				values, err := d.stringMap(n)
+				lsp.Env = values
+				return err
+			},
+			"cwd": d.stringInto(&lsp.Cwd),
+			"fileExtensions": func(n *tferlex.Node) error {
+				values, err := d.stringMap(n)
+				lsp.FileExtensions = values
+				return err
+			},
+			"rootUri": d.stringInto(&lsp.RootURI),
+			"initializationOptions": func(n *tferlex.Node) error {
+				value, null, err := d.text(n)
+				if err != nil || null {
+					return err
+				}
+				if err := validateJSON(value, d.file, n.Key); err != nil {
+					return d.errorf(n, "initializationOptions must be a JSON document")
+				}
+				lsp.InitializationOptions = value
+				return nil
+			},
+		}))
 	}
 	return Errorf("%s: unknown document kind", d.file)
 }
@@ -965,6 +1074,11 @@ func (d *documentDecoder) applyBody(body string) error {
 		if hasBody {
 			doc.Objectives = body
 		}
+	case "rule", "command":
+		if !hasBody {
+			return Errorf("%s: a %s needs Markdown in its body", d.file, doc.Kind)
+		}
+		doc.Body = body
 	default:
 		if hasBody {
 			return Errorf("%s: a %s document has no body", d.file, doc.Kind)
@@ -988,7 +1102,7 @@ func (d *documentDecoder) validate() error {
 		return Errorf("%s: description must be a single line without control characters", file)
 	}
 	switch doc.Kind {
-	case "agent", "skill", "plugin":
+	case "agent", "skill", "plugin", "command":
 		if strings.TrimSpace(doc.Description) == "" {
 			return Errorf("%s: a %s requires a description; hosts use it to decide when to use the %s", file, doc.Kind, doc.Kind)
 		}
@@ -1031,6 +1145,21 @@ func (d *documentDecoder) validate() error {
 		if err := validateServer(doc); err != nil {
 			return err
 		}
+	case "rule", "command":
+		if !IsHostName(Leaf(doc.ID)) {
+			return Errorf("%s: a %s's name is its file name, which must use lowercase letters, digits, and single hyphens", file, doc.Kind)
+		}
+		if !singleLine(doc.RulePaths) {
+			return Errorf("%s: paths must be a single line", file)
+		}
+	case "hook":
+		if err := validateHook(doc); err != nil {
+			return err
+		}
+	case "lsp":
+		if err := validateLSP(doc); err != nil {
+			return err
+		}
 	case "contextType":
 		if doc.InstanceName != "" {
 			var named *ContextField
@@ -1068,8 +1197,8 @@ func (d *documentDecoder) validate() error {
 			doc.Values = map[string]FieldValue{}
 		}
 	case "plugin":
-		if len(doc.PluginAgents)+len(doc.PluginProfiles)+len(doc.PluginSkills) == 0 {
-			return Errorf("%s: a plugin must link at least one agent, profile, or skill", file)
+		if len(doc.PluginAgents)+len(doc.PluginProfiles)+len(doc.PluginSkills)+len(doc.Rules)+len(doc.Commands)+len(doc.Hooks)+len(doc.PluginLSP) == 0 {
+			return Errorf("%s: a plugin must link at least one agent, profile, skill, rule, command, hook, or LSP server", file)
 		}
 		seen := map[string]bool{}
 		for _, mode := range doc.PluginModes {
@@ -1164,6 +1293,97 @@ func validateServer(doc *Document) error {
 		return Errorf("%s: a server requires a transport: stdio or streamable-http", file)
 	default:
 		return Errorf("%s: transport '%s' is not supported; use stdio or streamable-http", file, s.Transport)
+	}
+	return nil
+}
+
+// hookEvents are the Copilot hook events; matcherEvents accept a matcher.
+var (
+	hookEvents = map[string]bool{
+		"agentStop": true, "errorOccurred": true, "notification": true, "permissionRequest": true,
+		"postToolUse": true, "postToolUseFailure": true, "preCompact": true, "preToolUse": true,
+		"sessionEnd": true, "sessionStart": true, "subagentStart": true, "subagentStop": true,
+		"userPromptSubmitted": true, "userPromptTransformed": true,
+	}
+	matcherEvents = map[string]bool{
+		"notification": true, "permissionRequest": true, "postToolUse": true,
+		"preCompact": true, "preToolUse": true, "subagentStart": true,
+	}
+	positiveInteger = regexp.MustCompile(`^[1-9][0-9]{0,5}$`)
+)
+
+func validateHook(doc *Document) error {
+	file := doc.Path
+	h := doc.Hook
+	if !hookEvents[h.Event] {
+		return Errorf("%s: event '%s' is not a Copilot hook event", file, h.Event)
+	}
+	if h.Matcher != "" && !matcherEvents[h.Event] {
+		return Errorf("%s: event '%s' does not take a matcher", file, h.Event)
+	}
+	if h.TimeoutSec != "" && !positiveInteger.MatchString(h.TimeoutSec) {
+		return Errorf("%s: timeoutSec must be a positive whole number of seconds", file)
+	}
+	commandFields := h.Bash != "" || h.PowerShell != "" || h.Command != "" || h.Exec != "" || h.Args != nil || h.Cwd != "" || h.Env != nil
+	httpFields := h.URL != "" || h.Headers != nil || h.AllowedEnvVars != nil
+	if h.Type == "" {
+		h.Type = "command"
+	}
+	switch h.Type {
+	case "command":
+		if httpFields || h.Prompt != "" {
+			return Errorf("%s: a command hook takes bash, powershell, command, or exec, not url, headers, or prompt", file)
+		}
+		if h.Exec != "" && (h.Bash != "" || h.PowerShell != "" || h.Command != "") {
+			return Errorf("%s: exec runs an executable directly and cannot be combined with bash, powershell, or command", file)
+		}
+		if h.Exec == "" && h.Bash == "" && h.PowerShell == "" && h.Command == "" {
+			return Errorf("%s: a command hook needs bash, powershell, command, or exec", file)
+		}
+		if h.Args != nil && h.Exec == "" {
+			return Errorf("%s: args apply only to exec", file)
+		}
+	case "http":
+		if commandFields || h.Prompt != "" {
+			return Errorf("%s: an http hook takes url, headers, and allowedEnvVars only", file)
+		}
+		if !strings.HasPrefix(h.URL, "https://") || len(h.URL) <= len("https://") {
+			return Errorf("%s: an http hook's url must be an absolute HTTPS URL", file)
+		}
+	case "prompt":
+		if commandFields || httpFields || h.Matcher != "" || h.TimeoutSec != "" {
+			return Errorf("%s: a prompt hook takes only prompt", file)
+		}
+		if h.Event != "sessionStart" {
+			return Errorf("%s: prompt hooks fire only on sessionStart", file)
+		}
+		if strings.TrimSpace(h.Prompt) == "" {
+			return Errorf("%s: a prompt hook needs a prompt", file)
+		}
+	default:
+		return Errorf("%s: hook type '%s' is not supported; use command, http, or prompt", file, h.Type)
+	}
+	return nil
+}
+
+func validateLSP(doc *Document) error {
+	file := doc.Path
+	l := doc.LSP
+	if !IsHostName(Leaf(doc.ID)) {
+		return Errorf("%s: an LSP server's name is its file name, which must use lowercase letters, digits, and single hyphens", file)
+	}
+	if l.Command == "" && l.Bash == "" && l.PowerShell == "" {
+		return Errorf("%s: an LSP server needs command, bash, or powershell", file)
+	}
+	if len(l.FileExtensions) == 0 {
+		return Errorf("%s: an LSP server needs fileExtensions, a mapping from extension to language id", file)
+	}
+	// Keys are extensions without their leading dot, because a frontmatter
+	// key cannot start with '.'; the emitter adds it.
+	for _, ext := range SortedKeys(l.FileExtensions) {
+		if strings.HasPrefix(ext, ".") {
+			return Errorf("%s: write file extension '%s' without its leading dot; the build adds it", file, ext)
+		}
 	}
 	return nil
 }

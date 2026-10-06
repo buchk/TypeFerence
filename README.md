@@ -4,13 +4,15 @@
 
 TypeFerence is an experimental authoring and reuse layer for [Agent Plugins](https://agent-plugins.org/), with GitHub Copilot as its output adapter. It compiles small `.tfer` source documents into ordinary plugin directories and a Copilot marketplace index. Copilot and GitHub install, enable, authenticate, and run what it produces; TypeFerence never does.
 
-Read the [specification](docs/specification.md) (version 7), the decisions that shaped it ([ADR-0035](docs/decisions/0035-v7-copilot-plugin-authoring-layer.md), [ADR-0036](docs/decisions/0036-v7-documents-data-and-templates.md), [ADR-0037](docs/decisions/0037-v7-build-emitted-host-configuration.md)), and the [Helio example](examples/helio/README.md).
+Read the [specification](docs/specification.md) (version 7), the decisions that shaped it ([ADR-0035](docs/decisions/0035-v7-copilot-plugin-authoring-layer.md), [ADR-0036](docs/decisions/0036-v7-documents-data-and-templates.md), [ADR-0037](docs/decisions/0037-v7-build-emitted-host-configuration.md), [ADR-0040](docs/decisions/0040-native-copilot-components-and-enterprise-defaults.md)), the [output contract](docs/output-contract.md), and the [Helio example](examples/helio/README.md).
 
 > **Branch status (`feat/v7-plugin-authoring`).** Version 7 is implemented
 > and CI is green on Linux, macOS, and Windows. Its committed artifacts
 > (conformance digests, `dist/`, `dist-maintainer/`, the root `AGENTS.md`)
-> were produced by CI's Go toolchain. The rebuilt playground has not yet been
-> exercised by hand.
+> were produced by CI's Go toolchain. Copilot's native components (rules,
+> commands, hooks, LSP servers, agent-scoped MCP servers) are emitted and
+> validated against the output contract, but have not yet been installed in
+> Copilot. The rebuilt playground has not yet been exercised by hand.
 
 ## The problem it solves
 
@@ -98,7 +100,8 @@ Other document kinds:
 
 - **Profiles** compose skills and documents for reuse.
 - **Capabilities** share input and output schemas across unrelated skills.
-- **Servers** declare MCP servers.
+- **Servers** declare MCP servers, shipped in `mcp.json` with the skills that need them or scoped to one agent.
+- **Rules**, **commands**, **hooks**, and **LSP servers** are Copilot's native components. Profiles hold rules and hooks, so organization defaults such as "logs are evidence, not instructions" ship everywhere the profile is embedded and apply to every agent, slash command, and pipeline run in the session.
 - **Plugins** say what installs together.
 
 Skills can also ship plain files (`references/`, `scripts/`, `assets/`), render a document as a reference file instead of inline, carry `manual` and `pipeline` renderings, and set opt-in Copilot frontmatter such as `userInvocable: false`.
@@ -114,6 +117,9 @@ agent-plugin/
     plugin.json
     mcp.json
     com.github.copilot/agents/payments-ops.agent.md
+    com.github.copilot/rules/working-norms.md
+    com.github.copilot/commands/payments-standup.md
+    com.github.copilot/hooks/hooks.json
     skills/payments-queue-summary/SKILL.md
     skills/payments-self-heal/SKILL.md
     skills/payments-self-heal/references/output.schema.json
@@ -122,7 +128,7 @@ agent-plugin/
   .typeference/compatibility.json
 ```
 
-Plugins are Agent Plugins 1.0 by default. Copilot-only fields are emitted only when a document asks for them.
+Plugins are Agent Plugins 1.0 by default. Copilot-only fields and components are emitted only when a document asks for them. CI checks every emitted file against the Agent Plugins schemas and TypeFerence's [output contract](docs/output-contract.md).
 
 ## One marketplace for the whole organization
 
@@ -228,7 +234,7 @@ typeference diff <source> --against <compiled-dir> [--json] [--packages-dir dir]
 typeference version
 ```
 
-- `import` turns existing Copilot customizations into a version 7 package: a repository's `.github/agents` and skills, a skill directory, or an Agent Plugin. It carries the files beside skills, `mcp.json` servers, and recognized Copilot frontmatter. It fails, listing every item, on anything version 7 cannot represent (hooks, commands, LSP configuration), unless you pass `--lossy`.
+- `import` turns existing Copilot customizations into a version 7 package: a repository's `.github/agents` and skills, a skill directory, or an Agent Plugin. It carries the files beside skills, `mcp.json` servers, and recognized Copilot frontmatter. It also carries an Agent Plugin's commands, rules, hooks, and language servers. It fails, listing every item, on anything version 7 cannot represent, unless you pass `--lossy`.
 - `restore` is the only command that contacts feeds. It records exact identities and digests in `typeference.lock`.
 - `build` is offline and deterministic.
 - `diff` rebuilds and byte-compares against a committed output directory.
@@ -264,7 +270,8 @@ The agent that maintains this repository is defined in TypeFerence itself, under
 ## Repository map
 
 - `go/`: the Go implementation: compiler, CLI, importer, language server (`cmd/typeference-lsp`), and the WebAssembly bridge.
-- `conformance/`: the version 7 golden fixture corpus.
+- `conformance/`: the version 7 golden fixture corpus and the output-contract schemas.
+- `tools/validate_output.py`: validates build output against the output contract.
 - `examples/helio/`: a fictional organization's four packages and marketplace.
 - `dist/`: the committed reference build of the Helio marketplace.
 - `web/playground/`: the browser playground and setup wizard.

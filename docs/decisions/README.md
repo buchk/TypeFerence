@@ -47,5 +47,7 @@ their decision.
 | [0034](0034-organization-marketplace-from-source-packages.md) | One organization marketplace, built from source packages | Proposed | Folded into version 7 by [0035](0035-v7-copilot-plugin-authoring-layer.md) |
 | [0035](0035-v7-copilot-plugin-authoring-layer.md) | Version 7: an authoring and reuse layer for Copilot plugins | Proposed | — |
 | [0036](0036-v7-documents-data-and-templates.md) | Version 7: documents, typed data, and templates | Proposed | — |
-| [0037](0037-v7-build-emitted-host-configuration.md) | Version 7: MCP servers and Copilot fields emitted by build | Proposed | — |
+| [0037](0037-v7-build-emitted-host-configuration.md) | Version 7: MCP servers and Copilot fields emitted by build | Proposed | Deferred components completed by [0040](0040-native-copilot-components-and-enterprise-defaults.md) |
 | [0038](0038-v7-review-rulings.md) | Version 7 review rulings: portable bytes, requirements, provenance, and inherited bindings | Proposed | — |
+| [0039](0039-skill-directory-path-consistency.md) | Consistent paths throughout a skill directory | Proposed | Extends [0038](0038-v7-review-rulings.md) |
+| [0040](0040-native-copilot-components-and-enterprise-defaults.md) | Native Copilot components, enterprise defaults, and the output contract | Proposed | — |

@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/buchk/TypeFerence/conformance/schemas/typeference/compatibility.schema.json",
+  "title": "TypeFerence compatibility.json",
+  "description": "Capabilities implemented by more than one distinct skill in a mode (.typeference/compatibility.json, schemaVersion 1).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "conflicts"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mode",
+          "capabilityId",
+          "members"
+        ],
+        "properties": {
+          "mode": {
+            "enum": [
+              "manual",
+              "pipeline"
+            ]
+          },
+          "capabilityId": {
+            "$ref": "#/$defs/id"
+          },
+          "members": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "plugin",
+                "skill"
+              ],
+              "properties": {
+                "plugin": {
+                  "$ref": "#/$defs/name"
+                },
+                "skill": {
+                  "$ref": "#/$defs/name"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9.-]*(/[a-z0-9][a-z0-9.-]*)+@[^@\\s]+$"
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    }
+  }
+}

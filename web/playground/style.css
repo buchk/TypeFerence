@@ -26,6 +26,7 @@
   --kind-skill: #059669;
   --kind-capability: #d97706;
   --kind-interface: #9333ea;
+  --kind-native: #65a30d;
 }
 [data-theme="dark"] {
   --bg: #0d1117;
@@ -51,6 +52,7 @@
   --kind-skill: #34d399;
   --kind-capability: #fbbf24;
   --kind-interface: #c084fc;
+  --kind-native: #a3e635;
 }
 
 * { box-sizing: border-box; }

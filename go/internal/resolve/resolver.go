@@ -105,12 +105,21 @@ type ResolvedAgent struct {
 	InstanceName string
 	Copilot      resource.CopilotFields
 	Provenance   []ProvenanceEntry
+	// Native components the agent composes (ADR-0040): rules and commands
+	// rendered with its bindings, hooks, and agent-scoped servers.
+	Rules    []ResolvedRule
+	Commands []ResolvedCommand
+	Hooks    []string
+	Servers  []string
 }
 
 // ResolvedProfile is a profile shipped without an agent.
 type ResolvedProfile struct {
-	ID     string
-	Skills []ResolvedSkill
+	ID       string
+	Skills   []ResolvedSkill
+	Rules    []ResolvedRule
+	Commands []ResolvedCommand
+	Hooks    []string
 }
 
 // Resolver resolves documents from one merged, normalized document set.
@@ -142,6 +151,9 @@ func (r *Resolver) kindOf(id string) string {
 }
 
 func (r *Resolver) validate(doc *resource.Document) error {
+	if err := r.validateNative(doc); err != nil {
+		return err
+	}
 	for _, name := range resource.SortedKeys(doc.Parameters) {
 		if r.kindOf(doc.Parameters[name]) != "contextType" {
 			return resource.Errorf("%s: parameter '%s' names %s, which is not a context type in this build", doc.Path, name, doc.Parameters[name])
@@ -319,6 +331,15 @@ func (r *Resolver) ResolveAgent(id string) (*ResolvedAgent, error) {
 			}
 		}
 	}
+	for _, componentID := range append(append([]string{}, c.rules...), c.commands...) {
+		component := r.docs[componentID]
+		for _, name := range resource.SortedKeys(component.Parameters) {
+			templateSkills = true
+			if err := addNeed(name, component.Parameters[name], componentID); err != nil {
+				return nil, err
+			}
+		}
+	}
 	// The agent's bindings are its own 'with' plus those of the agents it
 	// embeds, shallowest first (composite.with).
 	template := len(c.with) > 0
@@ -363,7 +384,7 @@ func (r *Resolver) ResolveAgent(id string) (*ResolvedAgent, error) {
 			}
 		}
 		if len(suppliers) != 1 {
-			return nil, resource.Errorf("%s: the agent instantiates template skills, so exactly one bound data document must supply an instance name (a context type with instanceName); found %d", doc.Path, len(suppliers))
+			return nil, resource.Errorf("%s: the agent instantiates templates, so exactly one bound data document must supply an instance name (a context type with instanceName); found %d", doc.Path, len(suppliers))
 		}
 	}
 
@@ -419,6 +440,33 @@ func (r *Resolver) ResolveAgent(id string) (*ResolvedAgent, error) {
 		agent.Skills = append(agent.Skills, skill)
 	}
 	sort.Slice(agent.Skills, func(i, j int) bool { return agent.Skills[i].Name < agent.Skills[j].Name })
+	for _, ruleID := range c.rules {
+		rule, err := r.resolveRule(ruleID, bindings, instanceName)
+		if err != nil {
+			return nil, err
+		}
+		agent.Rules = append(agent.Rules, rule)
+		for _, source := range c.nativeSource[ruleID] {
+			agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "rules", Source: source})
+		}
+	}
+	for _, commandID := range c.commands {
+		command, err := r.resolveCommand(commandID, bindings, instanceName)
+		if err != nil {
+			return nil, err
+		}
+		agent.Commands = append(agent.Commands, command)
+		for _, source := range c.nativeSource[commandID] {
+			agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "commands", Source: source})
+		}
+	}
+	for _, hookID := range c.hooks {
+		agent.Hooks = append(agent.Hooks, hookID)
+		for _, source := range c.nativeSource[hookID] {
+			agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "hooks", Source: source})
+		}
+	}
+	agent.Servers = append([]string{}, doc.Servers...)
 	for i := 1; i < len(agent.Skills); i++ {
 		if agent.Skills[i].Name == agent.Skills[i-1].Name {
 			return nil, resource.Errorf("%s: skills %s and %s both emit the skill name '%s'", doc.Path, agent.Skills[i-1].ImplementationID, agent.Skills[i].ImplementationID, agent.Skills[i].Name)
@@ -469,6 +517,21 @@ func (r *Resolver) ResolveProfile(id string) (*ResolvedProfile, error) {
 		}
 		profile.Skills = append(profile.Skills, skill)
 	}
+	for _, ruleID := range c.rules {
+		rule, err := r.ResolveRule(ruleID)
+		if err != nil {
+			return nil, err
+		}
+		profile.Rules = append(profile.Rules, rule)
+	}
+	for _, commandID := range c.commands {
+		command, err := r.ResolveCommand(commandID)
+		if err != nil {
+			return nil, err
+		}
+		profile.Commands = append(profile.Commands, command)
+	}
+	profile.Hooks = append(profile.Hooks, c.hooks...)
 	return profile, nil
 }
 

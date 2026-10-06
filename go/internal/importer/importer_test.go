@@ -118,6 +118,42 @@ func TestImportCarriesFilesServersAndCopilotFields(t *testing.T) {
 	}
 }
 
+func TestImportCarriesCopilotComponents(t *testing.T) {
+	plugin := t.TempDir()
+	write(t, plugin, "plugin.json", `{"$schema":"https://agent-plugins.org/schemas/1.0.0/plugin.schema.json","name":"team-kit","description":"Our team kit."}`)
+	write(t, plugin, "skills/code-review/SKILL.md", "---\nname: code-review\ndescription: Review a diff.\n---\n"+skillBody)
+	write(t, plugin, "com.github.copilot/commands/changelog.md", "---\ndescription: Draft a changelog entry.\nargument-hint: \"[range]\"\ndisable-model-invocation: true\n---\nDraft the changelog.\n")
+	write(t, plugin, "com.github.copilot/rules/api.md", "---\napplyTo: \"src/api/**\"\ndescription: API conventions\n---\nUse ApiError.\n")
+	write(t, plugin, "com.github.copilot/hooks/hooks.json", `{"version":1,"hooks":{"preToolUse":[{"type":"command","bash":"./guard.sh","matcher":"bash","timeoutSec":10}]}}`)
+	write(t, plugin, "com.github.copilot/lsp.json", `{"lspServers":{"team-lsp":{"command":"team-lsp","fileExtensions":{".team":"team"}}}}`)
+	result, err := Import(plugin, Options{Name: "acme/team", Version: "1.0.0"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := t.TempDir()
+	if err := Write(result.Files, out); err != nil {
+		t.Fatal(err)
+	}
+	built := t.TempDir()
+	if _, err := compile.Build(out, built, compile.BuildOptions{}); err != nil {
+		t.Fatalf("imported sources must build: %v", err)
+	}
+	root := filepath.Join(built, "agent-plugin", "team-kit", "com.github.copilot")
+	for _, rel := range []string{"commands/changelog.md", "rules/api.md", "hooks/hooks.json", "lsp.json"} {
+		if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(rel))); err != nil {
+			t.Fatalf("%s must survive the round trip: %v", rel, err)
+		}
+	}
+	rule, _ := os.ReadFile(filepath.Join(root, "rules", "api.md"))
+	if !strings.Contains(string(rule), `paths: "src/api/**"`) {
+		t.Fatalf("a rule's applyTo scope becomes paths:\n%s", rule)
+	}
+	lsp, _ := os.ReadFile(filepath.Join(root, "lsp.json"))
+	if !strings.Contains(string(lsp), `".team": "team"`) {
+		t.Fatalf("an LSP server's extensions survive the round trip:\n%s", lsp)
+	}
+}
+
 func TestImportRejectsGenericServerNames(t *testing.T) {
 	plugin := t.TempDir()
 	write(t, plugin, "plugin.json", `{"$schema":"https://agent-plugins.org/schemas/1.0.0/plugin.schema.json","name":"team-kit","description":"Our team kit."}`)

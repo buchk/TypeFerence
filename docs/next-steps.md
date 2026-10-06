@@ -14,8 +14,11 @@ tab in a browser.
 
 ## Version 7 follow-ups
 
-- [ ] Hooks, commands, rules, LSP configuration, and agent-scoped
-  `mcp-servers` in the Copilot extension namespace (ADR-0037 decision 6).
+- [ ] Copilot behaviours to confirm for native components (ADR-0040):
+  plugin rules active by default and loaded in `-p` runs, and plugin hooks
+  on Copilot cloud agent.
+- [ ] Hooks that run scripts shipped inside the plugin, once the variable that
+  names a hook's plugin directory is confirmed.
 - [ ] Decide how `list<string>` fields render if a real case needs them in
   text.
 - [ ] Decide whether one agent may bind two values to one parameter name.

@@ -1,0 +1,4 @@
+{
+  "description": "LSP file extensions are written without their leading dot, because a frontmatter key cannot start with '.' (ADR-0040).",
+  "expect": "error"
+}

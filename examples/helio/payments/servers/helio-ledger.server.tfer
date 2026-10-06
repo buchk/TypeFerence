@@ -1,0 +1,5 @@
+---
+description: Read-only ledger queries for the payments operations agent.
+transport: streamable-http
+url: https://ledger.helio.example/mcp
+---

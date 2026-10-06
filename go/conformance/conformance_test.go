@@ -112,6 +112,11 @@ func runFixture(t *testing.T, dir string, m manifest) {
 	if buildErr != nil {
 		t.Fatalf("expected success, got: %v", buildErr)
 	}
+	// TF_OUTPUT_DIR keeps each success fixture's output so CI can validate it
+	// against the host schemas (docs/output-contract.md).
+	if keep := os.Getenv("TF_OUTPUT_DIR"); keep != "" {
+		copyTree(t, out, filepath.Join(keep, filepath.Base(dir)))
+	}
 
 	computed := map[string]string{}
 	outEntries, err := os.ReadDir(out)

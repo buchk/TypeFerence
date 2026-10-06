@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/buchk/TypeFerence/conformance/schemas/copilot/lsp.schema.json",
+  "title": "Copilot plugin lsp.json as TypeFerence reads the Copilot CLI reference",
+  "description": "com.github.copilot/lsp.json. Not published by GitHub; this records TypeFerence's reading of the Copilot CLI plugin reference (ADR-0040) and must follow it when it changes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lspServers"
+  ],
+  "properties": {
+    "lspServers": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/server"
+      }
+    }
+  },
+  "$defs": {
+    "server": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fileExtensions"
+      ],
+      "properties": {
+        "command": {
+          "type": "string"
+        },
+        "bash": {
+          "type": "string"
+        },
+        "powershell": {
+          "type": "string"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "cwd": {
+          "type": "string"
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "fileExtensions": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^\\.[A-Za-z0-9_.+-]+$"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "rootUri": {
+          "type": "string"
+        },
+        "initializationOptions": {}
+      },
+      "anyOf": [
+        {
+          "required": [
+            "command"
+          ]
+        },
+        {
+          "required": [
+            "bash"
+          ]
+        },
+        {
+          "required": [
+            "powershell"
+          ]
+        }
+      ]
+    }
+  }
+}

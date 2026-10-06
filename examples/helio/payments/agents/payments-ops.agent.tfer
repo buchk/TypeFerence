@@ -6,6 +6,8 @@ with:
   team: data/payments-team.context.tfer
 skills:
   - skills/self-heal.skill.tfer
+servers:
+  - servers/helio-ledger.server.tfer
 copilot:
   tools:
     - read

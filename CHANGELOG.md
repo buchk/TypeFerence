@@ -11,8 +11,36 @@ compatibility promises between minor versions.
 
 ## [Unreleased]
 
+### Added
+
+- **Native Copilot components**
+  ([ADR-0040](docs/decisions/0040-native-copilot-components-and-enterprise-defaults.md)):
+  `.rule.tfer`, `.command.tfer`, `.hook.tfer`, and `.lsp.tfer` documents emit
+  `com.github.copilot/rules/`, `commands/`, `hooks/hooks.json`, and
+  `lsp.json`, and an agent's `servers` render as its own `mcp-servers`.
+  Agents and profiles hold rules, commands, and hooks, so enterprise defaults
+  reach every invocation surface where the plugin is active. Rules and
+  commands can be templates. Build checks hook events, matcher eligibility,
+  prompt hooks, HTTPS hook URLs, LSP launch fields, command and skill name
+  clashes, and `${PLUGIN_DATA}` in agent-scoped servers. `import` carries
+  these components from an Agent Plugin.
+- **Output contract** ([docs/output-contract.md](docs/output-contract.md)):
+  the vendored Agent Plugins 1.0 schemas, TypeFerence-authored schemas for
+  `.typeference/` files, `hooks.json`, `lsp.json`, and the marketplace index,
+  and `tools/validate_output.py`. A new CI job validates every success
+  fixture's output, `dist/`, and `dist-maintainer/`. The conformance runner
+  keeps fixture output when `TF_OUTPUT_DIR` is set.
+
 ### Changed
 
+- `bundle.json` is `schemaVersion` 3: it records shipped rules, commands,
+  hooks, and LSP servers, and each agent's rules, commands, hooks, and
+  servers.
+- Helio's working norms are a rule held by the team profile instead of a
+  document rendered into agent files.
+- Skill directories reject inconsistent casing in shared directory prefixes
+  and file/directory conflicts before writing output, including inherited and
+  generated files ([ADR-0039](docs/decisions/0039-skill-directory-path-consistency.md)).
 - **Version 7: an authoring and reuse layer for Copilot plugins**
   ([ADR-0035](docs/decisions/0035-v7-copilot-plugin-authoring-layer.md)).
   `agent-plugin` is the only build target, and build emits complete plugins.

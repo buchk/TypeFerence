@@ -1,0 +1,9 @@
+---
+description: Prepare the {{team.name}} standup from the {{team.queue}} queue.
+parameters:
+  team: context-types/team.contexttype.tfer
+argumentHint: "[since]"
+---
+Prepare a short standup for the {{team.name}} team: what closed in the
+{{team.queue}} queue since the last standup, what is blocked, and who owns
+each blocker. Keep it under ten lines.

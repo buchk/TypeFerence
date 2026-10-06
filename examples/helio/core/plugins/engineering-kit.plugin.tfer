@@ -2,4 +2,6 @@
 description: Evidence-backed repository status for any Helio team, without an agent.
 skills:
   - skills/repository-status.skill.tfer
+lspServers:
+  - lsp/helio-config.lsp.tfer
 ---

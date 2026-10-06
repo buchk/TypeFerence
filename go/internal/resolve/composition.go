@@ -43,6 +43,20 @@ type composite struct {
 	with          map[string]*paramBinding
 	objectives    []Objective
 	bindingSource map[string][]string
+	// rules, commands, and hooks are the native components the composition
+	// holds, in first-seen order, with every contributor (ADR-0040).
+	rules        []string
+	commands     []string
+	hooks        []string
+	nativeSource map[string][]string
+}
+
+// addNative holds a native component once and records its contributors.
+func (c *composite) addNative(list *[]string, id string, sources ...string) {
+	if _, seen := c.nativeSource[id]; !seen {
+		*list = append(*list, id)
+	}
+	c.nativeSource[id] = appendDistinct(c.nativeSource[id], sources...)
 }
 
 // compose resolves an agent or profile's embedding graph from embedded
@@ -69,6 +83,7 @@ func (r *Resolver) compose(id string, stack []string) (*composite, error) {
 		declaredSource: map[string]string{},
 		with:           map[string]*paramBinding{},
 		bindingSource:  map[string][]string{},
+		nativeSource:   map[string][]string{},
 	}
 	seenObjective := map[string]bool{}
 	for _, embedID := range doc.Embeds {
@@ -85,6 +100,15 @@ func (r *Resolver) compose(id string, stack []string) (*composite, error) {
 		}
 		for _, docID := range sub.documents {
 			c.addDocument(docID, sub.documentSource[docID]...)
+		}
+		for _, id := range sub.rules {
+			c.addNative(&c.rules, id, sub.nativeSource[id]...)
+		}
+		for _, id := range sub.commands {
+			c.addNative(&c.commands, id, sub.nativeSource[id]...)
+		}
+		for _, id := range sub.hooks {
+			c.addNative(&c.hooks, id, sub.nativeSource[id]...)
 		}
 		for _, capability := range resource.SortedKeys(sub.bindings) {
 			promoted := *sub.bindings[capability]
@@ -114,6 +138,15 @@ func (r *Resolver) compose(id string, stack []string) (*composite, error) {
 	}
 	for _, ref := range doc.Context {
 		c.addDocument(ref.ID, id)
+	}
+	for _, ruleID := range doc.Rules {
+		c.addNative(&c.rules, ruleID, id)
+	}
+	for _, commandID := range doc.Commands {
+		c.addNative(&c.commands, commandID, id)
+	}
+	for _, hookID := range doc.Hooks {
+		c.addNative(&c.hooks, hookID, id)
 	}
 	for _, name := range resource.SortedKeys(doc.Parameters) {
 		if err := c.declare(doc.Path, name, doc.Parameters[name], id); err != nil {

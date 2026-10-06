@@ -68,6 +68,28 @@ jobs:
         run: |
           awk 'n >= 2 && (seen || $0 != "") { seen = 1; print } /^---$/ { n++ }'             dist-maintainer/agent-plugin/typeference-maintainer/com.github.copilot/agents/typeference-maintainer.agent.md             | cmp - AGENTS.md
 
+  # Output contract (docs/output-contract.md): every emitted JSON file and
+  # frontmatter block must satisfy the host formats and TypeFerence's own
+  # schemas. dist/ and dist-maintainer/ are byte-compared against fresh builds
+  # by the jobs above, so validating them validates the Helio reference and the
+  # maintainer plugin.
+  output-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache-dependency-path: go/go.sum
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r tools/requirements-output.txt
+      - name: Build every success fixture and keep its output
+        run: TF_OUTPUT_DIR="$RUNNER_TEMP/fixture-output" go test ./conformance -run TestConformance -count=1
+        working-directory: go
+      - run: python tools/validate_output.py "$RUNNER_TEMP/fixture-output" dist dist-maintainer
+
   docs:
     runs-on: ubuntu-latest
     steps:

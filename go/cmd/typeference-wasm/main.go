@@ -378,6 +378,18 @@ func buildGraph(resources map[string]*resource.Document) map[string]any {
 		for _, shipped := range append(append(append([]string{}, doc.PluginAgents...), doc.PluginProfiles...), doc.PluginSkills...) {
 			edge(doc.ID, shipped, "ships")
 		}
+		for _, id := range doc.Rules {
+			edge(doc.ID, id, "rule")
+		}
+		for _, id := range doc.Commands {
+			edge(doc.ID, id, "command")
+		}
+		for _, id := range doc.Hooks {
+			edge(doc.ID, id, "hook")
+		}
+		for _, id := range append(append([]string{}, doc.Servers...), doc.PluginLSP...) {
+			edge(doc.ID, id, "server")
+		}
 	}
 	return map[string]any{"nodes": nodes, "edges": edges}
 }

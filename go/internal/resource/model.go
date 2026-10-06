@@ -70,6 +70,62 @@ type Document struct {
 	PluginProfiles []string
 	PluginSkills   []string
 	PluginModes    []string
+	PluginLSP      []string
+
+	// Native Copilot components (ADR-0040). Agents, profiles, and plugins
+	// hold rules, commands, and hooks; agents hold agent-scoped servers.
+	Rules    []string
+	Commands []string
+	Hooks    []string
+	Servers  []string
+
+	// Rules: an optional path glob scoping the rule to matching files.
+	RulePaths string
+
+	// Commands: Copilot command frontmatter.
+	ArgumentHint           *string
+	AllowedTools           []string
+	DisableModelInvocation *bool
+	// Body is a rule's or command's Markdown body.
+	Body string
+
+	// Hooks.
+	Hook *HookConfig
+
+	// LSP servers.
+	LSP *LSPConfig
+}
+
+// HookConfig is one Copilot hook entry and the event it handles.
+type HookConfig struct {
+	Event          string
+	Matcher        string
+	Type           string
+	Bash           string
+	PowerShell     string
+	Command        string
+	Exec           string
+	Args           []string
+	Cwd            string
+	Env            map[string]string
+	TimeoutSec     string
+	URL            string
+	Headers        map[string]string
+	AllowedEnvVars []string
+	Prompt         string
+}
+
+// LSPConfig is one Copilot language server.
+type LSPConfig struct {
+	Command               string
+	Bash                  string
+	PowerShell            string
+	Args                  []string
+	Env                   map[string]string
+	Cwd                   string
+	FileExtensions        map[string]string
+	RootURI               string
+	InitializationOptions string
 }
 
 // IsData reports whether a context document is typed data rather than a

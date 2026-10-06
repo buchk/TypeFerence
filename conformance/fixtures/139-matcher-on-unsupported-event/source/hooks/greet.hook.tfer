@@ -1,0 +1,5 @@
+---
+event: sessionEnd
+matcher: anything
+bash: echo done
+---

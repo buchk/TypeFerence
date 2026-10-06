@@ -95,6 +95,7 @@ type importer struct {
 	skills      map[string]importedSkill
 	agents      map[string]importedAgent
 	servers     map[string]importedServer
+	native      nativeImport
 	unsupported []string
 	notes       []string
 }
@@ -222,6 +223,11 @@ func Import(source string, options Options) (*Result, error) {
 	plugin.raw(0, "description", pluginDescription)
 	plugin.list(0, "agents", agentPaths)
 	plugin.list(0, "skills", skillPaths)
+	plugin.list(0, "rules", im.native.rules)
+	plugin.list(0, "commands", im.native.commands)
+	plugin.list(0, "hooks", im.native.hooks)
+	plugin.list(0, "lspServers", im.native.lsp)
+	result.Files = append(result.Files, im.native.files...)
 	pluginPath := "plugins/" + pluginName + ".plugin.tfer"
 	result.Files = append(result.Files, File{Path: pluginPath, Content: document(plugin, "")})
 	manifest := &frontmatter{}
@@ -700,10 +706,8 @@ func (im *importer) plugin() (string, string, error) {
 				return "", "", err
 			}
 		}
-		for _, unsupported := range []string{"com.github.copilot/hooks", "com.github.copilot/commands", "com.github.copilot/rules", "com.github.copilot/lsp.json"} {
-			if exists(filepath.Join(im.root, filepath.FromSlash(unsupported))) {
-				im.unsupported = append(im.unsupported, unsupported+": hooks, commands, rules, and LSP servers have no version 7 source kind")
-			}
+		if err := im.copilotComponents(); err != nil {
+			return "", "", err
 		}
 		return name, description, nil
 	}

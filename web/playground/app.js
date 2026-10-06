@@ -349,8 +349,8 @@ function openArtifact(path) {
 
 /* ---------------------------------------------------------------- graph */
 
-const KIND_COLORS = { plugin: "--kind-plugin", agent: "--kind-agent", profile: "--kind-profile", skill: "--kind-skill", capability: "--kind-capability", server: "--kind-interface", contextType: "--kind-capability", context: "--text-dim" };
-const EDGE_KIND_COLOR = { embeds: "--text-dim", skill: "--kind-skill", binds: "--kind-skill", extends: "--kind-skill", ships: "--kind-plugin", capability: "--kind-capability", parameter: "--kind-capability", with: "--kind-agent", context: "--text-dim", server: "--kind-interface", contextType: "--kind-capability" };
+const KIND_COLORS = { plugin: "--kind-plugin", agent: "--kind-agent", profile: "--kind-profile", skill: "--kind-skill", capability: "--kind-capability", server: "--kind-interface", contextType: "--kind-capability", context: "--text-dim", rule: "--kind-native", command: "--kind-native", hook: "--kind-native", lsp: "--kind-native" };
+const EDGE_KIND_COLOR = { embeds: "--text-dim", skill: "--kind-skill", binds: "--kind-skill", extends: "--kind-skill", ships: "--kind-plugin", capability: "--kind-capability", parameter: "--kind-capability", with: "--kind-agent", context: "--text-dim", server: "--kind-interface", contextType: "--kind-capability", rule: "--kind-native", command: "--kind-native", hook: "--kind-native" };
 
 const shortName = (id) => {
   const noVersion = id.split("@")[0];

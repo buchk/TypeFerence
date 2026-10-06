@@ -24,8 +24,10 @@ tests cover diagnostics, internal invariants, and rendered content.
 | Parameters and field references | 003, 004, 102, 120 | `internal/compile`: `TestAgentInstantiatesTemplates`, `TestOptionalFieldWithoutValueCannotBeReferenced` |
 | Instances and instance names; embedded agents' bindings | 003, 004, 013, 101, 103, 104, 105, 111, 119, 125, 129 | `internal/compile`: `TestAgentInstantiatesTemplates`, `TestEmbeddedAgentBindingsShallowestWins` |
 | Rendering held documents | 003 | `internal/compile`: `TestAgentInstantiatesTemplates` |
-| Skill files and schemas; portable destinations | 006, 011, 112, 127 | `internal/compile`: `TestSchemasAndFilesShipBesideTheSkill`; `internal/packages`: `TestBinarySkillFilesPackByteForByte` |
+| Skill files and schemas; portable destinations | 006, 011, 112, 127, 130, 131 | `internal/compile`: `TestSchemasAndFilesShipBesideTheSkill`, `TestSkillDirectoryPaths`; `internal/packages`: `TestBinarySkillFilesPackByteForByte` |
 | Servers and `mcp.json` | 005, 109, 110, 118 | `internal/compile`: `TestServersShipWithTheirSkillsPerMode`; `go/conformance`: `TestMarketplaceServerNamesDenoteOneConfiguration` |
+| Native components: rules, commands, hooks, LSP servers, agent-scoped servers; enterprise defaults | 014, 137, 138, 139, 140, 141, 142, 143 | `internal/compile`: `TestNativeComponentsRender`; `internal/importer`: `TestImportCarriesCopilotComponents` |
+| Output contract | every success fixture | `tools/validate_output.py` in CI's `output-contract` job |
 | Copilot fields | 007 | `internal/compile`: `TestCopilotFieldsRenderInTableOrder`; `internal/importer`: `TestImportCarriesFilesServersAndCopilotFields` |
 | Build-wide name uniqueness | 117, 118 | `go/conformance`: `TestCandidateCollisionIsReported` |
 | Packages, restore, lockfiles, Git routes | 001 | `internal/packages`: all tests |

@@ -134,7 +134,11 @@ A version 7 source document is a `.tfer` file whose suffix is its kind:
 | `.server.tfer` | server | an MCP server that skills require |
 | `.contexttype.tfer` | contextType | the shape of a family of data documents |
 | `.context.tfer` | context | a document (Markdown) or data (typed values) |
-| `.plugin.tfer` | plugin | an installable package: the agents, profiles, and skills that ship together |
+| `.plugin.tfer` | plugin | an installable package: the agents, profiles, skills, and native components that ship together |
+| `.rule.tfer` | rule | always-on Copilot guidance, emitted as a rule |
+| `.command.tfer` | command | a Copilot slash command |
+| `.hook.tfer` | hook | one Copilot hook entry and the event it handles |
+| `.lsp.tfer` | lsp | a Copilot language server |
 
 A document path is relative to the package root, uses `/`, and is clean: not
 absolute, with no empty, `.`, or `..` segment. Every segment of its stem, the
@@ -276,17 +280,21 @@ marketplace entries, and bundle metadata, never in an instruction body.
 
 | Kind | Fields |
 | --- | --- |
-| agent | `displayName`, `description`, `embeds` (profiles or agents), `context` (documents), `skills` (bindings), `with` (parameter name to data), `copilot` |
-| profile | `displayName`, `description`, `embeds` (profiles), `parameters` (parameter name to context type), `context` (documents), `skills` (bindings) |
+| agent | `displayName`, `description`, `embeds` (profiles or agents), `context` (documents), `skills` (bindings), `with` (parameter name to data), `copilot`, `rules` (rules), `commands` (commands), `hooks` (hooks), `servers` (servers scoped to the agent) |
+| profile | `displayName`, `description`, `embeds` (profiles), `parameters` (parameter name to context type), `context` (documents), `skills` (bindings), `rules` (rules), `commands` (commands), `hooks` (hooks) |
 | capability | `displayName`, `description`, `inputSchema`, `outputSchema` |
 | skill | `displayName`, `description`, `binds` (capability), `extends` (skill), `parameters`, `with`, `inputSchema`, `outputSchema`, `context` (document entries), `files`, `requiresServers` (servers), `variants`, `copilot` |
 | server | `displayName`, `description`, `transport`, `command`, `args`, `env`, `cwd`, `url`, `headers` |
 | contextType | `displayName`, `description`, `instanceName`, `fields` |
 | context (document) | `displayName`, `description`, `parameters` |
 | context (data) | `displayName`, `description`, `contextType` (context type), `values` |
-| plugin | `description`, `agents` (agents), `profiles` (profiles), `skills` (skills), `modes` |
+| plugin | `description`, `agents` (agents), `profiles` (profiles), `skills` (skills), `modes`, `rules` (rules), `commands` (commands), `hooks` (hooks), `lspServers` (LSP servers) |
+| rule | `displayName`, `description`, `parameters`, `paths` |
+| command | `displayName`, `description`, `parameters`, `argumentHint`, `allowedTools`, `disableModelInvocation` |
+| hook | `displayName`, `description`, `event`, `matcher`, `type`, `bash`, `powershell`, `command`, `exec`, `args`, `cwd`, `env`, `timeoutSec`, `url`, `headers`, `allowedEnvVars`, `prompt` |
+| lsp | `displayName`, `description`, `command`, `bash`, `powershell`, `args`, `env`, `cwd`, `fileExtensions`, `rootUri`, `initializationOptions` |
 
-`description` is required on agents, skills, and plugins, is at most 1024
+`description` is required on agents, skills, plugins, and commands, is at most 1024
 characters after field references are resolved, and must remain a single line
 without control characters after they are resolved. Schemas are JSON Schema
 documents written as string values and canonicalized as JSON.
@@ -309,8 +317,8 @@ modes:
 ---
 ```
 
-A plugin links at least one agent, profile, or skill. A plugin that links no
-agents is a skills pack. `modes` lists `manual`, `pipeline`, or both, each at
+A plugin links at least one agent, profile, skill, rule, command, hook, or LSP
+server. A plugin that links no agents is a skills pack. `modes` lists `manual`, `pipeline`, or both, each at
 most once, and defaults to `manual`.
 
 A plugin ships:
@@ -323,7 +331,10 @@ A plugin ships:
   without an agent there is nowhere to deliver them;
 - each linked skill, after flattening its extension chain;
 - every server that a shipped skill requires in the artifact's mode (see
-  "Servers").
+  "Servers");
+- the rules, commands, and hooks of its linked agents and profiles, and the
+  rules, commands, hooks, and LSP servers it lists itself (see "Native Copilot
+  components").
 
 A skill reached more than once ships once. A skill shipped through `skills` or
 `profiles` MUST have no unbound parameters.
@@ -678,6 +689,12 @@ is `references`, `scripts`, or `assets`, and MUST NOT collide with another
 file, a rendered document, or an emitted schema in the same skill directory.
 Two destinations collide when they are equal after lowercasing, because they
 name one file on case-insensitive filesystems (ADR-0038).
+Every shared directory prefix MUST also use identical spelling: destinations
+`references/A/one.txt` and `references/a/two.txt` are an error even though
+their file names differ. A path MUST NOT name both a file and a directory,
+including after lowercasing. These checks apply to the complete skill directory,
+including inherited files, rendered documents, and schemas, before output is
+written. Accepted destination spelling is preserved (ADR-0039).
 
 Skill files are source members. A file whose bytes are valid UTF-8 is
 normalized like source text (BOM removed, CRLF to LF) and emitted normalized;
@@ -757,6 +774,69 @@ requires them.
 never inferred. A skill meant to be used only by its agent sets
 `userInvocable: false`. Extensions inherit their base's `copilot` fields; an
 extension's own fields replace the base's field by field.
+
+## Native Copilot components
+
+Agent Plugins 1.0 defines skills and MCP servers as its portable components.
+Copilot reads further components from the plugin's `com.github.copilot/`
+directory; TypeFerence declares each as a document kind (ADR-0040).
+
+**Rules** (`.rule.tfer`) are always-on guidance. A rule's body is Markdown; its
+optional `paths` is one glob that scopes it to matching files, and its
+optional `description` labels it. A rule is emitted as
+`com.github.copilot/rules/<name>.md`, with frontmatter (`paths`, then
+`description`) only when one of them is declared.
+
+**Commands** (`.command.tfer`) are slash commands. A command's body is the
+prompt; `description` is required, and `argumentHint`, `allowedTools`, and
+`disableModelInvocation` are emitted as `argument-hint`, `allowed-tools`, and
+`disable-model-invocation`. A command is emitted as
+`com.github.copilot/commands/<name>.md`. A command MUST NOT share an emitted
+name with any skill in the build, because Copilot lets a skill hide a command
+of the same name.
+
+**Hooks** (`.hook.tfer`) are single hook entries. `event` names a Copilot hook
+event; `matcher` is allowed only on `notification`, `permissionRequest`,
+`postToolUse`, `preCompact`, `preToolUse`, and `subagentStart`. `type` is
+`command` (the default), `http`, or `prompt`:
+
+- a `command` hook takes `bash`, `powershell`, `command`, or `exec` (an
+  executable run without a shell, which takes `args` and excludes the
+  others), with `cwd` and `env`;
+- an `http` hook takes an absolute HTTPS `url`, `headers`, and
+  `allowedEnvVars`;
+- a `prompt` hook takes `prompt` and is allowed only on `sessionStart`.
+
+`timeoutSec` is a positive whole number. An artifact's hooks are emitted
+together as `com.github.copilot/hooks/hooks.json`: `version` `1` and `hooks`,
+mapping each event, in canonical order, to its entries in hook identity order.
+
+**LSP servers** (`.lsp.tfer`) take `command`, `bash`, or `powershell` (at least
+one), `args`, `env`, `cwd`, `fileExtensions`, `rootUri`, and
+`initializationOptions` (a JSON document written as a string).
+`fileExtensions` maps extensions, written without their leading dot because a
+frontmatter key cannot start with `.`, to language identifiers; the emitter
+adds the dot. An artifact's servers are emitted together as
+`com.github.copilot/lsp.json`, `lspServers` keyed by server name.
+
+**Agent-scoped servers.** An agent's `servers` lists server documents that
+render in the agent's own frontmatter as `mcp-servers`, scoping them to the
+agent: `type` (`stdio` or `http`), the transport's fields, and `tools` (`*`).
+Copilot expands only `${PLUGIN_ROOT}` there, so a server an agent scopes to
+itself MUST NOT use `${PLUGIN_DATA}`. Agent-scoped servers do not enter the
+plugin's `mcp.json`.
+
+**Enterprise defaults.** Agents and profiles hold rules, commands, and hooks,
+and they promote through embedding like held documents, recording every
+contributor. A plugin ships the rules, commands, and hooks of every agent and
+profile it links. A rule therefore reaches every surface where the plugin is
+active, whether an agent, a slash command, a model-invoked skill, or a
+pipeline run, rather than only the agent whose file holds a document. A rule
+or command with parameters is a template: it ships only through an agent,
+rendered with the agent's bindings and named `<instance name>-<leaf>`, and an
+agent that instantiates one must supply an instance name exactly as for
+template skills. Across a build, one rule name denotes one rule body, one
+command name one command, and one LSP server name one server document.
 
 ## Packages, restore, and lockfiles
 
@@ -861,6 +941,10 @@ agent-plugin/
     plugin.json
     mcp.json
     com.github.copilot/agents/<agent>.agent.md
+    com.github.copilot/rules/<rule>.md
+    com.github.copilot/commands/<command>.md
+    com.github.copilot/hooks/hooks.json
+    com.github.copilot/lsp.json
     skills/<skill>/SKILL.md
     skills/<skill>/references/...
     skills/<skill>/scripts/...
@@ -883,8 +967,8 @@ Each plugin mode is one artifact directory: `manual` emits `<plugin>` and
   declared; a `streamable-http` entry holds `type` (`streamable-http`), `url`,
   then `headers` when declared.
 - `com.github.copilot/agents/<agent>.agent.md` is emitted for each linked
-  agent: frontmatter `name` (the agent's identity leaf), `description`, then
-  its Copilot fields in table order; a body of the `# displayName` title and
+  agent: frontmatter `name` (the agent's identity leaf), `description`, its
+  Copilot fields in table order, then its agent-scoped `mcp-servers`; a body of the `# displayName` title and
   the resolved objectives, then, when non-empty, a `## Context` section for
   held documents and a `## Skills` list of the emitted names of the skills the
   agent binds, sorted.
@@ -893,12 +977,14 @@ Each plugin mode is one artifact directory: `manual` emits `<plugin>` and
   in table order; a body of the skill's instructions for the artifact's mode,
   then, when the skill holds inline documents, a `## Context` section. File
   documents, skill files, and schemas are emitted beside it.
-- `.typeference/bundle.json` (`schemaVersion` 2) records the plugin identity,
+- rules, commands, hooks, and LSP servers are emitted as "Native Copilot
+  components" defines.
+- `.typeference/bundle.json` (`schemaVersion` 3) records the plugin identity,
   artifact name, mode, version, description, the owning package's provenance,
   the resolved agents, the shipped skills with, for each instance, the template
   identity (`templateId`, empty for a skill that is not an instance) and each
-  bound parameter's data identity and canonical values, and the shipped
-  servers. The owning package's provenance is its source digest
+  bound parameter's data identity and canonical values, the shipped
+  servers, and the shipped rules, commands, hooks, and LSP servers. The owning package's provenance is its source digest
   (the build's source digest when the building package owns the plugin, the
   locked digest otherwise) and the locked packages in its dependency closure,
   in lock order.
@@ -938,8 +1024,7 @@ and never compete with each other. Plugins that ship members of one family from
 different implementations, such as a team's specialization beside the shared
 skill, compete for the same requests when installed together.
 
-Build never emits hooks, commands, rules, LSP configuration, or repository or
-enterprise settings. Where a marketplace repository lives, and which
+Build never emits repository or enterprise settings. Where a marketplace repository lives, and which
 repositories enable which plugins, are deployment facts.
 
 ## Organization marketplaces
@@ -1041,7 +1126,8 @@ detection:
 1. a skill directory, one that contains `SKILL.md`;
 2. a plugin. A `plugin.json` that declares `$schema` is read as an Agent
    Plugins 1.0 plugin (`skills/*/SKILL.md`, `mcp.json`,
-   `com.github.copilot/agents/*.agent.md`). Otherwise `plugin.json` or
+   `com.github.copilot/agents/*.agent.md`, and the commands, rules,
+   `hooks/hooks.json`, and `lsp.json` under `com.github.copilot/`). Otherwise `plugin.json` or
    `.claude-plugin/plugin.json` is read as a Copilot CLI plugin, whose `agents`
    and `skills` members locate its components (defaults `agents/` and
    `skills/`);
@@ -1061,7 +1147,11 @@ Import writes:
   each file beside `SKILL.md`, copied to `files/<name>/` with its destination
   preserved;
 - `servers/<name>.server.tfer` for each `mcp.json` server. A server whose name
-  does not satisfy the server name grammar fails the import.
+  does not satisfy the server name grammar fails the import;
+- `commands/<name>.command.tfer` and `rules/<name>.rule.tfer` for each
+  command and rule (a rule's `paths` or `applyTo` becomes `paths`),
+  `hooks/<event>-<n>.hook.tfer` for each hook entry, and `lsp/<name>.lsp.tfer`
+  for each language server, all linked from the plugin.
 
 Imported skills require every imported server, because the source format does
 not record which skill uses which server. Authors narrow `requiresServers`
@@ -1080,9 +1170,10 @@ Import fails closed:
   descriptions and skill instructions are required;
 - content version 7 cannot represent fails the import and is listed item by
   item: unrecognized frontmatter fields, files beside `SKILL.md` outside
-  `references/`, `scripts/`, and `assets/`, hooks, commands, rules, LSP
-  configuration, server values that contain `${` other than the plugin
-  variables, and a Copilot CLI plugin's `hooks`, `commands`, and `lspServers`.
+  `references/`, `scripts/`, and `assets/`, server values that contain `${`
+  other than the plugin variables, hook or LSP fields version 7 does not
+  declare, and a legacy Copilot CLI plugin's `hooks`, `commands`, and
+  `lspServers`.
   With `--lossy`, import proceeds without them and lists each item it dropped;
 - plugin metadata other than `name`, `description`, and `version` is noted as
   not carried, and `.github/copilot-instructions.md` is noted as not imported.

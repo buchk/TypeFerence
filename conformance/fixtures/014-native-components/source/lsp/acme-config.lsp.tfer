@@ -1,0 +1,8 @@
+---
+command: acme-config-lsp
+args:
+  - --stdio
+fileExtensions:
+  acmecfg: acme-config
+initializationOptions: '{"strict":true}'
+---
