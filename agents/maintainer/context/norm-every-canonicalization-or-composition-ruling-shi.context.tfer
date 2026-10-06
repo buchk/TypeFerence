@@ -1,5 +1,4 @@
 ---
 displayName: Every canonicalization or composition ruling ships with a fi...
-contextType: context-types/norms.contexttype.tfer
 ---
 Every canonicalization or composition ruling ships with a fixture under conformance/fixtures in the same change.

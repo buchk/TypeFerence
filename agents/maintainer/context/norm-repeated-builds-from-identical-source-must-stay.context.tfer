@@ -1,5 +1,4 @@
 ---
 displayName: Repeated builds from identical source must stay byte-identic...
-contextType: context-types/norms.contexttype.tfer
 ---
 Repeated builds from identical source must stay byte-identical on every platform.

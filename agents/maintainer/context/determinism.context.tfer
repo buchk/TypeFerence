@@ -1,6 +1,5 @@
 ---
 displayName: Determinism Guarantees
-contextType: context-types/determinism.contexttype.tfer
 ---
 # Determinism guarantees
 
@@ -8,10 +7,11 @@ Identical source must compile to identical bytes — across repeated builds and
 across platforms. The guarantee is enforced, not aspirational:
 
 - `conformance/fixtures/` records the expected `typeference-directory-v1` digest of
-  every emitted target for the fixture corpus; the compiler must reproduce them in
-  CI (a golden-file determinism suite).
-- The committed `dist/` tree is the fully materialized reference output for
-  `examples/helio`; the compiler byte-compares against it in its tests.
+  the emitted agent-plugin target for every success fixture; the compiler must
+  reproduce them in CI (a golden-file determinism suite).
+- The committed `dist/` tree is the fully materialized reference output of the
+  Helio marketplace in `examples/helio`; the compiler byte-compares against it in
+  its tests.
 - The committed root `AGENTS.md` and `dist-maintainer/` are build artifacts of
   `agents/maintainer/`; CI recompiles the definition and fails on any drift.
 

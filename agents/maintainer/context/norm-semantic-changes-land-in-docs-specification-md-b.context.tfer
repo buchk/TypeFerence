@@ -1,5 +1,4 @@
 ---
 displayName: Semantic changes land in docs/specification.md before either...
-contextType: context-types/norms.contexttype.tfer
 ---
 Semantic changes land in docs/specification.md before either implementation changes behavior.

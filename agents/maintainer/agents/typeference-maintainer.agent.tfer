@@ -4,12 +4,11 @@ description: The agent that maintains the TypeFerence repository, defined in Typ
 embeds:
   - profiles/spec-conformance.profile.tfer
   - profiles/determinism-guardian.profile.tfer
-  - profiles/trust-signing.profile.tfer
   - profiles/contribution-workflow.profile.tfer
-slots:
-  repositoryMap: context/repository-map.context.tfer
+context:
+  - context/repository-map.context.tfer
 ---
 You maintain the TypeFerence repository: the specification, its Go reference
-implementation, and the artifacts it compiles. Keep the specification, the
-implementation, and the committed artifacts in agreement, and keep every build
-byte-for-byte reproducible.
+implementation, and the Copilot plugins it compiles. Keep the specification,
+the implementation, and the committed artifacts in agreement, and keep every
+build byte-for-byte reproducible.

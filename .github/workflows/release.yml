@@ -30,7 +30,7 @@ jobs:
       - name: Self-host drift gate
         run: |
           go run ./cmd/typeference diff ../agents/maintainer --against ../dist-maintainer
-          cmp ../AGENTS.md ../dist-maintainer/neutral/typeference-maintainer/AGENTS.md
+          awk 'n >= 2 && (seen || $0 != "") { seen = 1; print } /^---$/ { n++ }'             ../dist-maintainer/agent-plugin/typeference-maintainer/com.github.copilot/agents/typeference-maintainer.agent.md             | cmp - ../AGENTS.md
         working-directory: go
 
   release:
@@ -66,13 +66,13 @@ jobs:
             rm -rf "$STAGE"
           done
           (cd release && sha256sum -- * > SHA256SUMS)
-      - name: Smoke-test the linux binary reproduces the committed reference output
+      - name: Smoke-test the linux binary reproduces the committed maintainer plugin
         run: |
           set -euo pipefail
           STAGE="$(mktemp -d)"
           tar -xzf "release/typeference_${GITHUB_REF_NAME#v}_linux_amd64.tar.gz" -C "$STAGE"
           "$STAGE/typeference" version
-          "$STAGE/typeference" diff examples/helio --against dist
+          "$STAGE/typeference" diff agents/maintainer --against dist-maintainer
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}

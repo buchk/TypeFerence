@@ -1,8 +1,7 @@
 ---
-schemaVersion: 6
+schemaVersion: 7
 name: typeference/maintainer
-version: 0.1.0
-publisher: typeference.example
+version: 0.2.0
 plugins:
   - plugins/typeference-maintainer.plugin.tfer
 ---

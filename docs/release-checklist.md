@@ -7,14 +7,13 @@ release entry before that tag is created.
 
 ## Before tagging
 
-1. On `main`, CI fully green: the Go test suite, the current version 6
-   conformance corpus and the legacy-v5 and legacy-v3 archival corpora, and the
-   self-host drift gate.
+1. On `main`, CI fully green: the Go test suite, the version 7 conformance
+   corpus, the Helio reference test, and the self-host drift gate.
 2. `CHANGELOG.md`: move the `Unreleased` heading to the release date; confirm every
    spec-affecting entry names its ADR.
 3. Quick start in `README.md` executed literally from a clean clone.
-4. No uncommitted generated artifacts: `make selfhost-check` passes; `typeference
-   diff examples/helio --against dist` exits 0.
+4. No uncommitted generated artifacts: `make selfhost-check` passes, and
+   `go test ./internal/compile -run TestHelioReference` reproduces `dist/`.
 
 ## Tagging
 
@@ -26,7 +25,7 @@ git push origin vX.Y.Z
 The `release` workflow then: re-verifies tests, conformance, and drift at the
 tagged commit; cross-compiles `typeference` for linux/darwin/windows on
 amd64/arm64; smoke-tests that the released linux binary reproduces the committed
-reference output; and publishes a GitHub Release with per-platform archives and
+maintainer plugin; and publishes a GitHub Release with per-platform archives and
 `SHA256SUMS`. Tags starting `v0.` are marked as pre-releases.
 
 ## After the release
@@ -39,8 +38,8 @@ reference output; and publishes a GitHub Release with per-platform archives and
 ## Versioning notes
 
 - Tool releases (this checklist) version the CLIs and libraries. They do **not**
-  version the source format: typed resources stay `schemaVersion: 4` and trust
-  configurations `schemaVersion: 1` until an incompatible format change, which
-  requires a specification change and an ADR first.
+  version the source format: manifests stay `schemaVersion: 7` until an
+  incompatible format change, which requires a specification change and an ADR
+  first.
 - Pre-1.0, breaking tool changes are allowed in any release but must be listed
   under **Changed**/**Removed** in the changelog with their ADR.

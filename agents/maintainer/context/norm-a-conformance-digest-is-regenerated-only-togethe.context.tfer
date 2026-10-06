@@ -1,5 +1,4 @@
 ---
 displayName: A conformance digest is regenerated only together with the s...
-contextType: context-types/norms.contexttype.tfer
 ---
 A conformance digest is regenerated only together with the specification change and ADR that justify it; never hand-edit a digest.

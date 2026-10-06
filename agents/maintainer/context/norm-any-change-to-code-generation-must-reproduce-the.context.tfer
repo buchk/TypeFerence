@@ -1,5 +1,4 @@
 ---
 displayName: Any change to code generation must reproduce the committed d...
-contextType: context-types/norms.contexttype.tfer
 ---
 Any change to code generation must reproduce the committed digests, verified by the determinism suite before merge.

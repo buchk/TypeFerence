@@ -1,5 +1,4 @@
 ---
 displayName: Never silently diverge from the specification; fixing the sp...
-contextType: context-types/norms.contexttype.tfer
 ---
 Never silently diverge from the specification; fixing the specification is allowed, silent divergence is not.

@@ -1,6 +1,5 @@
 ---
 displayName: Contribution Workflow
-contextType: context-types/contribution-workflow.contexttype.tfer
 ---
 # Contribution workflow
 
@@ -8,8 +7,8 @@ contextType: context-types/contribution-workflow.contexttype.tfer
   release outside the checklist in `docs/release-checklist.md`.
 - Before any commit: `go test ./...` (from `go/`) and the determinism suite
   (`make conformance`) both pass. A commit that breaks either does not land.
-- Design decisions with real tradeoffs — spec semantics, canonical bytes, trust
-  model, dependencies — are recorded in `docs/decisions/` as numbered ADRs in the
+- Design decisions with real tradeoffs — spec semantics, canonical bytes,
+  dependencies — are recorded in `docs/decisions/` as numbered ADRs in the
   same change.
 - Generated artifacts (root `AGENTS.md`, `dist/`) are only ever changed by
   regenerating them from source (`make selfhost`, `typeference build`); hand edits

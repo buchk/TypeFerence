@@ -34,21 +34,26 @@ conformance:
 	cd go && $(GO) test ./conformance -v
 
 # Recompile the self-hosted maintainer definition (agents/maintainer) into its
-# committed artifacts: dist-maintainer (neutral bundle, installable Copilot
-# plugin, ARD catalog) and the repository-root AGENTS.md. The manifest's
-# publisher turns on ARD emission.
+# committed artifacts: dist-maintainer (the installable Copilot plugin) and the
+# repository-root AGENTS.md, which is the maintainer agent file without its
+# frontmatter.
+MAINTAINER_AGENT := dist-maintainer/agent-plugin/typeference-maintainer/com.github.copilot/agents/typeference-maintainer.agent.md
+STRIP_FRONTMATTER := awk 'n >= 2 && (seen || $$0 != "") { seen = 1; print } /^---$$/ { n++ }'
+
 selfhost: build-go
 	$(BINDIR)/typeference$(shell $(GO) env GOEXE) build agents/maintainer --out dist-maintainer
-	cp dist-maintainer/neutral/typeference-maintainer/AGENTS.md AGENTS.md
+	$(STRIP_FRONTMATTER) $(MAINTAINER_AGENT) > AGENTS.md
 
 # Fail if the committed artifacts have drifted from the definition.
 selfhost-check: build-go
 	$(BINDIR)/typeference$(shell $(GO) env GOEXE) diff agents/maintainer --against dist-maintainer
-	cmp AGENTS.md dist-maintainer/neutral/typeference-maintainer/AGENTS.md
+	$(STRIP_FRONTMATTER) $(MAINTAINER_AGENT) | cmp - AGENTS.md
 
-# Regenerate the committed reference output of examples/helio.
-reference: build-go
-	$(BINDIR)/typeference$(shell $(GO) env GOEXE) build examples/helio --out dist
+# Regenerate the committed reference output of the Helio marketplace
+# (examples/helio): the reference test stages its packages, restores the
+# marketplace, builds it, and rewrites dist/.
+reference:
+	cd go && $(GO) test ./internal/compile -run TestHelioReference -update
 
 fmt:
 	cd go && gofmt -l -w .

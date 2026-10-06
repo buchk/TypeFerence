@@ -1,5 +1,4 @@
 ---
 displayName: Documentation must be accurate against the code at the commi...
-contextType: context-types/norms.contexttype.tfer
 ---
 Documentation must be accurate against the code at the commit that includes it; no fabricated adoption, benchmarks, or endorsements.

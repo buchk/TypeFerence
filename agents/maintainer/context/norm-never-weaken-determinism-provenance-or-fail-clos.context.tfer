@@ -1,5 +1,4 @@
 ---
 displayName: Never weaken determinism, provenance, or fail-closed behavio...
-contextType: context-types/norms.contexttype.tfer
 ---
 Never weaken determinism, provenance, or fail-closed behavior to make a change easier.

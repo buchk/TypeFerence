@@ -1,6 +1,7 @@
 // TypeFerence Playground. Vanilla JS, no dependencies: the page loads the
 // real Go compiler as WebAssembly (typeference.wasm), gives it an in-memory
-// filesystem (memfs.js), and recompiles on every edit. Nothing leaves the tab.
+// filesystem (memfs.js), and recompiles every Copilot plugin on every edit.
+// Nothing leaves the tab.
 "use strict";
 
 /* ---------------------------------------------------------------- state */
@@ -14,13 +15,13 @@ const state = {
   activeArtifact: null,
   activeAgent: null,
   ready: false,
+  formFile: null,       // data document the Instantiate tab edits
 };
 
 const $ = (id) => document.getElementById(id);
 const els = {
   exampleSelect: $("example-select"),
   reset: $("reset-btn"),
-  emitArd: $("emit-ard"),
   share: $("share-btn"),
   theme: $("theme-btn"),
   fileList: $("file-list"),
@@ -37,6 +38,10 @@ const els = {
   bundleAgent: $("bundle-agent"),
   bundleView: document.querySelector("#bundle-view code"),
   status: $("status"),
+  formFile: $("form-file"),
+  formFields: $("form-fields"),
+  formPreview: document.querySelector("#form-preview code"),
+  formHint: $("form-hint"),
 };
 
 /* ---------------------------------------------------------------- theme */
@@ -133,7 +138,7 @@ function highlightJSON(text) {
 }
 
 function highlightFor(path, text) {
-  if (path.endsWith(".yaml") || path.endsWith(".yml")) return highlightYAML(text);
+  if (path.endsWith(".yaml") || path.endsWith(".yml") || path.endsWith(".tfer")) return highlightYAML(text);
   if (path.endsWith(".md")) return highlightMarkdown(text);
   if (path.endsWith(".json")) return highlightJSON(text);
   return escapeHTML(text);
@@ -240,17 +245,32 @@ function scheduleCompile() {
   compileTimer = setTimeout(compileNow, 300);
 }
 
+// buildRequest splits the editable tree into the package being built and its
+// dependency packages. A marketplace example prefixes every path with its
+// package directory; a single-package example does not.
+function buildRequest(example) {
+  const request = { files: {}, packages: {}, sourceName: state.example || "src" };
+  const rootDir = example?.root || "";
+  const packages = example?.packages || [];
+  for (const [path, content] of state.files) {
+    if (!rootDir) {
+      request.files[path] = content;
+      continue;
+    }
+    const slash = path.indexOf("/");
+    const dir = slash < 0 ? "" : path.slice(0, slash);
+    const rest = slash < 0 ? path : path.slice(slash + 1);
+    if (dir === rootDir) request.files[rest] = content;
+    else if (packages.includes(dir)) (request.packages[dir] = request.packages[dir] || {})[rest] = content;
+  }
+  return request;
+}
+
 function compileNow() {
   if (!state.ready) return;
   const started = performance.now();
   const example = state.examples.find((e) => e.name === state.example);
-  const request = {
-    files: Object.fromEntries(state.files),
-    target: "all",
-    emitArd: els.emitArd.checked,
-    publisherDomain: example?.publisherDomain || "playground.example",
-    sourceName: state.example || "src",
-  };
+  const request = buildRequest(example);
   let result;
   try {
     result = globalThis.TypeFerence.compile(request);
@@ -266,6 +286,7 @@ function compileNow() {
     els.outputPane.classList.add("stale");
     setStatus("error", `compile failed · ${elapsed} ms — details under the editor`);
     if (result && result.graph) renderGraph(result);
+    if (result && result.contextTypes) renderForm(result);
     return;
   }
 
@@ -274,7 +295,7 @@ function compileNow() {
   state.result = result;
   const fileCount = Object.keys(result.files).length;
   const digest = result.hash.replace(/^sha256:/, "").slice(0, 16);
-  const emitted = result.agents.filter((a) => a.emit).length;
+  const emitted = result.agents.length;
   setStatus("ok",
     `${emitted} agent${emitted === 1 ? "" : "s"} · ${fileCount} artifacts · ` +
     `<span class="digest">SHA-256 <b>${digest}…</b></span> · ${elapsed} ms · ` +
@@ -282,7 +303,7 @@ function compileNow() {
   renderArtifacts(result);
   renderGraph(result);
   renderBundle(result);
-  bethMarkStale(); // a packed BETH run no longer matches the edited source
+  renderForm(result);
 }
 
 /* ------------------------------------------------------------ artifacts */
@@ -312,7 +333,7 @@ function renderArtifacts(result) {
     els.artifactList.appendChild(el);
   }
   if (!state.activeArtifact || !result.files[state.activeArtifact]) {
-    state.activeArtifact = paths.find((p) => p.endsWith("AGENTS.md")) ?? paths[0];
+    state.activeArtifact = paths.find((p) => p.endsWith(".agent.md")) ?? paths.find((p) => p.endsWith("SKILL.md")) ?? paths[0];
   }
   openArtifact(state.activeArtifact);
 }
@@ -328,8 +349,8 @@ function openArtifact(path) {
 
 /* ---------------------------------------------------------------- graph */
 
-const KIND_COLORS = { plugin: "--kind-plugin", agent: "--kind-agent", profile: "--kind-profile", skill: "--kind-skill", capability: "--kind-capability", interface: "--kind-interface" };
-const EDGE_KIND_COLOR = { embeds: "--text-dim", satisfies: "--kind-interface", skill: "--kind-skill", binds: "--kind-skill", extends: "--kind-skill", ships: "--kind-plugin", capability: "--kind-capability", requires: "--kind-capability" };
+const KIND_COLORS = { plugin: "--kind-plugin", agent: "--kind-agent", profile: "--kind-profile", skill: "--kind-skill", capability: "--kind-capability", server: "--kind-interface", contextType: "--kind-capability", context: "--text-dim" };
+const EDGE_KIND_COLOR = { embeds: "--text-dim", skill: "--kind-skill", binds: "--kind-skill", extends: "--kind-skill", ships: "--kind-plugin", capability: "--kind-capability", parameter: "--kind-capability", with: "--kind-agent", context: "--text-dim", server: "--kind-interface", contextType: "--kind-capability" };
 
 const shortName = (id) => {
   const noVersion = id.split("@")[0];
@@ -340,12 +361,6 @@ function renderGraph(result) {
   const graph = result.graph || { nodes: [], edges: [] };
   const nodes = graph.nodes.map((n) => ({ ...n }));
   const edges = graph.edges.map((e) => ({ ...e }));
-  // Structural interface satisfaction is computed, not declared; show it.
-  for (const agent of result.agents || []) {
-    for (const iface of agent.satisfies || []) {
-      edges.push({ from: agent.id, to: iface, kind: "satisfies" });
-    }
-  }
 
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const validEdges = edges.filter((e) => byId.has(e.from) && byId.has(e.to));
@@ -365,7 +380,7 @@ function renderGraph(result) {
     if (!changed) break;
   }
 
-  const KIND_ORDER = { plugin: 0, agent: 1, profile: 2, interface: 3, skill: 4, capability: 5 };
+  const KIND_ORDER = { plugin: 0, agent: 1, profile: 2, skill: 3, capability: 4, server: 5, context: 6, contextType: 7 };
   const rows = [];
   for (const node of nodes) {
     const d = depth.get(node.id);
@@ -430,7 +445,7 @@ function renderGraph(result) {
     Object.entries(KIND_COLORS).map(([kind, v]) =>
       `<span><span class="swatch" style="background:${color(v)}"></span>${kind}</span>`).join("") +
     `<span><span class="edge-sample" style="background:${color("--text-dim")}"></span>embeds</span>` +
-    `<span><span class="edge-sample" style="background:repeating-linear-gradient(90deg,${color("--kind-interface")} 0 5px,transparent 5px 9px)"></span>satisfies (structural)</span>`;
+    `<span><span class="edge-sample" style="background:${color("--kind-agent")}"></span>with (binds data)</span>`;
 }
 
 /* --------------------------------------------------------------- bundle */
@@ -482,7 +497,7 @@ function loadExample(name) {
   state.files = new Map(Object.entries(example.files));
   state.activeArtifact = null;
   state.activeAgent = null;
-  bethReset(name);
+  state.formFile = example.form || null;
   const paths = [...state.files.keys()].sort();
   openFile(paths.find((p) => p.includes("agent")) ?? paths[0]);
   scheduleCompile();
@@ -498,7 +513,186 @@ function initExamples() {
   }
   els.exampleSelect.addEventListener("change", () => loadExample(els.exampleSelect.value));
   els.reset.addEventListener("click", () => loadExample(els.exampleSelect.value));
-  els.emitArd.addEventListener("change", scheduleCompile);
+}
+
+/* ----------------------------------------------------- instantiate form */
+
+// The Instantiate tab is a form generated from a context type (ADR-0036):
+// editing it rewrites one data document, which recompiles every instance
+// that binds it. The form knows no TypeFerence rules; the compiler is still
+// the validator.
+
+// parseValues reads a data document's values with the small subset of the
+// grammar data documents use: scalar entries and string lists.
+function parseValues(text) {
+  const values = {};
+  const lines = text.split("\n");
+  let inValues = false, listKey = null;
+  for (const line of lines) {
+    if (/^values:\s*$/.test(line)) { inValues = true; continue; }
+    if (!inValues) continue;
+    if (/^\S/.test(line)) break;
+    const item = line.match(/^ {4}- (.*)$/);
+    if (item && listKey) { values[listKey].push(unquote(item[1])); continue; }
+    const kv = line.match(/^ {2}([A-Za-z][A-Za-z0-9_]*):\s*(.*)$/);
+    if (kv) {
+      if (kv[2] === "") { listKey = kv[1]; values[kv[1]] = []; }
+      else { listKey = null; values[kv[1]] = unquote(kv[2]); }
+    }
+  }
+  return values;
+}
+
+function unquote(value) {
+  const v = value.trim();
+  if (v.startsWith('"') && v.endsWith('"')) {
+    try { return JSON.parse(v); } catch { return v.slice(1, -1); }
+  }
+  if (v.startsWith("'") && v.endsWith("'")) return v.slice(1, -1).replace(/''/g, "'");
+  return v;
+}
+
+// scalarText writes a value as a plain scalar when that is unambiguous for
+// a string field, and quotes it otherwise.
+function scalarText(value, type) {
+  if (type === "boolean" || type === "integer") return value;
+  const plainSafe = /^[A-Za-z0-9_./(][^#:]*$/.test(value) && value === value.trim() &&
+    !["null", "~", "[]", "{}"].includes(value);
+  return plainSafe ? value : JSON.stringify(value);
+}
+
+function dataDocument(typeRef, fields, values) {
+  const lines = ["---", "contextType: " + typeRef, "values:"];
+  for (const field of fields) {
+    const value = values[field.name];
+    if (field.type === "list<string>") {
+      const items = (value || []).filter((v) => v !== "");
+      if (!items.length) continue;
+      lines.push(`  ${field.name}:`);
+      for (const item of items) lines.push("    - " + scalarText(item, "string"));
+      continue;
+    }
+    if (value === undefined || value === "") continue;
+    lines.push(`  ${field.name}: ${scalarText(String(value), field.type)}`);
+  }
+  lines.push("---", "");
+  return lines.join("\n");
+}
+
+function dataFiles() {
+  return [...state.files.keys()].filter((p) => p.endsWith(".context.tfer") && /^contextType: /m.test(state.files.get(p))).sort();
+}
+
+// contextTypeFor maps a data document's contextType reference to the loaded
+// context type shape.
+function contextTypeFor(path, shapes) {
+  const text = state.files.get(path) || "";
+  const ref = (text.match(/^contextType: (.*)$/m) || [])[1];
+  if (!ref) return { ref: null, shape: null };
+  const target = ref.includes(":") ? ref.slice(ref.indexOf(":") + 1) : ref;
+  const shape = shapes.find((s) => s.path === target.trim()) || null;
+  return { ref: ref.trim(), shape };
+}
+
+function renderForm(result) {
+  const files = dataFiles();
+  els.formFile.innerHTML = "";
+  for (const path of files) {
+    const opt = document.createElement("option");
+    opt.value = path;
+    opt.textContent = path;
+    els.formFile.appendChild(opt);
+  }
+  if (!files.includes(state.formFile)) state.formFile = files[0] || null;
+  if (!state.formFile) {
+    els.formFields.innerHTML = "";
+    els.formPreview.textContent = "";
+    els.formHint.textContent = "This example has no data documents to instantiate.";
+    return;
+  }
+  els.formFile.value = state.formFile;
+  const { ref, shape } = contextTypeFor(state.formFile, result.contextTypes || []);
+  if (!shape) {
+    els.formFields.innerHTML = "";
+    els.formHint.textContent = "The context type for this data document did not load; fix the diagnostics first.";
+    return;
+  }
+  // Re-render only when the shape or file changes, so typing keeps focus.
+  const signature = state.formFile + "|" + JSON.stringify(shape);
+  els.formPreview.innerHTML = highlightYAML(state.files.get(state.formFile) || "");
+  if (els.formFields.dataset.signature === signature) return;
+  els.formFields.dataset.signature = signature;
+  els.formHint.innerHTML = `A form generated from <b>${escapeHTML(shape.displayName || shape.path)}</b>` +
+    (shape.description ? ` — ${escapeHTML(shape.description)}` : "") +
+    (shape.instanceName ? `. The <code>${escapeHTML(shape.instanceName)}</code> field names this team's skill instances.` : ".");
+  const values = parseValues(state.files.get(state.formFile) || "");
+  els.formFields.innerHTML = "";
+  for (const field of shape.fields) {
+    const row = document.createElement("label");
+    row.className = "form-row";
+    const title = document.createElement("span");
+    title.className = "form-label";
+    title.textContent = (field.displayName || field.name) + (field.required ? " *" : "");
+    row.appendChild(title);
+    let input;
+    if (field.choices && field.choices.length) {
+      input = document.createElement("select");
+      if (!field.required) input.appendChild(new Option(field.default ? `(default: ${field.default})` : "(none)", ""));
+      for (const choice of field.choices) input.appendChild(new Option(choice, choice));
+      input.value = values[field.name] ?? "";
+    } else if (field.type === "boolean") {
+      input = document.createElement("select");
+      input.appendChild(new Option(field.default ? `(default: ${field.default})` : "(none)", ""));
+      input.appendChild(new Option("true", "true"));
+      input.appendChild(new Option("false", "false"));
+      input.value = values[field.name] ?? "";
+    } else if (field.type === "text" || field.type === "list<string>") {
+      input = document.createElement("textarea");
+      input.rows = 3;
+      const value = values[field.name];
+      input.value = Array.isArray(value) ? value.join("\n") : (value ?? "");
+      if (field.type === "list<string>") input.placeholder = "one item per line";
+    } else {
+      input = document.createElement("input");
+      input.type = field.type === "integer" ? "number" : "text";
+      input.value = values[field.name] ?? "";
+      if (field.default !== undefined) input.placeholder = `default: ${field.default}`;
+    }
+    input.dataset.field = field.name;
+    input.addEventListener("input", () => updateFromForm(ref, shape));
+    row.appendChild(input);
+    if (field.description) {
+      const help = document.createElement("span");
+      help.className = "form-help";
+      help.textContent = field.description;
+      row.appendChild(help);
+    }
+    els.formFields.appendChild(row);
+  }
+}
+
+function updateFromForm(ref, shape) {
+  const values = {};
+  for (const input of els.formFields.querySelectorAll("[data-field]")) {
+    const field = shape.fields.find((f) => f.name === input.dataset.field);
+    values[field.name] = field.type === "list<string>" ? input.value.split("\n").map((v) => v.trim()) : input.value;
+  }
+  const text = dataDocument(ref, shape.fields, values);
+  state.files.set(state.formFile, text);
+  if (state.activePath === state.formFile) {
+    els.editor.value = text;
+    refreshHighlight();
+  }
+  els.formPreview.innerHTML = highlightYAML(text);
+  scheduleCompile();
+}
+
+function initForm() {
+  els.formFile.addEventListener("change", () => {
+    state.formFile = els.formFile.value;
+    els.formFields.dataset.signature = "";
+    if (state.result) renderForm(state.result);
+  });
 }
 
 /* ---------------------------------------------------------------- share */
@@ -536,7 +730,7 @@ async function restoreFromHash() {
       els.exampleSelect.value = state.example;
     }
     state.files = new Map(Object.entries(payload.files));
-    bethReset(state.example);
+    state.formFile = state.examples.find((e) => e.name === state.example)?.form || null;
     const paths = [...state.files.keys()].sort();
     openFile(paths.find((p) => p.includes("agent")) ?? paths[0]);
     return true;
@@ -570,7 +764,7 @@ async function boot() {
   initEditor();
   initFilePane();
   initTabs();
-  initBeth();
+  initForm();
   els.share.addEventListener("click", shareLink);
 
   try {

@@ -3,14 +3,55 @@
 All notable changes to TypeFerence are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semantic
 versioning. Tool versions (this file) are independent of the source-package
-`schemaVersion` declared in the project manifest (currently 6) and the trust
-configuration `schemaVersion` (currently 5), which only change when the source
-formats change incompatibly.
+`schemaVersion` declared in the project manifest (currently 7), which only
+changes when the source format changes incompatibly.
 
 TypeFerence is an experimental reference implementation; pre-1.0 versions make no
 compatibility promises between minor versions.
 
 ## [Unreleased]
+
+### Changed
+
+- **Version 7: an authoring and reuse layer for Copilot plugins**
+  ([ADR-0035](docs/decisions/0035-v7-copilot-plugin-authoring-layer.md)).
+  `agent-plugin` is the only build target, and build emits complete plugins.
+  Manifests declare `schemaVersion: 7`; version 6 sources are not accepted.
+  Packages may also restore from Git repositories by tag.
+- **Documents, typed data, and templates**
+  ([ADR-0036](docs/decisions/0036-v7-documents-data-and-templates.md)).
+  - A context document is free Markdown, or typed data (`contextType` plus
+    `values`). Context types are flat records with form metadata
+    (`displayName`, `description`, `choices`) and an optional `instanceName`
+    field.
+  - Documents, skills, and profiles declare `parameters`; `{{name.field}}`
+    inserts a bound value.
+  - An agent's `with` binds parameters and emits each template skill as
+    `<instance name>-<skill leaf>`. A skill that extends a template and
+    supplies `with` is a concrete instance.
+  - Skills ship plain files under `references/`, `scripts/`, and `assets/`,
+    can render a held document as a reference file, and emit their input and
+    output schemas as `references/*.schema.json`.
+- **MCP servers and Copilot fields emitted by build**
+  ([ADR-0037](docs/decisions/0037-v7-build-emitted-host-configuration.md)).
+  `.server.tfer` documents declare stdio or streamable-http servers with
+  namespaced names. Skills require them with `requiresServers`, and each
+  artifact's `mcp.json` holds exactly the servers its skills need. A
+  `copilot` mapping on skills and agents emits opt-in Copilot frontmatter.
+  `import` now carries skill files, `mcp.json` servers, and recognized
+  Copilot fields.
+- The playground builds multi-package marketplaces and generates an
+  "Instantiate" form from a context type.
+
+### Removed
+
+- The `neutral` target, ARD catalogs, A2A, deployment files, `link`,
+  `publish`, trust metadata and signature import, interfaces, slots,
+  `allowedContextTypes`, `sealed`, capability `visibility`, the `tool` kind,
+  `requiresContextTypes`, context-type refinement, `map<T>` and `decimal`,
+  the `eval` and `equivalence` commands and the playground's equivalence
+  console, the archival version 5 and version 3 languages, and the version 6
+  conformance corpus (ADR-0035).
 
 ### Added
 

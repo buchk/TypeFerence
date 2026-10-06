@@ -1,6 +1,5 @@
 ---
 displayName: Repository Map
-contextType: context-types/repository-map.contexttype.tfer
 ---
 # Repository map
 
@@ -10,16 +9,16 @@ contextType: context-types/repository-map.contexttype.tfer
 | `docs/whitepaper.md` | Motivation and design narrative. |
 | `docs/decisions/` | Architecture decision records. |
 | `go/` | The implementation (static binary; module `github.com/buchk/TypeFerence/go`). |
-| `go/cmd/typeference-lsp/` | Language server for version 6 `.tfer` packages. |
+| `go/cmd/typeference-lsp/` | Language server for version 7 `.tfer` packages. |
 | `editors/vscode/` | VS Code client for the language server. |
 | `go/conformance/` | Determinism runner (`-update` regenerates digests). |
-| `conformance/` | Golden-file fixture corpus: the current language plus archived legacy-v5 and legacy-v3 corpora. |
-| `examples/helio` | Example plugin set used by tests and the quick start. |
-| `examples/deployment` | Deployment files for linking helio's neutral and plugin outputs. |
-| `dist/` | Committed reference output of `examples/helio`: the neutral bundle, the agent-plugin marketplace, and the ARD catalog (byte-compared in CI). |
-| `agents/maintainer/` | This definition; compiled into the root `AGENTS.md` and `dist-maintainer/`. |
+| `conformance/` | Golden-file fixture corpus for version 7. |
+| `examples/helio` | Example packages and marketplace used by tests and the quick start. |
+| `dist/` | Committed reference output of the Helio marketplace (byte-compared in tests). |
+| `web/playground/` | Browser playground running the compiler as WebAssembly. |
+| `agents/maintainer/` | This definition; compiled into `dist-maintainer/` and the root `AGENTS.md`. |
 | `.github/workflows/ci.yml` | Build, test, determinism, and self-host drift gates. |
 
 The root `AGENTS.md` is generated from this definition. To change it, edit the
-resources under `agents/maintainer/` and run `make selfhost`; never edit the
+documents under `agents/maintainer/` and run `make selfhost`; never edit the
 generated file directly.

@@ -3,11 +3,12 @@
 A fictional organization, Helio Works, authoring its Copilot plugins with
 version 7 of the language (ADR-0035 through ADR-0037).
 
-**Status: illustrative.** The compiler on this branch still implements
-version 6. These sources follow the version 7 specification and are not yet
-built or tested. The output shown below is what the specification prescribes,
-derived by hand. It becomes a committed, byte-compared reference once the
-compiler implements version 7.
+The reference test (`go test ./internal/compile -run TestHelioReference`)
+stages the four team packages into a temporary feed, restores the marketplace,
+builds it, and byte-compares the result with the committed `dist/`; `make
+reference` rewrites `dist/`. The output excerpts below are derived from the
+specification by hand: until `dist/` is regenerated with a Go toolchain on this
+branch, they are the prediction the generated output will be reviewed against.
 
 ## Packages
 
@@ -57,8 +58,9 @@ compiler implements version 7.
 
 ## Expected output
 
-`typeference build marketplace --out dist` (after `typeference restore
-marketplace`) emits:
+Building `marketplace/` (after restoring it against a feed holding the four
+team packages; see the repository README's quick start and `feeds.yaml`)
+emits:
 
 ```text
 dist/agent-plugin/
