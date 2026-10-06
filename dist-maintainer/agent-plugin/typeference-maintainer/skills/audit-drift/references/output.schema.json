@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "properties": {
+    "clean": {
+      "type": "boolean"
+    },
+    "driftedFiles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "clean",
+    "driftedFiles"
+  ]
+}

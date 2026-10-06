@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 2,
+  "target": "agent-plugin",
+  "sourceDigest": "sha256:8937d30713d04024f0bcb66709221a1e62e7a7fdaa6d24eef6f033fe0c00d99f",
+  "artifacts": [
+    {
+      "id": "helio/data-platform/plugins/data-platform@1.0.2",
+      "mode": "manual",
+      "path": "data-platform",
+      "sourceDigest": "sha256:0c87231422d920dc4d18304a1d7c076db939d337a659e15b05a813294ded74d8",
+      "digest": "sha256:d40f259e3f61d1cf23a64ef36ba0f0c27141d431b784ff4b16a990c584d14da9"
+    },
+    {
+      "id": "helio/core/plugins/engineering-kit@3.1.0",
+      "mode": "manual",
+      "path": "engineering-kit",
+      "sourceDigest": "sha256:10ca0368a904463ae13efcb13c7bb96bd7cac823524c25d42009b2a9c95058f3",
+      "digest": "sha256:0700a89f53bdfb73ff03acac7cffe043edb91bac6ca690493f99cea70e1e78f3"
+    },
+    {
+      "id": "helio/integrations/plugins/integrations@0.3.0",
+      "mode": "manual",
+      "path": "integrations",
+      "sourceDigest": "sha256:bb94c6037aff6024de5297226e191fc33776c671598e433dd664614cf3899b37",
+      "digest": "sha256:2d5f02c3adbaed0770ff54f0a128731eeae346392a49022164e23ab2ac5e4075"
+    },
+    {
+      "id": "helio/payments/plugins/payments@2.4.0",
+      "mode": "manual",
+      "path": "payments",
+      "sourceDigest": "sha256:054cead84aae38dcf97e09e6013eb4784016436673d92a64301a0115d8fae89c",
+      "digest": "sha256:6e978f93e5abb1af4d2eb44ef0df020ce675e315c4ef5aef871d24d08a600246"
+    },
+    {
+      "id": "helio/payments/plugins/payments@2.4.0",
+      "mode": "pipeline",
+      "path": "payments-pipeline",
+      "sourceDigest": "sha256:054cead84aae38dcf97e09e6013eb4784016436673d92a64301a0115d8fae89c",
+      "digest": "sha256:e0f0b48cc50f6073088a486e1446feedbcb4f74367af67069ac8e318f2ede928"
+    }
+  ]
+}

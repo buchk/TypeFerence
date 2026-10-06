@@ -1,0 +1,19 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "helio-builds": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@helio/build-signals-mcp",
+        "--cache",
+        "${PLUGIN_DATA}/build-signals"
+      ]
+    },
+    "helio-tickets": {
+      "type": "streamable-http",
+      "url": "https://tickets.helio.example/mcp"
+    }
+  }
+}

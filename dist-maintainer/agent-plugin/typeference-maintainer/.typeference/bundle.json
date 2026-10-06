@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 2,
+  "id": "typeference/maintainer/plugins/typeference-maintainer@0.2.0",
+  "name": "typeference-maintainer",
+  "mode": "manual",
+  "version": "0.2.0",
+  "description": "The TypeFerence repository\u0027s maintainer agent, with its conformance and self-host drift skills.",
+  "sourceDigest": "sha256:ab4f23eee8e3d9b44233b3621152b218874c6c74d9102fefb73fab9a0ef86523",
+  "dependencies": [],
+  "agents": [
+    {
+      "id": "typeference/maintainer/agents/typeference-maintainer@0.2.0",
+      "name": "typeference-maintainer",
+      "displayName": "TypeFerence Maintainer",
+      "description": "The agent that maintains the TypeFerence repository, defined in TypeFerence\u0027s own terms and compiled into this repository\u0027s AGENTS.md.",
+      "embeds": [
+        "typeference/maintainer/profiles/spec-conformance@0.2.0",
+        "typeference/maintainer/profiles/determinism-guardian@0.2.0",
+        "typeference/maintainer/profiles/contribution-workflow@0.2.0"
+      ],
+      "bindings": [],
+      "objectives": [
+        {
+          "source": "typeference/maintainer/agents/typeference-maintainer@0.2.0",
+          "content": "You maintain the TypeFerence repository: the specification, its Go reference\nimplementation, and the Copilot plugins it compiles. Keep the specification,\nthe implementation, and the committed artifacts in agreement, and keep every\nbuild byte-for-byte reproducible.\n"
+        }
+      ],
+      "documents": [
+        {
+          "id": "typeference/maintainer/context/norm-semantic-changes-land-in-docs-specification-md-b@0.2.0",
+          "render": "inline"
+        },
+        {
+          "id": "typeference/maintainer/context/norm-where-the-specification-and-an-implementation-di@0.2.0",
+          "render": "inline"
+        },
+        {
+          "id": "typeference/maintainer/context/norm-every-canonicalization-or-composition-ruling-shi@0.2.0",
+          "render": "inline"
+        },
+        {
+          "id": "typeference/maintainer/context/norm-never-silently-diverge-from-the-specification-fi@0.2.0",
+          "render": "inline"
+        },
+        {
+          "id": "typeference/maintainer/context/spec-workflow@0.2.0",
+          "render": "inline"
+        },
+        {
+          "id": "typeference/maintainer/context/norm-any-change-to-code-generation-must-reproduce-the@0.2.0",
+          "render": "inline"
+        },
+        {
+          "id": "typeference/maintainer/context/norm-never-weaken-determinism-provenance-or-fail-clos@0.2.0",
+          "render": "inline"
+        },
+        {
+          "id": "typeference/maintainer/context/norm-a-conformance-digest-is-regenerated-only-togethe@0.2.0",
+          "render": "inline"
+        },
+        {
+          "id": "typeference/maintainer/context/norm-repeated-builds-from-identical-source-must-stay@0.2.0",
+          "render": "inline"
+        },
+        {
+          "id": "typeference/maintainer/context/determinism@0.2.0",
+          "render": "inline"
+        },
+        {
+          "id": "typeference/maintainer/context/norm-every-commit-builds-and-passes-the-test-suite-an@0.2.0",
+          "render": "inline"
+        },
+        {
+          "id": "typeference/maintainer/context/norm-decisions-with-real-tradeoffs-are-recorded-as-ad@0.2.0",
+          "render": "inline"
+        },
+        {
+          "id": "typeference/maintainer/context/norm-documentation-must-be-accurate-against-the-code@0.2.0",
+          "render": "inline"
+        },
+        {
+          "id": "typeference/maintainer/context/norm-commit-messages-are-conventional-and-written-for@0.2.0",
+          "render": "inline"
+        },
+        {
+          "id": "typeference/maintainer/context/contribution@0.2.0",
+          "render": "inline"
+        },
+        {
+          "id": "typeference/maintainer/context/repository-map@0.2.0",
+          "render": "inline"
+        }
+      ],
+      "skills": [
+        "audit-drift",
+        "verify-conformance"
+      ],
+      "provenance": [
+        {
+          "field": "objectives",
+          "source": "typeference/maintainer/agents/typeference-maintainer@0.2.0"
+        },
+        {
+          "field": "context",
+          "source": "typeference/maintainer/profiles/spec-conformance@0.2.0"
+        },
+        {
+          "field": "context",
+          "source": "typeference/maintainer/profiles/spec-conformance@0.2.0"
+        },
+        {
+          "field": "context",
+          "source": "typeference/maintainer/profiles/spec-conformance@0.2.0"
+        },
+        {
+          "field": "context",
+          "source": "typeference/maintainer/profiles/spec-conformance@0.2.0"
+        },
+        {
+          "field": "context",
+          "source": "typeference/maintainer/profiles/spec-conformance@0.2.0"
+        },
+        {
+          "field": "context",
+          "source": "typeference/maintainer/profiles/determinism-guardian@0.2.0"
+        },
+        {
+          "field": "context",
+          "source": "typeference/maintainer/profiles/determinism-guardian@0.2.0"
+        },
+        {
+          "field": "context",
+          "source": "typeference/maintainer/profiles/determinism-guardian@0.2.0"
+        },
+        {
+          "field": "context",
+          "source": "typeference/maintainer/profiles/determinism-guardian@0.2.0"
+        },
+        {
+          "field": "context",
+          "source": "typeference/maintainer/profiles/determinism-guardian@0.2.0"
+        },
+        {
+          "field": "context",
+          "source": "typeference/maintainer/profiles/contribution-workflow@0.2.0"
+        },
+        {
+          "field": "context",
+          "source": "typeference/maintainer/profiles/contribution-workflow@0.2.0"
+        },
+        {
+          "field": "context",
+          "source": "typeference/maintainer/profiles/contribution-workflow@0.2.0"
+        },
+        {
+          "field": "context",
+          "source": "typeference/maintainer/profiles/contribution-workflow@0.2.0"
+        },
+        {
+          "field": "context",
+          "source": "typeference/maintainer/profiles/contribution-workflow@0.2.0"
+        },
+        {
+          "field": "context",
+          "source": "typeference/maintainer/agents/typeference-maintainer@0.2.0"
+        },
+        {
+          "field": "embeds",
+          "source": "typeference/maintainer/profiles/spec-conformance@0.2.0"
+        },
+        {
+          "field": "embeds",
+          "source": "typeference/maintainer/profiles/determinism-guardian@0.2.0"
+        },
+        {
+          "field": "embeds",
+          "source": "typeference/maintainer/profiles/contribution-workflow@0.2.0"
+        }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "audit-drift",
+      "implementationId": "typeference/maintainer/skills/audit-drift@0.2.0",
+      "templateId": "",
+      "capabilityId": "typeference/maintainer/capabilities/audit-drift@0.2.0",
+      "description": "Confirms the committed AGENTS.md and maintainer plugin are exact build artifacts of this definition.",
+      "bindings": [],
+      "servers": [],
+      "documents": [],
+      "files": [],
+      "provenance": [
+        {
+          "field": "implementation",
+          "source": "typeference/maintainer/skills/audit-drift@0.2.0"
+        },
+        {
+          "field": "binding",
+          "source": "typeference/maintainer/profiles/determinism-guardian@0.2.0"
+        }
+      ]
+    },
+    {
+      "name": "verify-conformance",
+      "implementationId": "typeference/maintainer/skills/verify-conformance@0.2.0",
+      "templateId": "",
+      "capabilityId": "typeference/maintainer/capabilities/verify-conformance@0.2.0",
+      "description": "Runs the determinism suite and reports whether the compiler reproduces the committed digests.",
+      "bindings": [],
+      "servers": [],
+      "documents": [],
+      "files": [],
+      "provenance": [
+        {
+          "field": "implementation",
+          "source": "typeference/maintainer/skills/verify-conformance@0.2.0"
+        },
+        {
+          "field": "binding",
+          "source": "typeference/maintainer/profiles/determinism-guardian@0.2.0"
+        }
+      ]
+    }
+  ],
+  "servers": []
+}

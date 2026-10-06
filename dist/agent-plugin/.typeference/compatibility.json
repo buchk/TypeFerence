@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "conflicts": [
+    {
+      "mode": "manual",
+      "capabilityId": "helio/core/skills/self-heal@3.1.0",
+      "members": [
+        {
+          "plugin": "data-platform",
+          "skill": "data-platform-self-heal"
+        },
+        {
+          "plugin": "payments",
+          "skill": "payments-self-heal"
+        }
+      ]
+    }
+  ]
+}

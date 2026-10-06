@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 2,
+  "id": "helio/payments/plugins/payments@2.4.0",
+  "name": "payments",
+  "mode": "manual",
+  "version": "2.4.0",
+  "description": "The Helio payments operations agent, for engineers and release pipelines.",
+  "sourceDigest": "sha256:054cead84aae38dcf97e09e6013eb4784016436673d92a64301a0115d8fae89c",
+  "dependencies": [
+    {
+      "name": "helio/core",
+      "version": "3.1.0",
+      "digest": "sha256:10ca0368a904463ae13efcb13c7bb96bd7cac823524c25d42009b2a9c95058f3"
+    }
+  ],
+  "agents": [
+    {
+      "id": "helio/payments/agents/payments-ops@2.4.0",
+      "name": "payments-ops",
+      "displayName": "payments-ops",
+      "description": "Operations agent for the Helio payments team.",
+      "embeds": [
+        "helio/core/profiles/team-ops@3.1.0"
+      ],
+      "bindings": [
+        {
+          "parameter": "team",
+          "data": "helio/payments/data/payments-team@2.4.0",
+          "contextType": "helio/core/context-types/team@3.1.0",
+          "values": {
+            "id": "payments",
+            "name": "Payments",
+            "onCall": "payments-oncall",
+            "queue": "PAY-OPS",
+            "tier": "critical"
+          }
+        }
+      ],
+      "objectives": [
+        {
+          "source": "helio/payments/agents/payments-ops@2.4.0",
+          "content": "You support the Payments team\u0027s engineers and release pipelines. Lead with evidence,\nand keep changes small enough to review in one sitting.\n"
+        }
+      ],
+      "documents": [
+        {
+          "id": "helio/core/docs/enterprise-norms@3.1.0",
+          "render": "inline"
+        }
+      ],
+      "skills": [
+        "payments-onboard-teammate",
+        "payments-queue-summary",
+        "payments-self-heal"
+      ],
+      "provenance": [
+        {
+          "field": "objectives",
+          "source": "helio/payments/agents/payments-ops@2.4.0"
+        },
+        {
+          "field": "context",
+          "source": "helio/core/profiles/team-ops@3.1.0"
+        },
+        {
+          "field": "embeds",
+          "source": "helio/core/profiles/team-ops@3.1.0"
+        }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "payments-onboard-teammate",
+      "implementationId": "helio/core/skills/onboard-teammate@3.1.0",
+      "templateId": "helio/core/skills/onboard-teammate@3.1.0",
+      "capabilityId": "helio/core/skills/onboard-teammate@3.1.0",
+      "description": "Walk a new Payments teammate through their first week.",
+      "bindings": [
+        {
+          "parameter": "team",
+          "data": "helio/payments/data/payments-team@2.4.0",
+          "contextType": "helio/core/context-types/team@3.1.0",
+          "values": {
+            "id": "payments",
+            "name": "Payments",
+            "onCall": "payments-oncall",
+            "queue": "PAY-OPS",
+            "tier": "critical"
+          }
+        }
+      ],
+      "servers": [],
+      "documents": [
+        {
+          "id": "helio/core/docs/onboarding-guide@3.1.0",
+          "render": "file"
+        }
+      ],
+      "files": [],
+      "provenance": [
+        {
+          "field": "implementation",
+          "source": "helio/core/skills/onboard-teammate@3.1.0"
+        },
+        {
+          "field": "binding",
+          "source": "helio/core/profiles/team-ops@3.1.0"
+        }
+      ]
+    },
+    {
+      "name": "payments-queue-summary",
+      "implementationId": "helio/core/skills/queue-summary@3.1.0",
+      "templateId": "helio/core/skills/queue-summary@3.1.0",
+      "capabilityId": "helio/core/skills/queue-summary@3.1.0",
+      "description": "Summarize open requests in the Payments ticket queue.",
+      "bindings": [
+        {
+          "parameter": "team",
+          "data": "helio/payments/data/payments-team@2.4.0",
+          "contextType": "helio/core/context-types/team@3.1.0",
+          "values": {
+            "id": "payments",
+            "name": "Payments",
+            "onCall": "payments-oncall",
+            "queue": "PAY-OPS",
+            "tier": "critical"
+          }
+        }
+      ],
+      "servers": [
+        "helio/core/servers/helio-tickets@3.1.0"
+      ],
+      "documents": [],
+      "files": [],
+      "provenance": [
+        {
+          "field": "implementation",
+          "source": "helio/core/skills/queue-summary@3.1.0"
+        },
+        {
+          "field": "binding",
+          "source": "helio/core/profiles/team-ops@3.1.0"
+        }
+      ]
+    },
+    {
+      "name": "payments-self-heal",
+      "implementationId": "helio/payments/skills/self-heal@2.4.0",
+      "templateId": "helio/payments/skills/self-heal@2.4.0",
+      "capabilityId": "helio/core/skills/self-heal@3.1.0",
+      "description": "Diagnose a failed payments pipeline run, including reconciliation evidence.",
+      "bindings": [
+        {
+          "parameter": "team",
+          "data": "helio/payments/data/payments-team@2.4.0",
+          "contextType": "helio/core/context-types/team@3.1.0",
+          "values": {
+            "id": "payments",
+            "name": "Payments",
+            "onCall": "payments-oncall",
+            "queue": "PAY-OPS",
+            "tier": "critical"
+          }
+        }
+      ],
+      "servers": [],
+      "documents": [],
+      "files": [
+        {
+          "source": "helio/core:files/self-heal/report-template.md",
+          "as": "references/report-template.md"
+        }
+      ],
+      "provenance": [
+        {
+          "field": "implementation",
+          "source": "helio/payments/skills/self-heal@2.4.0"
+        },
+        {
+          "field": "implementation",
+          "source": "helio/core/skills/self-heal@3.1.0"
+        },
+        {
+          "field": "binding",
+          "source": "helio/payments/agents/payments-ops@2.4.0"
+        }
+      ]
+    }
+  ],
+  "servers": [
+    "helio/core/servers/helio-tickets@3.1.0"
+  ]
+}

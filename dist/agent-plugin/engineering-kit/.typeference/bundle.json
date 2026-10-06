@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 2,
+  "id": "helio/core/plugins/engineering-kit@3.1.0",
+  "name": "engineering-kit",
+  "mode": "manual",
+  "version": "3.1.0",
+  "description": "Evidence-backed repository status for any Helio team, without an agent.",
+  "sourceDigest": "sha256:10ca0368a904463ae13efcb13c7bb96bd7cac823524c25d42009b2a9c95058f3",
+  "dependencies": [],
+  "agents": [],
+  "skills": [
+    {
+      "name": "repository-status",
+      "implementationId": "helio/core/skills/repository-status@3.1.0",
+      "templateId": "",
+      "capabilityId": "helio/core/skills/repository-status@3.1.0",
+      "description": "Summarize repository health using current version-control and test evidence.",
+      "bindings": [],
+      "servers": [],
+      "documents": [],
+      "files": [],
+      "provenance": [
+        {
+          "field": "implementation",
+          "source": "helio/core/skills/repository-status@3.1.0"
+        }
+      ]
+    }
+  ],
+  "servers": []
+}

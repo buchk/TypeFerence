@@ -1,0 +1,6 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "payments-pipeline",
+  "version": "2.4.0",
+  "description": "The Helio payments operations agent, for engineers and release pipelines."
+}

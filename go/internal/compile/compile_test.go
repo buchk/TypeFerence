@@ -184,8 +184,8 @@ func TestSchemasAndFilesShipBesideTheSkill(t *testing.T) {
 
 func TestCopilotFieldsRenderInTableOrder(t *testing.T) {
 	root := build(t, map[string]string{
-		"typeference.tfer":        manifest,
-		"plugins/kit.plugin.tfer": "---\ndescription: Kit.\nagents:\n  - agents/helper.agent.tfer\n---\n",
+		"typeference.tfer":         manifest,
+		"plugins/kit.plugin.tfer":  "---\ndescription: Kit.\nagents:\n  - agents/helper.agent.tfer\n---\n",
 		"skills/hidden.skill.tfer": "---\ndescription: Hidden.\ncopilot:\n  allowedTools:\n    - shell(git:*)\n  userInvocable: false\n  argumentHint: \"[target]\"\n---\nInspect.\n",
 		"agents/helper.agent.tfer": "---\ndescription: Helper.\nskills:\n  - skills/hidden.skill.tfer\ncopilot:\n  tools:\n    - read\n  model: example-model\n---\nHelp.\n",
 	})

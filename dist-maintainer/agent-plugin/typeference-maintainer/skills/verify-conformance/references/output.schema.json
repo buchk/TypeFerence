@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "properties": {
+    "passed": {
+      "type": "boolean"
+    },
+    "mismatches": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "passed",
+    "mismatches"
+  ]
+}

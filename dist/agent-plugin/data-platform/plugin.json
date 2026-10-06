@@ -1,0 +1,6 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "data-platform",
+  "version": "1.0.2",
+  "description": "The Helio data platform operations agent."
+}

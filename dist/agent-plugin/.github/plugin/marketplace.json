@@ -1,0 +1,41 @@
+{
+  "name": "helio-agents",
+  "owner": {
+    "name": "Helio Platform"
+  },
+  "metadata": {
+    "version": "2026.10.1"
+  },
+  "plugins": [
+    {
+      "name": "data-platform",
+      "source": "./data-platform",
+      "description": "The Helio data platform operations agent.",
+      "version": "1.0.2"
+    },
+    {
+      "name": "engineering-kit",
+      "source": "./engineering-kit",
+      "description": "Evidence-backed repository status for any Helio team, without an agent.",
+      "version": "3.1.0"
+    },
+    {
+      "name": "integrations",
+      "source": "./integrations",
+      "description": "README upkeep skills for Helio\u0027s integration repositories.",
+      "version": "0.3.0"
+    },
+    {
+      "name": "payments",
+      "source": "./payments",
+      "description": "The Helio payments operations agent, for engineers and release pipelines.",
+      "version": "2.4.0"
+    },
+    {
+      "name": "payments-pipeline",
+      "source": "./payments-pipeline",
+      "description": "The Helio payments operations agent, for engineers and release pipelines.",
+      "version": "2.4.0"
+    }
+  ]
+}

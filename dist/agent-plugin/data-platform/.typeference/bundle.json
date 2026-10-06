@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 2,
+  "id": "helio/data-platform/plugins/data-platform@1.0.2",
+  "name": "data-platform",
+  "mode": "manual",
+  "version": "1.0.2",
+  "description": "The Helio data platform operations agent.",
+  "sourceDigest": "sha256:0c87231422d920dc4d18304a1d7c076db939d337a659e15b05a813294ded74d8",
+  "dependencies": [
+    {
+      "name": "helio/core",
+      "version": "3.1.0",
+      "digest": "sha256:10ca0368a904463ae13efcb13c7bb96bd7cac823524c25d42009b2a9c95058f3"
+    }
+  ],
+  "agents": [
+    {
+      "id": "helio/data-platform/agents/data-ops@1.0.2",
+      "name": "data-ops",
+      "displayName": "data-ops",
+      "description": "Operations agent for the Helio data platform team.",
+      "embeds": [
+        "helio/core/profiles/team-ops@3.1.0"
+      ],
+      "bindings": [
+        {
+          "parameter": "team",
+          "data": "helio/data-platform/data/data-team@1.0.2",
+          "contextType": "helio/core/context-types/team@3.1.0",
+          "values": {
+            "id": "data-platform",
+            "name": "Data Platform",
+            "onCall": "the team lead",
+            "queue": "DATA-REQ",
+            "tier": "standard"
+          }
+        }
+      ],
+      "objectives": [
+        {
+          "source": "helio/data-platform/agents/data-ops@1.0.2",
+          "content": "You support the Data Platform team\u0027s engineers. Prefer reversible changes.\n"
+        }
+      ],
+      "documents": [
+        {
+          "id": "helio/core/docs/enterprise-norms@3.1.0",
+          "render": "inline"
+        }
+      ],
+      "skills": [
+        "data-platform-onboard-teammate",
+        "data-platform-queue-summary",
+        "data-platform-self-heal"
+      ],
+      "provenance": [
+        {
+          "field": "objectives",
+          "source": "helio/data-platform/agents/data-ops@1.0.2"
+        },
+        {
+          "field": "context",
+          "source": "helio/core/profiles/team-ops@3.1.0"
+        },
+        {
+          "field": "embeds",
+          "source": "helio/core/profiles/team-ops@3.1.0"
+        }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "data-platform-onboard-teammate",
+      "implementationId": "helio/core/skills/onboard-teammate@3.1.0",
+      "templateId": "helio/core/skills/onboard-teammate@3.1.0",
+      "capabilityId": "helio/core/skills/onboard-teammate@3.1.0",
+      "description": "Walk a new Data Platform teammate through their first week.",
+      "bindings": [
+        {
+          "parameter": "team",
+          "data": "helio/data-platform/data/data-team@1.0.2",
+          "contextType": "helio/core/context-types/team@3.1.0",
+          "values": {
+            "id": "data-platform",
+            "name": "Data Platform",
+            "onCall": "the team lead",
+            "queue": "DATA-REQ",
+            "tier": "standard"
+          }
+        }
+      ],
+      "servers": [],
+      "documents": [
+        {
+          "id": "helio/core/docs/onboarding-guide@3.1.0",
+          "render": "file"
+        }
+      ],
+      "files": [],
+      "provenance": [
+        {
+          "field": "implementation",
+          "source": "helio/core/skills/onboard-teammate@3.1.0"
+        },
+        {
+          "field": "binding",
+          "source": "helio/core/profiles/team-ops@3.1.0"
+        }
+      ]
+    },
+    {
+      "name": "data-platform-queue-summary",
+      "implementationId": "helio/core/skills/queue-summary@3.1.0",
+      "templateId": "helio/core/skills/queue-summary@3.1.0",
+      "capabilityId": "helio/core/skills/queue-summary@3.1.0",
+      "description": "Summarize open requests in the Data Platform ticket queue.",
+      "bindings": [
+        {
+          "parameter": "team",
+          "data": "helio/data-platform/data/data-team@1.0.2",
+          "contextType": "helio/core/context-types/team@3.1.0",
+          "values": {
+            "id": "data-platform",
+            "name": "Data Platform",
+            "onCall": "the team lead",
+            "queue": "DATA-REQ",
+            "tier": "standard"
+          }
+        }
+      ],
+      "servers": [
+        "helio/core/servers/helio-tickets@3.1.0"
+      ],
+      "documents": [],
+      "files": [],
+      "provenance": [
+        {
+          "field": "implementation",
+          "source": "helio/core/skills/queue-summary@3.1.0"
+        },
+        {
+          "field": "binding",
+          "source": "helio/core/profiles/team-ops@3.1.0"
+        }
+      ]
+    },
+    {
+      "name": "data-platform-self-heal",
+      "implementationId": "helio/core/skills/self-heal@3.1.0",
+      "templateId": "helio/core/skills/self-heal@3.1.0",
+      "capabilityId": "helio/core/skills/self-heal@3.1.0",
+      "description": "Diagnose a failed pipeline run from its evidence and propose a narrow fix.",
+      "bindings": [
+        {
+          "parameter": "team",
+          "data": "helio/data-platform/data/data-team@1.0.2",
+          "contextType": "helio/core/context-types/team@3.1.0",
+          "values": {
+            "id": "data-platform",
+            "name": "Data Platform",
+            "onCall": "the team lead",
+            "queue": "DATA-REQ",
+            "tier": "standard"
+          }
+        }
+      ],
+      "servers": [],
+      "documents": [],
+      "files": [
+        {
+          "source": "helio/core:files/self-heal/report-template.md",
+          "as": "references/report-template.md"
+        }
+      ],
+      "provenance": [
+        {
+          "field": "implementation",
+          "source": "helio/core/skills/self-heal@3.1.0"
+        },
+        {
+          "field": "binding",
+          "source": "helio/core/profiles/team-ops@3.1.0"
+        }
+      ]
+    }
+  ],
+  "servers": [
+    "helio/core/servers/helio-tickets@3.1.0"
+  ]
+}

@@ -39,8 +39,8 @@ type ResolvedSkill struct {
 	// instance, and empty for a skill that binds no parameters.
 	TemplateID   string
 	CapabilityID string
-	Description      string
-	Instructions     string
+	Description  string
+	Instructions string
 	// Variants maps mode to rendered instructions for a multimodal skill.
 	Variants        map[string]string
 	Servers         []string
