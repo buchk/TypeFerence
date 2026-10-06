@@ -1,0 +1,8 @@
+---
+description: The Helio payments operations agent, for engineers and release pipelines.
+agents:
+  - agents/payments-ops.agent.tfer
+modes:
+  - manual
+  - pipeline
+---

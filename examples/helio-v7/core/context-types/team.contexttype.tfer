@@ -1,0 +1,31 @@
+---
+displayName: Team
+description: What a Helio team supplies to instantiate the team operations kit.
+instanceName: id
+fields:
+  id:
+    type: string
+    required: true
+    displayName: Team identifier
+    description: Lowercase and hyphenated; prefixes the team's skill names.
+  name:
+    type: string
+    required: true
+    displayName: Team name
+  queue:
+    type: string
+    required: true
+    displayName: Ticket queue
+    description: The queue this team's requests arrive in.
+  tier:
+    type: string
+    default: standard
+    displayName: Release tier
+    choices:
+      - standard
+      - critical
+  onCall:
+    type: string
+    default: the team lead
+    displayName: On-call alias
+---

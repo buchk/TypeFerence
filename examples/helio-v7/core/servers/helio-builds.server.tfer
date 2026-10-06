@@ -1,0 +1,10 @@
+---
+description: Build evidence for pipeline runs.
+transport: stdio
+command: npx
+args:
+  - -y
+  - "@helio/build-signals-mcp"
+  - --cache
+  - ${PLUGIN_DATA}/build-signals
+---

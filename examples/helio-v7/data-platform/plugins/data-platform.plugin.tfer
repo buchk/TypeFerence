@@ -1,0 +1,5 @@
+---
+description: The Helio data platform operations agent.
+agents:
+  - agents/data-ops.agent.tfer
+---

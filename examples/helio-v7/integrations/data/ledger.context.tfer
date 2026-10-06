@@ -1,0 +1,7 @@
+---
+contextType: helio/core:context-types/integration-repo.contexttype.tfer
+values:
+  system: Ledger
+  owner: Finance Platform
+  pipeline: ledger-release
+---

@@ -1,0 +1,5 @@
+---
+description: Read access to Helio's ticket system.
+transport: streamable-http
+url: https://tickets.helio.example/mcp
+---

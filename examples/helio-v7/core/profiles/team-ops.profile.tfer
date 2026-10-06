@@ -1,0 +1,11 @@
+---
+description: Day-to-day operations kit that every Helio team instantiates.
+parameters:
+  team: context-types/team.contexttype.tfer
+context:
+  - docs/enterprise-norms.context.tfer
+skills:
+  - skills/queue-summary.skill.tfer
+  - skills/onboard-teammate.skill.tfer
+  - skills/self-heal.skill.tfer
+---

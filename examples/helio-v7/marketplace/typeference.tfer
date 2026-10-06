@@ -1,0 +1,18 @@
+---
+schemaVersion: 7
+name: helio/marketplace
+version: 2026.10.1
+marketplace:
+  name: helio-agents
+  owner: Helio Platform
+dependencies:
+  helio/core: 3.1.0
+  helio/payments: 2.4.0
+  helio/data-platform: 1.0.2
+  helio/integrations: 0.3.0
+plugins:
+  - helio/core:plugins/engineering-kit.plugin.tfer
+  - helio/payments:plugins/payments.plugin.tfer
+  - helio/data-platform:plugins/data-platform.plugin.tfer
+  - helio/integrations:plugins/integrations.plugin.tfer
+---
