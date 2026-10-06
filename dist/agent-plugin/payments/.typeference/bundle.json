@@ -65,6 +65,10 @@
         {
           "field": "embeds",
           "source": "helio/core/profiles/team-ops@3.1.0"
+        },
+        {
+          "field": "with",
+          "source": "helio/payments/agents/payments-ops@2.4.0"
         }
       ]
     }

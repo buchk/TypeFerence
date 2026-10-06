@@ -239,13 +239,13 @@ func TestDiffAndDigestAreExactForBinaryFiles(t *testing.T) {
 func TestProvenanceKeepsEveryContributor(t *testing.T) {
 	source := t.TempDir()
 	write(t, source, map[string]string{
-		"typeference.tfer":          manifest,
-		"plugins/kit.plugin.tfer":   "---\ndescription: Kit.\nagents:\n  - agents/a.agent.tfer\n---\n",
-		"docs/norm.context.tfer":    "---\ndisplayName: Norm\n---\nCite evidence.\n",
-		"skills/review.skill.tfer":  "---\ndescription: Review.\n---\nReview the change.\n",
+		"typeference.tfer":            manifest,
+		"plugins/kit.plugin.tfer":     "---\ndescription: Kit.\nagents:\n  - agents/a.agent.tfer\n---\n",
+		"docs/norm.context.tfer":      "---\ndisplayName: Norm\n---\nCite evidence.\n",
+		"skills/review.skill.tfer":    "---\ndescription: Review.\n---\nReview the change.\n",
 		"profiles/left.profile.tfer":  "---\ncontext:\n  - docs/norm.context.tfer\nskills:\n  - skills/review.skill.tfer\n---\n",
 		"profiles/right.profile.tfer": "---\ncontext:\n  - docs/norm.context.tfer\nskills:\n  - skills/review.skill.tfer\n---\n",
-		"agents/a.agent.tfer":       "---\ndescription: A.\nembeds:\n  - profiles/left.profile.tfer\n  - profiles/right.profile.tfer\n---\nHelp.\n",
+		"agents/a.agent.tfer":         "---\ndescription: A.\nembeds:\n  - profiles/left.profile.tfer\n  - profiles/right.profile.tfer\n---\nHelp.\n",
 	})
 	agents, err := compile.Validate(source)
 	if err != nil {

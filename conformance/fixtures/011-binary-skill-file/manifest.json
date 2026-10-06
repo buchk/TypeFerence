@@ -1,4 +1,7 @@
 {
   "description": "A skill file that is not valid UTF-8 ships byte for byte and is digested as exact bytes (ADR-0038).",
-  "expect": "success"
+  "expect": "success",
+  "digests": {
+    "agent-plugin": "sha256:775a676060412077291c82d1a0f9af32d29bb87b1906b224a85f43bf2c76f2aa"
+  }
 }

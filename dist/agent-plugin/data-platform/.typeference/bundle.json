@@ -65,6 +65,10 @@
         {
           "field": "embeds",
           "source": "helio/core/profiles/team-ops@3.1.0"
+        },
+        {
+          "field": "with",
+          "source": "helio/data-platform/agents/data-ops@1.0.2"
         }
       ]
     }
