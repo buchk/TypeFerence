@@ -1,0 +1,8 @@
+{
+  "description": "Marketplace carried files (ADR-0041): the marketplace package's README, license, and CI workflow ship at the target root and are listed in build.json with file digests; a dependency's plugin ships its own metadata and carried files, which travel through pack and restore as members of that package.",
+  "expect": "success",
+  "packages": "packages",
+  "digests": {
+    "agent-plugin": "sha256:f82cc3477fe2d89cd5e64e2954435cea551aa4a1be057412d3c226507e7617c7"
+  }
+}

@@ -2,18 +2,19 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/buchk/TypeFerence/conformance/schemas/typeference/build.schema.json",
   "title": "TypeFerence build.json",
-  "description": "The target's integrity index (.typeference/build.json, schemaVersion 2): one entry per plugin and mode.",
+  "description": "The target's integrity index (.typeference/build.json, schemaVersion 3): one entry per plugin and mode, and one per marketplace file.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schemaVersion",
     "target",
     "sourceDigest",
-    "artifacts"
+    "artifacts",
+    "files"
   ],
   "properties": {
     "schemaVersion": {
-      "const": 2
+      "const": 3
     },
     "target": {
       "const": "agent-plugin"
@@ -48,6 +49,31 @@
           },
           "sourceDigest": {
             "$ref": "#/$defs/digest"
+          },
+          "digest": {
+            "$ref": "#/$defs/digest"
+          }
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "source",
+          "digest"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1
           },
           "digest": {
             "$ref": "#/$defs/digest"

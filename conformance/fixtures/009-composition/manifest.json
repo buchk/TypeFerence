@@ -2,6 +2,6 @@
   "description": "Composition: an embedding chain promotes documents and bindings, the shallowest binding wins, a local binding rebinds a promoted capability, an abstract required capability is fulfilled by an embedding profile, and embedded agents' objectives come first.",
   "expect": "success",
   "digests": {
-    "agent-plugin": "sha256:4eecf0039c2785b1802135252c5462c82734a77198e6436ceeb8e31678dd655a"
+    "agent-plugin": "sha256:8b083a74f672ad036321b62d2fb2109645675e28ef071f8d647ea25c7485b058"
   }
 }

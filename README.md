@@ -163,6 +163,8 @@ Because the marketplace is one build:
 
 `typeference validate <marketplace> --candidate <package-dir>` checks an unpublished package against the marketplace without writing anything.
 
+The published repository holds only build output. Anything else it needs, such as a README, a license, or CI workflows, is listed in the manifest's `marketplace.files` and reaches the repository through build, with a digest in `build.json`. A plugin's own `files` (a README, adoption templates) ship in its directory, and its `author`, `homepage`, `repository`, `license`, and `keywords` appear in `plugin.json` and its marketplace entry ([ADR-0041](docs/decisions/0041-plugin-metadata-and-carried-files.md)).
+
 ## Using the plugins with Copilot
 
 Publish the `agent-plugin` directory as a repository, then install from it with [Copilot CLI](https://docs.github.com/en/enterprise-cloud@latest/copilot/reference/copilot-cli-reference/cli-plugin-reference):
@@ -234,7 +236,7 @@ typeference diff <source> --against <compiled-dir> [--json] [--packages-dir dir]
 typeference version
 ```
 
-- `import` turns existing Copilot customizations into a version 7 package: a repository's `.github/agents` and skills, a skill directory, or an Agent Plugin. It carries the files beside skills, `mcp.json` servers, and recognized Copilot frontmatter. It also carries an Agent Plugin's commands, rules, hooks, and language servers. It fails, listing every item, on anything version 7 cannot represent, unless you pass `--lossy`.
+- `import` turns existing Copilot customizations into a version 7 package: a repository's `.github/agents` and skills, a skill directory, or an Agent Plugin. It carries the files beside skills, `mcp.json` servers, and recognized Copilot frontmatter. It also carries an Agent Plugin's commands, rules, hooks, and language servers, its `author`, `homepage`, `repository`, `license`, and `keywords`, and every other file in the plugin directory, such as a README or templates, as plugin `files`. A marketplace repository is not imported whole: import lists its plugins so each can be imported, and the repository's README and CI become the marketplace package's `marketplace.files`. It fails, listing every item, on anything version 7 cannot represent, unless you pass `--lossy`.
 - `restore` is the only command that contacts feeds. It records exact identities and digests in `typeference.lock`.
 - `build` is offline and deterministic.
 - `diff` rebuilds and byte-compares against a committed output directory.

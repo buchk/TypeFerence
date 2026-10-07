@@ -1,0 +1,17 @@
+---
+schemaVersion: 7
+name: conformance/marketplace
+version: 2026.10.7
+marketplace:
+  name: conformance-agents
+  owner: Conformance Platform
+  files:
+    - files/README.md
+    - files/LICENSE
+    - path: files/workflows/validate.yml
+      as: .github/workflows/validate.yml
+dependencies:
+  conformance/team: 1.2.0
+plugins:
+  - conformance/team:plugins/team-kit.plugin.tfer
+---

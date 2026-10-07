@@ -34,11 +34,11 @@ func SourceFiles(source string) ([]File, error) {
 	if err != nil {
 		return nil, err
 	}
-	skillFiles := map[string]bool{}
-	for _, rel := range loaded.SkillFiles {
-		skillFiles[rel] = true
+	memberFiles := map[string]bool{}
+	for _, rel := range loaded.MemberFiles {
+		memberFiles[rel] = true
 	}
-	paths := append(append([]string{}, loaded.Files...), loaded.SkillFiles...)
+	paths := append(append([]string{}, loaded.Files...), loaded.MemberFiles...)
 	paths = append(paths, resource.ManifestFile)
 	if info, statErr := os.Stat(filepath.Join(root, LockFile)); statErr == nil && info.Mode().IsRegular() {
 		paths = append(paths, LockFile)
@@ -53,7 +53,7 @@ func SourceFiles(source string) ([]File, error) {
 		if readErr != nil {
 			return nil, resource.Errorf("Cannot read source file: %s", rel)
 		}
-		if skillFiles[rel] && !utf8.Valid(data) {
+		if memberFiles[rel] && !utf8.Valid(data) {
 			files = append(files, File{Path: rel, Content: base64.StdEncoding.EncodeToString(data), Encoding: "base64"})
 			continue
 		}

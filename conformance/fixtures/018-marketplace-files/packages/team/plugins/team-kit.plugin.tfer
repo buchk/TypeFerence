@@ -1,0 +1,13 @@
+---
+description: The team's repository health kit.
+author:
+  name: Team Platform
+repository: https://example.com/git/team
+keywords:
+  - team
+skills:
+  - skills/status.skill.tfer
+files:
+  - path: files/adoption.md
+    as: templates/adoption.md
+---

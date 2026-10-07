@@ -1,0 +1,14 @@
+---
+description: Repository health kit.
+skills:
+  - skills/status.skill.tfer
+files:
+  - files/kit/README.md
+  - path: files/kit/settings.template.json
+    as: templates/settings.json
+  - path: files/kit/logo.bin
+    as: assets/logo.bin
+modes:
+  - manual
+  - pipeline
+---

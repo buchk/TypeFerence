@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "id": "helio/integrations/plugins/integrations@0.3.0",
   "name": "integrations",
   "mode": "manual",
@@ -86,5 +86,6 @@
   "rules": [],
   "commands": [],
   "hooks": [],
-  "lspServers": []
+  "lspServers": [],
+  "files": []
 }

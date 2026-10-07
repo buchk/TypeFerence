@@ -213,3 +213,76 @@ func TestImportRejectsInvalidNamesRatherThanRewriting(t *testing.T) {
 		t.Fatalf("an invalid skill name must fail, got %v", err)
 	}
 }
+
+func TestImportCarriesPluginMetadataAndFiles(t *testing.T) {
+	plugin := t.TempDir()
+	write(t, plugin, "plugin.json", `{"$schema":"https://agent-plugins.org/schemas/1.0.0/plugin.schema.json","name":"team-kit","version":"2.3.0","description":"Our team kit.","author":{"name":"Team Platform","email":"platform@example.com"},"repository":"https://example.com/git/team-kit","license":"MIT","keywords":["review","incidents"]}`)
+	write(t, plugin, "skills/code-review/SKILL.md", "---\nname: code-review\ndescription: Review a diff.\n---\n"+skillBody)
+	write(t, plugin, "README.md", "# Team kit\n")
+	write(t, plugin, "templates/settings.json", "{\"enabledPlugins\":{}}\n")
+	write(t, plugin, ".typeference/bundle.json", "{}\n")
+	result, err := Import(plugin, Options{Name: "acme/team"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := t.TempDir()
+	if err := Write(result.Files, out); err != nil {
+		t.Fatal(err)
+	}
+	built := t.TempDir()
+	if _, err := compile.Build(out, built, compile.BuildOptions{}); err != nil {
+		t.Fatalf("imported sources must build: %v", err)
+	}
+	root := filepath.Join(built, "agent-plugin", "team-kit")
+	manifest, err := os.ReadFile(filepath.Join(root, "plugin.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`"version": "2.3.0"`, `"name": "Team Platform"`, `"email": "platform@example.com"`, `"repository": "https://example.com/git/team-kit"`, `"license": "MIT"`, "\"keywords\": [\n    \"review\",\n    \"incidents\"\n  ]"} {
+		if !strings.Contains(string(manifest), want) {
+			t.Fatalf("plugin.json must carry %s:\n%s", want, manifest)
+		}
+	}
+	for _, rel := range []string{"README.md", "templates/settings.json"} {
+		if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(rel))); err != nil {
+			t.Fatalf("carried file %s must survive the round trip: %v", rel, err)
+		}
+	}
+	if !strings.Contains(strings.Join(result.Notes, "\n"), ".typeference/") {
+		t.Fatalf("skipped build provenance is noted: %v", result.Notes)
+	}
+}
+
+func TestImportFailsClosedOnPluginManifestAndStrayComponentFiles(t *testing.T) {
+	plugin := t.TempDir()
+	write(t, plugin, "plugin.json", `{"$schema":"https://agent-plugins.org/schemas/1.0.0/plugin.schema.json","name":"team-kit","description":"Our team kit.","extensions":{"com.example":{}},"keywords":[]}`)
+	write(t, plugin, "skills/code-review/SKILL.md", "---\nname: code-review\ndescription: Review a diff.\n---\n"+skillBody)
+	write(t, plugin, "skills/notes.md", "not a skill\n")
+	write(t, plugin, "com.github.copilot/settings.json", "{}\n")
+	_, err := Import(plugin, Options{})
+	if err == nil {
+		t.Fatal("unrepresentable plugin content must fail the import")
+	}
+	for _, want := range []string{"manifest member 'extensions'", "plugin metadata 'keywords'", "skills/notes.md", "com.github.copilot/settings.json"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("the failure must list %s:\n%v", want, err)
+		}
+	}
+	result, err := Import(plugin, Options{Lossy: true})
+	if err != nil {
+		t.Fatalf("--lossy imports without the listed content: %v", err)
+	}
+	if notes := strings.Join(result.Notes, "\n"); !strings.Contains(notes, "dropped: plugin.json: manifest member 'extensions'") {
+		t.Fatalf("a lossy import lists what it dropped:\n%s", notes)
+	}
+}
+
+func TestImportRejectsAMarketplaceRepository(t *testing.T) {
+	repo := t.TempDir()
+	write(t, repo, ".github/plugin/marketplace.json", `{"name":"team-agents","owner":{"name":"Team"},"plugins":[{"name":"team-kit","source":"./plugins/team-kit"}]}`)
+	write(t, repo, "README.md", "# Team agents\n")
+	_, err := Import(repo, Options{})
+	if err == nil || !strings.Contains(err.Error(), "marketplace repository") || !strings.Contains(err.Error(), "team-kit: plugins/team-kit") {
+		t.Fatalf("a marketplace must fail and list its plugin directories, got %v", err)
+	}
+}

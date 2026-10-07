@@ -13,6 +13,21 @@ compatibility promises between minor versions.
 
 ### Added
 
+- **Plugin metadata and carried files**
+  ([ADR-0041](docs/decisions/0041-plugin-metadata-and-carried-files.md)):
+  a plugin declares `author`, `homepage`, `repository`, `license`, and
+  `keywords`, emitted into `plugin.json` and its marketplace entry. A
+  plugin's `files` ship at each artifact's root (a README, adoption
+  templates); a manifest's `marketplace.files` ship at the target root (the
+  marketplace repository's README, license, and CI workflows), each listed in
+  `build.json` with a file digest. Build rejects destinations that claim its
+  own paths or `.github/copilot/`. `import` carries plugin metadata and every
+  file in a plugin directory that is not a component, fails closed on
+  manifest members such as `extensions` and on stray files in component
+  directories, takes the package version from the plugin's `version`, and
+  fails on a marketplace repository with the list of its plugins instead of
+  importing nothing. `tools/validate_output.py` rejects any target-root file
+  that `build.json` does not list or whose digest does not match.
 - **Native Copilot components**
   ([ADR-0040](docs/decisions/0040-native-copilot-components-and-enterprise-defaults.md)):
   `.rule.tfer`, `.command.tfer`, `.hook.tfer`, and `.lsp.tfer` documents emit
@@ -39,9 +54,10 @@ compatibility promises between minor versions.
 
 ### Changed
 
-- `bundle.json` is `schemaVersion` 3: it records shipped rules, commands,
-  hooks, and LSP servers, and each agent's rules, commands, hooks, and
-  servers.
+- `bundle.json` is `schemaVersion` 4: it records shipped rules, commands,
+  hooks, and LSP servers, each agent's rules, commands, hooks, and servers,
+  and the plugin's carried files. `build.json` is `schemaVersion` 3: it lists
+  marketplace files with their digests (ADR-0041).
 - Helio's working norms are a rule held by the team profile instead of a
   document rendered into agent files.
 - Skill directories reject inconsistent casing in shared directory prefixes

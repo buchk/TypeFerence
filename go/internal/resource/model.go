@@ -49,7 +49,7 @@ type Document struct {
 	// Skills.
 	Instructions    string
 	Variants        map[string]Variant
-	Files           []SkillFile
+	Files           []PackageFile
 	RequiresServers []string
 	Copilot         CopilotFields
 
@@ -71,6 +71,9 @@ type Document struct {
 	PluginSkills   []string
 	PluginModes    []string
 	PluginLSP      []string
+	// PluginMetadata is the plugin's descriptive manifest members
+	// (ADR-0041). A plugin's Files ship at the root of each artifact.
+	PluginMetadata PluginMetadata
 
 	// Native Copilot components (ADR-0040). Agents, profiles, and plugins
 	// hold rules, commands, and hooks; agents hold agent-scoped servers.
@@ -158,13 +161,32 @@ type ContextRef struct {
 	Render string
 }
 
-// SkillFile is a package file shipped in a skill directory.
-type SkillFile struct {
+// PluginMetadata is the optional descriptive part of a plugin's Agent
+// Plugins manifest. Empty strings and nil values are absent members.
+type PluginMetadata struct {
+	Author     *PluginAuthor
+	Homepage   string
+	Repository string
+	License    string
+	Keywords   []string
+}
+
+// PluginAuthor is a plugin manifest's author.
+type PluginAuthor struct {
+	Name  string
+	Email string
+	URL   string
+}
+
+// PackageFile is a package file that ships as authored: in a skill
+// directory, at a plugin artifact's root, or at the target root (ADR-0041).
+type PackageFile struct {
 	// Source is the package-relative path of the file.
 	Source string
 	// Package is the package that contains the file.
 	Package string
-	// As is the destination relative to the skill directory.
+	// As is the destination relative to the skill directory, the artifact
+	// directory, or the target root.
 	As string
 	// Data holds the file's bytes: normalized text when Text is set, the
 	// exact bytes otherwise.

@@ -1,0 +1,4 @@
+{
+  "description": "A marketplace file cannot ship beneath .github/copilot, because build never emits repository settings (ADR-0041).",
+  "expect": "error"
+}

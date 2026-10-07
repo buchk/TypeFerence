@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "target": "agent-plugin",
   "sourceDigest": "sha256:ab4f23eee8e3d9b44233b3621152b218874c6c74d9102fefb73fab9a0ef86523",
   "artifacts": [
@@ -8,7 +8,8 @@
       "mode": "manual",
       "path": "typeference-maintainer",
       "sourceDigest": "sha256:ab4f23eee8e3d9b44233b3621152b218874c6c74d9102fefb73fab9a0ef86523",
-      "digest": "sha256:2fca3336fb46417a87a155c517108ad531d8a6fd2f88c5744c432a18571d0ba2"
+      "digest": "sha256:50ad3bd58547172179cb8a198ef818788caad1f4b99f90e760c22955a417dff9"
     }
-  ]
+  ],
+  "files": []
 }

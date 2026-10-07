@@ -25,6 +25,9 @@ const SchemaVersion = 7
 type Marketplace struct {
 	Name  string
 	Owner string
+	// Files ship at the target root (ADR-0041). LoadPackage reads their
+	// bytes; LoadProject alone leaves Data empty.
+	Files []PackageFile
 }
 
 // Project is the source-root manifest: package identity, dependencies, the
@@ -118,6 +121,11 @@ func ParseProjectManifest(text string) (*Project, error) {
 			if err := d.decode(n, map[string]func(*tferlex.Node) error{
 				"name":  d.stringInto(&m.Name),
 				"owner": d.stringInto(&m.Owner),
+				"files": func(n *tferlex.Node) error {
+					files, err := d.fileEntries(n, project.Name, marketplaceFiles)
+					m.Files = files
+					return err
+				},
 			}); err != nil {
 				return err
 			}

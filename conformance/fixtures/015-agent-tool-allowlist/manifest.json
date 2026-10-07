@@ -2,6 +2,6 @@
   "description": "An agent's tools: [] means no tools and is emitted as such; an explicit allowlist names every MCP server the agent's skills require in each mode and every server it scopes to itself, by server/* or server/tool; '*' covers all (ADR-0040).",
   "expect": "success",
   "digests": {
-    "agent-plugin": "sha256:e62322a4e0dc469fff8fac0715981c38b650e65be28c4256d06d467e721c2fdc"
+    "agent-plugin": "sha256:cb05a180d7e45edf21a38ff9b4ceedbed9a884951f6048062104f87f550525d1"
   }
 }

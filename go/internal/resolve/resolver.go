@@ -50,7 +50,7 @@ type ResolvedSkill struct {
 	HasInputSchema  bool
 	HasOutputSchema bool
 	Documents       []ResolvedDocument
-	Files           []resource.SkillFile
+	Files           []resource.PackageFile
 	Copilot         resource.CopilotFields
 	// Bindings are the parameters this instance binds, sorted by name.
 	Bindings   []*Binding
@@ -581,7 +581,7 @@ func (r *Resolver) resolveSkill(id string, agentBindings map[string]*Binding, in
 		OutputSchema:     skill.OutputSchema,
 		HasInputSchema:   skill.HasInputSchema,
 		HasOutputSchema:  skill.HasOutputSchema,
-		Files:            append([]resource.SkillFile{}, skill.Files...),
+		Files:            append([]resource.PackageFile{}, skill.Files...),
 		Copilot:          skill.Copilot,
 	}
 	var err error

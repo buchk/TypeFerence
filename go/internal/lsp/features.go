@@ -24,7 +24,7 @@ var kindFields = map[string][]string{
 	"server":      {"displayName", "description", "transport", "command", "args", "env", "cwd", "url", "headers"},
 	"contextType": {"displayName", "description", "instanceName", "fields"},
 	"context":     {"displayName", "description", "parameters", "contextType", "values"},
-	"plugin":      {"description", "agents", "profiles", "skills", "modes", "rules", "commands", "hooks", "lspServers"},
+	"plugin":      {"description", "agents", "profiles", "skills", "modes", "rules", "commands", "hooks", "lspServers", "author", "homepage", "repository", "license", "keywords", "files"},
 	"rule":        {"displayName", "description", "parameters", "paths"},
 	"command":     {"displayName", "description", "parameters", "argumentHint", "allowedTools", "disableModelInvocation"},
 	"hook":        {"displayName", "description", "event", "matcher", "type", "bash", "powershell", "command", "exec", "args", "cwd", "env", "timeoutSec", "url", "headers", "allowedEnvVars", "prompt"},

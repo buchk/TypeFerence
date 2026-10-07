@@ -1,0 +1,8 @@
+---
+description: Repository health kit.
+skills:
+  - skills/status.skill.tfer
+files:
+  - files/a/README.md
+  - files/b/readme.md
+---

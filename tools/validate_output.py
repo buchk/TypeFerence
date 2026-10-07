@@ -9,6 +9,7 @@ component's frontmatter is checked against the fields its host reads. See
 docs/output-contract.md.
 """
 
+import hashlib
 import json
 import pathlib
 import re
@@ -269,7 +270,45 @@ def check_target(target):
                 fail(child, "plugin directory is not listed in build.json")
     for missing in sorted(paths - {c.name for c in target.iterdir() if c.is_dir()}):
         fail(target / missing, "build.json lists a plugin directory that was not emitted")
+    check_root_files(target, build, paths)
     count("target")
+
+
+INDEX_FILES = {".typeference/build.json", ".typeference/compatibility.json", ".github/plugin/marketplace.json"}
+
+
+def file_digest(path):
+    """The SHA-256 of a file's content as typeference-directory-v1 reads it."""
+    raw = path.read_bytes()
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return "sha256:" + hashlib.sha256(raw).hexdigest()
+    text = text.removeprefix("\ufeff").replace("\r\n", "\n")
+    return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def check_root_files(target, build, artifact_dirs):
+    """Every file outside the artifact directories is an index file or a
+    marketplace file that build.json lists with a matching digest (ADR-0041)."""
+    if not build:
+        return
+    listed = {entry["path"]: entry["digest"] for entry in build.get("files", [])}
+    for path in sorted(target.rglob("*")):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(target).as_posix()
+        if rel.split("/", 1)[0] in artifact_dirs or rel in INDEX_FILES:
+            continue
+        if rel not in listed:
+            fail(path, "file is neither an artifact, an index file, nor a marketplace file listed in build.json")
+        elif listed[rel] != file_digest(path):
+            fail(path, "file does not match its digest in build.json")
+        else:
+            count("marketplace file")
+    for rel in sorted(listed):
+        if not (target / rel).is_file():
+            fail(target / rel, "build.json lists a marketplace file that was not emitted")
 
 
 def main(argv):

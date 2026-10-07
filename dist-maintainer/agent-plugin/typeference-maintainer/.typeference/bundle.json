@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "id": "typeference/maintainer/plugins/typeference-maintainer@0.2.0",
   "name": "typeference-maintainer",
   "mode": "manual",
@@ -231,5 +231,6 @@
   "rules": [],
   "commands": [],
   "hooks": [],
-  "lspServers": []
+  "lspServers": [],
+  "files": []
 }

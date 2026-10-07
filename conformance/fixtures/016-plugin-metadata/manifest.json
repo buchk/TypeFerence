@@ -1,0 +1,7 @@
+{
+  "description": "Plugin metadata (ADR-0041): author, homepage, repository, license, and keywords ship unchanged in plugin.json, after description and in schema order, in every artifact of the plugin, and in its marketplace entry; an author without email or url omits them.",
+  "expect": "success",
+  "digests": {
+    "agent-plugin": "sha256:9553343f3a709590d69e02db64289e03c291d1242cc5e1159459e727844332a5"
+  }
+}

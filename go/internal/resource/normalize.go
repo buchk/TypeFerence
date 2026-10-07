@@ -101,7 +101,7 @@ func (f *flattener) flatten(id string) error {
 	}
 	doc.RequiresServers = distinctStrings(append(append([]string{}, base.RequiresServers...), doc.RequiresServers...))
 	doc.Context = mergeContext(base.Context, doc.Context)
-	doc.Files = append(append([]SkillFile{}, base.Files...), doc.Files...)
+	doc.Files = append(append([]PackageFile{}, base.Files...), doc.Files...)
 	if err := checkFiles(doc); err != nil {
 		return err
 	}
