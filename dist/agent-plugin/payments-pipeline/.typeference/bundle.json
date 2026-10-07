@@ -5,7 +5,7 @@
   "mode": "pipeline",
   "version": "2.4.0",
   "description": "The Helio payments operations agent, for engineers and release pipelines.",
-  "sourceDigest": "sha256:2d7265cbea73646f28fa710aa258976dcbe758e24226ecea0dee45dc85ff0073",
+  "sourceDigest": "sha256:ee499185f4033e52be0248b36f93083735cae57ad1c501e84208f753479e830a",
   "dependencies": [
     {
       "name": "helio/core",

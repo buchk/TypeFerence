@@ -4,6 +4,9 @@ description: "Operations agent for the Helio payments team."
 tools:
   - "read"
   - "search"
+  - "helio-tickets/*"
+  - "helio-builds/*"
+  - "helio-ledger/*"
 mcp-servers:
   helio-ledger:
     type: "http"
