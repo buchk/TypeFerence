@@ -1,8 +1,0 @@
-{
-  "description": "Scalars are typed by their declared field, never by spelling: plain words stay strings, and booleans, integers, and decimals are unquoted lexemes preserved verbatim (ADR-0032).",
-  "expect": "success",
-  "digests": {
-    "agent-plugin": "sha256:e42a0af2e9ad8e3b666a83e821ac8a76cc183422bd048de46113e77f67e63f1c",
-    "neutral": "sha256:0f035a2e7ebd00fccdf6024722038a81e76619bd55567e601636fd33b1f21a13"
-  }
-}

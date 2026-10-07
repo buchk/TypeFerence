@@ -1,0 +1,9 @@
+---
+schemaVersion: 7
+name: helio/data-platform
+version: 1.0.2
+dependencies:
+  helio/core: 3.1.0
+plugins:
+  - plugins/data-platform.plugin.tfer
+---

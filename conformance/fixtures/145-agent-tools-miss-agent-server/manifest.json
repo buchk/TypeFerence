@@ -1,0 +1,4 @@
+{
+  "description": "Tools from an agent's own mcp-servers are enabled only when its tools list names them (ADR-0040).",
+  "expect": "error"
+}

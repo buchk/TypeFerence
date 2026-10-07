@@ -1,6 +1,0 @@
----
-displayName: Organization
-body:
-  type: text
-  required: true
----

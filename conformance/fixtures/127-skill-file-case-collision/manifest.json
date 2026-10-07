@@ -1,0 +1,4 @@
+{
+  "description": "Skill-file destinations that differ only in letter case collide on every platform (ADR-0038).",
+  "expect": "error"
+}

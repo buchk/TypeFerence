@@ -1,0 +1,30 @@
+---
+displayName: Team
+description: What a team supplies to instantiate the operations kit.
+instanceName: id
+fields:
+  id:
+    type: string
+    required: true
+    displayName: Team identifier
+  name:
+    type: string
+    required: true
+    displayName: Team name
+  queue:
+    type: string
+    required: true
+  tier:
+    type: string
+    default: standard
+    choices:
+      - standard
+      - critical
+  onCall:
+    type: string
+  size:
+    type: integer
+    default: 5
+  members:
+    type: list<string>
+---

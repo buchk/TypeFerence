@@ -1,0 +1,4 @@
+{
+  "description": "Version 6 sources are not accepted.",
+  "expect": "error"
+}

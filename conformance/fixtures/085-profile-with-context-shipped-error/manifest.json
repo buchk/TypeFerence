@@ -1,4 +1,0 @@
-{
-  "description": "A profile that holds context cannot ship without an agent to deliver it (ADR-0030).",
-  "expect": "error"
-}

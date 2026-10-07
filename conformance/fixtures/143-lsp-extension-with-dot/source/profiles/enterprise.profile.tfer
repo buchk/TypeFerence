@@ -1,0 +1,8 @@
+---
+rules:
+  - rules/evidence.rule.tfer
+  - rules/api.rule.tfer
+hooks:
+  - hooks/guard.hook.tfer
+  - hooks/audit.hook.tfer
+---

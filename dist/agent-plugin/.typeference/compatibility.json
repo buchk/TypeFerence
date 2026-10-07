@@ -3,15 +3,15 @@
   "conflicts": [
     {
       "mode": "manual",
-      "capabilityId": "helio/works/capabilities/repository-status@1.0.0",
+      "capabilityId": "helio/core/skills/self-heal@3.1.0",
       "members": [
         {
-          "plugin": "engineering-kit",
-          "skill": "repository-status"
+          "plugin": "data-platform",
+          "skill": "data-platform-self-heal"
         },
         {
           "plugin": "payments",
-          "skill": "payments-repository-status"
+          "skill": "payments-self-heal"
         }
       ]
     }

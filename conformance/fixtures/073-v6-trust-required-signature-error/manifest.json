@@ -1,5 +1,0 @@
-{
-  "description": "signatureIntent.required fails closed in a version 6 build: without imported signatures, ARD publication is an error.",
-  "expect": "error",
-  "emitArd": "conformance.example"
-}

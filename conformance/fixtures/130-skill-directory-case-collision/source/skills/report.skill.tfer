@@ -1,0 +1,9 @@
+---
+description: Report.
+files:
+  - path: files/one.txt
+    as: references/A/one.txt
+  - path: files/two.txt
+    as: references/a/two.txt
+---
+Report.

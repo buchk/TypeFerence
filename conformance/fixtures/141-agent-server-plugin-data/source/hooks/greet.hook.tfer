@@ -1,0 +1,5 @@
+---
+event: sessionStart
+type: prompt
+prompt: /changelog
+---

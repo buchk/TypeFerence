@@ -5,50 +5,45 @@ important but not required to make the current branch semantically coherent.
 Completed merge requirements belong in the pull request and changelog instead of
 remaining as stale unchecked tasks here.
 
+## Version 7 verification
+
+CI verified the branch: tests, vet, gofmt, the conformance corpus on three
+platforms, the Helio reference build, and self-host drift. Still to do by
+hand: `make playground`, then exercise the Helio example and the Instantiate
+tab in a browser.
+
+## Version 7 follow-ups
+
+Consumer workflows built on TypeFerence's output, such as forms that open pull
+requests, publishing pipelines, and marketplace installation, belong to the
+adopting organization and are out of scope.
+
+- [ ] Copilot behaviours to confirm for native components (ADR-0040):
+  plugin rules active by default and loaded in `-p` runs, and plugin hooks
+  on Copilot cloud agent.
+- [ ] Hooks that run scripts shipped inside the plugin, once the variable that
+  names a hook's plugin directory is confirmed.
+- [ ] Decide how `list<string>` fields render if a real case needs them in
+  text.
+- [ ] Decide whether one agent may bind two values to one parameter name.
+
 ## Near term
 
 - [ ] Define stable diagnostic codes for CLI, LSP, and conformance consumers;
   diagnostic text is intentionally not yet contractual.
 - [ ] Add a review check that every normative specification edit updates
   `docs/conformance-matrix.md` and, for canonicalization or composition, adds a
-  current version 6 golden fixture.
-- [ ] Continue separating resolver phases behind narrow internal inputs and
-  outputs. The first file-level decomposition keeps composition, context typing,
-  interfaces, and dependency validation distinct; a later change can introduce
-  explicit phase result types if that improves reviewability without changing
-  semantics.
+  version 7 golden fixture.
 - [ ] Isolate mutable resolver normalization state from loaded source documents.
   Source identity is already computed from canonical source files, but a cloned
   resolver input would make that boundary structural rather than conventional.
-- [ ] Replace `samePromotedSkill`'s whole-struct comparison with an explicit
-  semantic member identity once that identity is specified. The current
-  comparison deliberately ignores only dispatch names and provenance and remains
-  conservative for ambiguity detection.
-- [ ] Run the Agent Plugins pilot that ADR-0029 requires before acceptance:
-  auto-install of repository-enabled plugins in non-interactive (`-p`) runs,
-  the `extraKnownMarketplaces` source object for a GitHub-hosted marketplace,
-  plugin versus repository agent parity, stdio MCP environment inheritance,
-  `--allow-tool` syntax for MCP tools, and plugin version comparison on update.
-- [ ] Decide how typed context field values reach hosts that read only
-  Markdown. Plugin agent files and `SKILL.md` render a context's title and text
-  body; its field values are carried only in `bundle.json`.
-- [ ] Move the trust configuration reader onto the closed grammar
-  (ADR-0032 decision 1 leaves it on its YAML-based reader).
-- [ ] Credentialed tool servers in plugins. Link refuses environment-forwarded
-  and bearer-token credentials for a plugin's `mcp.json` (ADR-0029 decision 7);
-  specify host-native configuration for credentialed CI use once the pilot
-  shows how Copilot supplies credentials to plugin MCP servers.
-- [ ] Verify how Copilot CLI authenticates to a private marketplace in a CI
-  job, whose default token reads only its own repository (ADR-0034).
-- [ ] Automate marketplace pin bumps: when a team publishes a package, open
-  a pull request that updates the marketplace package's pin and lockfile.
 - [ ] Decide whether `typeference import` should recover shared structure
   (profiles, extensions) from near-duplicate imported skills, or leave that to
   authors (ADR-0033).
 
 ## Corpus ownership
 
-- `examples/helio`: integrated product narrative and committed reference output.
+- `examples/helio`: the integrated product narrative; `dist/` is its committed reference output.
 - `agents/maintainer`: self-hosting definition and generated-artifact drift gate.
 - `conformance/fixtures`: small, isolated normative and canonical-byte cases.
 

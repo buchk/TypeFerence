@@ -1,5 +1,4 @@
 ---
 displayName: Where the specification and an implementation disagree, the ...
-contextType: context-types/norms.contexttype.tfer
 ---
 Where the specification and an implementation disagree, the specification wins; record the ruling in docs/decisions and cover it with a conformance fixture.

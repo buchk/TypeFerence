@@ -25,20 +25,16 @@ jobs:
           CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /tmp/typeference ./cmd/typeference
           CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /tmp/typeference-lsp ./cmd/typeference-lsp
         working-directory: go
-      - name: Go binary reproduces committed reference output byte-for-byte
-        run: /tmp/typeference diff examples/helio --against dist
-      - name: Eval harness dry run (no API key, no network)
-        run: /tmp/typeference eval examples/helio --scenarios evals/scenarios --out /tmp/eval-dry-run
       - name: Playground builds (js/wasm bridge and example packer)
         run: |
           GOOS=js GOARCH=wasm go build ./cmd/typeference-wasm
           go run ./cmd/playground-pack -root .. -out /tmp/examples.json
         working-directory: go
 
-  # Determinism suite: the Go compiler compiles the fixture corpora in
-  # conformance/ (the current language plus the archived legacy-v5 and
-  # legacy-v3 corpora) and must reproduce the committed digests on every
-  # platform (ADR-0014).
+  # Determinism suite: the Go compiler compiles the version 7 fixture corpus in
+  # conformance/ and must reproduce the committed digests on every platform
+  # (ADR-0014). The Helio reference test (go test ./internal/compile) also
+  # byte-compares the committed dist/ on every platform.
   determinism:
     strategy:
       fail-fast: false
@@ -51,7 +47,7 @@ jobs:
         with:
           go-version: stable
           cache-dependency-path: go/go.sum
-      - run: go test ./conformance -v
+      - run: go test ./conformance ./internal/compile -v
         working-directory: go
 
   # The repository-root AGENTS.md and dist-maintainer are build artifacts of
@@ -68,8 +64,31 @@ jobs:
       - name: Recompile maintainer definition and diff committed artifacts
         run: go run ./cmd/typeference diff ../agents/maintainer --against ../dist-maintainer
         working-directory: go
-      - name: Root AGENTS.md is the compiled artifact
-        run: cmp AGENTS.md dist-maintainer/neutral/typeference-maintainer/AGENTS.md
+      - name: Root AGENTS.md is the compiled agent file without its frontmatter
+        run: |
+          awk 'n >= 2 && (seen || $0 != "") { seen = 1; print } /^---$/ { n++ }'             dist-maintainer/agent-plugin/typeference-maintainer/com.github.copilot/agents/typeference-maintainer.agent.md             | cmp - AGENTS.md
+
+  # Output contract (docs/output-contract.md): every emitted JSON file and
+  # frontmatter block must satisfy the host formats and TypeFerence's own
+  # schemas. dist/ and dist-maintainer/ are byte-compared against fresh builds
+  # by the jobs above, so validating them validates the Helio reference and the
+  # maintainer plugin.
+  output-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache-dependency-path: go/go.sum
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r tools/requirements-output.txt
+      - name: Build every success fixture and keep its output
+        run: TF_OUTPUT_DIR="$RUNNER_TEMP/fixture-output" go test ./conformance -run TestConformance -count=1
+        working-directory: go
+      - run: python tools/validate_output.py "$RUNNER_TEMP/fixture-output" dist dist-maintainer
 
   docs:
     runs-on: ubuntu-latest

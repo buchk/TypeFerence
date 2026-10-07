@@ -1,0 +1,5 @@
+---
+description: Kit.
+rules:
+  - rules/team.rule.tfer
+---

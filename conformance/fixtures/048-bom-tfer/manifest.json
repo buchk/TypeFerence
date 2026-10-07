@@ -1,8 +1,0 @@
-{
-  "description": "A UTF-8 BOM before a version 4 .tfer opening fence is stripped before parsing and canonicalization.",
-  "language": "legacy-v5",
-  "expect": "success",
-  "digests": {
-    "neutral": "sha256:2ebb71b797ed6b547259f69b023fd3d51630b38e0ac3ea8da0673e190a1a82a7"
-  }
-}

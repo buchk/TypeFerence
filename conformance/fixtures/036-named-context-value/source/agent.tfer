@@ -1,7 +1,0 @@
----
-schemaVersion: 5
-kind: agent
-id: conformance/agents/named-context@1.0.0
-context:
-  - conformance/context/named@1.0.0
----

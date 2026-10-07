@@ -1,5 +1,0 @@
----
-description: Reads release signals.
-inputSchema: '{"type":"object"}'
-outputSchema: '{"type":"object"}'
----

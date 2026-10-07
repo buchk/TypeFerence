@@ -1,0 +1,5 @@
+---
+event: preToolUse
+type: prompt
+prompt: hello
+---

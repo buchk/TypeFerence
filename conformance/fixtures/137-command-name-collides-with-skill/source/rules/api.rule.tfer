@@ -1,0 +1,4 @@
+---
+paths: src/api/**/*.ts
+---
+Use the shared ApiError type for thrown errors.

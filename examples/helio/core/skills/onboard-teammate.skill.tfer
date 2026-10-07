@@ -1,0 +1,10 @@
+---
+description: Walk a new {{team.name}} teammate through their first week.
+parameters:
+  team: context-types/team.contexttype.tfer
+context:
+  - context: docs/onboarding-guide.context.tfer
+    render: file
+---
+Help a new teammate get set up. Read references/onboarding-guide.md for the
+team's specifics and point them to it rather than repeating it.

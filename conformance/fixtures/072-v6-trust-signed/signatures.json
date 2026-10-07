@@ -1,5 +1,0 @@
-{
-  "urn:air:conformance.example:typeference:source:conformance-trust-signed": "eyJhbGciOiJFUzI1NiJ9..c2lnbmF0dXJlLXNvdXJjZQ",
-  "urn:air:conformance.example:typeference:neutral:signed": "eyJhbGciOiJFUzI1NiJ9..c2lnbmF0dXJlLW5ldXRyYWw",
-  "urn:air:conformance.example:typeference:agent-plugin:kit": "eyJhbGciOiJFUzI1NiJ9..c2lnbmF0dXJlLXBsdWdpbg"
-}

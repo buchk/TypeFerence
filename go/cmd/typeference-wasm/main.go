@@ -1,11 +1,12 @@
 //go:build js && wasm
 
 // Command typeference-wasm exposes the unmodified Go compiler to the browser
-// playground (web/playground). It registers a global `TypeFerence.compile`
-// function that writes the caller's sources into the in-memory filesystem
-// provided by memfs.js, runs the same compile.Validate / compile.Build /
-// compile.HashDirectory code paths as the CLI, and returns artifacts,
-// diagnostics, and the embedding graph as a plain JavaScript object.
+// playground (web/playground). It registers a global `TypeFerence` object
+// whose compile function writes the caller's sources into the in-memory
+// filesystem provided by memfs.js, stages any dependency packages into an
+// in-memory feed, and runs the same restore, compile.Validate, compile.Build,
+// and compile.HashDirectory code paths as the CLI. It returns artifacts,
+// diagnostics, the composition graph, and every context type's form shape.
 //
 // The compiler internals are untouched: the playground's determinism digest
 // is produced by the identical code that produces it on disk.
@@ -13,7 +14,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"path"
@@ -23,7 +23,7 @@ import (
 	"syscall/js"
 
 	"github.com/buchk/TypeFerence/go/internal/compile"
-	"github.com/buchk/TypeFerence/go/internal/eval"
+	"github.com/buchk/TypeFerence/go/internal/packages"
 	"github.com/buchk/TypeFerence/go/internal/resource"
 )
 
@@ -32,77 +32,31 @@ import (
 var version = "dev"
 
 const (
-	workRoot      = "/work"
-	outputRoot    = "/out"
-	scenariosRoot = "/scenarios"
-	runRoot       = "/run"
+	workRoot    = "/work"
+	outputRoot  = "/out"
+	packageRoot = "/work/packages"
+	feedRoot    = "/work/feed"
 )
 
 func main() {
-	// eval.Pack stages the compiled build through os.MkdirTemp.
+	// Restore stages packages through os.MkdirTemp.
 	if err := os.MkdirAll(os.TempDir(), 0o755); err != nil {
 		panic(err)
 	}
 	js.Global().Set("TypeFerence", js.ValueOf(map[string]any{
 		"version":  version,
 		"compile":  js.FuncOf(compileFunc),
-		"pack":     js.FuncOf(packFunc),
 		"scaffold": js.FuncOf(scaffoldFunc),
 	}))
 	select {}
 }
 
-// packFunc implements TypeFerence.pack(request): the BETH `equivalence pack`
-// pipeline (eval.Pack) over in-memory sources and scenarios. The request
-// object carries files, sourceName, and scenarios (a path-to-YAML map); the
-// result carries ok, error, and files — the complete run directory keyed by
-// slash-relative path, byte-identical to what the CLI lays out on disk.
-func packFunc(_ js.Value, args []js.Value) (result any) {
-	defer func() {
-		if r := recover(); r != nil {
-			result = map[string]any{"ok": false, "error": fmt.Sprintf("internal error: %v", r)}
-		}
-	}()
-	if len(args) < 1 || args[0].Type() != js.TypeObject {
-		return map[string]any{"ok": false, "error": "pack requires a request object"}
-	}
-	request := args[0]
-
-	sourceName := "src"
-	if n := request.Get("sourceName"); n.Type() == js.TypeString {
-		if clean := sanitizeName(n.String()); clean != "" {
-			sourceName = clean
-		}
-	}
-	sourceRoot := path.Join(workRoot, sourceName)
-	if err := writeSources(sourceRoot, request.Get("files")); err != nil {
-		return map[string]any{"ok": false, "error": err.Error()}
-	}
-	if err := materializeTree(scenariosRoot, request.Get("scenarios")); err != nil {
-		return map[string]any{"ok": false, "error": err.Error()}
-	}
-	if err := os.RemoveAll(runRoot); err != nil {
-		return map[string]any{"ok": false, "error": "cannot reset run directory"}
-	}
-
-	if _, err := eval.Pack(sourceRoot, scenariosRoot, runRoot, eval.PackOptions{Stdout: io.Discard}); err != nil {
-		return map[string]any{"ok": false, "error": relativizeError(err.Error(), sourceRoot)}
-	}
-	files, err := readTree(runRoot)
-	if err != nil {
-		return map[string]any{"ok": false, "error": err.Error()}
-	}
-	return map[string]any{"ok": true, "files": files}
-}
-
 // compileFunc implements TypeFerence.compile(request). The request object
-// carries files (a path-to-content map), target, emitArd, publisherDomain,
-// and sourceName; the result object carries ok, error, agents (id,
-// displayName, emit, satisfies, bundle), files, hash, and graph.
-//
-// sourceName becomes the in-memory source directory's basename. The ARD
-// source-package URN is derived from that name, so using the same directory
-// name as a CLI invocation reproduces its digest exactly.
+// carries files (a path-to-content map for the package being built),
+// sourceName, and optionally packages (a map from package directory name to
+// a path-to-content map) for the package's dependencies. The result object
+// carries ok, error, agents (id, displayName, bundle), files, hash, graph,
+// and contextTypes.
 func compileFunc(_ js.Value, args []js.Value) (result any) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -121,78 +75,185 @@ func compileFunc(_ js.Value, args []js.Value) (result any) {
 		}
 	}
 	sourceRoot := path.Join(workRoot, sourceName)
-
 	if err := writeSources(sourceRoot, request.Get("files")); err != nil {
 		return map[string]any{"ok": false, "error": err.Error()}
 	}
+	if err := stagePackages(sourceRoot, request.Get("packages")); err != nil {
+		return map[string]any{"ok": false, "error": relativizeError(err.Error(), workRoot)}
+	}
 
-	// The composition graph comes straight from the loaded documents so it
-	// can be shown even when resolution fails (cycles, ambiguity, missing
-	// references).
+	// The composition graph and form shapes come straight from the loaded
+	// documents so they can be shown even when resolution fails.
 	graph := map[string]any{"nodes": []any{}, "edges": []any{}}
-	if loaded, err := resource.LoadV6(sourceRoot, resource.V6Options{}); err == nil {
-		graph = buildGraph(loaded.Documents)
-	}
-
-	targetValue := "all"
-	if t := request.Get("target"); t.Type() == js.TypeString && t.String() != "" {
-		targetValue = t.String()
-	}
-	targets, err := compile.ParseTargets(targetValue)
-	if err != nil {
-		return map[string]any{"ok": false, "error": err.Error(), "graph": graph}
-	}
-	var ard *compile.ArdPublicationOptions
-	if b := request.Get("emitArd"); b.Type() == js.TypeBoolean && b.Bool() {
-		domain := "playground.example"
-		if d := request.Get("publisherDomain"); d.Type() == js.TypeString && d.String() != "" {
-			domain = d.String()
+	contextTypes := []any{}
+	data := []any{}
+	if loaded, err := resource.LoadPackage(sourceRoot, resource.PackageOptions{}); err == nil {
+		docs := loaded.Documents
+		if set, setErr := packages.LoadDependencySet(sourceRoot, ""); setErr == nil {
+			for id, doc := range set.Documents {
+				docs[id] = doc
+			}
 		}
-		ard = &compile.ArdPublicationOptions{PublisherDomain: domain}
+		graph = buildGraph(docs)
+		contextTypes = formShapes(docs)
+		data = dataEntries(docs)
 	}
 
-	agents, err := compile.Validate(sourceRoot, "")
-	if err != nil {
-		return map[string]any{"ok": false, "error": relativizeError(err.Error(), sourceRoot), "graph": graph}
+	fail := func(message string) map[string]any {
+		return map[string]any{"ok": false, "error": message, "graph": graph, "contextTypes": contextTypes, "data": data}
 	}
-	if _, err := compile.Build(sourceRoot, outputRoot, targets, ard); err != nil {
-		return map[string]any{"ok": false, "error": relativizeError(err.Error(), sourceRoot), "graph": graph}
+	agents, err := compile.Validate(sourceRoot)
+	if err != nil {
+		return fail(relativizeError(err.Error(), sourceRoot))
+	}
+	if _, err := compile.Build(sourceRoot, outputRoot, compile.BuildOptions{}); err != nil {
+		return fail(relativizeError(err.Error(), sourceRoot))
 	}
 	hash, err := compile.HashDirectory(outputRoot)
 	if err != nil {
-		return map[string]any{"ok": false, "error": err.Error(), "graph": graph}
+		return fail(err.Error())
 	}
 	artifacts, err := readTree(outputRoot)
 	if err != nil {
-		return map[string]any{"ok": false, "error": err.Error(), "graph": graph}
+		return fail(err.Error())
 	}
-
 	agentList := make([]any, 0, len(agents))
 	for _, agent := range agents {
-		satisfies := make([]any, 0, len(agent.Satisfies))
-		for _, s := range agent.Satisfies {
-			satisfies = append(satisfies, s)
-		}
 		agentList = append(agentList, map[string]any{
 			"id":          agent.ID,
 			"displayName": agent.DisplayName,
-			"emit":        agent.Emit,
-			"satisfies":   satisfies,
 			"bundle":      compile.BundleJSON(agent),
 		})
 	}
-
 	return map[string]any{
-		"ok":     true,
-		"agents": agentList,
-		"files":  artifacts,
-		"hash":   hash,
-		"graph":  graph,
+		"ok":           true,
+		"agents":       agentList,
+		"files":        artifacts,
+		"hash":         hash,
+		"graph":        graph,
+		"contextTypes": contextTypes,
+		"data":         data,
 	}
 }
 
-// sanitizeName reduces a requested source-directory name to a safe single
-// path segment.
+// dataEntries returns every data document's authored values as the
+// compiler parsed them, keyed by package and path, so the Instantiate form
+// starts from the compiler's reading of the file rather than its own parse.
+func dataEntries(docs map[string]*resource.Document) []any {
+	entries := []any{}
+	for _, id := range resource.SortedKeys(docs) {
+		doc := docs[id]
+		if !doc.IsData() {
+			continue
+		}
+		values := map[string]any{}
+		for _, name := range resource.SortedKeys(doc.Values) {
+			value := doc.Values[name]
+			switch value.Kind {
+			case "scalar":
+				values[name] = value.Scalar
+			case "list":
+				items := make([]any, 0, len(value.List))
+				for _, item := range value.List {
+					items = append(items, item.Scalar)
+				}
+				values[name] = items
+			}
+		}
+		entries = append(entries, map[string]any{
+			"package":     doc.Package,
+			"path":        doc.Path,
+			"contextType": doc.ContextType,
+			"values":      values,
+		})
+	}
+	return entries
+}
+
+// stagePackages writes each dependency package beneath the work tree, packs
+// them into an in-memory filesystem feed, and restores the source package
+// against it.
+func stagePackages(sourceRoot string, request js.Value) error {
+	if request.Type() != js.TypeObject {
+		return nil
+	}
+	keys := js.Global().Get("Object").Call("keys", request)
+	if keys.Length() == 0 {
+		return nil
+	}
+	dirs := []string{}
+	for i := 0; i < keys.Length(); i++ {
+		key := keys.Index(i).String()
+		name := sanitizeName(key)
+		if name == "" {
+			return resource.Errorf("invalid package directory name: %s", key)
+		}
+		dir := path.Join(packageRoot, name)
+		if err := materializeTree(dir, request.Get(key)); err != nil {
+			return err
+		}
+		dirs = append(dirs, dir)
+	}
+	sort.Strings(dirs)
+	config, err := packages.StageLocal(dirs, feedRoot)
+	if err != nil {
+		return err
+	}
+	restorer := packages.Restorer{Source: sourceRoot, Config: config}
+	_, err = restorer.Restore()
+	return err
+}
+
+// formShapes describes every context type as the fields of a form whose
+// result is a data document (ADR-0036).
+func formShapes(docs map[string]*resource.Document) []any {
+	shapes := []any{}
+	for _, id := range resource.SortedKeys(docs) {
+		doc := docs[id]
+		if doc.Kind != "contextType" {
+			continue
+		}
+		fields := make([]any, 0, len(doc.Fields))
+		for _, field := range doc.Fields {
+			choices := make([]any, 0, len(field.Choices))
+			for _, choice := range field.Choices {
+				choices = append(choices, choice)
+			}
+			entry := map[string]any{
+				"name":        field.Name,
+				"type":        field.Type,
+				"required":    field.Required,
+				"displayName": field.DisplayName,
+				"description": field.Description,
+				"choices":     choices,
+			}
+			if field.HasDefault {
+				if field.Default.Kind == "list" {
+					items := make([]any, 0, len(field.Default.List))
+					for _, item := range field.Default.List {
+						items = append(items, item.Scalar)
+					}
+					entry["default"] = items
+				} else {
+					entry["default"] = field.Default.Scalar
+				}
+			}
+			fields = append(fields, entry)
+		}
+		shapes = append(shapes, map[string]any{
+			"id":           doc.ID,
+			"path":         doc.Path,
+			"displayName":  doc.DisplayName,
+			"description":  doc.Description,
+			"instanceName": doc.InstanceName,
+			"fields":       fields,
+		})
+	}
+	return shapes
+}
+
+// sanitizeName reduces a requested directory name to a safe single path
+// segment.
 func sanitizeName(name string) string {
 	var b strings.Builder
 	for _, r := range name {
@@ -268,49 +329,66 @@ func readTree(root string) (map[string]any, error) {
 	return files, nil
 }
 
-// buildGraph extracts the declared composition edges from loaded documents:
-// embeds, skill attachments, capability bindings, skill extension, and the
-// agents, profiles, and skills each plugin ships.
+// buildGraph extracts the declared composition edges from loaded documents.
 func buildGraph(resources map[string]*resource.Document) map[string]any {
-	ids := make([]string, 0, len(resources))
-	for id := range resources {
-		ids = append(ids, id)
-	}
-	sort.Strings(ids)
-
-	nodes := make([]any, 0, len(ids))
+	nodes := []any{}
 	edges := []any{}
 	edge := func(from, to, kind string) {
 		edges = append(edges, map[string]any{"from": from, "to": to, "kind": kind})
 	}
-	for _, id := range ids {
+	for _, id := range resource.SortedKeys(resources) {
 		doc := resources[id]
 		nodes = append(nodes, map[string]any{
 			"id":          doc.ID,
 			"kind":        doc.Kind,
 			"displayName": doc.DisplayName,
-			"emit":        doc.Emit,
 		})
 		for _, embedded := range doc.Embeds {
 			edge(doc.ID, embedded, "embeds")
 		}
 		for _, binding := range doc.Skills {
-			edge(doc.ID, binding.Ref, "skill")
+			if binding.Ref != "" {
+				edge(doc.ID, binding.Ref, "skill")
+			}
 			if binding.Capability != nil {
-				edge(binding.Ref, *binding.Capability, "capability")
+				edge(doc.ID, *binding.Capability, "capability")
 			}
 		}
-		if doc.Kind == "skill" && doc.Binds != "" {
+		if doc.Kind == "skill" && doc.Binds != "" && doc.Binds != doc.ID {
 			edge(doc.ID, doc.Binds, "binds")
 		}
 		if doc.Kind == "skill" && doc.Extends != "" {
 			edge(doc.ID, doc.Extends, "extends")
 		}
+		for _, name := range resource.SortedKeys(doc.Parameters) {
+			edge(doc.ID, doc.Parameters[name], "parameter")
+		}
+		for _, name := range resource.SortedKeys(doc.With) {
+			edge(doc.ID, doc.With[name], "with")
+		}
+		for _, ref := range doc.Context {
+			edge(doc.ID, ref.ID, "context")
+		}
+		for _, server := range doc.RequiresServers {
+			edge(doc.ID, server, "server")
+		}
+		if doc.ContextType != "" {
+			edge(doc.ID, doc.ContextType, "contextType")
+		}
 		for _, shipped := range append(append(append([]string{}, doc.PluginAgents...), doc.PluginProfiles...), doc.PluginSkills...) {
 			edge(doc.ID, shipped, "ships")
 		}
-		for _, capability := range doc.RequiresCapabilities {
-			edge(doc.ID, capability, "requires")
+		for _, id := range doc.Rules {
+			edge(doc.ID, id, "rule")
+		}
+		for _, id := range doc.Commands {
+			edge(doc.ID, id, "command")
+		}
+		for _, id := range doc.Hooks {
+			edge(doc.ID, id, "hook")
+		}
+		for _, id := range append(append([]string{}, doc.Servers...), doc.PluginLSP...) {
+			edge(doc.ID, id, "server")
 		}
 	}
 	return map[string]any{"nodes": nodes, "edges": edges}

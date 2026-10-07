@@ -1,0 +1,4 @@
+{
+  "description": "Variant modes are manual and pipeline; a2a was removed in version 7.",
+  "expect": "error"
+}

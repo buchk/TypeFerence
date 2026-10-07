@@ -1,0 +1,4 @@
+{
+  "description": "An extension takes its base's schemas and cannot declare its own.",
+  "expect": "error"
+}

@@ -1,4 +1,0 @@
----
-displayName: Ci Only Deploys
----
-Production deploys go through CI only.

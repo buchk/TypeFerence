@@ -1,0 +1,4 @@
+{
+  "description": "A list<string> field cannot be inserted into text.",
+  "expect": "error"
+}

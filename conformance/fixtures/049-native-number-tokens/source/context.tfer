@@ -1,8 +1,0 @@
----
-schemaVersion: 5
-kind: context
-id: conformance/context/measurements@1.0.0
-contextType: conformance/context-types/measurements@1.0.0
-values:
-  samples: [1.0, 1e5, -0, 0.10]
----

@@ -1,0 +1,4 @@
+{
+  "description": "Two plugins cannot emit different skills under one name.",
+  "expect": "error"
+}

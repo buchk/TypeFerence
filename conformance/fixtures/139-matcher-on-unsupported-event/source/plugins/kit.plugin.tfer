@@ -1,0 +1,11 @@
+---
+description: Native components kit.
+agents:
+  - agents/ops.agent.tfer
+commands:
+  - commands/changelog.command.tfer
+hooks:
+  - hooks/greet.hook.tfer
+lspServers:
+  - lsp/acme-config.lsp.tfer
+---

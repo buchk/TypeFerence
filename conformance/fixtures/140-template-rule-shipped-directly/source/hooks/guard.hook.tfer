@@ -1,0 +1,8 @@
+---
+event: preToolUse
+matcher: bash|powershell
+exec: acme-guard
+args:
+  - --strict
+timeoutSec: 15
+---

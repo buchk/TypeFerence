@@ -1,0 +1,8 @@
+---
+description: Ask Helio's policy service before any shell command runs.
+event: preToolUse
+matcher: bash|powershell
+type: http
+url: https://policy.helio.example/copilot/pre-tool-use
+timeoutSec: 10
+---

@@ -1,0 +1,10 @@
+---
+description: Prepare the {{team.name}} standup.
+parameters:
+  team: context-types/team.contexttype.tfer
+argumentHint: "[since]"
+allowedTools:
+  - acme-tickets(search)
+disableModelInvocation: true
+---
+Summarize what {{team.name}} closed since the last standup.

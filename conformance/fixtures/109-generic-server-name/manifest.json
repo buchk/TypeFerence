@@ -1,0 +1,4 @@
+{
+  "description": "A server name must have at least two hyphen-separated segments so it cannot replace a user's generically named server.",
+  "expect": "error"
+}

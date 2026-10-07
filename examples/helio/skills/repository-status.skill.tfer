@@ -1,8 +1,0 @@
----
-displayName: Repository Status
-description: Summarize repository health using current version-control and test evidence.
-binds: capabilities/repository-status.capability.tfer
----
-Inspect the requested repository signals. Report branch state, recent material
-changes, test evidence, risks, and the next accountable action. Mark any
-unavailable signal explicitly instead of inferring success.

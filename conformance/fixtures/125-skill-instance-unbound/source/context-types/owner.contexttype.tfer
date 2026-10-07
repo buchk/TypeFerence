@@ -1,0 +1,6 @@
+---
+fields:
+  team:
+    type: string
+    required: true
+---

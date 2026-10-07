@@ -1,0 +1,7 @@
+---
+description: Summarize.
+parameters:
+  team: context-types/team.contexttype.tfer
+  region: context-types/region.contexttype.tfer
+---
+Summarize {{team.queue}} in {{region.code}}.

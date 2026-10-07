@@ -1,0 +1,4 @@
+{
+  "description": "A rule with parameters ships only through an agent that binds them (ADR-0040).",
+  "expect": "error"
+}

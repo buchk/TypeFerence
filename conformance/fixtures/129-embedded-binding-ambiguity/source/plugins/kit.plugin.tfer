@@ -1,0 +1,5 @@
+---
+description: Kit.
+agents:
+  - agents/outer.agent.tfer
+---

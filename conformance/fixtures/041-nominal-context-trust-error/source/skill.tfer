@@ -1,9 +1,0 @@
----
-schemaVersion: 5
-kind: skill
-id: conformance/skills/review@1.0.0
-binds: conformance/capabilities/review@1.0.0
-requiresContextTypes:
-  - conformance/context-types/governed@1.0.0
----
-Review governed context only.

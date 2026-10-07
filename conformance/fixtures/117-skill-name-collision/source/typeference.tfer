@@ -1,0 +1,8 @@
+---
+schemaVersion: 7
+name: conformance/case
+version: 1.0.0
+plugins:
+  - plugins/a.plugin.tfer
+  - plugins/b.plugin.tfer
+---

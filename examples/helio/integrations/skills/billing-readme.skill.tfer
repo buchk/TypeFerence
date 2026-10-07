@@ -1,0 +1,6 @@
+---
+description: Keep the Billing integration README accurate.
+extends: helio/core:skills/integration-readme.skill.tfer
+with:
+  repo: data/billing.context.tfer
+---

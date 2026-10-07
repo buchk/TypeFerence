@@ -1,0 +1,9 @@
+---
+description: Team defaults.
+embeds:
+  - profiles/base.profile.tfer
+context:
+  - docs/team-norm.context.tfer
+skills:
+  - skills/audit.skill.tfer
+---

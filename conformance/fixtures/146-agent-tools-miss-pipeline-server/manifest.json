@@ -1,0 +1,4 @@
+{
+  "description": "The allowlist is checked in every mode the agent ships in: the pipeline rendering's server must be listed too (ADR-0040).",
+  "expect": "error"
+}

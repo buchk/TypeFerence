@@ -9,7 +9,7 @@ import (
 	"github.com/buchk/TypeFerence/go/internal/resource"
 )
 
-// importCommand turns existing GitHub Copilot customizations into a version 6
+// importCommand turns existing GitHub Copilot customizations into a version 7
 // package (ADR-0033) and validates the result through the ordinary compiler.
 //
 //	typeference import <source> --out <dir> [--name ns/name] [--version x.y.z]
@@ -50,7 +50,7 @@ func importCommand(args []string) (int, error) {
 	for _, note := range result.Notes {
 		fmt.Printf("note: %s\n", note)
 	}
-	summary, err := compile.Summarize(out, "", "")
+	summary, err := compile.Summarize(out, compile.BuildOptions{})
 	if err != nil {
 		return 0, resource.Errorf("imported sources do not validate: %s", err)
 	}

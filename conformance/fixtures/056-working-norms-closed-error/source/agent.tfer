@@ -1,8 +1,0 @@
----
-schemaVersion: 5
-kind: agent
-id: conformance/agents/normed@1.0.0
-displayName: Normed Agent
-workingNorms:
-  - Pull requests require one reviewer before merge.
----

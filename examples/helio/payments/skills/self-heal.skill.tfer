@@ -1,0 +1,7 @@
+---
+description: Diagnose a failed payments pipeline run, including reconciliation evidence.
+extends: helio/core:skills/self-heal.skill.tfer
+---
+For payments runs, also check the reconciliation job's output before proposing
+a fix, and never propose a change to ledger posting code without a human
+reviewer named in the fix.

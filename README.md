@@ -1,154 +1,178 @@
 # TypeFerence
 
-**Define your organization's agents and skills once. Compose them with types. Ship them as GitHub Agent Plugins that people install once and use in every repository and pipeline.**
+**Write your organization's Copilot skills, agents, and MCP servers once. Specialize them per team with typed data. Ship them as GitHub Agent Plugins through one marketplace.**
 
-TypeFerence is an experimental reference implementation of a typed definition and compilation layer for AI agents. It replaces copied, drifting agent files with Go-like composition: reusable profiles, agent embedding, skills that extend shared skills, structurally satisfied interfaces, typed context, deterministic compilation, provenance, and artifact diffing. Its primary output is a marketplace of [Agent Plugins](https://agent-plugins.org/) for GitHub Copilot.
+TypeFerence is an experimental authoring and reuse layer for [Agent Plugins](https://agent-plugins.org/), with GitHub Copilot as its output adapter. It compiles small `.tfer` source documents into ordinary plugin directories and a Copilot marketplace index. Copilot and GitHub install, enable, authenticate, and run what it produces; TypeFerence never does.
 
-Read the [whitepaper](docs/whitepaper.md), the [rendered PDF](output/pdf/typeference-whitepaper.pdf), the [draft v6 specification](docs/specification.md), or the [ARD alignment notes](docs/ard-alignment.md). The design of version 6 is recorded in [ADR-0029](docs/decisions/0029-agent-plugins-primary-target.md) through [ADR-0033](docs/decisions/0033-import-copilot-customizations.md).
+Read the [specification](docs/specification.md) (version 7), the decisions that shaped it ([ADR-0035](docs/decisions/0035-v7-copilot-plugin-authoring-layer.md), [ADR-0036](docs/decisions/0036-v7-documents-data-and-templates.md), [ADR-0037](docs/decisions/0037-v7-build-emitted-host-configuration.md), [ADR-0040](docs/decisions/0040-native-copilot-components-and-enterprise-defaults.md)), the [output contract](docs/output-contract.md), and the [Helio example](examples/helio/README.md).
+
+> **Branch status (`feat/v7-plugin-authoring`).** Version 7 is implemented
+> and CI is green on Linux, macOS, and Windows. Its committed artifacts
+> (conformance digests, `dist/`, `dist-maintainer/`, the root `AGENTS.md`)
+> were produced by CI's Go toolchain. Copilot's native components (rules,
+> commands, hooks, LSP servers, agent-scoped MCP servers) are emitted and
+> validated against the output contract, but have not yet been installed in
+> Copilot. The rebuilt playground has not yet been exercised by hand.
 
 ## The problem it solves
 
-A well-tuned custom agent lives in one repository's `.github/agents/`. Using it anywhere else means copying it, and every copy drifts. Across an organization that becomes dozens of near-identical agents and skills, each team reinventing the last team's work, and a fix to the shared part reaches none of them.
+A good skill lives in one repository. Every other team copies it, and the copies drift. One developer maintaining a README skill across thirty repositories keeps thirty near-identical files in sync by hand. When several teams publish to one internal marketplace, nothing stops two of them shipping different skills called `review`, or an MCP server that silently replaces a user's own.
 
-TypeFerence makes the shared part a typed source package. Teams compose what they need from it, and the build emits installable plugins, so a team's agent and skills follow its people into every repository, into Copilot CLI and VS Code, and into CI runs.
+TypeFerence makes the shared part source:
+
+- **Shared templates.** A platform team writes a template once: a skill, a document, or a whole profile with blanks such as `{{team.queue}}`.
+- **Typed team data.** Each team supplies one small data document of the template's context type. That type is the contract: every instance must fill every required field, and a form can be generated from it.
+- **Specialization by extension.** A team can extend a shared skill instead of copying it. Fixes to the shared skill reach every team on the next build.
+- **Checks the plugin format cannot express.** A skill always ships with the MCP servers it needs. Every skill, agent, plugin, and server name means one thing across the whole marketplace. A pipeline skill's output schema ships beside it for the runner to validate against.
+- **Reviewable output.** Builds are byte-for-byte reproducible, so a change to a shared template shows up as a diff of exactly what changed for every team.
 
 ## What you write
 
-A version 6 package is a manifest and small `.tfer` documents. A document's kind comes from its file suffix and its identity from its path; nobody types an ID.
+A package is a manifest plus small documents whose kind comes from the file suffix. Prose is ordinary Markdown; types describe only the values that vary between instances.
+
+A context type is the contract every team instantiates against:
 
 ```text
-examples/helio/
-  typeference.tfer                          # package name, version, plugins, exports
-  plugins/payments.plugin.tfer              # what ships together
-  agents/payments-repo-agent.agent.tfer     # identity and objectives
-  profiles/repository-defaults.profile.tfer # reusable composition
-  skills/repository-status.skill.tfer       # a shared core skill
-  skills/payments-repository-status.skill.tfer  # the payments team's extension of it
-  context/payments-service.context.tfer     # typed context
+---
+displayName: Team
+instanceName: id
+fields:
+  id:
+    type: string
+    required: true
+    description: Lowercase and hyphenated; prefixes the team's skill names.
+  name:
+    type: string
+    required: true
+  queue:
+    type: string
+    required: true
+  tier:
+    type: string
+    default: standard
+    choices:
+      - standard
+      - critical
+---
 ```
 
-A plugin links the agents, profiles, and skills that install together:
+A template skill uses its fields, and can require an MCP server:
 
 ```text
 ---
-description: The payments repository agent, for engineers and for release pipelines.
-agents:
-  - agents/payments-repo-agent.agent.tfer
-modes:
-  - manual
-  - pipeline
+description: Summarize open requests in the {{team.name}} ticket queue.
+parameters:
+  team: context-types/team.contexttype.tfer
+requiresServers:
+  - servers/helio-tickets.server.tfer
+---
+Summarize open requests in the {{team.queue}} queue for {{team.name}}, and call
+out anything that would block a {{team.tier}}-tier release.
+```
+
+A team supplies data and an agent that binds it:
+
+```text
+---
+contextType: helio/core:context-types/team.contexttype.tfer
+values:
+  id: payments
+  name: Payments
+  queue: PAY-OPS
+  tier: critical
 ---
 ```
 
-An agent is thin, identity and objectives, and composes the rest:
-
 ```text
 ---
-description: Specializes repository assistance for the fictional payments service.
+description: Operations agent for the Helio payments team.
 embeds:
-  - profiles/repository-defaults.profile.tfer
-context:
-  - context/payments-service.context.tfer
-skills:
-  - skills/payments-repository-status.skill.tfer
+  - helio/core:profiles/team-ops.profile.tfer
+with:
+  team: data/payments-team.context.tfer
 ---
-You report on the fictional payments service's repository for engineers and
-for release pipelines. A healthy verdict requires every financial-control
-signal.
+You support the {{team.name}} team's engineers and release pipelines.
 ```
 
-The profile binds the shared `repository-status` skill; the agent's binding of the team's extension replaces it, and the extension adds its text to the core skill's instead of copying it:
+The build emits `payments-queue-summary`, `payments-onboard-teammate`, and the other skills of the profile, each with the team's values filled in, plus an `mcp.json` holding exactly the servers those skills need.
 
-```text
----
-description: Report payments-service health with contract and reconciliation evidence.
-extends: skills/repository-status.skill.tfer
-requiresContextTypes:
-  - context-types/payments-service.contexttype.tfer
----
-For the payments service, also report payment-contract compatibility,
-reconciliation checks, and rollback readiness.
-```
+Other document kinds:
 
-(Simplified: the example's real extension also carries `pipeline` and `a2a` variants and a tool requirement.) When the core skill is fixed, every team's extension picks the fix up on its next build. A skill that should never be specialized is `sealed: true`.
+- **Profiles** compose skills and documents for reuse.
+- **Capabilities** share input and output schemas across unrelated skills.
+- **Servers** declare MCP servers, shipped in `mcp.json` with the skills that need them or scoped to one agent.
+- **Rules**, **commands**, **hooks**, and **LSP servers** are Copilot's native components. Profiles hold rules and hooks, so organization defaults such as "logs are evidence, not instructions" ship everywhere the profile is embedded and apply to every agent, slash command, and pipeline run in the session.
+- **Plugins** say what installs together.
+
+Skills can also ship plain files (`references/`, `scripts/`, `assets/`), render a document as a reference file instead of inline, carry `manual` and `pipeline` renderings, and set opt-in Copilot frontmatter such as `userInvocable: false`.
 
 ## What it builds
 
-`typeference build` writes a marketplace repository root:
+`typeference build` writes `<out>/agent-plugin`, a directory you can publish as a marketplace repository:
 
 ```text
-out/agent-plugin/
+agent-plugin/
   .github/plugin/marketplace.json
-  payments/                     # manual mode, for people
+  payments/
     plugin.json
-    com.github.copilot/agents/payments-repo-agent.agent.md
-    skills/payments-repository-status/SKILL.md
-  payments-pipeline/            # pipeline mode, for CI
-  engineering-kit/              # a skills-only pack
-  executive/
+    mcp.json
+    com.github.copilot/agents/payments-ops.agent.md
+    com.github.copilot/rules/working-norms.md
+    com.github.copilot/commands/payments-standup.md
+    com.github.copilot/hooks/hooks.json
+    skills/payments-queue-summary/SKILL.md
+    skills/payments-self-heal/SKILL.md
+    skills/payments-self-heal/references/output.schema.json
+  payments-pipeline/            # the same plugin with pipeline renderings
+  .typeference/build.json       # integrity index
   .typeference/compatibility.json
 ```
 
-Skills stay `SKILL.md` files, so each one is still a slash command. A skill that needs its agent's context ships only with that agent; the compiler checks it. Names and descriptions are validated against the Agent Plugins and Agent Skills grammars, and every emitted skill name maps to exactly one skill across the build. `compatibility.json` reports plugins that ship competing members of one skill family, the case where installing both would let Copilot pick either.
-
-It also writes the `neutral` bundle, the canonical host-independent form that link, A2A publication, and the ARD catalog build on.
+Plugins are Agent Plugins 1.0 by default. Copilot-only fields and components are emitted only when a document asks for them. CI checks every emitted file against the Agent Plugins schemas and TypeFerence's [output contract](docs/output-contract.md).
 
 ## One marketplace for the whole organization
 
-Teams author agents and skills in their own repositories, but people install from one place. That place is the build of a **marketplace package**: a small repository whose manifest pins every team's published package and lists the plugins to ship ([ADR-0034](docs/decisions/0034-organization-marketplace-from-source-packages.md)):
+Teams author packages in their own repositories; people install from one place. That place is the build of a marketplace package whose manifest pins every team's published package and lists the plugins to ship:
 
 ```text
 ---
-schemaVersion: 6
-name: acme/marketplace
+schemaVersion: 7
+name: helio/marketplace
 version: 2026.10.1
 marketplace:
-  name: acme-agents
-  owner: Acme Platform
+  name: helio-agents
+  owner: Helio Platform
 dependencies:
-  acme/core: 3.1.0
-  acme/payments-agents: 2.4.0
-  acme/data-agents: 1.0.2
+  helio/core: 3.1.0
+  helio/payments: 2.4.0
+  helio/data-platform: 1.0.2
 plugins:
-  - acme/core:plugins/engineering-kit.plugin.tfer
-  - acme/payments-agents:plugins/payments.plugin.tfer
-  - acme/data-agents:plugins/data.plugin.tfer
+  - helio/core:plugins/engineering-kit.plugin.tfer
+  - helio/payments:plugins/payments.plugin.tfer
+  - helio/data-platform:plugins/data-platform.plugin.tfer
 ---
 ```
 
-Because the whole marketplace is one build, the guarantees of a single build hold across every team:
+Because the marketplace is one build:
 
-- Every plugin, agent, and skill name maps to exactly one thing. If two teams ship different skills called `review`, the marketplace build fails and names both, instead of Copilot keeping whichever it loads first.
-- A shared skill from a core package is one skill, emitted byte-for-byte identically in every plugin that carries it, so installing two packs that include it is harmless.
-- The lockfile holds one version of each package. If payments pins `acme/core` 3.1.0 and data pins 3.2.0, restoring the marketplace fails until they agree.
-- The compatibility report covers the whole marketplace: it names plugins that ship competing variants of one skill.
-- Each plugin carries its owning package's version and provenance, so releasing one team's package changes only that team's plugin directories.
+- every skill, agent, plugin, and server name maps to one thing across all teams;
+- the lockfile holds one version of each package;
+- adding a required field to a shared context type fails every team's data that lacks it, by name;
+- the compatibility report lists plugins that ship competing members of one skill family;
+- each plugin carries its owning package's version and provenance, so releasing one team's package changes only that team's plugins.
 
-The flow:
-
-1. A team merges, and its CI publishes a new version of its package to the feed with `typeference pack`.
-2. A pull request bumps that package's pin in the marketplace package (`typeference update` rewrites the lockfile).
-3. Marketplace CI builds it. Collisions, divergent shared skills, and version skew fail here.
-4. A release job replaces the published marketplace repository's contents with the build output (linked, when plugins import tools). Nothing else goes in, so a plugin reaches people only by going through the compiler.
-
-A team can check its package against the current marketplace before publishing:
-
-```sh
-typeference validate path/to/marketplace --candidate .
-```
-
-It reports collisions, the packages that must move with a core release, and competing plugins, and writes nothing.
+`typeference validate <marketplace> --candidate <package-dir>` checks an unpublished package against the marketplace without writing anything.
 
 ## Using the plugins with Copilot
 
-Publish the `agent-plugin` directory as a repository (here `your-org/agent-plugins`; the marketplace it defines is named `helio-agents` by the manifest), then install from it with [Copilot CLI](https://docs.github.com/en/enterprise-cloud@latest/copilot/reference/copilot-cli-reference/cli-plugin-reference):
+Publish the `agent-plugin` directory as a repository, then install from it with [Copilot CLI](https://docs.github.com/en/enterprise-cloud@latest/copilot/reference/copilot-cli-reference/cli-plugin-reference):
 
 ```sh
 copilot plugin marketplace add your-org/agent-plugins
 copilot plugin install payments@helio-agents
 ```
 
-A repository can enable a plugin for everyone who works in it in `.github/copilot/settings.json`; a plugin enabled there installs automatically and is active only in that repository:
+A repository can enable a plugin for everyone who works in it in `.github/copilot/settings.json`. A plugin enabled there installs automatically and is active only in that repository:
 
 ```json
 {
@@ -158,366 +182,114 @@ A repository can enable a plugin for everyone who works in it in `.github/copilo
 }
 ```
 
-Marketplaces that are not added by default are declared in the same file under `extraKnownMarketplaces`; see GitHub's [repository settings reference](https://docs.github.com/en/enterprise-cloud@latest/copilot/reference/copilot-cli-reference/cli-config-dir-reference) for its format.
+In CI, install the `-pipeline` plugin, whose skills render their pipeline variants, and run Copilot non-interactively.
 
-In CI, install the `-pipeline` plugin, whose skills render their pipeline variants, and run the agent non-interactively:
-
-```yaml
-permissions:
-  contents: read
-  copilot-requests: write
-steps:
-  - uses: actions/checkout@v6
-  - run: npm install -g @github/copilot
-  - run: |
-      copilot plugin marketplace add your-org/agent-plugins
-      copilot plugin install payments-pipeline@helio-agents
-      copilot --agent payments-repo-agent -p "Report release readiness." -s
-    env:
-      GITHUB_TOKEN: ${{ github.token }}
-```
-
-A job's default `GITHUB_TOKEN` can read only the job's own repository, so installing from a private marketplace in another repository needs a credential with read access to it; how Copilot CLI picks that credential up is still to be verified.
-
-These host behaviors come from GitHub's documentation; the ones TypeFerence has not yet verified in practice are listed in [ADR-0029](docs/decisions/0029-agent-plugins-primary-target.md#consequences).
-
-## Why not just write agent files?
-
-You can, and for one agent in one repository you often should. TypeFerence becomes useful when agents and skills need reuse, review, specialization, provenance, and repeatable output across many repositories and teams.
-
-Agent runtime system prompts are like machine code: they are what the model consumes at execution time. `.agent.md` and `SKILL.md` files are like assembly language: readable and controllable, but close to one host's concrete shape. TypeFerence is the higher-level language above them. Teams model profiles, skills, capabilities, context, and trust metadata once, and the compiler emits the files.
-
-Already have agents and skills? `typeference import` turns a repository's `.github/agents` and skills, a skill directory, or an existing plugin into a version 6 package. It fails, listing every item, when the source holds something version 6 cannot represent (tool restrictions, MCP configuration, scripts beside a skill), unless you pass `--lossy`.
-
-## Where it fits
-
-```text
-declared source packages
-    -> restore exact locked dependency tree
-    -> build deterministic unlinked target artifacts
-    -> link explicit deployment bindings
-    -> publish or run through the selected host
-```
-
-[Agentic Resource Discovery](https://agenticresourcediscovery.org/) helps clients find and verify deployed capabilities. TypeFerence addresses the earlier authoring problem: producing compatible native artifacts from one governed definition. Discovery portability does not itself provide definition portability.
-
-The long-term objective is behavioral equivalence: preserving declared organizational intent across the places an agent runs closely enough to be measured and governed. Version 6 provides the closed typed source, deterministic output, and provenance needed to test that objective; it does not claim that different models or runtimes already behave identically.
+MCP servers that need sign-in rely on Copilot's OAuth support (discovery and dynamic client registration), or handle their own login. Plugin MCP configuration never contains a secret and cannot depend on environment variables.
 
 ## Try it in your browser
 
-The **[playground](https://buchk.github.io/TypeFerence/)** runs the real Go
-compiler — built for WebAssembly, internals untouched — entirely in your tab.
-Edit typed source and watch the compiled plugin and neutral artifacts, the
-composition graph, and the diagnostics update live. The status-bar digest is
-the determinism guarantee made interactive: the Helio example reproduces the
-digest of this repository's committed `dist/` exactly, and the self-hosting
-example recompiles the repository's own root `AGENTS.md` byte for byte. There
-is no backend; nothing you type leaves the browser
-([ADR-0010](docs/decisions/0010-browser-playground.md)).
-
-The playground's **Equivalence** tab walks the full BETH loop (ADR-0009)
-without ever asking for a credential: it packs scenario × surface cells with
-the real `equivalence pack` code, you collect responses by copy/paste from
-real hosts (BETH's operator model), it exports the assembled run as a
-deterministic `.tar.gz`, you score locally — keys stay in your terminal — and
-dropping the resulting `scorecard.json` back onto the page renders adherence,
-agreement, and every divergence
-([ADR-0011](docs/decisions/0011-playground-live-runs.md)).
+The **[playground](https://buchk.github.io/TypeFerence/)** runs the real Go compiler, built for WebAssembly, entirely in your tab. Edit source, including every package of the Helio marketplace, and watch the plugins, the composition graph, and the diagnostics update live. The **Instantiate** tab generates a form from a context type: change a team's data and see every instance of every template rebuild. There is no backend; nothing you type leaves the browser ([ADR-0010](docs/decisions/0010-browser-playground.md)).
 
 ## Quick start
 
-Requires Go 1.24+ and nothing else. From clone to compiled artifacts:
+Requires Go 1.24+ and nothing else:
 
 ```sh
 git clone https://github.com/buchk/TypeFerence.git
 cd TypeFerence
 cd go && go build -o ../bin/ ./cmd/typeference && cd ..
 
-./bin/typeference validate examples/helio
-./bin/typeference build examples/helio --out out
-./bin/typeference link out/agent-plugin --deployment examples/deployment/helio-plugins.yaml --out linked/plugins
-./bin/typeference link out/neutral --deployment examples/deployment/helio-a2a.yaml --out linked/a2a
-./bin/typeference diff examples/helio --against dist
-./bin/typeference inspect helio/works/agents/payments-repo-agent@1.0.0 --source examples/helio
+./bin/typeference validate examples/helio/core
+./bin/typeference build examples/helio/core --out out
 ```
 
-`build` writes deterministic, unlinked `agent-plugin` and `neutral` targets
-under `out/`, plus an ARD catalog because the example's manifest declares a
-publisher. It emits no MCP configuration, command, or endpoint. `link`
-validates an explicit external deployment file and materializes runtime
-configuration: for plugins, a credential-free `mcp.json` per plugin. It creates
-an absent or empty output and replaces a non-empty one only when root link
-provenance identifies it as a prior TypeFerence output. `diff` recompiles and
-byte-compares against the committed reference output in `dist/` — "No
-differences." is the determinism guarantee made visible: your freshly built
-compiler reproduces the repository's artifacts exactly.
-
-The binary is fully static (`CGO_ENABLED=0`) with no runtime dependencies. You can
-also install it with Go directly (requires the module to be published on the
-repository's default branch):
+Building the whole Helio marketplace needs its team packages in a feed. Pack them into a local filesystem feed, restore the marketplace, and build:
 
 ```sh
-go install github.com/buchk/TypeFerence/go/cmd/typeference@latest
+FEED="$PWD/obj/feed"
+for p in core data-platform integrations payments; do
+  # packages with dependencies restore before they pack
+  [ "$p" = core ] || ./bin/typeference restore examples/helio/$p --feeds examples/helio/feeds.yaml
+  ./bin/typeference pack examples/helio/$p --out "$FEED/helio/$p/$(sed -n 's/^version: //p' examples/helio/$p/typeference.tfer)/$p-$(sed -n 's/^version: //p' examples/helio/$p/typeference.tfer).tferpkg"
+done
+./bin/typeference restore examples/helio/marketplace --feeds examples/helio/feeds.yaml
+./bin/typeference build examples/helio/marketplace --out out
 ```
 
-Tagged releases ship prebuilt archives for Linux, macOS, and Windows (amd64/arm64)
-with a `SHA256SUMS` file — unpack one binary and put it on `PATH`; there is no
-installer to run. The release process is documented in
-[docs/release-checklist.md](docs/release-checklist.md).
+`make reference` does the same in a temporary directory and rewrites the committed `dist/`.
 
 ## Using the CLI
-
-If you downloaded a release archive instead of building from source, unpack
-`typeference` (`typeference.exe` on Windows) onto `PATH` and confirm it runs:
-
-```sh
-typeference version
-```
-
-`<source>` in every command below is a version 6 package: a directory with a
-`typeference.tfer` manifest. `typeference init` scaffolds one from a setup
-wizard answer set, and `typeference import` creates one from existing Copilot
-customizations.
 
 ```text
 typeference init --answers <answers.json> [--out DIR] [--verify sha256:...]
 typeference import <copilot-source> --out <dir> [--name ns/name]
     [--version x.y.z] [--plugin name] [--lossy]
-typeference validate <source> [--trust-config path]
-    [--packages-dir obj/typeference/packages] [--candidate <package-dir>]
+typeference validate <source> [--packages-dir dir] [--candidate <package-dir>]
 typeference pack <source> [--out package.tferpkg]
-typeference restore <source> --feeds <external-config> [--locked]
-    [--packages-dir obj/typeference/packages]
-typeference update <source> --feeds <external-config>
-typeference build <source> [--target all|agent-plugin|neutral] [--out dist]
-    [--packages-dir obj/typeference/packages]
-    [--emit-ard --publisher-domain example.com] [--trust-config path]
-    [--trust-signatures signatures.json] [--allow-unsigned-trust]
-typeference inspect <agent-id> [--source path]
-typeference link <built-target-dir> --deployment <file> --out <linked-dir>
-typeference diff <source> --against <compiled-dir> [--target all]
-    [--emit-ard --publisher-domain example.com] [--trust-config path]
-    [--trust-signatures signatures.json] [--json] [--allow-unsigned-trust]
-typeference eval <source> --scenarios <file-or-dir> [--live] [--model id] [--out dir]
-typeference equivalence pack <source> --scenarios <file-or-dir> --out <run-dir>
-    [--target all|<name>[,<name>...]]
-typeference equivalence score <run-dir> [--live] [--model id]
+typeference restore <source> --feeds <external-config> [--locked] [--packages-dir dir]
+typeference update <source> --feeds <external-config> [--packages-dir dir]
+typeference build <source> [--out dist] [--packages-dir dir]
+typeference inspect <agent-id> [--source path] [--packages-dir dir]
+typeference diff <source> --against <compiled-dir> [--json] [--packages-dir dir]
+typeference version
 ```
 
-`validate` checks composition, typing, and every plugin's shipping rules
-without writing anything; with `--candidate`, it checks an unpublished package
-against a marketplace package's locked graph. `pack` creates a canonical source package. `restore`
-is the only dependency operation that contacts feeds; it commits exact
-identities and digests to `typeference.lock` and materializes the complete tree
-under `obj/typeference/packages`. Once a lock exists, `restore` honors it;
-`update` is the explicit re-resolution after exact manifest edits. `build` is
-offline and frozen. `link` is the separate environment-specific transform.
-`diff` recompiles and byte-compares against an already-built directory — see
-[Quick start](#quick-start) above for what "No differences." means. `eval` and
-`equivalence` are covered in [Behavioral evals](#behavioral-evals) below; both
-default to a dry run that never makes a network call.
+- `import` turns existing Copilot customizations into a version 7 package: a repository's `.github/agents` and skills, a skill directory, or an Agent Plugin. It carries the files beside skills, `mcp.json` servers, and recognized Copilot frontmatter. It also carries an Agent Plugin's commands, rules, hooks, and language servers. It fails, listing every item, on anything version 7 cannot represent, unless you pass `--lossy`.
+- `restore` is the only command that contacts feeds. It records exact identities and digests in `typeference.lock`.
+- `build` is offline and deterministic.
+- `diff` rebuilds and byte-compares against a committed output directory.
 
-The language server (`go/cmd/typeference-lsp`) and its
-[VS Code client](editors/vscode/README.md) give `.tfer` authors diagnostics,
-completions, and go-to-definition on reference paths.
+## Packages and feeds
 
-## Source format, composition, and exposure
+A package can share skills, profiles, documents, context types, and servers with other packages. Its manifest declares exact dependencies and exports what others may reference, such as `helio/core:profiles/team-ops.profile.tfer`.
 
-Every document is a `.tfer` file: frontmatter in TypeFerence's own closed
-grammar between `---` fences, then a body. A skill's body is its instructions,
-a context's body is its text, and an agent's body is its objectives. Plain
-text needs no quotes; each field's declared type decides what a value means,
-and nothing is guessed from its spelling. The grammar is normative in the
-[specification](docs/specification.md#frontmatter-grammar) and
-[ADR-0032](docs/decisions/0032-v6-grammar-and-schema-directed-scalars.md).
-
-Composition is Go-like. Agents embed profiles or other agents, profiles embed
-profiles, and the shallowest binding of a capability wins, so a team agent can
-embed a shared agent and change one skill, or change nothing and just bundle
-job-shaped profiles. A skill that binds no capability defines its own; binding
-a skill whose capability an embedded layer already binds replaces it, unless
-that binding is `sealed`. Interfaces are satisfied structurally by the resolved
-slots and capability bindings of an agent.
-
-`required` is the demand side of the composition model. A profile may declare a
-required capability without choosing its implementation; every concrete agent
-that carries the requirement must supply a compatible binding. Interface
-satisfaction is observational—it reports what an agent already provides—and does
-not create that obligation. `sealed` is separate: it protects an implementation
-that has already been supplied.
-
-Capability visibility is a separate public-API axis: `internal` is the default,
-and both internal and exposed capabilities can satisfy interfaces and
-participate in composition. Only `visibility: exposed` capability documents are
-projected onto linked callable surfaces such as A2A Agent Cards.
-
-Context governance uses a different boundary. A context satisfies its declared
-type and only the base types it explicitly refines through `embeds`; a
-structurally identical but unrelated type cannot impersonate a governed type.
-A context with no declared type is plain text. Tools are independent extern
-dependencies consumed by skills, not alternate implementations of those
-skills' capabilities. These boundaries are recorded in
-[ADR-0024](docs/decisions/0024-clarify-v4-type-and-composition-boundaries.md).
-
-## One implementation, one specification
-
-The Go implementation under `go/` is the reference implementation. The
-[specification](docs/specification.md) stays normative in principle — the
-abstraction is the contract, and anyone may realize it differently — but this
-repository's Go compiler is the one living answer ([ADR-0014](docs/decisions/0014-go-only-implementation.md)).
-Determinism is preserved and made visible by the
-[conformance suite](conformance/README.md): the compiler must reproduce the
-committed digests byte-for-byte.
-The [specification evidence matrix](docs/conformance-matrix.md) maps normative
-areas to golden fixtures and focused implementation tests. Architectural
-follow-ups are maintained in [next steps](docs/next-steps.md).
-
-The repository's executable corpora have distinct jobs: `examples/helio` is the
-integrated narrative and committed reference output; `agents/maintainer` is the
-self-hosting drift gate; and `conformance/fixtures` is the normative edge-case
-corpus. New features should not be copied into every example unless that role
-requires them.
-
-An earlier C# reference implementation was retired when the project committed to
-being a tool rather than a multi-implementation standard. Determinism — the
-property that makes `diff` and the committed-digest guarantee real — is a property
-of one good compiler and was unaffected; only the second implementation, and the
-cross-implementation half of the conformance suite, went away. TypeFerence embeds
-no LLM provider. Deployment state is consumed only by the explicit linker and
-never changes source or unlinked-target identity.
-
-## Packages and enterprise feeds
-
-A package can share agents, profiles, and skills with other packages. Its
-manifest declares exact dependencies and exports the documents others may use:
-
-```text
----
-schemaVersion: 6
-name: helio/payments-agents
-version: 1.0.0
-dependencies:
-  helio/foundations: 3.1.0
-plugins:
-  - plugins/payments.plugin.tfer
----
-```
-
-A document then references a dependency's export by package-qualified path,
-such as `helio/foundations:skills/repository-status.skill.tfer`.
-
-Feed routing is external to source identity. A filesystem/JFrog-compatible
-example looks like:
+Feed routing is external to source identity:
 
 ```yaml
 schemaVersion: 1
 routes:
   helio:
-    kind: jfrog
-    baseUrl: https://artifacts.example/artifactory/typeference
-    credentialEnvironment: JFROG_ACCESS_TOKEN
+    kind: azureArtifacts
+    organization: https://dev.azure.com/helio
+    feed: typeference
 ```
 
-`azureArtifacts` routes use Azure Universal Packages through the Azure CLI and
-its existing authentication. Package names replace `/` with `--` in Azure
-Artifacts. Lockfiles contain package identities, exports, dependency edges, and
-content digests—never feed URLs, credentials, or machine paths.
+Route kinds:
+
+- `azureArtifacts`: Azure Universal Packages, through the Azure CLI and its existing sign-in.
+- `jfrog` and `http`: an HTTPS base URL, with an optional `credentialEnvironment` naming an environment variable that holds a bearer token.
+- `git`: an HTTPS repository `url`, an optional `root` within it, and a `tagPrefix`. Restore clones the tag `<tagPrefix><version>` with Git's own credentials and packs the package.
+- `filesystem`: a local directory.
+
+Lockfiles contain package identities, exports, dependency edges, and content digests. They never contain feed URLs, credentials, commit identifiers, or machine paths.
 
 ## Self-hosting
 
-The agent that maintains this repository is defined in TypeFerence itself, under
-[agents/maintainer/](agents/maintainer/). The repository-root
-[AGENTS.md](AGENTS.md) and `dist-maintainer/` (its neutral bundle, an
-installable Copilot plugin, and an ARD catalog) are compiled artifacts of that
-definition; CI recompiles it and fails on any drift. What the exercise revealed
-about the type system's limits is recorded honestly in
-[ADR-0006](docs/decisions/0006-self-hosting-design-feedback.md).
-
-## Behavioral evals
-
-`typeference eval` runs scenario files (task prompt plus expected-behavior rubric)
-against a compiled definition and scores rubric adherence with an LLM judge — dry
-run by default, emitting the exact request payloads without any network call. A
-pass is an adherence signal, not behavioral equivalence; the framing and its limits
-are documented in [evals/README.md](evals/README.md).
-
-`typeference equivalence` (BETH, the Behavioral Equivalence Test Harness) is the
-deployment-side counterpart: `pack` lays out the same scenarios as run-ready cells
-per compiled target surface, an operator collects one response per cell from a real
-host, and `score` reports adherence per surface and agreement across surfaces,
-listing every divergence. A scorecard is one observation per surface, not a proof;
-see [ADR-0009](docs/decisions/0009-behavioral-equivalence-harness.md).
-
-`--emit-ard` (the default when the manifest declares a `publisher`) emits one
-canonical TypeFerence source-package entry and one unlinked bundle entry for
-each neutral agent bundle and plugin artifact. Entries carry `derivedFrom`
-provenance back to the canonical explicit source-resource digest. Callable MCP
-or A2A publication requires linked provider/endpoint metadata; build never
-invents an address.
-
-### Trust manifests
-
-An optional `typeference.trust.tfer` at the source root enriches the draft AI Catalog `trustManifest` for the source package and compiled bundles. It can declare DID, SPIFFE, or HTTPS identity; trust schemas; attestation and provenance references; policy or enterprise verification metadata; and an intent to sign. TypeFerence validates and publishes these declarations without resolving remote documents or asserting that an external authority has verified them.
-
-```text
----
-schemaVersion: 5
-source:
-  identity: did:web:helio.example:typeference:source:helio
-  identityType: did
-  attestations:
-    - type: https://slsa.dev/provenance/v1
-      uri: https://trust.helio.example/provenance/source.intoto.jsonl
-      digest: sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-bundles:
-  identityTemplate: spiffe://helio.example/typeference/{target}/{agent}
-  identityType: spiffe
-  metadata:
-    com.helio.governance:
-      policyDigest: sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-      runtimeEvidenceProfile: tag:agentrust.io,2026:trace-v0.1
-  signatureIntent:
-    algorithm: ES256
-    keyRef: did:web:helio.example#catalog-signing
----
-```
-
-TypeFerence does not hold signing keys. An external signer can produce detached JWS values over the unsigned, JCS-canonicalized trust manifests and provide them through `--trust-signatures signatures.json`. Use `--allow-unsigned-trust` only to emit signing input when `signatureIntent.required` is true; normal publication fails closed without those signatures. The signature map must be outside the source root so adding signatures cannot change the source digest they sign. Identical source, trust config, and signature map inputs produce byte-identical output.
+The agent that maintains this repository is defined in TypeFerence itself, under [agents/maintainer/](agents/maintainer/). The repository-root [AGENTS.md](AGENTS.md) and `dist-maintainer/` (its installable Copilot plugin) are compiled artifacts of that definition; CI recompiles it and fails on any drift.
 
 ## Repository map
 
-- `go/` - the Go implementation: compiler, CLI, importer, language server (`cmd/typeference-lsp`), and eval harness.
-- `conformance/` - canonical conformance fixtures (byte-identity contract).
-- `examples/helio/` - fictional organization: a plugin marketplace with a multi-skill agent plugin, a skills pack, skill extension, and a pipeline plugin.
-- `examples/deployment/` - deployment files for linking the Helio output.
-- `web/playground/` - browser playground: the Go compiler built for `js/wasm`, plus the setup wizard and the BETH operator console.
-- `agents/maintainer/` - this repository's maintainer agent, defined in TypeFerence.
-- `editors/vscode/` - VS Code client for the language server.
-- `evals/` - behavioral eval scenarios and honest framing.
-- `docs/specification.md` - normative version 6 behavior.
-- `docs/decisions/` - architecture decision records.
-- `docs/whitepaper.md` and `output/pdf/typeference-whitepaper.pdf` - design paper.
-- `CHANGELOG.md` and `docs/release-checklist.md` - versioning and release process.
+- `go/`: the Go implementation: compiler, CLI, importer, language server (`cmd/typeference-lsp`), and the WebAssembly bridge.
+- `conformance/`: the version 7 golden fixture corpus and the output-contract schemas.
+- `tools/validate_output.py`: validates build output against the output contract.
+- `examples/helio/`: a fictional organization's four packages and marketplace.
+- `dist/`: the committed reference build of the Helio marketplace.
+- `web/playground/`: the browser playground and setup wizard.
+- `agents/maintainer/`: this repository's maintainer agent, defined in TypeFerence.
+- `editors/vscode/`: VS Code client for the language server.
+- `docs/specification.md`: normative version 7 behavior.
+- `docs/decisions/`: architecture decision records.
+- `CHANGELOG.md` and `docs/release-checklist.md`: versioning and release process.
 
 ## Design boundaries
 
-- Agents may embed multiple profiles or agents; profiles may embed other profiles; local slots and capability bindings resolve promoted-name ambiguity.
-- A plugin links; it does not compose. Agents and skills are reused across plugins by reference, never copied.
-- Skills extend one base skill additively; a sealed skill cannot be extended, and an extension cannot change its base's contract.
-- Interfaces may embed interfaces and are satisfied structurally, without declarations on agents.
-- Context is a first-class typed resource. Raw prose is a context with a text
-  body; there is no filesystem-path escape hatch. Refinement is nominal through
-  explicit `embeds`, with structurally checked members.
-- Tools are independent declared runtime imports used by skills. Base and variant
-  requirements remain distinct until link selects deployment modes and providers.
-- Build emits deterministic unlinked artifacts with provenance; link
-  materializes active runtime configuration, and never a secret.
+- Prose is Markdown. Types describe data: the values that vary per instance, checked at build time.
+- A template is never emitted; its instances are. Instance names come from the data (`instanceName`).
+- A plugin links; it does not compose. Skills and agents are reused across plugins by reference, never copied.
+- Skills extend one base skill additively. Replacing base text is a new skill.
+- A skill shipped on its own has no unbound parameters, so a slash command never depends on being run inside an agent.
+- Build emits complete plugins, including `mcp.json`. There is no deployment or link step, and no secret is ever emitted.
 - Source package dependencies restore to an exact committed graph before build.
-- No deployment state, hosted runtime, or model credentials participate in
-  source or build semantics.
-- Structural validation does not guarantee identical LLM behavior across models or hosts.
-- ARD publication wraps selected target outputs; it is not itself a compilation target or execution runtime.
+- Structural validation does not guarantee identical model behavior across hosts.
 
 GitHub Copilot is the supported host, and its plugin format is young. Review generated artifacts before production use.
-
-TypeFerence is licensed under Apache-2.0. Helio Works is fictional.

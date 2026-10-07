@@ -1,0 +1,12 @@
+---
+description: A helper agent.
+skills:
+  - skills/hidden.skill.tfer
+copilot:
+  model: example-model
+  tools:
+    - read
+    - search
+  userInvocable: true
+---
+Help with targets.

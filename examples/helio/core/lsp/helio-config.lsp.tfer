@@ -1,0 +1,8 @@
+---
+description: Language support for Helio service configuration files.
+command: helio-config-lsp
+args:
+  - --stdio
+fileExtensions:
+  heliocfg: helio-config
+---

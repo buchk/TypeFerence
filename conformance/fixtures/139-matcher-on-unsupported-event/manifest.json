@@ -1,0 +1,4 @@
+{
+  "description": "Only some hook events take a matcher (ADR-0040).",
+  "expect": "error"
+}

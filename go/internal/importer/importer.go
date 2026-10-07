@@ -12,13 +12,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// File is one generated source file.
+// File is one generated source file. Data, when set, holds bytes copied from
+// the source tree verbatim; otherwise Content is the file's text.
 type File struct {
 	Path    string
 	Content string
+	Data    []byte
 }
 
-// Result is a generated version 6 source tree and what a person should know
+// Result is a generated version 7 source tree and what a person should know
 // about it.
 type Result struct {
 	Files []File
@@ -34,18 +36,25 @@ type Options struct {
 	// Plugin names the generated plugin; defaults to the imported plugin's
 	// name or the source directory's name.
 	Plugin string
-	// Lossy drops what version 6 cannot represent, listing each item in the
+	// Lossy drops what version 7 cannot represent, listing each item in the
 	// notes, instead of failing (ADR-0033).
 	Lossy bool
 }
 
 var hostName = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 
+type importedFile struct {
+	as   string
+	data []byte
+}
+
 type importedSkill struct {
 	name        string
 	description string
 	body        string
 	source      string
+	copilot     []copilotField
+	files       []importedFile
 }
 
 type importedAgent struct {
@@ -54,6 +63,30 @@ type importedAgent struct {
 	description string
 	body        string
 	source      string
+	copilot     []copilotField
+}
+
+// copilotField is one recognized Copilot frontmatter field, renamed to its
+// version 7 source key.
+type copilotField struct {
+	key    string
+	text   string
+	list   []string
+	isBool bool
+	isList bool
+}
+
+type importedServer struct {
+	name      string
+	transport string
+	command   string
+	args      []string
+	hasArgs   bool
+	env       map[string]string
+	cwd       string
+	url       string
+	headers   map[string]string
+	source    string
 }
 
 type importer struct {
@@ -61,6 +94,8 @@ type importer struct {
 	lossy       bool
 	skills      map[string]importedSkill
 	agents      map[string]importedAgent
+	servers     map[string]importedServer
+	native      nativeImport
 	unsupported []string
 	notes       []string
 }
@@ -68,8 +103,9 @@ type importer struct {
 // Import reads GitHub Copilot customizations under source (an Agent Plugins
 // 1.0 plugin, a Copilot CLI plugin, a repository's .github/agents and skill
 // directories, or a single skill directory) and returns an equivalent
-// version 6 package: one plugin linking the imported agents and skills.
-// Anything version 6 cannot represent fails the import unless Lossy is set.
+// version 7 package: one plugin linking the imported agents and skills, the
+// files beside each skill, and the plugin's MCP servers. Anything version 7
+// cannot represent fails the import unless Lossy is set.
 func Import(source string, options Options) (*Result, error) {
 	root, err := filepath.Abs(source)
 	if err != nil {
@@ -78,7 +114,7 @@ func Import(source string, options Options) (*Result, error) {
 	if info, statErr := os.Stat(root); statErr != nil || !info.IsDir() {
 		return nil, resource.Errorf("Import source not found: %s", source)
 	}
-	im := &importer{root: root, lossy: options.Lossy, skills: map[string]importedSkill{}, agents: map[string]importedAgent{}}
+	im := &importer{root: root, lossy: options.Lossy, skills: map[string]importedSkill{}, agents: map[string]importedAgent{}, servers: map[string]importedServer{}}
 	pluginName, pluginDescription := "", ""
 	switch {
 	case exists(filepath.Join(root, "SKILL.md")):
@@ -101,7 +137,7 @@ func Import(source string, options Options) (*Result, error) {
 	}
 	if len(im.unsupported) > 0 && !im.lossy {
 		sort.Strings(im.unsupported)
-		return nil, resource.Errorf("version 6 cannot represent:\n  %s\nrerun with --lossy to import without them", strings.Join(im.unsupported, "\n  "))
+		return nil, resource.Errorf("version 7 cannot represent:\n  %s\nrerun with --lossy to import without them", strings.Join(im.unsupported, "\n  "))
 	}
 	for _, item := range im.unsupported {
 		im.notes = append(im.notes, "dropped: "+item)
@@ -130,6 +166,17 @@ func Import(source string, options Options) (*Result, error) {
 	result := &Result{}
 	agentNames := sortedKeys(im.agents)
 	skillNames := sortedKeys(im.skills)
+	serverNames := sortedKeys(im.servers)
+	serverPaths := []string{}
+	for _, serverName := range serverNames {
+		server := im.servers[serverName]
+		path := "servers/" + server.name + ".server.tfer"
+		result.Files = append(result.Files, File{Path: path, Content: document(serverFrontmatter(server), "")})
+		serverPaths = append(serverPaths, path)
+	}
+	if len(serverPaths) > 0 {
+		im.notes = append(im.notes, "every imported skill requires every imported server, because the source format does not record which skill uses which server; narrow requiresServers by hand")
+	}
 	agentPaths := []string{}
 	for _, agentName := range agentNames {
 		agent := im.agents[agentName]
@@ -138,6 +185,7 @@ func Import(source string, options Options) (*Result, error) {
 			fm.raw(0, "displayName", agent.displayName)
 		}
 		fm.raw(0, "description", agent.description)
+		writeCopilot(fm, agent.copilot)
 		path := "agents/" + agent.name + ".agent.tfer"
 		result.Files = append(result.Files, File{Path: path, Content: document(fm, agent.body)})
 		agentPaths = append(agentPaths, path)
@@ -147,6 +195,17 @@ func Import(source string, options Options) (*Result, error) {
 		skill := im.skills[skillName]
 		fm := &frontmatter{}
 		fm.raw(0, "description", skill.description)
+		fm.list(0, "requiresServers", serverPaths)
+		if len(skill.files) > 0 {
+			fm.key(0, "files")
+			for _, file := range skill.files {
+				source := "files/" + skill.name + "/" + file.as
+				fm.b.WriteString(pad(2) + "- path: " + scalarText(source) + "\n")
+				fm.b.WriteString(pad(4) + "as: " + scalarText(file.as) + "\n")
+				result.Files = append(result.Files, File{Path: source, Data: file.data})
+			}
+		}
+		writeCopilot(fm, skill.copilot)
 		path := "skills/" + skill.name + ".skill.tfer"
 		result.Files = append(result.Files, File{Path: path, Content: document(fm, skill.body)})
 		skillPaths = append(skillPaths, path)
@@ -164,10 +223,15 @@ func Import(source string, options Options) (*Result, error) {
 	plugin.raw(0, "description", pluginDescription)
 	plugin.list(0, "agents", agentPaths)
 	plugin.list(0, "skills", skillPaths)
+	plugin.list(0, "rules", im.native.rules)
+	plugin.list(0, "commands", im.native.commands)
+	plugin.list(0, "hooks", im.native.hooks)
+	plugin.list(0, "lspServers", im.native.lsp)
+	result.Files = append(result.Files, im.native.files...)
 	pluginPath := "plugins/" + pluginName + ".plugin.tfer"
 	result.Files = append(result.Files, File{Path: pluginPath, Content: document(plugin, "")})
 	manifest := &frontmatter{}
-	manifest.token(0, "schemaVersion", "6")
+	manifest.token(0, "schemaVersion", "7")
 	manifest.raw(0, "name", name)
 	manifest.raw(0, "version", version)
 	manifest.list(0, "plugins", []string{pluginPath})
@@ -271,24 +335,273 @@ func (im *importer) skill(dir string) error {
 	if strings.TrimSpace(body) == "" {
 		return resource.Errorf("%s: the skill has no instructions", source)
 	}
-	for _, key := range keys {
-		if key != "name" && key != "description" {
-			im.unsupported = append(im.unsupported, source+": frontmatter field '"+key+"'")
-		}
-	}
-	entries, err := os.ReadDir(dir)
+	copilot := im.copilotFields(source, values, keys, skillCopilotFields)
+	files, err := im.skillFiles(dir)
 	if err != nil {
-		return resource.Errorf("Cannot read %s", dir)
-	}
-	for _, entry := range entries {
-		if entry.Name() != "SKILL.md" {
-			im.unsupported = append(im.unsupported, im.rel(filepath.Join(dir, entry.Name()))+": skill resource file (version 6 skills are SKILL.md text only)")
-		}
+		return err
 	}
 	if prior, taken := im.skills[name]; taken {
 		return resource.Errorf("skills %s and %s share the name %q", prior.source, source, name)
 	}
-	im.skills[name] = importedSkill{name: name, description: description, body: body, source: source}
+	im.skills[name] = importedSkill{name: name, description: description, body: body, source: source, copilot: copilot, files: files}
+	return nil
+}
+
+// skillFiles collects the files beside SKILL.md under references/, scripts/,
+// and assets/. Anything else beside it cannot be represented.
+func (im *importer) skillFiles(dir string) ([]importedFile, error) {
+	files := []importedFile{}
+	err := filepath.WalkDir(dir, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		rel, relErr := filepath.Rel(dir, path)
+		if relErr != nil {
+			return relErr
+		}
+		rel = filepath.ToSlash(rel)
+		if rel == "SKILL.md" {
+			return nil
+		}
+		first := strings.SplitN(rel, "/", 2)[0]
+		if !strings.Contains(rel, "/") || (first != "references" && first != "scripts" && first != "assets") {
+			im.unsupported = append(im.unsupported, im.rel(path)+": skill files must live under references/, scripts/, or assets/")
+			return nil
+		}
+		data, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return readErr
+		}
+		files = append(files, importedFile{as: rel, data: data})
+		return nil
+	})
+	if err != nil {
+		return nil, resource.Errorf("Cannot read %s: %s", dir, err)
+	}
+	sort.Slice(files, func(i, j int) bool { return files[i].as < files[j].as })
+	return files, nil
+}
+
+// skillCopilotFields and agentCopilotFields map recognized Copilot
+// frontmatter keys to version 7 copilot keys.
+var skillCopilotFields = map[string]string{
+	"argument-hint":            "argumentHint",
+	"user-invocable":           "userInvocable",
+	"disable-model-invocation": "disableModelInvocation",
+	"allowed-tools":            "allowedTools",
+}
+
+var agentCopilotFields = map[string]string{
+	"model":                    "model",
+	"tools":                    "tools",
+	"user-invocable":           "userInvocable",
+	"disable-model-invocation": "disableModelInvocation",
+}
+
+// copilotOrder is the order copilot keys are written in.
+var copilotOrder = []string{"argumentHint", "model", "tools", "userInvocable", "disableModelInvocation", "allowedTools"}
+
+func (im *importer) copilotFields(source string, values map[string]any, keys []string, recognized map[string]string) []copilotField {
+	byKey := map[string]copilotField{}
+	for _, key := range keys {
+		if key == "name" || key == "description" {
+			continue
+		}
+		target, ok := recognized[key]
+		if !ok {
+			im.unsupported = append(im.unsupported, source+": frontmatter field '"+key+"'")
+			continue
+		}
+		field := copilotField{key: target}
+		switch value := values[key].(type) {
+		case bool:
+			field.isBool = true
+			field.text = "false"
+			if value {
+				field.text = "true"
+			}
+		case string:
+			if target == "allowedTools" || target == "tools" {
+				field.isList = true
+				for _, item := range strings.FieldsFunc(value, func(r rune) bool { return r == ',' || r == ' ' }) {
+					field.list = append(field.list, item)
+				}
+			} else {
+				field.text = value
+			}
+		case []any:
+			field.isList = true
+			for _, item := range value {
+				text, isString := item.(string)
+				if !isString {
+					im.unsupported = append(im.unsupported, source+": frontmatter field '"+key+"' must list strings")
+					break
+				}
+				field.list = append(field.list, text)
+			}
+		default:
+			im.unsupported = append(im.unsupported, source+": frontmatter field '"+key+"' has an unsupported value")
+			continue
+		}
+		if (target == "userInvocable" || target == "disableModelInvocation") && !field.isBool {
+			im.unsupported = append(im.unsupported, source+": frontmatter field '"+key+"' must be true or false")
+			continue
+		}
+		// An empty tools list means no tools; dropping it would grant
+		// Copilot's default set. An empty pre-approval list approves nothing.
+		if field.isList && len(field.list) == 0 && target != "tools" {
+			continue
+		}
+		byKey[target] = field
+	}
+	fields := []copilotField{}
+	for _, key := range copilotOrder {
+		if field, ok := byKey[key]; ok {
+			fields = append(fields, field)
+		}
+	}
+	return fields
+}
+
+func writeCopilot(fm *frontmatter, fields []copilotField) {
+	if len(fields) == 0 {
+		return
+	}
+	fm.key(0, "copilot")
+	for _, field := range fields {
+		switch {
+		case field.isBool:
+			fm.token(2, field.key, field.text)
+		case field.isList && len(field.list) == 0:
+			fm.token(2, field.key, "[]")
+		case field.isList:
+			fm.list(2, field.key, field.list)
+		default:
+			fm.raw(2, field.key, field.text)
+		}
+	}
+}
+
+func serverFrontmatter(server importedServer) *frontmatter {
+	fm := &frontmatter{}
+	fm.raw(0, "transport", server.transport)
+	if server.transport == "stdio" {
+		fm.raw(0, "command", server.command)
+		if server.hasArgs {
+			if len(server.args) == 0 {
+				fm.token(0, "args", "[]")
+			} else {
+				fm.list(0, "args", server.args)
+			}
+		}
+		if server.env != nil {
+			if len(server.env) == 0 {
+				fm.token(0, "env", "{}")
+			} else {
+				fm.key(0, "env")
+				for _, key := range sortedKeys(server.env) {
+					fm.raw(2, key, server.env[key])
+				}
+			}
+		}
+		fm.scalar(0, "cwd", server.cwd)
+		return fm
+	}
+	fm.raw(0, "url", server.url)
+	if server.headers != nil {
+		if len(server.headers) == 0 {
+			fm.token(0, "headers", "{}")
+		} else {
+			fm.key(0, "headers")
+			for _, key := range sortedKeys(server.headers) {
+				fm.raw(2, key, server.headers[key])
+			}
+		}
+	}
+	return fm
+}
+
+var serverNamePattern = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)+$`)
+
+// servers imports an Agent Plugins 1.0 mcp.json.
+func (im *importer) mcpServers(path string) error {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return resource.Errorf("Cannot read %s", path)
+	}
+	var config struct {
+		MCPServers map[string]map[string]any `json:"mcpServers"`
+	}
+	if err := json.Unmarshal(raw, &config); err != nil {
+		return resource.Errorf("%s: invalid JSON: %s", im.rel(path), err)
+	}
+	source := im.rel(path)
+	for _, name := range sortedKeys(config.MCPServers) {
+		entry := config.MCPServers[name]
+		if !serverNamePattern.MatchString(name) || len(name) > 64 {
+			return resource.Errorf("%s: server name %q must be at least two hyphen-separated lowercase segments (such as acme-tickets) so it cannot replace a user's own server; rename it before importing", source, name)
+		}
+		server := importedServer{name: name, source: source}
+		transport, _ := entry["type"].(string)
+		switch transport {
+		case "stdio", "local", "":
+			server.transport = "stdio"
+			server.command, _ = entry["command"].(string)
+			if args, ok := entry["args"].([]any); ok {
+				server.hasArgs = true
+				for _, arg := range args {
+					if text, isString := arg.(string); isString {
+						server.args = append(server.args, text)
+					}
+				}
+			}
+			if env, ok := entry["env"].(map[string]any); ok {
+				server.env = map[string]string{}
+				for key, value := range env {
+					if text, isString := value.(string); isString {
+						server.env[key] = text
+					}
+				}
+			}
+			server.cwd, _ = entry["cwd"].(string)
+		case "streamable-http", "http":
+			server.transport = "streamable-http"
+			server.url, _ = entry["url"].(string)
+			if headers, ok := entry["headers"].(map[string]any); ok {
+				server.headers = map[string]string{}
+				for key, value := range headers {
+					if text, isString := value.(string); isString {
+						server.headers[key] = text
+					}
+				}
+			}
+		default:
+			im.unsupported = append(im.unsupported, source+": server "+name+" uses transport '"+transport+"'")
+			continue
+		}
+		values := append([]string{server.command, server.cwd, server.url}, server.args...)
+		for _, value := range server.env {
+			values = append(values, value)
+		}
+		for _, value := range server.headers {
+			values = append(values, value)
+		}
+		placeholder := false
+		for _, value := range values {
+			stripped := strings.ReplaceAll(strings.ReplaceAll(value, "${PLUGIN_ROOT}", ""), "${PLUGIN_DATA}", "")
+			if strings.Contains(stripped, "${") || (server.transport == "streamable-http" && strings.Contains(value, "${")) {
+				placeholder = true
+			}
+		}
+		if placeholder {
+			im.unsupported = append(im.unsupported, source+": server "+name+" uses ${...} values other than the plugin path variables")
+			continue
+		}
+		im.servers[name] = server
+	}
 	return nil
 }
 
@@ -306,15 +619,11 @@ func (im *importer) agent(path string) error {
 	if description == "" {
 		return resource.Errorf("%s: a custom agent requires a description", source)
 	}
-	for _, key := range keys {
-		if key != "name" && key != "description" {
-			im.unsupported = append(im.unsupported, source+": frontmatter field '"+key+"'")
-		}
-	}
+	copilot := im.copilotFields(source, values, keys, agentCopilotFields)
 	if prior, taken := im.agents[name]; taken {
 		return resource.Errorf("agents %s and %s share the name %q", prior.source, source, name)
 	}
-	im.agents[name] = importedAgent{name: name, displayName: text(values, "name"), description: description, body: body, source: source}
+	im.agents[name] = importedAgent{name: name, displayName: text(values, "name"), description: description, body: body, source: source, copilot: copilot}
 	return nil
 }
 
@@ -396,10 +705,13 @@ func (im *importer) plugin() (string, string, error) {
 		if err := im.agentsIn(filepath.Join(im.root, "com.github.copilot", "agents")); err != nil {
 			return "", "", err
 		}
-		for _, unsupported := range []string{"mcp.json", "com.github.copilot/hooks", "com.github.copilot/commands", "com.github.copilot/rules", "com.github.copilot/lsp.json"} {
-			if exists(filepath.Join(im.root, filepath.FromSlash(unsupported))) {
-				im.unsupported = append(im.unsupported, unsupported+": not representable as version 6 source (MCP servers are deployment bindings; hooks, commands, rules, and LSP servers have no source kind)")
+		if exists(filepath.Join(im.root, "mcp.json")) {
+			if err := im.mcpServers(filepath.Join(im.root, "mcp.json")); err != nil {
+				return "", "", err
 			}
+		}
+		if err := im.copilotComponents(); err != nil {
+			return "", "", err
 		}
 		return name, description, nil
 	}
@@ -435,12 +747,12 @@ func (im *importer) plugin() (string, string, error) {
 	}
 	for _, key := range []string{"hooks", "mcpServers", "commands", "lspServers"} {
 		if _, ok := manifest[key]; ok {
-			im.unsupported = append(im.unsupported, im.rel(manifestPath)+": '"+key+"' has no version 6 source kind")
+			im.unsupported = append(im.unsupported, im.rel(manifestPath)+": '"+key+"' has no version 7 source kind")
 		}
 	}
 	for _, unsupported := range []string{"hooks", "hooks.json", ".mcp.json", "commands"} {
 		if exists(filepath.Join(im.root, unsupported)) {
-			im.unsupported = append(im.unsupported, unsupported+": has no version 6 source kind")
+			im.unsupported = append(im.unsupported, unsupported+": has no version 7 source kind")
 		}
 	}
 	return name, description, nil
@@ -457,7 +769,11 @@ func Write(files []File, out string) error {
 		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
 			return resource.Errorf("Cannot create directory: %s", filepath.Dir(full))
 		}
-		if err := os.WriteFile(full, []byte(file.Content), 0o644); err != nil {
+		data := []byte(file.Content)
+		if file.Data != nil {
+			data = file.Data
+		}
+		if err := os.WriteFile(full, data, 0o644); err != nil {
 			return resource.Errorf("Cannot write file: %s", full)
 		}
 	}

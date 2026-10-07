@@ -1,5 +1,4 @@
 ---
 displayName: Decisions with real tradeoffs are recorded as ADRs in docs/d...
-contextType: context-types/norms.contexttype.tfer
 ---
 Decisions with real tradeoffs are recorded as ADRs in docs/decisions before the change merges.

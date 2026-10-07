@@ -1,0 +1,6 @@
+---
+description: Inspect a target directly.
+extends: skills/hidden.skill.tfer
+copilot:
+  userInvocable: true
+---

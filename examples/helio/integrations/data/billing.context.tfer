@@ -1,0 +1,8 @@
+---
+contextType: helio/core:context-types/integration-repo.contexttype.tfer
+values:
+  system: Billing
+  owner: Revenue Systems
+  pipeline: billing-release
+  dataClass: restricted
+---

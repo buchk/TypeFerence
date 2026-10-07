@@ -1,0 +1,6 @@
+---
+description: Outer.
+embeds:
+  - agents/one.agent.tfer
+  - agents/two.agent.tfer
+---

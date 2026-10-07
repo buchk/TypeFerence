@@ -1,5 +1,5 @@
 // Package importer turns existing GitHub Copilot customizations (custom
-// agents, Agent Skills, and Agent Plugins) into version 6 TypeFerence sources
+// agents, Agent Skills, and Agent Plugins) into version 7 TypeFerence sources
 // (ADR-0033). It writes only constructs a person could hand-author.
 package importer
 
@@ -10,7 +10,7 @@ import (
 	"unicode/utf8"
 )
 
-// frontmatter builds version 6 frontmatter text deterministically: keys in
+// frontmatter builds version 7 frontmatter text deterministically: keys in
 // the order written, strings plain where the grammar allows and quoted
 // otherwise, multi-line strings as literal blocks.
 type frontmatter struct {
@@ -149,7 +149,7 @@ func doubleQuoted(s string) string {
 	return b.String()
 }
 
-// document assembles a version 6 document: fenced frontmatter and a body.
+// document assembles a version 7 document: fenced frontmatter and a body.
 func document(fm *frontmatter, body string) string {
 	text := "---\n" + fm.String() + "---\n"
 	if strings.TrimSpace(body) != "" {

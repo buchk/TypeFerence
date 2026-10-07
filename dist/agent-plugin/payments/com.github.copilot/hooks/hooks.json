@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "http",
+        "matcher": "bash|powershell",
+        "url": "https://policy.helio.example/copilot/pre-tool-use",
+        "timeoutSec": 10
+      }
+    ]
+  }
+}

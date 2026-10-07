@@ -1,3 +1,0 @@
-# Playbook
-
-Team operating playbook.

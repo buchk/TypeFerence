@@ -1,6 +1,0 @@
----
-displayName: Principal Preferences
-body:
-  type: text
-  required: true
----

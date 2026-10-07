@@ -1,0 +1,4 @@
+{
+  "description": "A command cannot share a skill's name, because Copilot lets the skill hide it (ADR-0040).",
+  "expect": "error"
+}

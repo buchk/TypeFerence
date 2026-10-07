@@ -1,0 +1,9 @@
+---
+description: A.
+embeds:
+  - profiles/mid.profile.tfer
+skills:
+  - capability: capabilities/report.capability.tfer
+    required: true
+---
+Report when asked.

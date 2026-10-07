@@ -1,0 +1,415 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/buchk/TypeFerence/conformance/schemas/typeference/bundle.schema.json",
+  "title": "TypeFerence bundle.json",
+  "description": "What one emitted plugin artifact ships and where it came from (.typeference/bundle.json, schemaVersion 3).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "mode",
+    "version",
+    "description",
+    "sourceDigest",
+    "dependencies",
+    "agents",
+    "skills",
+    "servers",
+    "rules",
+    "commands",
+    "hooks",
+    "lspServers"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 3
+    },
+    "id": {
+      "$ref": "#/$defs/id"
+    },
+    "name": {
+      "$ref": "#/$defs/name"
+    },
+    "mode": {
+      "enum": [
+        "manual",
+        "pipeline"
+      ]
+    },
+    "version": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "sourceDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "version",
+          "digest"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "digest": {
+            "$ref": "#/$defs/digest"
+          }
+        }
+      }
+    },
+    "agents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "displayName",
+          "description",
+          "embeds",
+          "bindings",
+          "objectives",
+          "documents",
+          "skills",
+          "rules",
+          "commands",
+          "hooks",
+          "servers",
+          "provenance"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "name": {
+            "$ref": "#/$defs/name"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "embeds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/id"
+            }
+          },
+          "bindings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/binding"
+            }
+          },
+          "objectives": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "content"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/document"
+            }
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/name"
+            }
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/component"
+            }
+          },
+          "commands": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/component"
+            }
+          },
+          "hooks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/id"
+            }
+          },
+          "servers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/id"
+            }
+          },
+          "provenance": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/provenance"
+            }
+          }
+        }
+      }
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "implementationId",
+          "templateId",
+          "capabilityId",
+          "description",
+          "bindings",
+          "servers",
+          "documents",
+          "files",
+          "provenance"
+        ],
+        "properties": {
+          "name": {
+            "$ref": "#/$defs/name"
+          },
+          "implementationId": {
+            "$ref": "#/$defs/id"
+          },
+          "templateId": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/id"
+              },
+              {
+                "const": ""
+              }
+            ]
+          },
+          "capabilityId": {
+            "$ref": "#/$defs/id"
+          },
+          "description": {
+            "type": "string"
+          },
+          "bindings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/binding"
+            }
+          },
+          "servers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/id"
+            }
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/document"
+            }
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "as"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string"
+                },
+                "as": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "provenance": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/provenance"
+            }
+          }
+        }
+      }
+    },
+    "servers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/component"
+      }
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/component"
+      }
+    },
+    "hooks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    },
+    "lspServers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9.-]*(/[a-z0-9][a-z0-9.-]*)+@[^@\\s]+$"
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parameter",
+        "data",
+        "contextType",
+        "values"
+      ],
+      "properties": {
+        "parameter": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/id"
+        },
+        "contextType": {
+          "$ref": "#/$defs/id"
+        },
+        "values": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "integer",
+              "boolean",
+              "array"
+            ]
+          }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "field",
+        "source"
+      ],
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        }
+      }
+    },
+    "document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "render"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "render": {
+          "enum": [
+            "inline",
+            "file"
+          ]
+        }
+      }
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "id",
+        "templateId",
+        "bindings"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/name"
+        },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "templateId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "const": ""
+            }
+          ]
+        },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/binding"
+          }
+        }
+      }
+    }
+  }
+}

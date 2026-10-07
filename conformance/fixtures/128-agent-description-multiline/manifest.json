@@ -1,0 +1,4 @@
+{
+  "description": "An agent description must stay a single line after field references are resolved, so bound text cannot inject a frontmatter fence (ADR-0038).",
+  "expect": "error"
+}

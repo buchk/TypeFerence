@@ -1,0 +1,4 @@
+---
+transport: streamable-http
+url: https://b.example/mcp
+---

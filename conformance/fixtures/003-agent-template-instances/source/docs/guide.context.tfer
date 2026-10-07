@@ -1,0 +1,10 @@
+---
+displayName: Onboarding guide
+parameters:
+  team: context-types/team.contexttype.tfer
+---
+# Welcome to {{team.name}}
+
+Requests arrive in {{team.queue}} at the {{team.tier}} tier; the team has {{team.size}} people.
+Write \{{team.name}} for a literal reference.
+Pipelines keep ${{ secrets.TOKEN }} unchanged.

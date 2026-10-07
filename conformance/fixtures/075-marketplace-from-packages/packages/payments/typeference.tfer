@@ -1,9 +1,0 @@
----
-schemaVersion: 6
-name: conformance/payments
-version: 2.0.0
-dependencies:
-  conformance/core: 1.0.0
-plugins:
-  - plugins/payments.plugin.tfer
----

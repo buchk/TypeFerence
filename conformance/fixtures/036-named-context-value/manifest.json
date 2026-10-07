@@ -1,8 +1,0 @@
-{
-  "description": "Named context values materialize nested defaults and preserve scalar types.",
-  "language": "legacy-v5",
-  "expect": "success",
-  "digests": {
-    "neutral": "sha256:07866e3c134c3bbdd6689d8393855251ad9172230783aa93ba97bc19d352a874"
-  }
-}

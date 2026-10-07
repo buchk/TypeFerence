@@ -1,5 +1,0 @@
----
-displayName: TypeFerence imports externally produced signatures; it never...
-contextType: context-types/norms.contexttype.tfer
----
-TypeFerence imports externally produced signatures; it never signs, never verifies cryptographic validity, and never resolves keys.

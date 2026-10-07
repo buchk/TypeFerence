@@ -1,8 +1,0 @@
-{
-  "description": "Version 4 native context fields, defaults, collections, and text body are validated and emitted into every target.",
-  "language": "legacy-v5",
-  "expect": "success",
-  "digests": {
-    "neutral": "sha256:c141b4c38b2f1c68999c47e9c6c31473bef20d309cdcda12dbe6e6e90e865e6c"
-  }
-}

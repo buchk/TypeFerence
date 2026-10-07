@@ -1,5 +1,0 @@
-{
-  "description": "A bare .yaml resource document is not valid version 5 source (ADR-0026).",
-  "language": "legacy-v5",
-  "expect": "error"
-}

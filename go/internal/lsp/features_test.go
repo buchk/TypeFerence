@@ -8,11 +8,11 @@ import (
 	"testing"
 )
 
-// packageDir writes a minimal version 6 package manifest and returns its root.
+// packageDir writes a minimal version 7 package manifest and returns its root.
 func packageDir(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
-	writeFile(t, root, "typeference.tfer", "---\nschemaVersion: 6\nname: acme/test\nversion: 1.0.0\nplugins:\n  - plugins/kit.plugin.tfer\n---\n")
+	writeFile(t, root, "typeference.tfer", "---\nschemaVersion: 7\nname: acme/test\nversion: 1.0.0\nplugins:\n  - plugins/kit.plugin.tfer\n---\n")
 	return root
 }
 

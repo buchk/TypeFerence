@@ -1,8 +1,0 @@
-{
-  "description": "Non-ASCII text in descriptions, bodies, and context survives byte-for-byte through every target.",
-  "expect": "success",
-  "digests": {
-    "agent-plugin": "sha256:a1e2bb5b25c36d8322b63bfc0387eea18bd0c75ebac007fce931960ab9a0bffd",
-    "neutral": "sha256:cbc0ce15d205a0e531ea905c48f0e34cf057a7118a04b92058e238b0fcef29f1"
-  }
-}

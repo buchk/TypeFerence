@@ -1,8 +1,0 @@
-{
-  "description": "Base tool requirements apply to every mode while variant requirements stay attached only to their mode.",
-  "language": "legacy-v5",
-  "expect": "success",
-  "digests": {
-    "neutral": "sha256:e2f361c58273dc37850b5241d26d1fba012b8d6279e4171e867c96dc69b83285"
-  }
-}

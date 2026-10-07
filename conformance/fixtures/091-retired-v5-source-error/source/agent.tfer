@@ -1,6 +1,0 @@
----
-schemaVersion: 5
-kind: agent
-id: conformance/agents/a@1.0.0
-description: A.
----

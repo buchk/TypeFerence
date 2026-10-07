@@ -1,0 +1,9 @@
+---
+contextType: helio/core:context-types/team.contexttype.tfer
+values:
+  id: payments
+  name: Payments
+  queue: PAY-OPS
+  tier: critical
+  onCall: payments-oncall
+---

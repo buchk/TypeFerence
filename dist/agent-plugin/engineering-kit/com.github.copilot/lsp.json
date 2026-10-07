@@ -1,0 +1,13 @@
+{
+  "lspServers": {
+    "helio-config": {
+      "command": "helio-config-lsp",
+      "args": [
+        "--stdio"
+      ],
+      "fileExtensions": {
+        ".heliocfg": "helio-config"
+      }
+    }
+  }
+}

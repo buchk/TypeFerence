@@ -1,6 +1,0 @@
-schemaVersion: 5
-kind: contextType
-id: conformance/context-types/derived@1.0.0
-embeds:
-  - conformance/context-types/left@1.0.0
-  - conformance/context-types/right@1.0.0

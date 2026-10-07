@@ -1,8 +1,0 @@
----
-description: The payments repository agent, for engineers and for release pipelines.
-agents:
-  - agents/payments-repo-agent.agent.tfer
-modes:
-  - manual
-  - pipeline
----

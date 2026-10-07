@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "helio-tickets": {
+      "type": "streamable-http",
+      "url": "https://tickets.helio.example/mcp"
+    }
+  }
+}

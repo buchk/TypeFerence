@@ -1,5 +1,0 @@
----
-description: Reporter kit.
-agents:
-  - agents/reporter.agent.tfer
----

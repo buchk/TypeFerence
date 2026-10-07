@@ -1,8 +1,0 @@
-{
-  "description": "workingNorms is gone: normative prose is a context resource of a declared contextType, held by the profile via context (ADR-0027).",
-  "language": "legacy-v5",
-  "expect": "success",
-  "digests": {
-    "neutral": "sha256:d6fcb53355aa5bbacf1a1d35d6e5121d13eedf92d6a82646963c43ab0e018000"
-  }
-}

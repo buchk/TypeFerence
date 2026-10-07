@@ -1,0 +1,11 @@
+---
+description: Used by the helper agent.
+copilot:
+  argumentHint: "[target]"
+  userInvocable: false
+  disableModelInvocation: false
+  allowedTools:
+    - acme-tickets(search)
+    - shell(git:*)
+---
+Inspect the target.

@@ -1,8 +1,0 @@
-{
-  "description": "A version 4 .tfer document authored with CRLF is normalized to LF before frontmatter splitting and body emission.",
-  "language": "legacy-v5",
-  "expect": "success",
-  "digests": {
-    "neutral": "sha256:6da03e41d352290037e6638bf0a414f12131299ec9de024acaf63dbb593dc636"
-  }
-}

@@ -4,32 +4,38 @@
     "name": "Helio Platform"
   },
   "metadata": {
-    "version": "1.0.0"
+    "version": "2026.10.1"
   },
   "plugins": [
+    {
+      "name": "data-platform",
+      "source": "./data-platform",
+      "description": "The Helio data platform operations agent.",
+      "version": "1.0.2"
+    },
     {
       "name": "engineering-kit",
       "source": "./engineering-kit",
       "description": "Evidence-backed repository status for any Helio team, without an agent.",
-      "version": "1.0.0"
+      "version": "3.1.0"
     },
     {
-      "name": "executive",
-      "source": "./executive",
-      "description": "The Helio executive assistant with its briefing, triage, and reply-drafting skills.",
-      "version": "1.0.0"
+      "name": "integrations",
+      "source": "./integrations",
+      "description": "README upkeep skills for Helio\u0027s integration repositories.",
+      "version": "0.3.0"
     },
     {
       "name": "payments",
       "source": "./payments",
-      "description": "The payments repository agent, for engineers and for release pipelines.",
-      "version": "1.0.0"
+      "description": "The Helio payments operations agent, for engineers and release pipelines.",
+      "version": "2.4.0"
     },
     {
       "name": "payments-pipeline",
       "source": "./payments-pipeline",
-      "description": "The payments repository agent, for engineers and for release pipelines.",
-      "version": "1.0.0"
+      "description": "The Helio payments operations agent, for engineers and release pipelines.",
+      "version": "2.4.0"
     }
   ]
 }

@@ -1,8 +1,0 @@
-{
-  "description": "An exported interface is a source member, so structural satisfaction is computed and recorded for agents that meet it.",
-  "expect": "success",
-  "digests": {
-    "agent-plugin": "sha256:9a413c0cf61252fd3e5526dbc9ffecabf423f9871a31fea3ad6841fb57465de3",
-    "neutral": "sha256:2aef060be9277f1143f7805b65709a8a049124c7964f69e93b46254718e7fcc0"
-  }
-}

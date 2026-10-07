@@ -1,0 +1,7 @@
+---
+description: Use the logo.
+files:
+  - path: files/logo.bin
+    as: assets/logo.bin
+---
+Attach assets/logo.bin when asked for the logo.

@@ -1,0 +1,7 @@
+---
+event: postToolUse
+type: http
+url: https://audit.acme.example/copilot
+headers:
+  X-Source: copilot
+---

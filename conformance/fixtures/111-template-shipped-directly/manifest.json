@@ -1,0 +1,4 @@
+{
+  "description": "A template skill ships only as an instance, never through a plugin's skills.",
+  "expect": "error"
+}

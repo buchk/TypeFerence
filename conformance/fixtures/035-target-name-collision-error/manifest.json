@@ -1,5 +1,0 @@
-{
-  "description": "Distinct agent IDs that collapse to one target artifact name fail instead of overwriting.",
-  "language": "legacy-v5",
-  "expect": "error"
-}

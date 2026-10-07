@@ -1,0 +1,4 @@
+{
+  "description": "A field reference must name a field of the parameter's context type.",
+  "expect": "error"
+}

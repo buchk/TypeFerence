@@ -1,5 +1,0 @@
-schemaVersion: 5
-kind: agent
-id: conformance/agents/context-files-closed@1.0.0
-contextFiles:
-  - notes.md

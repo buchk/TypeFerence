@@ -1,5 +1,0 @@
-{
-  "description": "A structurally identical context type does not satisfy a governed type without explicitly embedding it.",
-  "language": "legacy-v5",
-  "expect": "error"
-}

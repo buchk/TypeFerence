@@ -1,4 +1,0 @@
-{
-  "description": "A skill requires a description; hosts route on it (ADR-0029).",
-  "expect": "error"
-}

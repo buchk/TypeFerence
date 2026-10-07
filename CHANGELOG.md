@@ -3,14 +3,100 @@
 All notable changes to TypeFerence are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semantic
 versioning. Tool versions (this file) are independent of the source-package
-`schemaVersion` declared in the project manifest (currently 6) and the trust
-configuration `schemaVersion` (currently 5), which only change when the source
-formats change incompatibly.
+`schemaVersion` declared in the project manifest (currently 7), which only
+changes when the source format changes incompatibly.
 
 TypeFerence is an experimental reference implementation; pre-1.0 versions make no
 compatibility promises between minor versions.
 
 ## [Unreleased]
+
+### Added
+
+- **Native Copilot components**
+  ([ADR-0040](docs/decisions/0040-native-copilot-components-and-enterprise-defaults.md)):
+  `.rule.tfer`, `.command.tfer`, `.hook.tfer`, and `.lsp.tfer` documents emit
+  `com.github.copilot/rules/`, `commands/`, `hooks/hooks.json`, and
+  `lsp.json`, and an agent's `servers` render as its own `mcp-servers`.
+  Agents and profiles hold rules, commands, and hooks, so enterprise defaults
+  reach every invocation surface where the plugin is active. Rules and
+  commands can be templates. Build checks hook events, matcher eligibility,
+  prompt hooks, HTTPS hook URLs, LSP launch fields, command and skill name
+  clashes, and `${PLUGIN_DATA}` in agent-scoped servers. `import` carries
+  these components from an Agent Plugin.
+- An agent's `copilot.tools: []` means no tools and is emitted; previously it
+  could not be written, and `import` dropped it, silently granting Copilot's
+  default tools. An agent that declares `tools` must name every MCP server its
+  skills require in each mode and every server it scopes to itself; build
+  fails on a gap and never adds a grant. Helio's payments agent now lists
+  `helio-tickets/*`, `helio-builds/*`, and `helio-ledger/*`.
+- **Output contract** ([docs/output-contract.md](docs/output-contract.md)):
+  the vendored Agent Plugins 1.0 schemas, TypeFerence-authored schemas for
+  `.typeference/` files, `hooks.json`, `lsp.json`, and the marketplace index,
+  and `tools/validate_output.py`. A new CI job validates every success
+  fixture's output, `dist/`, and `dist-maintainer/`. The conformance runner
+  keeps fixture output when `TF_OUTPUT_DIR` is set.
+
+### Changed
+
+- `bundle.json` is `schemaVersion` 3: it records shipped rules, commands,
+  hooks, and LSP servers, and each agent's rules, commands, hooks, and
+  servers.
+- Helio's working norms are a rule held by the team profile instead of a
+  document rendered into agent files.
+- Skill directories reject inconsistent casing in shared directory prefixes
+  and file/directory conflicts before writing output, including inherited and
+  generated files ([ADR-0039](docs/decisions/0039-skill-directory-path-consistency.md)).
+- **Version 7: an authoring and reuse layer for Copilot plugins**
+  ([ADR-0035](docs/decisions/0035-v7-copilot-plugin-authoring-layer.md)).
+  `agent-plugin` is the only build target, and build emits complete plugins.
+  Manifests declare `schemaVersion: 7`; version 6 sources are not accepted.
+  Packages may also restore from Git repositories by tag.
+- **Documents, typed data, and templates**
+  ([ADR-0036](docs/decisions/0036-v7-documents-data-and-templates.md)).
+  - A context document is free Markdown, or typed data (`contextType` plus
+    `values`). Context types are flat records with form metadata
+    (`displayName`, `description`, `choices`) and an optional `instanceName`
+    field.
+  - Documents, skills, and profiles declare `parameters`; `{{name.field}}`
+    inserts a bound value.
+  - An agent's `with` binds parameters and emits each template skill as
+    `<instance name>-<skill leaf>`. A skill that extends a template and
+    supplies `with` is a concrete instance.
+  - Skills ship plain files under `references/`, `scripts/`, and `assets/`,
+    can render a held document as a reference file, and emit their input and
+    output schemas as `references/*.schema.json`.
+- **MCP servers and Copilot fields emitted by build**
+  ([ADR-0037](docs/decisions/0037-v7-build-emitted-host-configuration.md)).
+  `.server.tfer` documents declare stdio or streamable-http servers with
+  namespaced names. Skills require them with `requiresServers`, and each
+  artifact's `mcp.json` holds exactly the servers its skills need. A
+  `copilot` mapping on skills and agents emits opt-in Copilot frontmatter.
+  `import` now carries skill files, `mcp.json` servers, and recognized
+  Copilot fields.
+- The playground builds multi-package marketplaces and generates an
+  "Instantiate" form from a context type.
+- **Review rulings** ([ADR-0038](docs/decisions/0038-v7-review-rulings.md)):
+  - skill-file destinations that differ only in case collide;
+  - target digests and `diff` compare non-UTF-8 files byte for byte;
+  - abstract requirements accumulate without erasing inherited
+    implementations;
+  - agent descriptions are checked after rendering;
+  - provenance keeps every contributor;
+  - an agent's bindings include those of the agents it embeds, shallowest
+    first;
+  - the playground form reads the compiler's values and quotes multiline
+    text.
+
+### Removed
+
+- The `neutral` target, ARD catalogs, A2A, deployment files, `link`,
+  `publish`, trust metadata and signature import, interfaces, slots,
+  `allowedContextTypes`, `sealed`, capability `visibility`, the `tool` kind,
+  `requiresContextTypes`, context-type refinement, `map<T>` and `decimal`,
+  the `eval` and `equivalence` commands and the playground's equivalence
+  console, the archival version 5 and version 3 languages, and the version 6
+  conformance corpus (ADR-0035).
 
 ### Added
 

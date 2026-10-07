@@ -1,0 +1,6 @@
+---
+description: Summarize {{team.name}}'s queue.
+parameters:
+  team: context-types/team.contexttype.tfer
+---
+Summarize the queue for {{team.name}}.

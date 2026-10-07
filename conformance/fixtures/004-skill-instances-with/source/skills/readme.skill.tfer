@@ -1,0 +1,6 @@
+---
+description: Keep the {{repo.system}} README accurate.
+parameters:
+  repo: context-types/repo.contexttype.tfer
+---
+Keep the {{repo.system}} README accurate. It is owned by {{repo.owner}}; its data is {{repo.dataClass}}.

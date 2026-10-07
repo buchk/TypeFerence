@@ -4,7 +4,8 @@ description: "Runs the determinism suite and reports whether the compiler reprod
 ---
 
 Run `go test ./conformance` from the go/ directory (or `make conformance`).
-Report passed=true only when every fixture reproduces its committed digest.
-List each failing fixture and target as a mismatch. Never resolve a mismatch
-by editing a digest; find the compiler regression, or take the ruling to the
-specification with an ADR and a regenerated fixture.
+Report passed=true only when every fixture reproduces its committed digest or
+fails as expected, as JSON matching references/output.schema.json. List each
+failing fixture as a mismatch. Never resolve a mismatch by editing a digest;
+find the compiler regression, or take the ruling to the specification with an
+ADR and a regenerated fixture.

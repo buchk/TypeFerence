@@ -1,5 +1,0 @@
----
-displayName: Draft norm
-contextType: context-types/norms.contexttype.tfer
----
-Distinguish drafts from messages approved for delivery.

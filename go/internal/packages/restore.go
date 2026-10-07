@@ -24,6 +24,11 @@ type Route struct {
 	Organization          string `yaml:"organization"`
 	Project               string `yaml:"project"`
 	Feed                  string `yaml:"feed"`
+	// Git routes: an HTTPS repository URL, an optional package root within
+	// the repository, and the prefix of version tags.
+	URL       string `yaml:"url"`
+	Root      string `yaml:"root"`
+	TagPrefix string `yaml:"tagPrefix"`
 }
 
 type FeedConfig struct {
@@ -60,7 +65,21 @@ func LoadFeedConfig(path string) (*FeedConfig, error) {
 		if !resource.IsPackageName(prefix + "/placeholder") {
 			return nil, resource.Errorf("invalid feed route prefix: %s", prefix)
 		}
+		gitFields := route.URL != "" || route.Root != "" || route.TagPrefix != ""
+		if route.Kind != "git" && gitFields {
+			return nil, resource.Errorf("route %s: url, root, and tagPrefix apply only to git routes", prefix)
+		}
 		switch route.Kind {
+		case "git":
+			parsed, err := url.Parse(route.URL)
+			if err != nil || parsed.Scheme != "https" || parsed.Host == "" || parsed.User != nil ||
+				route.Path != "" || route.BaseURL != "" || route.CredentialEnvironment != "" ||
+				route.Organization != "" || route.Project != "" || route.Feed != "" {
+				return nil, resource.Errorf("git route %s requires an HTTPS url without credentials", prefix)
+			}
+			if route.Root != "" && (strings.HasPrefix(route.Root, "/") || strings.Contains(route.Root, "..") || strings.Contains(route.Root, "\\")) {
+				return nil, resource.Errorf("git route %s: root must be a clean path within the repository", prefix)
+			}
 		case "filesystem":
 			if route.Path == "" || route.BaseURL != "" || route.CredentialEnvironment != "" ||
 				route.Organization != "" || route.Project != "" || route.Feed != "" {
@@ -91,7 +110,7 @@ func (r *Restorer) Restore() (*Lock, error) {
 		return nil, err
 	}
 	if project == nil {
-		return nil, resource.Errorf("restore requires %s", resource.ProjectManifestFile)
+		return nil, resource.Errorf("restore requires %s", resource.ManifestFile)
 	}
 	if r.PackagesDir == "" {
 		r.PackagesDir = filepath.Join(r.Source, "obj", "typeference", "packages")
@@ -109,7 +128,7 @@ func (r *Restorer) Restore() (*Lock, error) {
 			return nil, resource.Errorf("--locked requires %s", LockFile)
 		}
 		if existing.Root != project.Name || existing.RootVersion != project.Version {
-			return nil, resource.Errorf("%s root identity does not match %s", LockFile, resource.ProjectManifestFile)
+			return nil, resource.Errorf("%s root identity does not match %s", LockFile, resource.ManifestFile)
 		}
 		if !sameDependencies(project.Dependencies, directDependencies(existing.Packages, project.Dependencies)) {
 			return nil, resource.Errorf("%s does not match manifest dependencies", LockFile)
@@ -267,6 +286,8 @@ func (r *Restorer) fetch(name, version string) ([]byte, error) {
 		return io.ReadAll(response.Body)
 	case "azureArtifacts":
 		return fetchAzureUniversal(route, name, version)
+	case "git":
+		return fetchGit(route, name, version)
 	default:
 		return nil, resource.Errorf("unsupported feed kind: %s", route.Kind)
 	}
@@ -305,6 +326,34 @@ func fetchAzureUniversal(route Route, name, version string) ([]byte, error) {
 	return os.ReadFile(packagePath)
 }
 
+// fetchGit resolves a package from a Git repository tag and packs it exactly
+// as typeference pack would. Credentials come from Git's own configuration.
+func fetchGit(route Route, name, version string) ([]byte, error) {
+	temp, err := os.MkdirTemp("", "typeference-git-")
+	if err != nil {
+		return nil, resource.Errorf("cannot create Git staging directory")
+	}
+	defer os.RemoveAll(temp)
+	tag := route.TagPrefix + version
+	command := exec.Command("git", "clone", "--quiet", "--depth", "1", "--branch", tag, "--", route.URL, temp)
+	command.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+	if output, err := command.CombinedOutput(); err != nil {
+		return nil, resource.Errorf("cannot restore %s@%s from %s tag %s: %s", name, version, route.URL, tag, strings.TrimSpace(string(output)))
+	}
+	root := temp
+	if route.Root != "" {
+		root = filepath.Join(temp, filepath.FromSlash(route.Root))
+	}
+	data, project, err := PackBytes(root)
+	if err != nil {
+		return nil, resource.Errorf("%s@%s from %s tag %s: %s", name, version, route.URL, tag, err)
+	}
+	if project.Name != name || project.Version != version {
+		return nil, resource.Errorf("%s tag %s holds %s@%s, not %s@%s", route.URL, tag, project.Name, project.Version, name, version)
+	}
+	return data, nil
+}
+
 func (r *Restorer) materialize(archive *Archive, digest string) error {
 	hexDigest := strings.TrimPrefix(digest, "sha256:")
 	root := filepath.Join(r.PackagesDir, filepath.FromSlash(archive.Name), archive.Version, hexDigest, "source")
@@ -338,7 +387,11 @@ func (r *Restorer) materialize(archive *Archive, digest string) error {
 		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 			return resource.Errorf("cannot materialize package path: %s", file.Path)
 		}
-		if err := os.WriteFile(target, []byte(file.Content), 0o644); err != nil {
+		data, err := file.Bytes()
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(target, data, 0o644); err != nil {
 			return resource.Errorf("cannot materialize package file: %s", file.Path)
 		}
 	}

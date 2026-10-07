@@ -1,5 +1,0 @@
-{
-  "description": "Two packages ship different skills that emit one skill name; installed skills share one namespace, so the marketplace build fails (ADR-0034).",
-  "expect": "error",
-  "packages": "packages"
-}

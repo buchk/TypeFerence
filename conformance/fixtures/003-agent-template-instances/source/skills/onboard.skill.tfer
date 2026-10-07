@@ -1,0 +1,9 @@
+---
+description: Onboard a new {{team.name}} teammate.
+parameters:
+  team: context-types/team.contexttype.tfer
+context:
+  - context: docs/guide.context.tfer
+    render: file
+---
+Read references/guide.md and walk the teammate through it.

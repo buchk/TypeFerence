@@ -1,4 +1,4 @@
-// Package lsp implements a Language Server Protocol server for version 6
+// Package lsp implements a Language Server Protocol server for version 7
 // TypeFerence packages. Each open `.tfer` buffer gets the loader's
 // single-document diagnostics, positioned at the reported line; on open and
 // save it also gets the package's composition diagnostics. Completion offers
@@ -178,7 +178,7 @@ func (s *Server) handleInitialize(raw json.RawMessage) {
 	s.buildIndex()
 }
 
-// buildIndex maps every document identity under the workspace's version 6
+// buildIndex maps every document identity under the workspace's version 7
 // packages to its file uri, deriving identities from paths without parsing so
 // a broken document still has an entry.
 func (s *Server) buildIndex() {
@@ -317,13 +317,13 @@ func (s *Server) publish(uri, text string, withComposition bool) {
 			Range:    lineRange(text, 0),
 			Severity: 1,
 			Source:   "typeference",
-			Message:  "not part of a version 6 package: no ancestor directory has a typeference.tfer declaring schemaVersion 6",
+			Message:  "not part of a version 7 package: no ancestor directory has a typeference.tfer declaring schemaVersion 7",
 		})
 		s.publishDiagnostics(uri, diags)
 		return
 	}
 	rel := relativeTo(root, path)
-	if err := resource.CheckV6Document(rel, text); err != nil {
+	if err := resource.CheckDocument(rel, text); err != nil {
 		line, message := locate(err.Error(), rel)
 		diags = append(diags, diagnostic{
 			Range:    lineRange(text, line),
@@ -351,7 +351,7 @@ func (s *Server) publish(uri, text string, withComposition bool) {
 // or one that cannot be attributed to a different indexed document (so an
 // unlocated package error still surfaces somewhere).
 func (s *Server) compositionErrorsFor(root, rel, id string) []string {
-	_, err := compile.Validate(root, "")
+	_, err := compile.Validate(root)
 	if err == nil {
 		return nil
 	}

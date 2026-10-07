@@ -1,0 +1,7 @@
+{
+  "description": "Additive extension across modes: a unimodal base followed by a multimodal extension yields one rendering per extension mode, each starting with the base text.",
+  "expect": "success",
+  "digests": {
+    "agent-plugin": "sha256:5801077059bb28753a28a198336b3a7a47fc438c6aa418143054bc8774dc3916"
+  }
+}

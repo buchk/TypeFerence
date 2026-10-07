@@ -1,0 +1,5 @@
+schemaVersion: 1
+routes:
+  helio:
+    kind: filesystem
+    path: obj/feed

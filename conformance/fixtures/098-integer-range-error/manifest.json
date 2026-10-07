@@ -1,4 +1,0 @@
-{
-  "description": "An integer is a JSON integer token within the signed 64-bit range; a larger value is an error, not a silent widening.",
-  "expect": "error"
-}

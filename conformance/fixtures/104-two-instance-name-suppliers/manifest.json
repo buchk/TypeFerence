@@ -1,0 +1,4 @@
+{
+  "description": "Exactly one bound data document may supply the instance name.",
+  "expect": "error"
+}

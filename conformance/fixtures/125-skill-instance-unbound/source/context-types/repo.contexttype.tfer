@@ -1,0 +1,6 @@
+---
+fields:
+  system:
+    type: string
+    required: true
+---

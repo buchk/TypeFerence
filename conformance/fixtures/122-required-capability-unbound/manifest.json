@@ -1,0 +1,4 @@
+{
+  "description": "A concrete agent must fulfil every required capability.",
+  "expect": "error"
+}

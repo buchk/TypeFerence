@@ -1,5 +1,0 @@
----
-description: The team agent.
-agents:
-  - agents/team.agent.tfer
----

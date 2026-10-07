@@ -1,0 +1,4 @@
+{
+  "description": "An agent's own mcp-servers expand only ${PLUGIN_ROOT}, so an agent-scoped server cannot use ${PLUGIN_DATA} (ADR-0040).",
+  "expect": "error"
+}

@@ -1,0 +1,25 @@
+---
+displayName: Integration repository
+description: The facts one integration repository's README skill needs.
+fields:
+  system:
+    type: string
+    required: true
+    displayName: Integrated system
+  owner:
+    type: string
+    required: true
+    displayName: Owning team
+  pipeline:
+    type: string
+    required: true
+    displayName: Release pipeline
+  dataClass:
+    type: string
+    default: internal
+    displayName: Data classification
+    choices:
+      - public
+      - internal
+      - restricted
+---

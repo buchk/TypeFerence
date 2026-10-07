@@ -8,7 +8,7 @@ import (
 	"github.com/buchk/TypeFerence/go/internal/resource"
 )
 
-// DependencySet is the verified locked dependency graph of a version 6
+// DependencySet is the verified locked dependency graph of a
 // package: every locked package's documents, its lock entries, and each
 // package's exported identities and own plugins.
 type DependencySet struct {
@@ -22,9 +22,8 @@ type DependencySet struct {
 	Candidate *resource.Project
 }
 
-// LoadDependencySet verifies and loads a version 6 package's committed locked
-// graph from the materialized package directory. Every dependency must itself
-// be a version 6 package. It performs no network access.
+// LoadDependencySet verifies and loads a package's committed locked graph from
+// the materialized package directory. It performs no network access.
 func LoadDependencySet(source, packagesDir string) (*DependencySet, error) {
 	return loadDependencySet(source, packagesDir, "")
 }
@@ -106,7 +105,7 @@ func loadDependencySet(source, packagesDir, candidateDir string) (*DependencySet
 		if Digest(EncodeArchive(archive)) != item.Digest {
 			return nil, resource.Errorf("materialized package %s does not match locked digest", item.Name)
 		}
-		loaded, err := resource.LoadV6(root, resource.V6Options{Dependencies: item.Dependencies})
+		loaded, err := resource.LoadPackage(root, resource.PackageOptions{Dependencies: item.Dependencies})
 		if err != nil {
 			return nil, resource.Errorf("locked package %s: %s", item.Name, err)
 		}
@@ -121,7 +120,7 @@ func loadDependencySet(source, packagesDir, candidateDir string) (*DependencySet
 		set.Locked = append(set.Locked, item)
 	}
 	if candidate != nil {
-		loaded, err := resource.LoadV6(candidateDir, resource.V6Options{Dependencies: candidate.Dependencies})
+		loaded, err := resource.LoadPackage(candidateDir, resource.PackageOptions{Dependencies: candidate.Dependencies})
 		if err != nil {
 			return nil, resource.Errorf("candidate %s: %s", candidate.Name, err)
 		}
@@ -168,8 +167,8 @@ func checkCandidate(project *resource.Project, locked []LockedPackage, candidate
 	if err != nil {
 		return nil, err
 	}
-	if !candidate.IsV6() {
-		return nil, resource.Errorf("candidate %s is not a version 6 package", candidateDir)
+	if candidate == nil {
+		return nil, resource.Errorf("candidate %s has no %s", candidateDir, resource.ManifestFile)
 	}
 	if candidate.Name == project.Name {
 		return nil, resource.Errorf("candidate %s is the package being validated, not one of its dependencies", candidate.Name)
@@ -200,74 +199,6 @@ func checkCandidate(project *resource.Project, locked []LockedPackage, candidate
 		}
 	}
 	return candidate, nil
-}
-
-// LoadDependencies loads an archival (pre-version 6) package's locked graph.
-// Only the archival conformance corpora reach it.
-func LoadDependencies(source, packagesDir string) (map[string]*resource.Document, []LockedPackage, error) {
-	project, err := resource.LoadProject(source)
-	if err != nil {
-		return nil, nil, err
-	}
-	lock, err := LoadLock(source)
-	if err != nil {
-		return nil, nil, err
-	}
-	if project == nil {
-		if lock != nil {
-			return nil, nil, resource.Errorf("%s requires %s", LockFile, resource.ProjectManifestFile)
-		}
-		return map[string]*resource.Document{}, nil, nil
-	}
-	if err := validateProjectLock(project, lock, len(project.Dependencies) > 0); err != nil {
-		return nil, nil, err
-	}
-	if lock == nil {
-		return map[string]*resource.Document{}, nil, nil
-	}
-	if packagesDir == "" {
-		packagesDir = filepath.Join(source, "obj", "typeference", "packages")
-	}
-	all := map[string]*resource.Document{}
-	seenPackages := map[string]bool{}
-	for _, item := range lock.Packages {
-		if seenPackages[item.Name] {
-			return nil, nil, resource.Errorf("%s contains duplicate package %s", LockFile, item.Name)
-		}
-		seenPackages[item.Name] = true
-		root := filepath.Join(packagesDir, filepath.FromSlash(item.Name), item.Version,
-			strings.TrimPrefix(item.Digest, "sha256:"), "source")
-		files, err := SourceFiles(root)
-		if err != nil {
-			return nil, nil, resource.Errorf("locked package %s is not materialized; run typeference restore --locked", item.Name)
-		}
-		archive := Archive{
-			SchemaVersion: 1, Name: item.Name, Version: item.Version,
-			Dependencies: item.Dependencies, Exports: item.Exports, Files: files,
-		}
-		if Digest(EncodeArchive(archive)) != item.Digest {
-			return nil, nil, resource.Errorf("materialized package %s does not match locked digest", item.Name)
-		}
-		documents, err := resource.Load(root, "")
-		if err != nil {
-			return nil, nil, err
-		}
-		actualExports := make([]string, 0, len(documents))
-		for id := range documents {
-			actualExports = append(actualExports, id)
-		}
-		sort.Strings(actualExports)
-		if strings.Join(actualExports, "\x00") != strings.Join(item.Exports, "\x00") {
-			return nil, nil, resource.Errorf("materialized package %s exports differ from the lockfile", item.Name)
-		}
-		for id, document := range documents {
-			if _, duplicate := all[id]; duplicate {
-				return nil, nil, resource.Errorf("dependency resource id conflict: %s", id)
-			}
-			all[id] = document
-		}
-	}
-	return all, append([]LockedPackage{}, lock.Packages...), nil
 }
 
 func validateProjectLock(project *resource.Project, lock *Lock, required bool) error {

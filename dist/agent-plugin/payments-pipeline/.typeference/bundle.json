@@ -1,201 +1,273 @@
 {
-  "schemaVersion": 1,
-  "id": "helio/works/plugins/payments@1.0.0",
+  "schemaVersion": 3,
+  "id": "helio/payments/plugins/payments@2.4.0",
   "name": "payments-pipeline",
   "mode": "pipeline",
-  "version": "1.0.0",
-  "description": "The payments repository agent, for engineers and for release pipelines.",
+  "version": "2.4.0",
+  "description": "The Helio payments operations agent, for engineers and release pipelines.",
+  "sourceDigest": "sha256:ee499185f4033e52be0248b36f93083735cae57ad1c501e84208f753479e830a",
+  "dependencies": [
+    {
+      "name": "helio/core",
+      "version": "3.1.0",
+      "digest": "sha256:0887f5deff78efb00c40b8a1232c78f33150c28cf9ac50a098190c433711b874"
+    }
+  ],
   "agents": [
     {
-      "id": "helio/works/agents/payments-repo-agent@1.0.0",
-      "displayName": "Helio Payments Repository Agent",
-      "description": "Specializes repository assistance for the fictional payments service.",
-      "emit": true,
+      "id": "helio/payments/agents/payments-ops@2.4.0",
+      "name": "payments-ops",
+      "displayName": "payments-ops",
+      "description": "Operations agent for the Helio payments team.",
       "embeds": [
-        "helio/works/profiles/repository-defaults@1.0.0"
+        "helio/core/profiles/team-ops@3.1.0"
       ],
-      "satisfies": [
-        "helio/works/interfaces/repository-observer@1.0.0"
+      "bindings": [
+        {
+          "parameter": "team",
+          "data": "helio/payments/data/payments-team@2.4.0",
+          "contextType": "helio/core/context-types/team@3.1.0",
+          "values": {
+            "id": "payments",
+            "name": "Payments",
+            "onCall": "payments-oncall",
+            "queue": "PAY-OPS",
+            "tier": "critical"
+          }
+        }
       ],
-      "slots": {
-        "organization": "helio/works/context/organization@1.0.0",
-        "repository": "helio/works/context/repository@1.0.0"
-      },
       "objectives": [
         {
-          "source": "helio/works/agents/payments-repo-agent@1.0.0",
-          "content": "You report on the fictional payments service\u0027s repository for engineers and\nfor release pipelines. A healthy verdict requires every financial-control\nsignal.\n"
+          "source": "helio/payments/agents/payments-ops@2.4.0",
+          "content": "You support the Payments team\u0027s engineers and release pipelines. Lead with evidence,\nand keep changes small enough to review in one sitting.\n"
         }
       ],
-      "context": [
-        {
-          "id": "helio/works/context/audit-norm@1.0.0",
-          "contextType": "helio/works/context-types/norms@1.0.0",
-          "satisfies": [
-            "helio/works/context-types/norms@1.0.0"
-          ],
-          "content": "Preserve a clear audit trail for material decisions.\n"
-        },
-        {
-          "id": "helio/works/context/evidence-norm@1.0.0",
-          "contextType": "helio/works/context-types/norms@1.0.0",
-          "satisfies": [
-            "helio/works/context-types/norms@1.0.0"
-          ],
-          "content": "Prefer evidence from tests, diffs, and version control over recollection.\n"
-        },
-        {
-          "id": "helio/works/context/organization@1.0.0",
-          "contextType": "helio/works/context-types/organization@1.0.0",
-          "satisfies": [
-            "helio/works/context-types/organization@1.0.0"
-          ],
-          "content": "# Helio Works\n\nHelio Works is a fictional organization used only to demonstrate TypeFerence. It values clear ownership, reversible decisions, and evidence-backed communication.\n"
-        },
-        {
-          "id": "helio/works/context/payments-service@1.0.0",
-          "contextType": "helio/works/context-types/payments-service@1.0.0",
-          "satisfies": [
-            "helio/works/context-types/payments-service@1.0.0"
-          ],
-          "content": "# Payments service\n\nThis fictional service requires API-contract compatibility, reconciliation evidence, and a documented rollback path before a release is described as healthy.\n"
-        },
-        {
-          "id": "helio/works/context/repository@1.0.0",
-          "contextType": "helio/works/context-types/repository-evidence@1.0.0",
-          "satisfies": [
-            "helio/works/context-types/repository-evidence@1.0.0"
-          ],
-          "content": "# Repository evidence\n\nRepository reports should identify the current branch, working-tree state, relevant checks, and source commit whenever available.\n"
-        },
-        {
-          "id": "helio/works/context/safety-policy@1.0.0",
-          "contextType": "helio/works/context-types/safety-policy@1.0.0",
-          "satisfies": [
-            "helio/works/context-types/safety-policy@1.0.0",
-            "helio/works/context-types/policy@1.0.0"
-          ],
-          "values": {
-            "authority": "explicit"
-          },
-          "content": "# Safety policy\n\nAgents may prepare recommendations and drafts. They must not represent approval, transmit external messages, or make irreversible changes without explicit authority.\n"
-        },
-        {
-          "id": "helio/works/context/uncertainty-norm@1.0.0",
-          "contextType": "helio/works/context-types/norms@1.0.0",
-          "satisfies": [
-            "helio/works/context-types/norms@1.0.0"
-          ],
-          "content": "State uncertainty and route work to an accountable owner when authority is unclear.\n"
-        }
-      ],
+      "documents": [],
       "skills": [
+        "payments-onboard-teammate",
+        "payments-queue-summary",
+        "payments-self-heal"
+      ],
+      "rules": [
         {
-          "dispatchName": "payments-repo-agent.repository-status",
-          "capabilityId": "helio/works/capabilities/repository-status@1.0.0",
-          "implementationId": "helio/works/skills/payments-repository-status@1.0.0",
-          "description": "Report payments-service health with contract and reconciliation evidence.",
-          "instructions": "Inspect the requested repository signals. Report branch state, recent material\nchanges, test evidence, risks, and the next accountable action. Mark any\nunavailable signal explicitly instead of inferring success.\n\nFor the payments service, emit only the strict output object. Mark any\nunavailable financial-control signal as an explicit null; do not report\nthe service healthy when one is missing.\n",
-          "inputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022focus\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022additionalProperties\u0022:false}",
-          "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022risks\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022status\u0022,\u0022evidence\u0022,\u0022risks\u0022]}",
-          "variants": {
-            "a2a": {
-              "instructions": "Inspect the requested repository signals. Report branch state, recent material\nchanges, test evidence, risks, and the next accountable action. Mark any\nunavailable signal explicitly instead of inferring success.\n\nFor the payments service, return attributed evidence for the calling\nagent (contract compatibility, reconciliation, and rollback readiness)\nwith no user-facing framing. Do not report the service healthy when any\nrequired financial-control signal is unavailable.\n",
-              "requiresContextTypes": [],
-              "requiresTools": []
-            },
-            "manual": {
-              "instructions": "Inspect the requested repository signals. Report branch state, recent material\nchanges, test evidence, risks, and the next accountable action. Mark any\nunavailable signal explicitly instead of inferring success.\n\nFor the payments service, also report payment-contract compatibility,\nreconciliation checks, and rollback readiness, and surface uncertainty\nconversationally. Do not report the service healthy when any required\nfinancial-control signal is unavailable.\n",
-              "requiresContextTypes": [],
-              "requiresTools": []
-            },
-            "pipeline": {
-              "instructions": "Inspect the requested repository signals. Report branch state, recent material\nchanges, test evidence, risks, and the next accountable action. Mark any\nunavailable signal explicitly instead of inferring success.\n\nFor the payments service, emit only the strict output object. Mark any\nunavailable financial-control signal as an explicit null; do not report\nthe service healthy when one is missing.\n",
-              "requiresContextTypes": [],
-              "requiresTools": []
-            }
-          },
-          "requiresContextTypes": [
-            "helio/works/context-types/payments-service@1.0.0"
-          ],
-          "requiresTools": [
-            "helio/works/tools/repository-signals@1.0.0"
-          ],
-          "exposed": true,
-          "provenance": [
+          "name": "working-norms",
+          "id": "helio/core/rules/working-norms@3.1.0",
+          "templateId": "",
+          "bindings": []
+        }
+      ],
+      "commands": [
+        {
+          "name": "payments-standup",
+          "id": "helio/core/commands/standup@3.1.0",
+          "templateId": "helio/core/commands/standup@3.1.0",
+          "bindings": [
             {
-              "field": "skill.capability",
-              "source": "helio/works/capabilities/repository-status@1.0.0"
-            },
-            {
-              "field": "skill.implementation",
-              "source": "helio/works/skills/payments-repository-status@1.0.0"
+              "parameter": "team",
+              "data": "helio/payments/data/payments-team@2.4.0",
+              "contextType": "helio/core/context-types/team@3.1.0",
+              "values": {
+                "id": "payments",
+                "name": "Payments",
+                "onCall": "payments-oncall",
+                "queue": "PAY-OPS",
+                "tier": "critical"
+              }
             }
           ]
         }
       ],
+      "hooks": [
+        "helio/core/hooks/policy-check@3.1.0"
+      ],
+      "servers": [
+        "helio/payments/servers/helio-ledger@2.4.0"
+      ],
       "provenance": [
         {
-          "field": "slots.organization",
-          "source": "helio/works/profiles/enterprise-defaults@1.0.0"
-        },
-        {
-          "field": "embeds.helio/works/profiles/enterprise-defaults@1.0.0",
-          "source": "helio/works/profiles/repository-defaults@1.0.0"
-        },
-        {
-          "field": "slots.repository",
-          "source": "helio/works/profiles/repository-defaults@1.0.0"
-        },
-        {
-          "field": "embeds.helio/works/profiles/repository-defaults@1.0.0",
-          "source": "helio/works/agents/payments-repo-agent@1.0.0"
-        },
-        {
-          "field": "displayName",
-          "source": "helio/works/agents/payments-repo-agent@1.0.0"
-        },
-        {
-          "field": "description",
-          "source": "helio/works/agents/payments-repo-agent@1.0.0"
-        },
-        {
-          "field": "satisfies.helio/works/interfaces/repository-observer@1.0.0",
-          "source": "helio/works/agents/payments-repo-agent@1.0.0"
-        },
-        {
           "field": "objectives",
-          "source": "helio/works/agents/payments-repo-agent@1.0.0"
+          "source": "helio/payments/agents/payments-ops@2.4.0"
+        },
+        {
+          "field": "embeds",
+          "source": "helio/core/profiles/team-ops@3.1.0"
+        },
+        {
+          "field": "with",
+          "source": "helio/payments/agents/payments-ops@2.4.0"
+        },
+        {
+          "field": "rules",
+          "source": "helio/core/profiles/team-ops@3.1.0"
+        },
+        {
+          "field": "commands",
+          "source": "helio/core/profiles/team-ops@3.1.0"
+        },
+        {
+          "field": "hooks",
+          "source": "helio/core/profiles/team-ops@3.1.0"
         }
       ]
     }
   ],
   "skills": [
     {
-      "name": "payments-repository-status",
-      "implementationId": "helio/works/skills/payments-repository-status@1.0.0",
-      "capabilityId": "helio/works/capabilities/repository-status@1.0.0",
-      "description": "Report payments-service health with contract and reconciliation evidence.",
-      "instructions": "Inspect the requested repository signals. Report branch state, recent material\nchanges, test evidence, risks, and the next accountable action. Mark any\nunavailable signal explicitly instead of inferring success.\n\nFor the payments service, emit only the strict output object. Mark any\nunavailable financial-control signal as an explicit null; do not report\nthe service healthy when one is missing.\n",
-      "inputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022focus\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022additionalProperties\u0022:false}",
-      "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022risks\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022status\u0022,\u0022evidence\u0022,\u0022risks\u0022]}",
-      "requiresContextTypes": [
-        "helio/works/context-types/payments-service@1.0.0"
+      "name": "payments-onboard-teammate",
+      "implementationId": "helio/core/skills/onboard-teammate@3.1.0",
+      "templateId": "helio/core/skills/onboard-teammate@3.1.0",
+      "capabilityId": "helio/core/skills/onboard-teammate@3.1.0",
+      "description": "Walk a new Payments teammate through their first week.",
+      "bindings": [
+        {
+          "parameter": "team",
+          "data": "helio/payments/data/payments-team@2.4.0",
+          "contextType": "helio/core/context-types/team@3.1.0",
+          "values": {
+            "id": "payments",
+            "name": "Payments",
+            "onCall": "payments-oncall",
+            "queue": "PAY-OPS",
+            "tier": "critical"
+          }
+        }
       ],
-      "requiresTools": [
-        "helio/works/tools/repository-signals@1.0.0"
+      "servers": [],
+      "documents": [
+        {
+          "id": "helio/core/docs/onboarding-guide@3.1.0",
+          "render": "file"
+        }
       ],
-      "exposed": true,
+      "files": [],
       "provenance": [
         {
-          "field": "skill.capability",
-          "source": "helio/works/capabilities/repository-status@1.0.0"
+          "field": "implementation",
+          "source": "helio/core/skills/onboard-teammate@3.1.0"
         },
         {
-          "field": "skill.implementation",
-          "source": "helio/works/skills/payments-repository-status@1.0.0"
+          "field": "binding",
+          "source": "helio/core/profiles/team-ops@3.1.0"
+        }
+      ]
+    },
+    {
+      "name": "payments-queue-summary",
+      "implementationId": "helio/core/skills/queue-summary@3.1.0",
+      "templateId": "helio/core/skills/queue-summary@3.1.0",
+      "capabilityId": "helio/core/skills/queue-summary@3.1.0",
+      "description": "Summarize open requests in the Payments ticket queue.",
+      "bindings": [
+        {
+          "parameter": "team",
+          "data": "helio/payments/data/payments-team@2.4.0",
+          "contextType": "helio/core/context-types/team@3.1.0",
+          "values": {
+            "id": "payments",
+            "name": "Payments",
+            "onCall": "payments-oncall",
+            "queue": "PAY-OPS",
+            "tier": "critical"
+          }
+        }
+      ],
+      "servers": [
+        "helio/core/servers/helio-tickets@3.1.0"
+      ],
+      "documents": [],
+      "files": [],
+      "provenance": [
+        {
+          "field": "implementation",
+          "source": "helio/core/skills/queue-summary@3.1.0"
+        },
+        {
+          "field": "binding",
+          "source": "helio/core/profiles/team-ops@3.1.0"
+        }
+      ]
+    },
+    {
+      "name": "payments-self-heal",
+      "implementationId": "helio/payments/skills/self-heal@2.4.0",
+      "templateId": "helio/payments/skills/self-heal@2.4.0",
+      "capabilityId": "helio/core/skills/self-heal@3.1.0",
+      "description": "Diagnose a failed payments pipeline run, including reconciliation evidence.",
+      "bindings": [
+        {
+          "parameter": "team",
+          "data": "helio/payments/data/payments-team@2.4.0",
+          "contextType": "helio/core/context-types/team@3.1.0",
+          "values": {
+            "id": "payments",
+            "name": "Payments",
+            "onCall": "payments-oncall",
+            "queue": "PAY-OPS",
+            "tier": "critical"
+          }
+        }
+      ],
+      "servers": [
+        "helio/core/servers/helio-builds@3.1.0"
+      ],
+      "documents": [],
+      "files": [
+        {
+          "source": "helio/core:files/self-heal/report-template.md",
+          "as": "references/report-template.md"
+        }
+      ],
+      "provenance": [
+        {
+          "field": "implementation",
+          "source": "helio/payments/skills/self-heal@2.4.0"
+        },
+        {
+          "field": "implementation",
+          "source": "helio/core/skills/self-heal@3.1.0"
+        },
+        {
+          "field": "binding",
+          "source": "helio/payments/agents/payments-ops@2.4.0"
         }
       ]
     }
-  ]
+  ],
+  "servers": [
+    "helio/core/servers/helio-builds@3.1.0",
+    "helio/core/servers/helio-tickets@3.1.0"
+  ],
+  "rules": [
+    {
+      "name": "working-norms",
+      "id": "helio/core/rules/working-norms@3.1.0",
+      "templateId": "",
+      "bindings": []
+    }
+  ],
+  "commands": [
+    {
+      "name": "payments-standup",
+      "id": "helio/core/commands/standup@3.1.0",
+      "templateId": "helio/core/commands/standup@3.1.0",
+      "bindings": [
+        {
+          "parameter": "team",
+          "data": "helio/payments/data/payments-team@2.4.0",
+          "contextType": "helio/core/context-types/team@3.1.0",
+          "values": {
+            "id": "payments",
+            "name": "Payments",
+            "onCall": "payments-oncall",
+            "queue": "PAY-OPS",
+            "tier": "critical"
+          }
+        }
+      ]
+    }
+  ],
+  "hooks": [
+    "helio/core/hooks/policy-check@3.1.0"
+  ],
+  "lspServers": []
 }

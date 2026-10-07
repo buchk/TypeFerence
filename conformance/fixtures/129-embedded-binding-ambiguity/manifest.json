@@ -1,0 +1,4 @@
+{
+  "description": "Two agents embedded at one depth that bind one parameter to different data are ambiguous unless the embedding agent binds it (ADR-0038).",
+  "expect": "error"
+}

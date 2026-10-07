@@ -1,31 +1,37 @@
 {
-  "schemaVersion": 1,
-  "id": "helio/works/plugins/engineering-kit@1.0.0",
+  "schemaVersion": 3,
+  "id": "helio/core/plugins/engineering-kit@3.1.0",
   "name": "engineering-kit",
   "mode": "manual",
-  "version": "1.0.0",
+  "version": "3.1.0",
   "description": "Evidence-backed repository status for any Helio team, without an agent.",
+  "sourceDigest": "sha256:0887f5deff78efb00c40b8a1232c78f33150c28cf9ac50a098190c433711b874",
+  "dependencies": [],
   "agents": [],
   "skills": [
     {
       "name": "repository-status",
-      "implementationId": "helio/works/skills/repository-status@1.0.0",
-      "capabilityId": "helio/works/capabilities/repository-status@1.0.0",
+      "implementationId": "helio/core/skills/repository-status@3.1.0",
+      "templateId": "",
+      "capabilityId": "helio/core/skills/repository-status@3.1.0",
       "description": "Summarize repository health using current version-control and test evidence.",
-      "instructions": "Inspect the requested repository signals. Report branch state, recent material\nchanges, test evidence, risks, and the next accountable action. Mark any\nunavailable signal explicitly instead of inferring success.\n",
-      "inputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022focus\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022additionalProperties\u0022:false}",
-      "outputSchema": "{\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022evidence\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}},\u0022risks\u0022:{\u0022type\u0022:\u0022array\u0022,\u0022items\u0022:{\u0022type\u0022:\u0022string\u0022}}},\u0022required\u0022:[\u0022status\u0022,\u0022evidence\u0022,\u0022risks\u0022]}",
-      "exposed": true,
+      "bindings": [],
+      "servers": [],
+      "documents": [],
+      "files": [],
       "provenance": [
         {
-          "field": "skill.capability",
-          "source": "helio/works/capabilities/repository-status@1.0.0"
-        },
-        {
-          "field": "skill.implementation",
-          "source": "helio/works/skills/repository-status@1.0.0"
+          "field": "implementation",
+          "source": "helio/core/skills/repository-status@3.1.0"
         }
       ]
     }
+  ],
+  "servers": [],
+  "rules": [],
+  "commands": [],
+  "hooks": [],
+  "lspServers": [
+    "helio/core/lsp/helio-config@3.1.0"
   ]
 }

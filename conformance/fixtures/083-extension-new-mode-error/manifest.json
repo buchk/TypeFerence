@@ -1,4 +1,0 @@
-{
-  "description": "An extension can only add to modes its multimodal base defines (ADR-0031).",
-  "expect": "error"
-}

@@ -1,7 +1,3 @@
-// Package resolve implements the TypeFerence structural type system:
-// embedding composition, depth-based member promotion with compile-time
-// ambiguity detection, capability contract enforcement, and implicit
-// structural interface satisfaction (docs/specification.md).
 package resolve
 
 import (
@@ -11,202 +7,269 @@ import (
 	"github.com/buchk/TypeFerence/go/internal/resource"
 )
 
+// ProvenanceEntry records which source document contributed a field.
 type ProvenanceEntry struct {
 	Field  string
 	Source string
 }
 
-// ResolvedSkill is a concrete skill after promotion and contract checks.
-type ResolvedSkill struct {
-	DispatchName         string
-	CapabilityID         string
-	ImplementationID     string
-	Description          string
-	Instructions         string
-	InputSchema          string
-	OutputSchema         string
-	ContextFiles         []string
-	RequiresContextTypes []string
-	RequiresTools        []string
-	// Exposed is true when the bound capability's visibility is "exposed":
-	// part of the agent's public callable surface, eligible for a callable
-	// card (ADR-0015). Rides the skill, so promotion carries it automatically.
-	Exposed bool
-	// Sealed marks a binding an embedder may not override or rebind; Required
-	// marks it mandatory (ADR-0016). Both ride the skill through promotion.
-	Sealed   bool
-	Required bool
-	// Variants maps mode name to that mode's instructions for a multimodal
-	// skill (ADR-0012); nil for a unimodal skill. Instructions above holds the
-	// default (neutral) variant's rendering.
-	Variants map[string]string
-	// Variant requirements remain attached to their mode. Base requirements
-	// above apply to every mode.
-	VariantContextRequirements map[string][]string
-	VariantToolRequirements    map[string][]string
-	// ContextObjects is the context a version 6 skill holds itself. It travels
-	// with the skill wherever it ships (ADR-0030).
-	ContextObjects []ResolvedContextRef
-	Provenance     []ProvenanceEntry
-}
-
-// ResolvedObjective is one inherited block of an agent's identity and
-// objectives: the body of Source.
-type ResolvedObjective struct {
+// Objective is one source's contribution to an agent's objectives.
+type Objective struct {
 	Source  string
 	Content string
 }
 
-// ResolvedAgent is a fully composed agent or profile.
+// ResolvedDocument is a held document with its field references resolved.
+type ResolvedDocument struct {
+	ID      string
+	Title   string
+	Content string
+	// Render is "inline" or "file".
+	Render string
+}
+
+// ResolvedSkill is a skill or skill instance as it ships.
+type ResolvedSkill struct {
+	// Name is the emitted skill name: the identity leaf, prefixed by the
+	// instance name for an agent instance.
+	Name             string
+	ImplementationID string
+	// TemplateID is the template an instance instantiates: the skill itself
+	// for an agent instance, the nearest template ancestor for a skill
+	// instance, and empty for a skill that binds no parameters.
+	TemplateID   string
+	CapabilityID string
+	Description  string
+	Instructions string
+	// Variants maps mode to rendered instructions for a multimodal skill.
+	Variants        map[string]string
+	Servers         []string
+	VariantServers  map[string][]string
+	InputSchema     string
+	OutputSchema    string
+	HasInputSchema  bool
+	HasOutputSchema bool
+	Documents       []ResolvedDocument
+	Files           []resource.SkillFile
+	Copilot         resource.CopilotFields
+	// Bindings are the parameters this instance binds, sorted by name.
+	Bindings   []*Binding
+	Provenance []ProvenanceEntry
+}
+
+// Key identifies a skill's emitted content: its implementation and the data
+// its parameters are bound to.
+func (s ResolvedSkill) Key() string {
+	parts := []string{s.ImplementationID}
+	for _, b := range s.Bindings {
+		parts = append(parts, b.Name+"="+b.DataID)
+	}
+	return strings.Join(parts, "|")
+}
+
+// IsInstance reports whether the skill binds any parameters.
+func (s ResolvedSkill) IsInstance() bool { return len(s.Bindings) > 0 }
+
+// InstructionsFor returns the skill's instructions in one mode.
+func (s ResolvedSkill) InstructionsFor(mode string) string {
+	if len(s.Variants) > 0 {
+		return s.Variants[mode]
+	}
+	return s.Instructions
+}
+
+// ServersFor returns the servers the skill requires in one mode.
+func (s ResolvedSkill) ServersFor(mode string) []string {
+	out := []string{}
+	seen := map[string]bool{}
+	for _, id := range append(append([]string{}, s.Servers...), s.VariantServers[mode]...) {
+		if !seen[id] {
+			seen[id] = true
+			out = append(out, id)
+		}
+	}
+	return out
+}
+
+// ResolvedAgent is a concrete agent after composition.
 type ResolvedAgent struct {
 	ID          string
 	DisplayName string
 	Description string
-	// Language is the source language version the component was written in;
-	// version 6 components render with version 6 rules.
-	Language int
-	// Objectives are the agent's identity and objectives: embedded agents'
-	// bodies in embedding order, then its own (ADR-0030).
-	Objectives             []ResolvedObjective
-	Emit                   bool
-	Embeds                 []string
-	Satisfies              []string
-	Slots                  map[string]string
-	SlotKeys               []string // canonical order for Slots
-	ContextFiles           []string
-	Context                []string
-	ContextObjects         []ResolvedContextRef
-	AllowedContextTypes    []string
-	HasAllowedContextTypes bool
-	Skills                 []ResolvedSkill
-	// RequiredCapabilities are the capability ids mandated by this component or
-	// anything it embeds. A profile may carry ones it does not bind (an abstract
-	// requirement); a resolved agent never can (ADR-0016).
-	RequiredCapabilities []string
-	Provenance           []ProvenanceEntry
+	Embeds      []string
+	Objectives  []Objective
+	Documents   []ResolvedDocument
+	// Skills are ordered by emitted name.
+	Skills       []ResolvedSkill
+	Bindings     []*Binding
+	InstanceName string
+	Copilot      resource.CopilotFields
+	Provenance   []ProvenanceEntry
+	// Native components the agent composes (ADR-0040): rules and commands
+	// rendered with its bindings, hooks, and agent-scoped servers.
+	Rules    []ResolvedRule
+	Commands []ResolvedCommand
+	Hooks    []string
+	Servers  []string
 }
 
-// ResolvedContextRef is a context object an agent holds by id, with the
-// contextType it instantiates and its materialized content (ADR-0013). Content
-// lets a target inline the held context, not merely reference it.
-type ResolvedContextRef struct {
-	ID          string
-	DisplayName string
-	ContextType string
-	Satisfies   []string
-	Content     string
-	Values      map[string]resource.FieldValue
-	ValuesJSON  string
+// ResolvedProfile is a profile shipped without an agent.
+type ResolvedProfile struct {
+	ID       string
+	Skills   []ResolvedSkill
+	Rules    []ResolvedRule
+	Commands []ResolvedCommand
+	Hooks    []string
 }
 
-type interfaceContract struct {
-	slots     []string
-	slotTypes map[string]string
-	skills    []string
-}
-
-// Resolver composes resources into resolved agents. Its resource set is mutable
-// normalization state: native context defaults and canonical typed values are
-// materialized in place. Source identity is computed separately from canonical
-// source files and must never depend on these documents.
+// Resolver resolves documents from one merged, normalized document set.
 type Resolver struct {
-	resources      map[string]*resource.Document
-	implied        map[string]*resource.Document
-	componentCache map[string]*ResolvedAgent
-	interfaceCache map[string]*interfaceContract
-	slotDepths     map[string]map[string]int
-	skillDepths    map[string]map[string]int
+	docs       map[string]*resource.Document
+	data       map[string]map[string]resource.Value
+	composites map[string]*composite
 }
 
-// New creates a Resolver over a loaded resource set. Version 6 root skills
-// that bind no capability document define an implied capability identified by
-// the skill itself (ADR-0030); it is synthesized here, never authored.
-func New(resources map[string]*resource.Document) *Resolver {
-	implied := map[string]*resource.Document{}
-	for id, doc := range resources {
-		if doc.Kind == "skill" && doc.ImpliedCapability && doc.Binds == id {
-			capability := resource.NewDocument()
-			capability.SchemaVersion = doc.SchemaVersion
-			capability.Kind = "capability"
-			capability.ID = id
-			capability.DisplayName = doc.DisplayName
-			capability.Description = doc.Description
-			capability.InputSchema = doc.InputSchema
-			capability.OutputSchema = doc.OutputSchema
-			capability.Visibility = "internal"
-			implied[id] = capability
+// New validates a merged, normalized document set and returns a resolver for
+// it. Every data document is checked against its context type and every
+// template's references against its parameters, whether or not anything
+// instantiates them.
+func New(docs map[string]*resource.Document) (*Resolver, error) {
+	r := &Resolver{docs: docs, data: map[string]map[string]resource.Value{}, composites: map[string]*composite{}}
+	for _, id := range resource.SortedKeys(docs) {
+		if err := r.validate(docs[id]); err != nil {
+			return nil, err
 		}
 	}
-	return &Resolver{
-		resources:      resources,
-		implied:        implied,
-		componentCache: map[string]*ResolvedAgent{},
-		interfaceCache: map[string]*interfaceContract{},
-		slotDepths:     map[string]map[string]int{},
-		skillDepths:    map[string]map[string]int{},
-	}
+	return r, nil
 }
 
-// requireCapability finds a capability document or a skill's implied
-// capability.
-func (r *Resolver) requireCapability(id string) (*resource.Document, error) {
-	if capability, ok := r.implied[id]; ok {
-		return capability, nil
+func (r *Resolver) kindOf(id string) string {
+	if doc := r.docs[id]; doc != nil {
+		return doc.Kind
 	}
-	return r.require(id, "capability")
+	return ""
 }
 
-// ResolveAll validates every skill, interface, and profile, then returns all
-// agents resolved, sorted by id.
+func (r *Resolver) validate(doc *resource.Document) error {
+	if err := r.validateNative(doc); err != nil {
+		return err
+	}
+	for _, name := range resource.SortedKeys(doc.Parameters) {
+		if r.kindOf(doc.Parameters[name]) != "contextType" {
+			return resource.Errorf("%s: parameter '%s' names %s, which is not a context type in this build", doc.Path, name, doc.Parameters[name])
+		}
+	}
+	for _, embed := range doc.Embeds {
+		if r.docs[embed] == nil {
+			return resource.Errorf("%s: embeds %s, which is not in this build", doc.Path, embed)
+		}
+	}
+	for _, ref := range doc.Context {
+		held := r.docs[ref.ID]
+		if held == nil || held.Kind != "context" {
+			return resource.Errorf("%s: holds %s, which is not a context document in this build", doc.Path, ref.ID)
+		}
+		if held.IsData() {
+			return resource.Errorf("%s: holds data document %s; data reaches output only through field references, so bind it with 'with'", doc.Path, ref.ID)
+		}
+	}
+	for _, binding := range doc.Skills {
+		if binding.Ref != "" && r.kindOf(binding.Ref) != "skill" {
+			return resource.Errorf("%s: binds %s, which is not a skill in this build", doc.Path, binding.Ref)
+		}
+		if binding.Capability != nil && r.kindOf(*binding.Capability) != "capability" && r.kindOf(*binding.Capability) != "skill" {
+			return resource.Errorf("%s: names capability %s, which is not in this build", doc.Path, *binding.Capability)
+		}
+	}
+	switch doc.Kind {
+	case "context":
+		if doc.IsData() {
+			contextType := r.docs[doc.ContextType]
+			if contextType == nil || contextType.Kind != "contextType" {
+				return resource.Errorf("%s: contextType %s is not a context type in this build", doc.Path, doc.ContextType)
+			}
+			values, err := resource.DataValues(doc, contextType)
+			if err != nil {
+				return err
+			}
+			r.data[doc.ID] = values
+			return nil
+		}
+		return r.checkReferences(doc.Content, doc.Path, doc.Parameters)
+	case "skill":
+		for _, id := range append(append([]string{}, doc.RequiresServers...), variantServers(doc)...) {
+			if r.kindOf(id) != "server" {
+				return resource.Errorf("%s: requires server %s, which is not in this build", doc.Path, id)
+			}
+		}
+		for _, name := range resource.SortedKeys(doc.With) {
+			if err := r.checkData(doc.Path, name, doc.With[name], doc.Parameters[name]); err != nil {
+				return err
+			}
+		}
+		for _, ref := range doc.Context {
+			held := r.docs[ref.ID]
+			for _, name := range resource.SortedKeys(held.Parameters) {
+				if doc.Parameters[name] != held.Parameters[name] {
+					return resource.Errorf("%s: holds document %s, whose parameter '%s' (%s) the skill does not declare with the same context type", doc.Path, ref.ID, name, held.Parameters[name])
+				}
+			}
+		}
+		if err := r.checkReferences(doc.Description, doc.Path+" description", doc.Parameters); err != nil {
+			return err
+		}
+		if err := r.checkReferences(doc.Instructions, doc.Path, doc.Parameters); err != nil {
+			return err
+		}
+		for _, mode := range resource.SortedKeys(doc.Variants) {
+			if err := r.checkReferences(doc.Variants[mode].Instructions, doc.Path+" variant "+mode, doc.Parameters); err != nil {
+				return err
+			}
+		}
+	case "agent":
+		for _, name := range resource.SortedKeys(doc.With) {
+			if err := r.checkData(doc.Path, name, doc.With[name], ""); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func variantServers(doc *resource.Document) []string {
+	out := []string{}
+	for _, mode := range resource.SortedKeys(doc.Variants) {
+		out = append(out, doc.Variants[mode].RequiresServers...)
+	}
+	return out
+}
+
+// checkData checks that a binding names a data document, of the expected
+// context type when one is given.
+func (r *Resolver) checkData(where, name, dataID, expectedType string) error {
+	data := r.docs[dataID]
+	if data == nil || !data.IsData() {
+		return resource.Errorf("%s: 'with' binds '%s' to %s, which is not a data document in this build", where, name, dataID)
+	}
+	if expectedType != "" && data.ContextType != expectedType {
+		return resource.Errorf("%s: 'with' binds '%s' to %s, whose context type %s is not the parameter's %s", where, name, dataID, data.ContextType, expectedType)
+	}
+	return nil
+}
+
+func (r *Resolver) binding(name, dataID string) *Binding {
+	data := r.docs[dataID]
+	return &Binding{Name: name, DataID: dataID, ContextType: data.ContextType, Values: r.data[dataID]}
+}
+
+// ResolveAll resolves every agent in the document set, ordered by identity.
 func (r *Resolver) ResolveAll() ([]*ResolvedAgent, error) {
-	for _, id := range r.idsOfKind("skill") {
-		if err := r.validateSkillImplementation(r.resources[id]); err != nil {
-			return nil, err
-		}
-	}
-	for _, id := range r.idsOfKind("interface") {
-		if _, err := r.resolveInterface(id, map[string]bool{}); err != nil {
-			return nil, err
-		}
-	}
-	for _, id := range r.idsOfKind("contextType") {
-		if _, err := r.contextTypeClosure(id, map[string]bool{}); err != nil {
-			return nil, err
-		}
-		if r.resources[id].IsNative() {
-			if _, _, _, err := r.nativeContextShape(id); err != nil {
-				return nil, err
-			}
-			if err := r.validateContextValueTypeGraph(id, map[string]bool{}); err != nil {
-				return nil, err
-			}
-			if err := r.validateNativeDefaults(id); err != nil {
-				return nil, err
-			}
-		}
-	}
-	for _, id := range r.idsOfKind("context") {
-		obj := r.resources[id]
-		if _, err := r.contextTypeClosure(obj.ContextType, map[string]bool{}); err != nil {
-			return nil, resource.Errorf("%s: %s", id, err)
-		}
-		if err := r.validateContextFields(obj); err != nil {
-			return nil, err
-		}
-	}
-	for _, id := range r.idsOfKind("tool") {
-		if err := r.validateTool(r.resources[id]); err != nil {
-			return nil, err
-		}
-	}
-	for _, id := range r.idsOfKind("profile") {
-		if _, err := r.resolveComponent(id, map[string]bool{}, false); err != nil {
-			return nil, err
-		}
-	}
 	agents := []*ResolvedAgent{}
-	for _, id := range r.idsOfKind("agent") {
-		agent, err := r.resolveComponent(id, map[string]bool{}, true)
+	for _, id := range resource.SortedKeys(r.docs) {
+		if r.docs[id].Kind != "agent" {
+			continue
+		}
+		agent, err := r.ResolveAgent(id)
 		if err != nil {
 			return nil, err
 		}
@@ -215,255 +278,379 @@ func (r *Resolver) ResolveAll() ([]*ResolvedAgent, error) {
 	return agents, nil
 }
 
-// Resolve resolves a single agent by id.
-func (r *Resolver) Resolve(id string) (*ResolvedAgent, error) {
-	return r.resolveComponent(id, map[string]bool{}, true)
-}
-
-func (r *Resolver) idsOfKind(kind string) []string {
-	ids := []string{}
-	for id, doc := range r.resources {
-		if doc.Kind == kind {
-			ids = append(ids, id)
-		}
+// ResolveAgent composes one agent: its promoted bindings and documents, its
+// parameter bindings, and its skills and skill instances.
+func (r *Resolver) ResolveAgent(id string) (*ResolvedAgent, error) {
+	doc := r.docs[id]
+	if doc == nil || doc.Kind != "agent" {
+		return nil, resource.Errorf("%s is not an agent in this build", id)
 	}
-	sort.Strings(ids)
-	return ids
-}
-
-func (r *Resolver) resolveComponent(id string, visiting map[string]bool, requireAgent bool) (*ResolvedAgent, error) {
-	if requireAgent {
-		if _, err := r.require(id, "agent"); err != nil {
-			return nil, err
-		}
-	}
-	if cached, ok := r.componentCache[id]; ok {
-		return cached, nil
-	}
-	current, err := r.requireEmbeddable(id)
+	c, err := r.compose(id, nil)
 	if err != nil {
 		return nil, err
 	}
-	if visiting[id] {
-		return nil, resource.Errorf("Embedding cycle detected at %s", id)
-	}
-	visiting[id] = true
-	defer delete(visiting, id)
-
-	seen := map[string]bool{}
-	for _, embed := range current.Embeds {
-		if seen[embed] {
-			return nil, resource.Errorf("%s: a %s cannot embed the same resource more than once", id, current.Kind)
-		}
-		seen[embed] = true
-	}
-
-	embedded := make([]*ResolvedAgent, 0, len(current.Embeds))
-	for _, embedID := range current.Embeds {
-		embeddedResource, embErr := r.requireEmbeddable(embedID)
-		if embErr != nil {
-			return nil, embErr
-		}
-		if current.Kind == "profile" && embeddedResource.Kind != "profile" {
-			return nil, resource.Errorf("%s: profiles can only embed profiles", id)
-		}
-		component, resErr := r.resolveComponent(embedID, visiting, false)
-		if resErr != nil {
-			return nil, resErr
-		}
-		embedded = append(embedded, component)
-	}
-
-	slots, slotKeys, slotDepths, err := r.mergeSlots(id, current, embedded)
+	skillIDs, err := c.finalSkills(doc.Path)
 	if err != nil {
 		return nil, err
 	}
-	contexts := distinct(normalizeAll(concatContexts(embedded, current)))
-	contextRefs := distinct(append(concatContextRefs(embedded, current), slotContextRefs(slots, slotKeys)...))
-	allowedContextTypes := intersectAllowLists(embedded, current)
-	skills, skillDepths, err := r.mergeSkills(id, current, embedded, contexts)
-	if err != nil {
-		return nil, err
-	}
-	requiredCapabilities, requiredBy, err := r.mergeRequired(id, current, embedded)
-	if err != nil {
-		return nil, err
-	}
-	// A mandated capability is mandatory wherever it is carried, however it came
-	// to be bound, so the flag reflects the requirement rather than the binding
-	// that happened to satisfy it (ADR-0016).
-	for capabilityID := range requiredBy {
-		if skill, bound := skills[capabilityID]; bound && !skill.Required {
-			skill.Required = true
-			skills[capabilityID] = skill
-		}
-	}
-	if current.Kind == "agent" {
-		if err := checkRequiredCapabilities(id, requiredBy, skills); err != nil {
-			return nil, err
-		}
-		if err := r.checkSkillDependencies(id, skills, contextRefs); err != nil {
-			return nil, err
-		}
-		if err := r.checkAllowedContext(id, contextRefs, allowedContextTypes, hasAllowedContextTypes(embedded, current)); err != nil {
-			return nil, err
-		}
-	}
 
-	satisfies := []string{}
-	for _, interfaceID := range r.idsOfKind("interface") {
-		contract, ifErr := r.resolveInterface(interfaceID, map[string]bool{})
-		if ifErr != nil {
-			return nil, ifErr
+	// What the agent must bind: declared contracts, its template skills'
+	// unbound parameters, and its held documents' parameters.
+	need := map[string]string{}
+	needSource := map[string]string{}
+	addNeed := func(name, typeID, source string) error {
+		if prior, exists := need[name]; exists && prior != typeID {
+			return resource.Errorf("%s: parameter '%s' is %s for %s but %s for %s; one name has one context type", doc.Path, name, typeID, source, prior, needSource[name])
 		}
-		if r.satisfiesContract(contract, slots, skills) {
-			satisfies = append(satisfies, interfaceID)
+		need[name], needSource[name] = typeID, source
+		return nil
+	}
+	for _, name := range resource.SortedKeys(c.declared) {
+		if err := addNeed(name, c.declared[name], c.declaredSource[name]); err != nil {
+			return nil, err
 		}
 	}
-
-	provenance := []ProvenanceEntry{}
-	for _, component := range embedded {
-		for _, entry := range component.Provenance {
-			if isPromotedProvenance(entry) {
-				provenance = append(provenance, entry)
+	templateSkills := false
+	for _, skillID := range skillIDs {
+		skill := r.docs[skillID]
+		for _, name := range resource.SortedKeys(skill.Parameters) {
+			if _, bound := skill.With[name]; bound {
+				continue
+			}
+			templateSkills = true
+			if err := addNeed(name, skill.Parameters[name], skillID); err != nil {
+				return nil, err
 			}
 		}
 	}
-	for _, embed := range current.Embeds {
-		provenance = append(provenance, ProvenanceEntry{Field: "embeds." + embed, Source: id})
-	}
-	if !isBlank(current.DisplayName) {
-		provenance = append(provenance, ProvenanceEntry{Field: "displayName", Source: id})
-	}
-	if !isBlank(current.Description) {
-		provenance = append(provenance, ProvenanceEntry{Field: "description", Source: id})
-	}
-	for _, key := range resource.SortedKeys(current.Slots) {
-		provenance = append(provenance, ProvenanceEntry{Field: "slots." + key, Source: id})
-	}
-	for range current.ContextFiles {
-		provenance = append(provenance, ProvenanceEntry{Field: "contextFiles", Source: id})
-	}
-	for _, interfaceID := range satisfies {
-		provenance = append(provenance, ProvenanceEntry{Field: "satisfies." + interfaceID, Source: id})
-	}
-
-	displayName := current.DisplayName
-	if isBlank(displayName) {
-		displayName = id
-	}
-
-	// Objectives inherit through embedding like held context: embedded agents'
-	// bodies in embedding order, then this agent's own, first-seen per source.
-	objectives := []ResolvedObjective{}
-	objectiveSources := map[string]bool{}
-	for _, component := range embedded {
-		for _, objective := range component.Objectives {
-			if !objectiveSources[objective.Source] {
-				objectiveSources[objective.Source] = true
-				objectives = append(objectives, objective)
+	for _, docID := range c.documents {
+		held := r.docs[docID]
+		for _, name := range resource.SortedKeys(held.Parameters) {
+			if err := addNeed(name, held.Parameters[name], docID); err != nil {
+				return nil, err
 			}
 		}
 	}
-	if !isBlank(current.Objectives) && !objectiveSources[id] {
-		objectives = append(objectives, ResolvedObjective{Source: id, Content: current.Objectives})
-		provenance = append(provenance, ProvenanceEntry{Field: "objectives", Source: id})
-	}
-
-	sortedSkills := make([]ResolvedSkill, 0, len(skills))
-	dispatchOwners := map[string]string{}
-	capabilityIDs := make([]string, 0, len(skills))
-	for capabilityID := range skills {
-		capabilityIDs = append(capabilityIDs, capabilityID)
-	}
-	sort.Strings(capabilityIDs)
-	for _, capabilityID := range capabilityIDs {
-		skill := withDispatch(skills[capabilityID], id)
-		if prior, duplicate := dispatchOwners[skill.DispatchName]; duplicate {
-			return nil, resource.Errorf("%s: capabilities %s and %s produce the same target dispatch name %s",
-				id, prior, capabilityID, skill.DispatchName)
+	for _, componentID := range append(append([]string{}, c.rules...), c.commands...) {
+		component := r.docs[componentID]
+		for _, name := range resource.SortedKeys(component.Parameters) {
+			templateSkills = true
+			if err := addNeed(name, component.Parameters[name], componentID); err != nil {
+				return nil, err
+			}
 		}
-		dispatchOwners[skill.DispatchName] = capabilityID
-		sortedSkills = append(sortedSkills, skill)
+	}
+	// The agent's bindings are its own 'with' plus those of the agents it
+	// embeds, shallowest first (composite.with).
+	template := len(c.with) > 0
+	referenced := map[string]bool{}
+	if template {
+		for _, objective := range c.objectives {
+			for _, name := range referencedNames(objective.Content) {
+				referenced[name] = true
+			}
+		}
+		for _, name := range referencedNames(doc.Description) {
+			referenced[name] = true
+		}
+	}
+	bindings := map[string]*Binding{}
+	for _, name := range resource.SortedKeys(c.with) {
+		dataID := c.with[name].data
+		typeID, needed := need[name]
+		_, own := doc.With[name]
+		if own && !needed && !referenced[name] {
+			return nil, resource.Errorf("%s: 'with' binds '%s', but nothing the agent composes declares that parameter and its objectives do not reference it", doc.Path, name)
+		}
+		if err := r.checkData(doc.Path, name, dataID, typeID); err != nil {
+			return nil, err
+		}
+		bindings[name] = r.binding(name, dataID)
+	}
+	for _, name := range resource.SortedKeys(need) {
+		if _, bound := bindings[name]; !bound {
+			return nil, resource.Errorf("%s: parameter '%s' (%s, from %s) is unbound; bind it with 'with'", doc.Path, name, need[name], needSource[name])
+		}
+	}
+	instanceName := ""
+	if templateSkills {
+		suppliers := []string{}
+		for _, name := range resource.SortedKeys(bindings) {
+			b := bindings[name]
+			contextType := r.docs[b.ContextType]
+			if contextType.InstanceName != "" {
+				suppliers = append(suppliers, name)
+				instanceName = b.Values[contextType.InstanceName].Text
+			}
+		}
+		if len(suppliers) != 1 {
+			return nil, resource.Errorf("%s: the agent instantiates templates, so exactly one bound data document must supply an instance name (a context type with instanceName); found %d", doc.Path, len(suppliers))
+		}
 	}
 
-	resolved := &ResolvedAgent{
-		ID:                     id,
-		DisplayName:            displayName,
-		Description:            current.Description,
-		Language:               current.SchemaVersion,
-		Objectives:             objectives,
-		Emit:                   current.Emit,
-		Embeds:                 append([]string{}, current.Embeds...),
-		Satisfies:              satisfies,
-		Slots:                  slots,
-		SlotKeys:               slotKeys,
-		ContextFiles:           contexts,
-		Context:                contextRefs,
-		ContextObjects:         r.resolveContextObjects(contextRefs),
-		AllowedContextTypes:    allowedContextTypes,
-		HasAllowedContextTypes: hasAllowedContextTypes(embedded, current),
-		Skills:                 sortedSkills,
-		RequiredCapabilities:   requiredCapabilities,
-		Provenance:             provenance,
+	agent := &ResolvedAgent{
+		ID:           id,
+		DisplayName:  doc.DisplayName,
+		Embeds:       append([]string{}, doc.Embeds...),
+		InstanceName: instanceName,
+		Copilot:      doc.Copilot,
 	}
-	r.slotDepths[id] = slotDepths
-	r.skillDepths[id] = skillDepths
-	r.componentCache[id] = resolved
+	agent.Description, err = r.render(doc.Description, doc.Path+" description", template, bindings)
+	if err != nil {
+		return nil, err
+	}
+	if len([]rune(agent.Description)) > 1024 {
+		return nil, resource.Errorf("%s: description exceeds 1024 characters", doc.Path)
+	}
+	if !singleLine(agent.Description) {
+		return nil, resource.Errorf("%s: description must stay a single line after field references are resolved", doc.Path)
+	}
+	for _, objective := range c.objectives {
+		content, err := r.render(objective.Content, objective.Source, template, bindings)
+		if err != nil {
+			return nil, err
+		}
+		agent.Objectives = append(agent.Objectives, Objective{Source: objective.Source, Content: content})
+		agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "objectives", Source: objective.Source})
+	}
+	for _, docID := range c.documents {
+		resolved, err := r.resolveDocument(docID, "inline", bindings)
+		if err != nil {
+			return nil, err
+		}
+		agent.Documents = append(agent.Documents, resolved)
+		for _, source := range c.documentSource[docID] {
+			agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "context", Source: source})
+		}
+	}
+	for _, embed := range doc.Embeds {
+		agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "embeds", Source: embed})
+	}
+	for _, name := range resource.SortedKeys(bindings) {
+		agent.Bindings = append(agent.Bindings, bindings[name])
+		for _, source := range c.with[name].sources {
+			agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "with", Source: source})
+		}
+	}
+	for _, skillID := range skillIDs {
+		skill, err := r.resolveSkill(skillID, bindings, instanceName, c.bindingSource[skillID])
+		if err != nil {
+			return nil, err
+		}
+		agent.Skills = append(agent.Skills, skill)
+	}
+	sort.Slice(agent.Skills, func(i, j int) bool { return agent.Skills[i].Name < agent.Skills[j].Name })
+	for _, ruleID := range c.rules {
+		rule, err := r.resolveRule(ruleID, bindings, instanceName)
+		if err != nil {
+			return nil, err
+		}
+		agent.Rules = append(agent.Rules, rule)
+		for _, source := range c.nativeSource[ruleID] {
+			agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "rules", Source: source})
+		}
+	}
+	for _, commandID := range c.commands {
+		command, err := r.resolveCommand(commandID, bindings, instanceName)
+		if err != nil {
+			return nil, err
+		}
+		agent.Commands = append(agent.Commands, command)
+		for _, source := range c.nativeSource[commandID] {
+			agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "commands", Source: source})
+		}
+	}
+	for _, hookID := range c.hooks {
+		agent.Hooks = append(agent.Hooks, hookID)
+		for _, source := range c.nativeSource[hookID] {
+			agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "hooks", Source: source})
+		}
+	}
+	agent.Servers = append([]string{}, doc.Servers...)
+	for i := 1; i < len(agent.Skills); i++ {
+		if agent.Skills[i].Name == agent.Skills[i-1].Name {
+			return nil, resource.Errorf("%s: skills %s and %s both emit the skill name '%s'", doc.Path, agent.Skills[i-1].ImplementationID, agent.Skills[i].ImplementationID, agent.Skills[i].Name)
+		}
+	}
+	return agent, nil
+}
+
+// ResolveSkill resolves a skill shipped directly, without an agent. A
+// template cannot ship this way; only its instances can.
+func (r *Resolver) ResolveSkill(id string) (ResolvedSkill, error) {
+	skill := r.docs[id]
+	if skill == nil || skill.Kind != "skill" {
+		return ResolvedSkill{}, resource.Errorf("%s is not a skill in this build", id)
+	}
+	if skill.IsTemplate() {
+		return ResolvedSkill{}, resource.Errorf("%s is a template (it has unbound parameters), so it ships only as an instance: through an agent's 'with', or a skill that extends it and supplies 'with'", skill.Path)
+	}
+	return r.resolveSkill(id, nil, "", nil)
+}
+
+// ResolveProfile resolves a profile shipped without an agent. It must be
+// complete, hold no documents, and declare no parameters.
+func (r *Resolver) ResolveProfile(id string) (*ResolvedProfile, error) {
+	doc := r.docs[id]
+	if doc == nil || doc.Kind != "profile" {
+		return nil, resource.Errorf("%s is not a profile in this build", id)
+	}
+	c, err := r.compose(id, nil)
+	if err != nil {
+		return nil, err
+	}
+	if len(c.declared) > 0 {
+		return nil, resource.Errorf("%s: a profile that declares parameters is instantiated by an agent; link an agent that binds them", doc.Path)
+	}
+	if len(c.documents) > 0 {
+		return nil, resource.Errorf("%s: the profile holds document %s, which only an agent can deliver; link an agent that embeds the profile instead", doc.Path, c.documents[0])
+	}
+	skillIDs, err := c.finalSkills(doc.Path)
+	if err != nil {
+		return nil, err
+	}
+	profile := &ResolvedProfile{ID: id}
+	for _, skillID := range skillIDs {
+		skill, err := r.ResolveSkill(skillID)
+		if err != nil {
+			return nil, err
+		}
+		profile.Skills = append(profile.Skills, skill)
+	}
+	for _, ruleID := range c.rules {
+		rule, err := r.ResolveRule(ruleID)
+		if err != nil {
+			return nil, err
+		}
+		profile.Rules = append(profile.Rules, rule)
+	}
+	for _, commandID := range c.commands {
+		command, err := r.ResolveCommand(commandID)
+		if err != nil {
+			return nil, err
+		}
+		profile.Commands = append(profile.Commands, command)
+	}
+	profile.Hooks = append(profile.Hooks, c.hooks...)
+	return profile, nil
+}
+
+// resolveSkill renders one skill. agentBindings supply the parameters the
+// skill leaves unbound; a template is named after the instance.
+func (r *Resolver) resolveSkill(id string, agentBindings map[string]*Binding, instanceName string, boundBy []string) (ResolvedSkill, error) {
+	skill := r.docs[id]
+	bindings := map[string]*Binding{}
+	for _, name := range resource.SortedKeys(skill.Parameters) {
+		if dataID, bound := skill.With[name]; bound {
+			bindings[name] = r.binding(name, dataID)
+			continue
+		}
+		b, ok := agentBindings[name]
+		if !ok {
+			return ResolvedSkill{}, resource.Errorf("%s: parameter '%s' is unbound", skill.Path, name)
+		}
+		bindings[name] = b
+	}
+	name := resource.Leaf(id)
+	if skill.IsTemplate() {
+		if instanceName == "" {
+			return ResolvedSkill{}, resource.Errorf("%s: a template skill needs an instance name from its agent's data", skill.Path)
+		}
+		name = instanceName + "-" + name
+	}
+	template := len(skill.Parameters) > 0
+	templateID := ""
+	if skill.IsTemplate() {
+		templateID = id
+	} else if len(skill.OwnWith) > 0 {
+		base := r.docs[skill.Extends]
+		for base != nil && !base.IsTemplate() {
+			base = r.docs[base.Extends]
+		}
+		if base != nil {
+			templateID = base.ID
+		}
+	}
+	resolved := ResolvedSkill{
+		Name:             name,
+		ImplementationID: id,
+		TemplateID:       templateID,
+		CapabilityID:     skill.Binds,
+		Servers:          append([]string{}, skill.RequiresServers...),
+		InputSchema:      skill.InputSchema,
+		OutputSchema:     skill.OutputSchema,
+		HasInputSchema:   skill.HasInputSchema,
+		HasOutputSchema:  skill.HasOutputSchema,
+		Files:            append([]resource.SkillFile{}, skill.Files...),
+		Copilot:          skill.Copilot,
+	}
+	var err error
+	resolved.Description, err = r.render(skill.Description, skill.Path+" description", template, bindings)
+	if err != nil {
+		return ResolvedSkill{}, err
+	}
+	if len([]rune(resolved.Description)) > 1024 {
+		return ResolvedSkill{}, resource.Errorf("%s: description exceeds 1024 characters", skill.Path)
+	}
+	if !singleLine(resolved.Description) {
+		return ResolvedSkill{}, resource.Errorf("%s: description must stay a single line after field references are resolved", skill.Path)
+	}
+	resolved.Instructions, err = r.render(skill.Instructions, skill.Path, template, bindings)
+	if err != nil {
+		return ResolvedSkill{}, err
+	}
+	if len(skill.Variants) > 0 {
+		resolved.Variants = map[string]string{}
+		resolved.VariantServers = map[string][]string{}
+		for _, mode := range resource.SortedKeys(skill.Variants) {
+			text, err := r.render(skill.Variants[mode].Instructions, skill.Path+" variant "+mode, template, bindings)
+			if err != nil {
+				return ResolvedSkill{}, err
+			}
+			resolved.Variants[mode] = text
+			resolved.VariantServers[mode] = append([]string{}, skill.Variants[mode].RequiresServers...)
+		}
+	}
+	for _, ref := range skill.Context {
+		document, err := r.resolveDocument(ref.ID, ref.Render, bindings)
+		if err != nil {
+			return ResolvedSkill{}, err
+		}
+		resolved.Documents = append(resolved.Documents, document)
+	}
+	for _, name := range resource.SortedKeys(bindings) {
+		resolved.Bindings = append(resolved.Bindings, bindings[name])
+	}
+	for chain := skill; chain != nil; chain = r.docs[chain.Extends] {
+		resolved.Provenance = append(resolved.Provenance, ProvenanceEntry{Field: "implementation", Source: chain.ID})
+		if chain.Extends == "" {
+			break
+		}
+	}
+	for _, source := range boundBy {
+		resolved.Provenance = append(resolved.Provenance, ProvenanceEntry{Field: "binding", Source: source})
+	}
 	return resolved, nil
 }
 
-func (r *Resolver) require(id, kind string) (*resource.Document, error) {
-	doc, ok := r.resources[id]
-	if !ok || doc.Kind != kind {
-		return nil, resource.Errorf("Missing %s: %s", kind, id)
+func (r *Resolver) resolveDocument(id, render string, bindings map[string]*Binding) (ResolvedDocument, error) {
+	doc := r.docs[id]
+	content, err := r.render(doc.Content, doc.Path, len(doc.Parameters) > 0, bindings)
+	if err != nil {
+		return ResolvedDocument{}, err
 	}
-	return doc, nil
+	title := doc.DisplayName
+	if strings.TrimSpace(title) == "" {
+		title = resource.Leaf(id)
+	}
+	return ResolvedDocument{ID: id, Title: title, Content: content, Render: render}, nil
 }
 
-func (r *Resolver) requireEmbeddable(id string) (*resource.Document, error) {
-	doc, ok := r.resources[id]
-	if !ok || (doc.Kind != "agent" && doc.Kind != "profile") {
-		return nil, resource.Errorf("Missing embeddable resource: %s", id)
-	}
-	return doc, nil
-}
-
-// InstructionsFor returns the rendering for an invocation mode, falling back to
-// the unimodal or default instructions (ADR-0012).
-func (s ResolvedSkill) InstructionsFor(mode string) string {
-	if ins, ok := s.Variants[mode]; ok {
-		return ins
-	}
-	return s.Instructions
-}
-
-// ExposedSkills returns the resolved skills whose capability is exposed, in
-// dispatch order: the agent's public callable surface (ADR-0015). A callable
-// card (ADR-0018) is emitted from exactly these, not from every skill.
-func (a *ResolvedAgent) ExposedSkills() []ResolvedSkill {
-	out := []ResolvedSkill{}
-	for _, s := range a.Skills {
-		if s.Exposed {
-			out = append(out, s)
+func singleLine(value string) bool {
+	for _, r := range value {
+		if r < 0x20 || r == 0x7f {
+			return false
 		}
 	}
-	return out
-}
-
-// Leaf extracts the unversioned name segment of a resource id
-// (namespace/name@version -> name).
-func Leaf(id string) string {
-	parts := strings.Split(id, "/")
-	last := parts[len(parts)-1]
-	return strings.SplitN(last, "@", 2)[0]
-}
-
-func isBlank(s string) bool { return strings.TrimSpace(s) == "" }
-
-func isPromotedProvenance(entry ProvenanceEntry) bool {
-	if entry.Field == "displayName" || entry.Field == "description" {
-		return false
-	}
-	return !strings.HasPrefix(entry.Field, "satisfies.")
+	return !strings.ContainsRune(value, ' ') && !strings.ContainsRune(value, ' ')
 }

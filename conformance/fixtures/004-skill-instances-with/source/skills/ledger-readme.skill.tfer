@@ -1,0 +1,7 @@
+---
+description: Keep the Ledger README accurate.
+extends: skills/readme.skill.tfer
+with:
+  repo: data/ledger.context.tfer
+---
+Also link the ledger runbook.

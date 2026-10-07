@@ -1,0 +1,7 @@
+---
+schemaVersion: 7
+name: test/directory-case
+version: 1.0.0
+plugins:
+  - plugins/kit.plugin.tfer
+---

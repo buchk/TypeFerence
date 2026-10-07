@@ -1,0 +1,5 @@
+---
+description: Composed kit.
+agents:
+  - agents/lead.agent.tfer
+---

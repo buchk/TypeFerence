@@ -1,0 +1,6 @@
+---
+description: Billing README.
+extends: skills/readme.skill.tfer
+with:
+  repo: data/billing.context.tfer
+---

@@ -1,6 +1,0 @@
----
-displayName: Payments Service
-body:
-  type: text
-  required: true
----

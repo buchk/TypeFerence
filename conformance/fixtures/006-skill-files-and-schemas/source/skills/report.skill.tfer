@@ -1,0 +1,10 @@
+---
+description: Report on a failed run.
+files:
+  - files/report/template.md
+  - path: files/report/collect.ps1
+    as: scripts/collect.ps1
+inputSchema: '{"type":"object","properties":{"run":{"type":"string"}},"required":["run"]}'
+outputSchema: '{"type":"object","properties":{"diagnosis":{"type":"string"},"confidence":{"enum":["low","medium","high"]}},"required":["diagnosis","confidence"]}'
+---
+Use references/template.md. Return JSON matching references/output.schema.json.

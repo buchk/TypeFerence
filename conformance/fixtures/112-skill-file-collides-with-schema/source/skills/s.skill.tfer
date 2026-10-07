@@ -1,0 +1,8 @@
+---
+description: S.
+files:
+  - path: files/schema.json
+    as: references/output.schema.json
+outputSchema: '{"type":"object"}'
+---
+S.

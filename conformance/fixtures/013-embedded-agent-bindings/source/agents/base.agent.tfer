@@ -1,0 +1,8 @@
+---
+description: Base operations agent.
+embeds:
+  - profiles/kit.profile.tfer
+with:
+  team: data/alpha.context.tfer
+---
+You support {{team.name}}.

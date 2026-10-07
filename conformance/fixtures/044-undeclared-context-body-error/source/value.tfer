@@ -1,9 +1,0 @@
----
-schemaVersion: 5
-kind: context
-id: conformance/context/value@1.0.0
-contextType: conformance/context-types/fields-only@1.0.0
-values:
-  owner: operations
----
-This body has no declared text-body type.

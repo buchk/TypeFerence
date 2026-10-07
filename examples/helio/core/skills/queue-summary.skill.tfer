@@ -1,0 +1,12 @@
+---
+description: Summarize open requests in the {{team.name}} ticket queue.
+parameters:
+  team: context-types/team.contexttype.tfer
+requiresServers:
+  - servers/helio-tickets.server.tfer
+copilot:
+  argumentHint: "[age filter]"
+---
+Summarize open requests in the {{team.queue}} queue for {{team.name}}. Group
+them by age, and call out anything that would block a {{team.tier}}-tier
+release. Read tickets through the helio-tickets server; never change them.

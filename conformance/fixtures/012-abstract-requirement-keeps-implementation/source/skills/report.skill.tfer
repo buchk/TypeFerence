@@ -1,0 +1,5 @@
+---
+description: Write the report.
+binds: capabilities/report.capability.tfer
+---
+Write the report.

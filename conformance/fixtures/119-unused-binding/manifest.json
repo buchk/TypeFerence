@@ -1,0 +1,4 @@
+{
+  "description": "An agent cannot bind a parameter that nothing it composes declares or references.",
+  "expect": "error"
+}

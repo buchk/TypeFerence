@@ -1,0 +1,4 @@
+{
+  "description": "exec runs an executable directly and cannot be combined with a shell command (ADR-0040).",
+  "expect": "error"
+}

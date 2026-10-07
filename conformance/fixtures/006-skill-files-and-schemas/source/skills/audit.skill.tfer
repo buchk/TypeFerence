@@ -1,0 +1,5 @@
+---
+description: Audit a change.
+binds: capabilities/audit.capability.tfer
+---
+List findings as JSON matching references/output.schema.json.

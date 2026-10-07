@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/buchk/TypeFerence/conformance/schemas/typeference/build.schema.json",
+  "title": "TypeFerence build.json",
+  "description": "The target's integrity index (.typeference/build.json, schemaVersion 2): one entry per plugin and mode.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "target",
+    "sourceDigest",
+    "artifacts"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "target": {
+      "const": "agent-plugin"
+    },
+    "sourceDigest": {
+      "$ref": "#/$defs/digest"
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "mode",
+          "path",
+          "sourceDigest",
+          "digest"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "mode": {
+            "enum": [
+              "manual",
+              "pipeline"
+            ]
+          },
+          "path": {
+            "$ref": "#/$defs/name"
+          },
+          "sourceDigest": {
+            "$ref": "#/$defs/digest"
+          },
+          "digest": {
+            "$ref": "#/$defs/digest"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9.-]*(/[a-z0-9][a-z0-9.-]*)+@[^@\\s]+$"
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  }
+}

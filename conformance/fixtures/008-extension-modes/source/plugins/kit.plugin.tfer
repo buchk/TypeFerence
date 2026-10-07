@@ -1,0 +1,8 @@
+---
+description: Status kit.
+skills:
+  - skills/payments-status.skill.tfer
+modes:
+  - manual
+  - pipeline
+---

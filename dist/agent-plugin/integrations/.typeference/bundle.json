@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 3,
+  "id": "helio/integrations/plugins/integrations@0.3.0",
+  "name": "integrations",
+  "mode": "manual",
+  "version": "0.3.0",
+  "description": "README upkeep skills for Helio\u0027s integration repositories.",
+  "sourceDigest": "sha256:0a575a6a141af36461feacd30b5c73ed5cbd2a959703ca8a6597bce91398af1e",
+  "dependencies": [
+    {
+      "name": "helio/core",
+      "version": "3.1.0",
+      "digest": "sha256:0887f5deff78efb00c40b8a1232c78f33150c28cf9ac50a098190c433711b874"
+    }
+  ],
+  "agents": [],
+  "skills": [
+    {
+      "name": "billing-readme",
+      "implementationId": "helio/integrations/skills/billing-readme@0.3.0",
+      "templateId": "helio/core/skills/integration-readme@3.1.0",
+      "capabilityId": "helio/core/skills/integration-readme@3.1.0",
+      "description": "Keep the Billing integration README accurate.",
+      "bindings": [
+        {
+          "parameter": "repo",
+          "data": "helio/integrations/data/billing@0.3.0",
+          "contextType": "helio/core/context-types/integration-repo@3.1.0",
+          "values": {
+            "dataClass": "restricted",
+            "owner": "Revenue Systems",
+            "pipeline": "billing-release",
+            "system": "Billing"
+          }
+        }
+      ],
+      "servers": [],
+      "documents": [],
+      "files": [],
+      "provenance": [
+        {
+          "field": "implementation",
+          "source": "helio/integrations/skills/billing-readme@0.3.0"
+        },
+        {
+          "field": "implementation",
+          "source": "helio/core/skills/integration-readme@3.1.0"
+        }
+      ]
+    },
+    {
+      "name": "ledger-readme",
+      "implementationId": "helio/integrations/skills/ledger-readme@0.3.0",
+      "templateId": "helio/core/skills/integration-readme@3.1.0",
+      "capabilityId": "helio/core/skills/integration-readme@3.1.0",
+      "description": "Keep the Ledger integration README accurate.",
+      "bindings": [
+        {
+          "parameter": "repo",
+          "data": "helio/integrations/data/ledger@0.3.0",
+          "contextType": "helio/core/context-types/integration-repo@3.1.0",
+          "values": {
+            "dataClass": "internal",
+            "owner": "Finance Platform",
+            "pipeline": "ledger-release",
+            "system": "Ledger"
+          }
+        }
+      ],
+      "servers": [],
+      "documents": [],
+      "files": [],
+      "provenance": [
+        {
+          "field": "implementation",
+          "source": "helio/integrations/skills/ledger-readme@0.3.0"
+        },
+        {
+          "field": "implementation",
+          "source": "helio/core/skills/integration-readme@3.1.0"
+        }
+      ]
+    }
+  ],
+  "servers": [],
+  "rules": [],
+  "commands": [],
+  "hooks": [],
+  "lspServers": []
+}

@@ -1,8 +1,0 @@
----
-displayName: Correspondent
-description: Contract for agents that assess and route communications.
-requiresSlots:
-  principal: context-types/principal.contexttype.tfer
-requiresCapabilities:
-  - capabilities/triage-message.capability.tfer
----

@@ -1,0 +1,479 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/buchk/TypeFerence/conformance/schemas/copilot/hooks.schema.json",
+  "title": "Copilot plugin hooks.json as TypeFerence reads the Copilot CLI reference",
+  "description": "com.github.copilot/hooks/hooks.json. Not published by GitHub; this records TypeFerence's reading of the Copilot CLI plugin reference (ADR-0040) and must follow it when it changes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "hooks"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "hooks": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "agentStop": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "allOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/command"
+                  },
+                  {
+                    "$ref": "#/$defs/http"
+                  }
+                ]
+              },
+              {
+                "not": {
+                  "required": [
+                    "matcher"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "errorOccurred": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "allOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/command"
+                  },
+                  {
+                    "$ref": "#/$defs/http"
+                  }
+                ]
+              },
+              {
+                "not": {
+                  "required": [
+                    "matcher"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "notification": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/command"
+              },
+              {
+                "$ref": "#/$defs/http"
+              }
+            ]
+          }
+        },
+        "permissionRequest": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/command"
+              },
+              {
+                "$ref": "#/$defs/http"
+              }
+            ]
+          }
+        },
+        "postToolUse": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/command"
+              },
+              {
+                "$ref": "#/$defs/http"
+              }
+            ]
+          }
+        },
+        "postToolUseFailure": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "allOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/command"
+                  },
+                  {
+                    "$ref": "#/$defs/http"
+                  }
+                ]
+              },
+              {
+                "not": {
+                  "required": [
+                    "matcher"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "preCompact": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/command"
+              },
+              {
+                "$ref": "#/$defs/http"
+              }
+            ]
+          }
+        },
+        "preToolUse": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/command"
+              },
+              {
+                "$ref": "#/$defs/http"
+              }
+            ]
+          }
+        },
+        "sessionEnd": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "allOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/command"
+                  },
+                  {
+                    "$ref": "#/$defs/http"
+                  }
+                ]
+              },
+              {
+                "not": {
+                  "required": [
+                    "matcher"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "sessionStart": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "allOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/command"
+                  },
+                  {
+                    "$ref": "#/$defs/http"
+                  },
+                  {
+                    "$ref": "#/$defs/prompt"
+                  }
+                ]
+              },
+              {
+                "not": {
+                  "required": [
+                    "matcher"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "subagentStart": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/command"
+              },
+              {
+                "$ref": "#/$defs/http"
+              }
+            ]
+          }
+        },
+        "subagentStop": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "allOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/command"
+                  },
+                  {
+                    "$ref": "#/$defs/http"
+                  }
+                ]
+              },
+              {
+                "not": {
+                  "required": [
+                    "matcher"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "userPromptSubmitted": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "allOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/command"
+                  },
+                  {
+                    "$ref": "#/$defs/http"
+                  }
+                ]
+              },
+              {
+                "not": {
+                  "required": [
+                    "matcher"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "userPromptTransformed": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "allOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/command"
+                  },
+                  {
+                    "$ref": "#/$defs/http"
+                  }
+                ]
+              },
+              {
+                "not": {
+                  "required": [
+                    "matcher"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "command"
+        },
+        "matcher": {
+          "type": "string"
+        },
+        "bash": {
+          "type": "string"
+        },
+        "powershell": {
+          "type": "string"
+        },
+        "command": {
+          "type": "string"
+        },
+        "exec": {
+          "type": "string"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "cwd": {
+          "type": "string"
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "timeoutSec": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "bash"
+          ]
+        },
+        {
+          "required": [
+            "powershell"
+          ]
+        },
+        {
+          "required": [
+            "command"
+          ]
+        },
+        {
+          "required": [
+            "exec"
+          ]
+        }
+      ],
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "exec"
+            ]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "bash"
+                  ]
+                },
+                {
+                  "required": [
+                    "powershell"
+                  ]
+                },
+                {
+                  "required": [
+                    "command"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "args"
+            ]
+          },
+          "then": {
+            "required": [
+              "exec"
+            ]
+          }
+        }
+      ]
+    },
+    "http": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "url"
+      ],
+      "properties": {
+        "type": {
+          "const": "http"
+        },
+        "matcher": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://"
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "allowedEnvVars": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "timeoutSec": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "prompt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "prompt"
+      ],
+      "properties": {
+        "type": {
+          "const": "prompt"
+        },
+        "prompt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timeoutSec": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,5 @@
+---
+parameters:
+  team: context-types/team.contexttype.tfer
+---
+Route {{team.name}} escalations to the team lead.

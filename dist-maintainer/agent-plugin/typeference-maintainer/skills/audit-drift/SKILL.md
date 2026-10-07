@@ -1,12 +1,13 @@
 ---
 name: audit-drift
-description: "Confirms the committed AGENTS.md and maintainer bundle are exact build artifacts of this definition."
+description: "Confirms the committed AGENTS.md and maintainer plugin are exact build artifacts of this definition."
 ---
 
-Run `typeference diff agents/maintainer --against dist-maintainer` from the
-repository root, then byte-compare the repository-root AGENTS.md against
-dist-maintainer/neutral/typeference-maintainer/AGENTS.md. Report clean=true only
-when the diff exits 0 and the byte comparison matches. Any drift between the
-definition and its committed artifacts is a broken build: regenerate with
-`make selfhost` and commit definition and artifacts together, or revert the
-stray edit to the generated files.
+Run `make selfhost-check` from the repository root. It rebuilds this
+definition, diffs the result against dist-maintainer, and byte-compares the
+repository-root AGENTS.md with the agent file it is generated from. Report
+clean=true only when both checks pass, as JSON matching
+references/output.schema.json. Any drift between the definition and its
+committed artifacts is a broken build: regenerate with `make selfhost` and
+commit definition and artifacts together, or revert the stray edit to the
+generated files.

@@ -1,0 +1,4 @@
+{
+  "description": "One lowercase destination path cannot name both a file and a directory (ADR-0039).",
+  "expect": "error"
+}

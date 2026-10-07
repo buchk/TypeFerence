@@ -1,9 +1,0 @@
----
-schemaVersion: 5
-kind: profile
-id: conformance/profiles/normed@1.0.0
-displayName: Normed Profile
-description: Holds its norm as typed context instead of a string list.
-context:
-  - conformance/context/review-norm@1.0.0
----

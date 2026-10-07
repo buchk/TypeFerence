@@ -1,5 +1,4 @@
 ---
 displayName: Every commit builds and passes the test suite and the determ...
-contextType: context-types/norms.contexttype.tfer
 ---
 Every commit builds and passes the test suite and the determinism suite.

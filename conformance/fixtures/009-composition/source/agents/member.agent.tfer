@@ -1,0 +1,6 @@
+---
+description: A team member agent.
+embeds:
+  - profiles/team.profile.tfer
+---
+Answer team questions.

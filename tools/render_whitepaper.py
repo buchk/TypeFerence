@@ -238,7 +238,7 @@ def decorate(canvas, doc):
     page = canvas.getPageNumber()
     canvas.setStrokeColor(colors.HexColor("#D8DBE8")); canvas.line(0.72*inch, 0.55*inch, 7.78*inch, 0.55*inch)
     canvas.setFont(BODY, 7.5); canvas.setFillColor(MUTED)
-    canvas.drawString(0.72*inch, 0.36*inch, "TypeFerence - typed coherence for portable organizational agents")
+    canvas.drawString(0.72*inch, 0.36*inch, "TypeFerence - authoring and reuse for organizational Copilot plugins")
     canvas.drawRightString(7.78*inch, 0.36*inch, str(page))
     canvas.restoreState()
 
@@ -246,13 +246,13 @@ def decorate(canvas, doc):
 def main():
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     doc = SimpleDocTemplate(str(OUTPUT), pagesize=LETTER, rightMargin=0.72*inch, leftMargin=0.72*inch, topMargin=0.68*inch, bottomMargin=0.72*inch,
-                            title="TypeFerence: A typed coherence layer for portable organizational agents", author="TypeFerence contributors",
+                            title="TypeFerence: An authoring and reuse layer for organizational Copilot plugins", author="TypeFerence contributors",
                             invariant=1)
     doc.build(parse_markdown(SOURCE.read_text(encoding="utf-8")), onFirstPage=decorate, onLaterPages=decorate)
     reader = PdfReader(str(OUTPUT))
-    if len(reader.pages) < 6: raise RuntimeError("Whitepaper unexpectedly short")
+    if len(reader.pages) < 3: raise RuntimeError("Whitepaper unexpectedly short")
     extracted = "".join(page.extract_text() or "" for page in reader.pages)
-    for phrase in ("TypeFerence", "Composition over ancestry", "deterministic compiler", "Conclusion"):
+    for phrase in ("TypeFerence", "Documents and data", "deterministic compiler", "Boundaries"):
         if phrase not in extracted: raise RuntimeError(f"Missing PDF text: {phrase}")
     print(f"Rendered {OUTPUT} ({len(reader.pages)} pages)")
 

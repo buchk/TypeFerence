@@ -1,5 +1,0 @@
----
-displayName: Evidence norm
-contextType: context-types/norms.contexttype.tfer
----
-Prefer evidence from tests, diffs, and version control over recollection.

@@ -1,0 +1,9 @@
+---
+description: Triage kit.
+skills:
+  - skills/triage.skill.tfer
+  - skills/plain.skill.tfer
+modes:
+  - manual
+  - pipeline
+---

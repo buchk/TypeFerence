@@ -1,0 +1,6 @@
+---
+description: Keep the Ledger integration README accurate.
+extends: helio/core:skills/integration-readme.skill.tfer
+with:
+  repo: data/ledger.context.tfer
+---

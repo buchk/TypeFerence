@@ -1,5 +1,4 @@
 ---
 displayName: Commit messages are conventional and written for a critical ...
-contextType: context-types/norms.contexttype.tfer
 ---
 Commit messages are conventional and written for a critical human reader.
