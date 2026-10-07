@@ -20,17 +20,16 @@ Plugins 1.0 is the default output; Copilot-only features are explicit opt-ins
 emitted into `com.github.copilot/`. Copilot and GitHub install, host, enable,
 authenticate, and run everything. TypeFerence does not.
 
-The motivating deployment is an enterprise AI suite with two paths into the
-same packaged expertise:
+An organization typically has two paths into the same packaged expertise:
 
-- **Interactive:** people install plugins from one internal marketplace.
+- **Interactive:** people install plugins from one marketplace.
 - **Automated:** pipelines run Copilot CLI with a skill against trusted
   evidence. A runner validates the skill's result against a versioned schema
   before it is stored or acted on.
 
-TypeFerence owns only the packaged-expertise part of that suite. Policy, usage
-reporting, pipeline templates, runners, and integrations are runtime systems
-and stay outside it.
+TypeFerence owns only the packaged expertise. Policy, usage reporting,
+pipeline templates, runners, and integrations are runtime systems and stay
+outside it.
 
 The test for every item below is whether it serves one of these four:
 
@@ -69,7 +68,7 @@ The test for every item below is whether it serves one of these four:
 | `inputSchema` and `outputSchema` | Runner result contracts | Must reach output (Add 6) |
 | `agent-plugin` target and `marketplace.json` | The product | Already emits Copilot's marketplace format |
 | Organization marketplace (ADR-0034), `validate --candidate` | Cross-team name and version guarantees | Unchanged |
-| Packages: `pack`, `restore`, `update`, lockfile | Extension needs base-skill source across repositories | Azure Artifacts is the primary feed, with JFrog Artifactory next; filesystem, HTTP, JFrog and Azure Artifacts routes already exist. Add a Git route (Change). |
+| Packages: `pack`, `restore`, `update`, lockfile | Extension needs base-skill source across repositories | Filesystem, HTTP, JFrog and Azure Artifacts routes already exist. Add a Git route (Change). |
 | Compatibility report | Competing members of one skill family | Unchanged |
 | Canonicalization, digests, provenance, `diff` | Diff as governance | Unchanged |
 | `import` | Onboarding existing plugins | Must grow with the supported surface (Add 7) |
@@ -91,7 +90,7 @@ The test for every item below is whether it serves one of these four:
 | Package routes | Add a `git` route: a dependency resolves from a repository and tag, and the lockfile records the resolved commit and package digest. Feeds stay for organizations that want them. |
 | Slots | Repurposed as the named-parameter mechanism for templates (Add 1), rather than an agent-only feature. |
 | Agent emission | Emits the agent frontmatter Copilot supports (Add 3), not only `name` and `description`. |
-| Example corpus | Replace `examples/helio` with a fictional example shaped like the motivating suite: an enterprise core library, a team plugin package with template instances, a pipeline-mode skill with an output schema, an MCP server, and a marketplace package. |
+| Example corpus | Replace `examples/helio` with a fictional example showing both paths: an enterprise core library, a team plugin package with template instances, a pipeline-mode skill with an output schema, an MCP server, and a marketplace package. |
 
 ## Add
 
@@ -207,11 +206,6 @@ and is reworked.
 - **Git route details.** Tags only, or branches too, which would need
   `update` to re-resolve? How do credentials reach a private repository in
   CI? Presumably through Git's own credential helpers, never through source.
-- **Form UI output.** The natural design: a form generated from a context
-  type writes one `.context.tfer` data file and opens a pull request against
-  the team's package, so Git stays the source of truth and the compiler
-  validates. Open questions are where the UI is hosted and whether it can
-  create a whole new team package or only add instances.
 - **Where the "render as file" switch lives.** On the context, on its type as
   a default, or on the skill's reference to it. The reference is the most
   flexible, because the same context could be inline in one skill and a file

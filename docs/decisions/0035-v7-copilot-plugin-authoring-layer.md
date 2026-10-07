@@ -16,12 +16,11 @@ deployment linking, signed source packages, structural interfaces, a
 behavioural equivalence harness, and a fully typed source language with no
 untyped prose. Version 6 then made GitHub Agent Plugins the primary output.
 
-The organization this direction serves standardizes on GitHub Copilot and
-wants one thing from the language: write its skills, agents, and MCP servers
-once, specialize them per team, and ship them through one internal
-marketplace. They should not collide or drift, and Copilot plugins should be
-installable everywhere. That organization has two paths into the same
-packaged expertise:
+An organization that standardizes on GitHub Copilot wants one thing from the
+language: write its skills, agents, and MCP servers once, specialize them per
+team, and ship them through one marketplace. They should not collide or
+drift, and Copilot plugins should be installable everywhere. Such an
+organization typically has two paths into the same packaged expertise:
 
 - people installing plugins interactively;
 - pipelines running Copilot CLI with a skill against trusted evidence, where a
@@ -30,8 +29,8 @@ packaged expertise:
 Nobody has asked for the general platform. Several of its guarantees also
 defend against something that can't be prevented. A sealed skill can be
 replaced by writing a new one. A ban on untyped prose blocks nothing, because
-a model accepts any text a user types. Meanwhile, things the organization
-needs immediately have no home in version 6:
+a model accepts any text a user types. Meanwhile, things such organizations
+need immediately have no home in version 6:
 
 - reference files beside a skill;
 - per-team instances of a shared template;
@@ -39,9 +38,9 @@ needs immediately have no home in version 6:
 - output contracts the runner can see.
 
 Microsoft's APM (Agent Package Manager) was evaluated as a foundation instead.
-APM installs and governs agent configuration in every repository. The
-organization instead relies on GitHub's marketplace and Copilot's own
-installer, so only APM's producer side would be used. That side does not emit
+APM installs and governs agent configuration in every repository. An
+organization that relies on GitHub's marketplace and Copilot's own installer
+would use only APM's producer side. That side does not emit
 Copilot's marketplace format, cannot combine agents with MCP configuration in
 one plugin, and has no extension or templating. Its contribution process also
 gates new features on maintainer review capacity.
@@ -111,8 +110,7 @@ gates new features on maintainer review capacity.
 6. **A `git` package route.** Alongside the existing filesystem, HTTP, JFrog,
    and Azure Artifacts routes, a route may resolve packages from a Git
    repository by tag. The lockfile is unchanged: it records the package digest,
-   which restore verifies whatever the route. Azure Artifacts is the expected
-   primary feed, with JFrog Artifactory next.
+   which restore verifies whatever the route.
 
 ## Consequences
 
@@ -120,8 +118,7 @@ gates new features on maintainer review capacity.
   The inventory estimates about a third of the Go code and about
   three-quarters of the fixtures go. The resolver, packages, plugin emitter,
   and marketplace build remain.
-- Every guarantee the organization relies on daily is still checked at build
-  time. The guarantees that only constrained intentional authorship are gone.
+- Every guarantee authors rely on daily is still checked at build time. The guarantees that only constrained intentional authorship are gone.
 - Supporting a second host later means adding an adapter. Copilot-only output
   is already explicit opt-in (ADR-0037), and the portable Agent Plugins core
   is the default.

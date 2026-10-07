@@ -87,4 +87,5 @@ reference, and the maintainer plugin, then validates all of them, including
 the committed `dist/` and `dist-maintainer/`.
 
 What this does not prove: that Copilot loads the output the way the reference
-says. That remains a pilot check; ADR-0040 lists the open questions.
+says. That still has to be confirmed in Copilot itself; ADR-0040 lists the
+open questions.

@@ -14,6 +14,10 @@ tab in a browser.
 
 ## Version 7 follow-ups
 
+Consumer workflows built on TypeFerence's output, such as forms that open pull
+requests, publishing pipelines, and marketplace installation, belong to the
+adopting organization and are out of scope.
+
 - [ ] Copilot behaviours to confirm for native components (ADR-0040):
   plugin rules active by default and loaded in `-p` runs, and plugin hooks
   on Copilot cloud agent.
@@ -22,11 +26,6 @@ tab in a browser.
 - [ ] Decide how `list<string>` fields render if a real case needs them in
   text.
 - [ ] Decide whether one agent may bind two values to one parameter name.
-- [ ] A hosted form UI that writes a data document and opens a pull request
-  against a team's package (ADR-0036).
-- [ ] Copilot behaviours to confirm in a pilot: repository-enabled plugin
-  auto-install in non-interactive runs, and OAuth sign-in for plugin MCP
-  servers with the organization's identity provider.
 
 ## Near term
 
@@ -38,10 +37,6 @@ tab in a browser.
 - [ ] Isolate mutable resolver normalization state from loaded source documents.
   Source identity is already computed from canonical source files, but a cloned
   resolver input would make that boundary structural rather than conventional.
-- [ ] Verify how Copilot CLI authenticates to a private marketplace in a CI
-  job, whose default token reads only its own repository (ADR-0034).
-- [ ] Automate marketplace pin bumps: when a team publishes a package, open
-  a pull request that updates the marketplace package's pin and lockfile.
 - [ ] Decide whether `typeference import` should recover shared structure
   (profiles, extensions) from near-duplicate imported skills, or leave that to
   authors (ADR-0033).
