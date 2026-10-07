@@ -27,11 +27,11 @@ model-invoked skills, agents, pipelines), not only agent files.
 3. **Copilot-only fields are explicit.** A `copilot` mapping holds skill and
    agent frontmatter Copilot reads beyond Agent Skills. Nothing is inferred:
    `allowed-tools` is never derived from server requirements, and an agent
-   that declares `tools` must list every server its skills need; build fails
-   on a gap and never adds a grant. `tools: []` means no tools.
+   that declares `tools` must list every server its plugin's skills need;
+   build fails on a gap and never adds a grant. `tools: []` means no tools.
 4. **Native components.** Rules, commands, hooks, and LSP servers are document
    kinds emitted into `com.github.copilot/`. Enterprise defaults are rules
-   held by profiles, so they apply wherever the plugin is active. Build checks
+   held by plugins and profiles, so they apply wherever the plugin is active. Build checks
    what Copilot would otherwise ignore silently (hook events and matchers,
    prompt-hook placement, HTTPS hooks, LSP launch fields).
 5. **Plugin metadata.** A plugin's `author`, `homepage`, `repository`,

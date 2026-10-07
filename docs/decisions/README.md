@@ -16,7 +16,7 @@ Format: `NNNN-short-title.md` with **Status**, **Context**, **Decision**,
 | [0003](0003-determinism-and-golden-digests.md) | Deterministic output, enforced by golden digests |
 | [0004](0004-packages-and-one-marketplace-build.md) | Source packages and one marketplace build |
 | [0005](0005-closed-tfer-grammar.md) | A closed `.tfer` grammar with schema-directed scalars |
-| [0006](0006-composition-and-templates.md) | Composition: plugins link, profiles embed, skills extend, templates instantiate |
+| [0006](0006-composition-and-templates.md) | Composition: plugins are the binding root, profiles embed, agents and skills extend |
 | [0007](0007-build-emits-complete-host-configuration.md) | Build emits complete Copilot configuration |
 | [0008](0008-authoring-tools.md) | Authoring tools: import, the setup wizard, and the playground |
 

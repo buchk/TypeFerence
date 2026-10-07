@@ -1,7 +1,7 @@
 # TypeFerence Draft Specification
 
-Status: experimental reference draft, amended October 2026 to version 7. A
-version 7 source package declares `schemaVersion: 7` in its project manifest.
+Status: experimental reference draft, amended October 2026 to version 8. A
+version 8 source package declares `schemaVersion: 8` in its project manifest.
 Its resource documents carry no schema version, kind, or identity field; the
 manifest and each document's path supply them. Unsupported fields and schema
 versions are errors rather than extension points.
@@ -60,11 +60,11 @@ a deployment fact into one makes it source.
 
 ## Project manifest
 
-A version 7 source root contains `typeference.tfer`:
+A version 8 source root contains `typeference.tfer`:
 
 ```text
 ---
-schemaVersion: 7
+schemaVersion: 8
 name: helio/payments
 version: 1.4.0
 marketplace:
@@ -85,7 +85,7 @@ exports:
 ```
 
 The manifest is written in the frontmatter grammar and has no body.
-`schemaVersion` is the unquoted token `7`. `name` is a lowercase package name of
+`schemaVersion` is the unquoted token `8`. `name` is a lowercase package name of
 two or more `/`-separated segments, each matching `[a-z0-9][a-z0-9.-]*`; the
 name `typeference/builtin` and every name beneath it are reserved. `version` and
 every dependency version are exact semantic versions (`MAJOR.MINOR.PATCH` with
@@ -102,30 +102,31 @@ on itself.
   files").
 - `plugins` lists the plugins the package ships: its own plugin documents
   (`.plugin.tfer` paths), and plugins of direct dependencies written
-  `<package>:<path>` (see "Organization marketplaces").
+  `<package>:<path>` (see "Organization marketplaces"). The package's own
+  plugins are also the plugins other packages may embed.
 - `exports` lists the package's own documents, other than plugins, that other
   packages may reference.
 
 A manifest lists at least one plugin or export and names each at most once. A
 package with no plugins is a library. Unknown fields, deployment fields, feed
 addresses, and credentials are errors. Product entry points reject a source
-root whose manifest is absent or does not declare `schemaVersion: 7`, naming
+root whose manifest is absent or does not declare `schemaVersion: 8`, naming
 this specification.
 
 ## Documents, kinds, and identity
 
-A version 7 source document is a `.tfer` file whose suffix is its kind:
+A version 8 source document is a `.tfer` file whose suffix is its kind:
 
 | Suffix | Kind | Role |
 | --- | --- | --- |
-| `.agent.tfer` | agent | a concrete composition: identity, objectives, documents, skills, parameter bindings |
-| `.profile.tfer` | profile | a reusable, possibly parameterized composition |
+| `.agent.tfer` | agent | a Copilot custom agent: identity, objectives, and held documents |
+| `.profile.tfer` | profile | a reusable, possibly incomplete or parameterized composition that plugins embed |
 | `.capability.tfer` | capability | input and output schemas shared by unrelated skills |
 | `.skill.tfer` | skill | instructions emitted as `SKILL.md`, possibly a template |
 | `.server.tfer` | server | an MCP server that skills require |
 | `.contexttype.tfer` | contextType | the shape of a family of data documents |
 | `.context.tfer` | context | a document (Markdown) or data (typed values) |
-| `.plugin.tfer` | plugin | an installable package: the agents, profiles, skills, and native components that ship together |
+| `.plugin.tfer` | plugin | an installable package and its binding root: the agents, skills, documents, data, and native components that ship together |
 | `.rule.tfer` | rule | always-on Copilot guidance, emitted as a rule |
 | `.command.tfer` | command | a Copilot slash command |
 | `.hook.tfer` | hook | one Copilot hook entry and the event it handles |
@@ -157,8 +158,10 @@ A reference names a document by path:
   a reference with the referencing package's own name is an error.
 
 Each reference field accepts the kinds listed for it below, checked by suffix;
-a reference to any other kind is an error. Plugins are listed only by a
-manifest and are never referenced from a document. A reference list names each
+a reference to any other kind is an error. A plugin is referenced only from a
+plugin's `embeds`, and only when its package's manifest lists it among the
+package's own plugins: a package-qualified plugin reference names a plugin the
+dependency's manifest lists, not an export. A reference list names each
 document at most once.
 
 Resolution is exact. It never searches, never selects a similarly named
@@ -189,7 +192,7 @@ A body belongs to its document's kind:
 - a unimodal skill's body is its instructions. A multimodal skill keeps each
   rendering under `variants` and MUST NOT have a body;
 - a document context's body is its Markdown text and MUST NOT be empty;
-- an agent's body is its objectives (see "Agents and objectives").
+- an agent's body is its objectives (see "Agents").
 
 Every other kind, including data contexts, and the manifest, rejects a
 non-whitespace body.
@@ -271,15 +274,15 @@ marketplace entries, and bundle metadata, never in an instruction body.
 
 | Kind | Fields |
 | --- | --- |
-| agent | `displayName`, `description`, `embeds` (profiles or agents), `context` (documents), `skills` (bindings), `with` (parameter name to data), `copilot`, `rules` (rules), `commands` (commands), `hooks` (hooks), `servers` (servers scoped to the agent) |
-| profile | `displayName`, `description`, `embeds` (profiles), `parameters` (parameter name to context type), `context` (documents), `skills` (bindings), `rules` (rules), `commands` (commands), `hooks` (hooks) |
+| agent | `displayName`, `description`, `extends` (agent), `context` (documents), `copilot`, `servers` (servers scoped to the agent) |
+| profile | `displayName`, `description`, `embeds` (profiles), `parameters` (parameter name to context type), `agents` (agents), `context` (documents), `skills` (bindings), `rules` (rules), `commands` (commands), `hooks` (hooks), `lspServers` (LSP servers) |
 | capability | `displayName`, `description`, `inputSchema`, `outputSchema` |
 | skill | `displayName`, `description`, `binds` (capability), `extends` (skill), `parameters`, `with`, `inputSchema`, `outputSchema`, `context` (document entries), `files`, `requiresServers` (servers), `variants`, `copilot` |
 | server | `displayName`, `description`, `transport`, `command`, `args`, `env`, `cwd`, `url`, `headers` |
 | contextType | `displayName`, `description`, `instanceName`, `fields` |
 | context (document) | `displayName`, `description`, `parameters` |
 | context (data) | `displayName`, `description`, `contextType` (context type), `values` |
-| plugin | `description`, `agents` (agents), `profiles` (profiles), `skills` (skills), `modes`, `rules` (rules), `commands` (commands), `hooks` (hooks), `lspServers` (LSP servers), `author`, `homepage`, `repository`, `license`, `keywords`, `category`, `tags`, `files` |
+| plugin | `description`, `embeds` (profiles or plugins), `agents` (agents), `context` (documents), `skills` (bindings), `with` (parameter name to data), `rules` (rules), `commands` (commands), `hooks` (hooks), `lspServers` (LSP servers), `modes`, `author`, `homepage`, `repository`, `license`, `keywords`, `category`, `tags`, `files` |
 | rule | `displayName`, `description`, `parameters`, `paths` |
 | command | `displayName`, `description`, `parameters`, `argumentHint`, `allowedTools`, `disableModelInvocation` |
 | hook | `displayName`, `description`, `event`, `matcher`, `type`, `bash`, `powershell`, `command`, `exec`, `args`, `cwd`, `env`, `timeoutSec`, `url`, `headers`, `allowedEnvVars`, `prompt` |
@@ -292,43 +295,64 @@ documents written as string values and canonicalized as JSON.
 
 ## Plugins
 
-A plugin is the solution file for one installable package. It links; it does
-not compose:
+A plugin is one installable package and the **binding root** of everything in
+it. A marketplace is to its plugins what a solution is to its projects: it
+lists them, and each plugin decides what ships inside it and binds every
+parameter its members declare.
 
 ```text
 ---
-description: Payments team agent and skills.
+description: The Helio payments operations agent, for engineers and release pipelines.
+embeds:
+  - helio/core:profiles/team-ops.profile.tfer
+with:
+  team: data/payments-team.context.tfer
 agents:
   - agents/payments-ops.agent.tfer
 skills:
-  - skills/changelog.skill.tfer
+  - skills/self-heal.skill.tfer
 modes:
   - manual
   - pipeline
 ---
 ```
 
-A plugin links at least one agent, profile, skill, rule, command, hook, or LSP
-server. A plugin that links no agents is a skills pack. `modes` lists `manual`, `pipeline`, or both, each at
-most once, and defaults to `manual`.
+A plugin holds:
 
-A plugin ships:
-
-- each linked agent, and every skill and skill instance that agent resolves to
-  after composition (see "Instances");
-- for each linked profile, the profile's resolved skills. The profile MUST be
-  complete, binding every capability it requires, MUST declare no
-  `parameters`, and MUST hold no documents, directly or through embedding:
-  without an agent there is nowhere to deliver them;
-- each linked skill, after flattening its extension chain;
-- every server that a shipped skill requires in the artifact's mode (see
-  "Servers");
-- the rules, commands, and hooks of its linked agents and profiles, and the
-  rules, commands, hooks, and LSP servers it lists itself (see "Native Copilot
+- `embeds`: profiles and plugins whose composition it takes (see
+  "Composition");
+- `agents`: the custom agents it ships;
+- `skills`: skill bindings (see "Capabilities, skills, and bindings");
+- `context`: documents delivered to every agent it ships (see "Rendering held
+  documents");
+- `with`: parameter bindings (see "Instances");
+- `rules`, `commands`, `hooks`, and `lspServers` (see "Native Copilot
   components").
 
-A skill reached more than once ships once. A skill shipped through `skills` or
-`profiles` MUST have no unbound parameters.
+After composition a plugin MUST contain at least one agent, skill, rule,
+command, hook, or LSP server. A plugin whose composition contains no agent is
+a skills pack, and MUST hold no documents: without an agent there is nowhere
+to deliver them. A plugin MUST be complete: it binds every capability its
+composition requires and every parameter its members declare (see
+"Instances"). `modes` lists `manual`, `pipeline`, or both, each at most once,
+and defaults to `manual`.
+
+A plugin ships, in each of its modes:
+
+- each agent of its composition (see "Agents");
+- each skill of its composition after flattening its extension chain, a
+  template skill as the instance its bindings make (see "Instances");
+- every server that a shipped skill requires in the artifact's mode (see
+  "Servers");
+- the rules, commands, hooks, and LSP servers of its composition (see "Native
+  Copilot components").
+
+A skill reached more than once ships once.
+
+**Packaging is not inherited.** A plugin's `description`, metadata (see
+"Plugin metadata"), `modes`, and `files` (see "Carried files") belong to the
+plugin that declares them. Embedding a plugin takes its composition, never its
+packaging.
 
 A plugin's **owning package** is the package that contains its document. Its
 artifacts carry the owning package's version and provenance, whichever build
@@ -340,7 +364,7 @@ starting and ending with a letter or digit, with no `--` or `..`. When the
 plugin lists `pipeline`, `<name>-pipeline` MUST satisfy it as well. For each
 plugin and each of its modes:
 
-- each linked agent's name, its identity leaf, MUST satisfy the Agent Skills
+- each shipped agent's name, its identity leaf, MUST satisfy the Agent Skills
   name grammar `[a-z0-9]+(-[a-z0-9]+)*` in at most 64 characters, so that it is
   a clean custom agent name;
 - each shipped skill's emitted name MUST satisfy the same grammar, and no two
@@ -425,31 +449,60 @@ Carried files are source members, read and normalized like skill files; field
 references are not resolved in them. A plugin's files ship identically in each
 of its artifacts.
 
-## Agents and objectives
+## Agents
 
-An agent is identity (`description`, `displayName`), objectives (its body), and
-composition (`embeds`, `skills`, `context`, `with`). Objectives render
-immediately after the agent's title. Knowledge a whole team needs is a document
-the agent or its profiles hold; facts that vary per team are data the agent
-binds with `with`. An agent's objectives and description MAY reference the
-parameters it binds (see "Parameters and field references"). An agent or
-profile without a `displayName` takes its identity leaf.
+An agent is a Copilot custom agent: identity (`description`, `displayName`),
+objectives (its body), held documents (`context`), Copilot fields (see
+"Copilot fields"), and agent-scoped servers (see "Native Copilot
+components"). An agent composes nothing. The plugin that ships it decides
+which skills, data, and native components ship beside it, and every skill the
+plugin ships is available to the agent, because Copilot has no narrower
+attachment. Knowledge a whole plugin needs is a document the plugin or its
+profiles hold; facts that vary per team are data the plugin binds with
+`with`. An agent's objectives and description MAY reference parameters its
+plugin binds (see "Parameters and field references"). An agent or profile
+without a `displayName` takes its identity leaf.
 
-Agents are concrete: they declare no parameters and MUST fulfill every
-promoted requirement and bind every promoted parameter.
+An agent MAY name exactly one base agent in `extends`. Chains are allowed; a
+cycle is an error.
+
+- **Additive objectives.** An extension's objectives are its base's resolved
+  objectives followed by its own body. Replacing or removing base objectives
+  is not expressible; that is a new agent.
+- **Documents and servers accumulate.** `context` and `servers` are the
+  base's followed by the extension's, deduplicated in first-seen order.
+- **Copilot fields overlay.** An extension inherits its base's `copilot`
+  fields; its own fields replace the base's field by field.
+- **Own identity.** An extension has its own identity, emitted name, and
+  required `description`. Its `displayName` is its own, or its identity leaf.
+
+An agent's **role** is the root of its extension chain. A plugin ships one
+agent per role: listing an extension where an embedded layer lists its base
+replaces the base (rule 4 of "Composition"), so a plugin specializes an
+inherited agent without forking it.
 
 ## Composition
 
-Agents MAY embed profiles or agents. Profiles MAY embed profiles but MUST NOT
-embed agents. An embedding graph MUST NOT contain a cycle.
+Plugins MAY embed profiles and plugins. Profiles MAY embed profiles. An
+embedding graph MUST NOT contain a cycle.
 
-Resolution proceeds from embedded resources toward the embedding resource:
+A **profile** is a reusable composition: it holds everything a plugin holds
+except packaging and `with`. A profile MAY be incomplete: it may declare
+`parameters` and retain abstract requirements, which the plugin that embeds it
+binds. A profile ships only through a plugin. Embedding a plugin takes its
+composition, including its parameter bindings, exactly as embedding a profile
+does; embedding never takes packaging.
 
-1. Display name and description belong to their declaring resource.
-2. Held document references append in embedding order and deduplicate in
-   first-seen order. Provenance records every contributing profile or agent for
-   every held document, including each contributor of a document several
-   layers hold.
+Resolution proceeds from embedded resources toward the embedding resource. A
+resource's own members are at depth zero; a member of a resource it embeds is
+one level deeper than in that resource.
+
+1. Display name, description, and packaging belong to their declaring
+   resource.
+2. Held documents, rules, commands, hooks, and LSP servers append in
+   embedding order, then the resource's own, and deduplicate in first-seen
+   order. Provenance records every contributing profile or plugin for every
+   member, including each contributor of a member several layers hold.
 3. Capability bindings promote by capability identity. Requirements
    accumulate: a capability is required when any layer at any depth requires
    it, and an abstract requirement (a binding with no skill) adds that
@@ -458,20 +511,22 @@ Resolution proceeds from embedded resources toward the embedding resource:
    the same resolved implementation converge as one member and provenance
    retains every contributor; different implementations are ambiguous unless
    bound by a shallower layer.
-4. Parameter declarations promote by name. Declarations of one name MUST name
-   one context type; otherwise the composition is an error. An agent's
-   parameter bindings (`with`) promote from the agents it embeds by the same
-   rule as capability bindings: the shallowest binding of a name wins,
-   identical bindings at one depth converge, and different bindings at one
-   depth are ambiguous unless a shallower layer binds the name.
-5. Objectives inherit: an agent's resolved objectives are its embedded agents'
-   objectives in embedding order, then its own body, each source at most once
-   in first-seen order.
+4. Agents promote by role (see "Agents") under the rule for capability
+   bindings: the shallowest agent of a role wins, the same agent at one depth
+   converges, and different agents of one role at one depth are ambiguous
+   unless a shallower layer lists one. One resource MUST NOT list two agents
+   of one role.
+5. Parameter declarations promote by name. Declarations of one name MUST name
+   one context type; otherwise the composition is an error. A plugin's
+   parameter bindings (`with`) promote from the plugins it embeds by the rule
+   for capability bindings: the shallowest binding of a name wins, identical
+   bindings at one depth converge, and different bindings at one depth are
+   ambiguous unless a shallower layer binds the name.
 6. Every contribution records source-resource provenance.
 
-Profiles may retain abstract required capability bindings. `required` is the
-demand side of composition: a binding with no skill declares an obligation
-without supplying an implementation.
+`required` is the demand side of composition: a binding with no skill declares
+an obligation without supplying an implementation. A profile may retain one; a
+plugin must see it fulfilled.
 
 ## Capabilities, skills, and bindings
 
@@ -485,7 +540,7 @@ shares its base's capability (see "Skill extension"). A capability reference in
 a binding's `capability` names a capability document or a skill; naming a skill
 denotes that skill's capability.
 
-A `skills` entry in an agent or profile is a skill path or a mapping:
+A `skills` entry in a plugin or profile is a skill path or a mapping:
 
 ```text
 skills:
@@ -499,7 +554,8 @@ skills:
 A mapping takes `skill`, `capability`, and `required`. An entry that names a
 skill binds that skill's capability; if it also names a capability, the skill
 MUST implement it. An entry without a skill MUST name a capability and set
-`required: true`. `required` demands that concrete agents contain a binding.
+`required: true`. `required` demands that the plugin that ships the
+composition contains a binding.
 
 Binding a skill whose capability an embedded layer already binds rebinds that
 capability under rule 3 of "Composition".
@@ -590,8 +646,8 @@ values:
 ---
 ```
 
-Agents, profiles, and skills hold documents with `context`; holding a data
-document is an error. Data is bound to parameters with `with`.
+Plugins, profiles, agents, and skills hold documents with `context`; holding a
+data document is an error. Data is bound to parameters with `with`.
 
 ## Context types
 
@@ -666,7 +722,8 @@ declare the same context type.
 
 In a template's body, variant instructions, and `description`, and in an
 agent's objectives and description, `{{name.field}}` is a **field reference**.
-`name` is a parameter of the template, or a parameter the agent binds, and
+`name` is a parameter of the template, or a parameter the agent's plugin binds,
+and
 `field` is a field of its context type. The reference is replaced by the bound
 value:
 
@@ -678,7 +735,7 @@ An undeclared parameter, an unknown field, a `list<string>` field, and an
 optional field with neither a value nor a default are errors. References are
 replaced exactly once; inserted values are never scanned for further
 references. `\{{` writes a literal `{{`. In a document or skill that declares no
-parameters, and in an agent that binds none, `{{` is ordinary text.
+parameters, and in an agent whose plugin binds none, `{{` is ordinary text.
 
 A field reference matches exactly `{{` followed by a parameter name, `.`, a
 field name, and `}}`, with no whitespace. Other text containing `{{` is
@@ -694,29 +751,34 @@ mapping from each parameter of its flattened chain to a data document whose
 parameter, MUST NOT bind a name that is not a parameter, and MUST NOT declare
 `parameters` of its own. Its emitted name is its own identity leaf.
 
-**Agent instances.** An agent's `with` maps parameter names to data documents.
-Its bindings are its own `with` together with those promoted from the agents
-it embeds (rule 4 of "Composition"), so embedding an agent and binding a name
-re-points the embedded agent at other data, while embedding it without binding
-keeps the embedded agent's data. Every objective, including an embedded
-agent's, renders with the embedding agent's bindings. After composition, the
-agent's parameterized members are the templates among its resolved skills,
-those skills' held documents, and its held documents. The agent's bindings:
+**Plugin instances.** A plugin's `with` maps parameter names to data
+documents. Its bindings are its own `with` together with those promoted from
+the plugins it embeds (rule 5 of "Composition"), so embedding a plugin and
+binding a name re-points the embedded plugin's members at other data, while
+embedding it without binding keeps the embedded plugin's data. Every member
+renders with the plugin's bindings, including agents' objectives and
+descriptions. After composition, the plugin's parameterized members are the
+templates among its resolved skills, those skills' held documents, its held
+documents and its agents', and its template rules and commands. The plugin's
+bindings:
 
 - MUST bind every parameter those members and its embedded profiles declare,
-  with data of the declared context type;
+  with data of the declared context type, and every parameter its agents'
+  objectives and descriptions reference;
 - MUST NOT, in its own `with`, bind a name that is neither declared by
-  something it composes nor referenced by its objectives or description.
+  something it composes nor referenced by its agents' objectives or
+  descriptions.
 
-Each template skill the agent resolves to is emitted as an instance named
+Each template skill the plugin resolves to is emitted as an instance named
 `<instance name>-<skill leaf>`. The instance name is the value of the
 `instanceName` field of the one bound data document whose context type declares
-`instanceName`. When the agent resolves to at least one template skill, exactly
-one bound data document MUST supply an instance name. A skill that is not a
-template keeps its own name. A rebinding that replaces a template skill also
-removes that skill's parameters from what the agent must bind.
+`instanceName`. When the plugin resolves to at least one template skill, rule,
+or command, exactly one bound data document MUST supply an instance name. A
+skill that is not a template keeps its own name, and an agent is always named
+by its identity leaf. A rebinding that replaces a template skill also removes
+that skill's parameters from what the plugin must bind.
 
-One agent binds one value per parameter name. Every emitted instance name is
+One plugin binds one value per parameter name. Every emitted instance name is
 subject to the build-wide name rules (see "The agent-plugin target").
 
 A contract change is visible everywhere: adding a required field to a context
@@ -736,7 +798,8 @@ document path) and `render` (`inline`, the default, or `file`).
   responsible for pointing at the file.
 
 An agent's held documents always render inline in its agent file under
-`## Context`, in resolved order.
+`## Context`: its plugin's resolved documents, then the agent's own after its
+extension chain is flattened, each document at most once in first-seen order.
 
 ## Skill files
 
@@ -847,15 +910,15 @@ default tools; `tools: []` gives it none and is emitted as `tools: []`; a key
 without a value is an error, because it could mean either. MCP server tools
 are named `<server>/<tool>` or `<server>/*`, and `*` names every tool. When an
 agent declares `tools` without `*`, then in every artifact that ships the
-agent, each server that a skill the agent binds requires in that artifact's
+agent, each server that a skill the artifact ships requires in that artifact's
 mode, and each server in the agent's own `servers`, MUST be named by an entry
 `<server>/*` or `<server>/<tool>`. Copilot enables a server's tools for an
 agent only when the agent's `tools` names them, and build never adds an entry,
 so a missing one fails compilation. Entries naming servers an artifact does not
 ship are emitted unchanged; Copilot ignores tool names it does not
-recognize. A skill meant to be used only by its agent sets
-`userInvocable: false`. Extensions inherit their base's `copilot` fields; an
-extension's own fields replace the base's field by field.
+recognize. A skill meant to be used only by an agent sets
+`userInvocable: false`. Skill and agent extensions inherit their base's
+`copilot` fields; an extension's own fields replace the base's field by field.
 
 ## Native Copilot components
 
@@ -908,22 +971,22 @@ Copilot expands only `${PLUGIN_ROOT}` there, so a server an agent scopes to
 itself MUST NOT use `${PLUGIN_DATA}`. Agent-scoped servers do not enter the
 plugin's `mcp.json`.
 
-**Enterprise defaults.** Agents and profiles hold rules, commands, and hooks,
-and they promote through embedding like held documents, recording every
-contributor. A plugin ships the rules, commands, and hooks of every agent and
-profile it links. A rule therefore reaches every surface where the plugin is
-active, whether an agent, a slash command, a model-invoked skill, or a
-pipeline run, rather than only the agent whose file holds a document. A rule
-or command with parameters is a template: it ships only through an agent,
-rendered with the agent's bindings and named `<instance name>-<leaf>`, and an
-agent that instantiates one must supply an instance name exactly as for
-template skills. Across a build, one rule name denotes one rule body, one
-command name one command, and one LSP server name one server document.
+**Enterprise defaults.** Plugins and profiles hold rules, commands, hooks,
+and LSP servers, and they promote through embedding like held documents,
+recording every contributor. A plugin ships every one its composition holds.
+A rule therefore reaches every surface where the plugin is active, whether an
+agent, a slash command, a model-invoked skill, or a pipeline run, rather than
+only the agent whose file holds a document. A rule or command with parameters
+is a template: it ships only as an instance, rendered with its plugin's
+bindings and named `<instance name>-<leaf>`, and a plugin that instantiates one
+must supply an instance name exactly as for template skills. Across a build,
+one rule name denotes one rule body, one command name one command, and one LSP
+server name one server document.
 
 ## Packages, restore, and lockfiles
 
 `typeference pack` emits one canonical source package (`.tferpkg`) from a
-version 7 source root. It contains:
+version 8 source root. It contains:
 
 - package name and exact version;
 - exact dependency declarations;
@@ -959,7 +1022,7 @@ never source.
 
 A Git route names an HTTPS repository URL, an optional package root path within
 the repository, and a tag prefix. Restore resolves a package `<name>@<version>`
-by fetching the tag `<prefix><version>`, reading the version 7 source root at
+by fetching the tag `<prefix><version>`, reading the version 8 source root at
 the package root path, verifying that its manifest declares that name and
 version, and packing it as `typeference pack` would. The resulting package
 digest is what the lockfile records and what later restores verify, exactly as
@@ -977,7 +1040,7 @@ in a dependent's build only when the dependent's manifest lists them (see
 ## Source membership and digests
 
 The source digest hashes an explicit resource set, never an arbitrary recursive
-directory after output has been written. A version 7 package's source members
+directory after output has been written. A version 8 package's source members
 are:
 
 - the project manifest;
@@ -1053,12 +1116,13 @@ Each plugin mode is one artifact directory: `manual` emits `<plugin>` and
   entry holds `type` (`stdio`), `command`, then `args`, `env`, and `cwd` when
   declared; a `streamable-http` entry holds `type` (`streamable-http`), `url`,
   then `headers` when declared.
-- `com.github.copilot/agents/<agent>.agent.md` is emitted for each linked
+- `com.github.copilot/agents/<agent>.agent.md` is emitted for each shipped
   agent: frontmatter `name` (the agent's identity leaf), `description`, its
-  Copilot fields in table order, then its agent-scoped `mcp-servers`; a body of the `# displayName` title and
-  the resolved objectives, then, when non-empty, a `## Context` section for
-  held documents and a `## Skills` list of the emitted names of the skills the
-  agent binds, sorted.
+  Copilot fields in table order, then its agent-scoped `mcp-servers`; a body
+  of the `# displayName` title and the resolved objectives, each source's text
+  trimmed and followed by one blank line, then, when non-empty, a `## Context`
+  section for held documents and a `## Skills` list of the emitted names of
+  the skills the artifact ships, sorted.
 - `skills/<skill>/SKILL.md` is emitted for each shipped skill and instance:
   frontmatter `name` (the emitted name), `description`, then its Copilot fields
   in table order; a body of the skill's instructions for the artifact's mode,
@@ -1067,9 +1131,13 @@ Each plugin mode is one artifact directory: `manual` emits `<plugin>` and
 - rules, commands, hooks, and LSP servers are emitted as "Native Copilot
   components" defines.
 - each of the plugin's carried files is emitted at its destination.
-- `.typeference/bundle.json` (`schemaVersion` 4) records the plugin identity,
+- `.typeference/bundle.json` (`schemaVersion` 5) records the plugin identity,
   artifact name, mode, version, description, the owning package's provenance,
-  the resolved agents, the shipped skills with, for each instance, the template
+  the plugin's `embeds`, its parameter bindings with each bound data
+  document's identity and canonical values, the contributors of every member
+  its composition holds, the resolved agents with their extension chains,
+  objectives by source, and held documents, the shipped skills with, for each
+  instance, the template
   identity (`templateId`, empty for a skill that is not an instance) and each
   bound parameter's data identity and canonical values, the shipped
   servers, the shipped rules, commands, hooks, and LSP servers, and the
@@ -1132,7 +1200,7 @@ direct dependencies:
 
 ```text
 ---
-schemaVersion: 7
+schemaVersion: 8
 name: acme/marketplace
 version: 2026.10.1
 marketplace:
@@ -1178,7 +1246,7 @@ marketplace index, the build index, and the compatibility report.
 package that is not yet published fits the marketplace. It validates the
 marketplace package, with its locked graph, after these substitutions:
 
-- the candidate, a version 7 source directory, replaces the locked package of
+- the candidate, a version 8 source directory, replaces the locked package of
   the same name, or joins the graph as a direct dependency when the
   marketplace does not yet depend on it;
 - every dependency the candidate declares MUST be locked by the marketplace at
@@ -1218,7 +1286,7 @@ inputs MUST be byte-identical on every platform.
 
 `typeference import <source> --out <dir> [--name <package>] [--version
 <version>] [--plugin <name>] [--lossy]` converts existing GitHub Copilot
-customizations into a version 7 package. The source is, in this order of
+customizations into a version 8 package. The source is, in this order of
 detection:
 
 1. a skill directory, one that contains `SKILL.md`;
@@ -1240,7 +1308,7 @@ detection:
 Import writes:
 
 - a manifest;
-- one plugin, `plugins/<plugin>.plugin.tfer`, that links every imported agent
+- one plugin, `plugins/<plugin>.plugin.tfer`, that lists every imported agent
   and skill and carries the source plugin's metadata (see "Plugin metadata");
 - for a plugin source, a plugin `files` entry for each file in the plugin
   directory that is not a component import reads, copied to
@@ -1279,10 +1347,10 @@ Import fails closed:
 - names are never rewritten. A skill's declared `name` MUST equal its directory
   name, agent and skill names MUST satisfy the Agent Skills grammar, and
   descriptions and skill instructions are required;
-- content version 7 cannot represent fails the import and is listed item by
+- content version 8 cannot represent fails the import and is listed item by
   item: unrecognized frontmatter fields, files beside `SKILL.md` outside
   `references/`, `scripts/`, and `assets/`, server values that contain `${`
-  other than the plugin variables, hook or LSP fields version 7 does not
+  other than the plugin variables, hook or LSP fields version 8 does not
   declare, plugin manifest members other than `name`, `description`,
   `version`, the metadata members, and a legacy plugin's component paths
   (`extensions` among them), metadata values that "Plugin metadata" rejects,
