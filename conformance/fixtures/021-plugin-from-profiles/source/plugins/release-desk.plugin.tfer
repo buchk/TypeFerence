@@ -1,0 +1,15 @@
+---
+description: Release coordination, built from shared profiles.
+embeds:
+  - conformance/core:profiles/baseline.profile.tfer
+  - conformance/ledger:profiles/ledger-skills.profile.tfer
+agents:
+  - agents/release.agent.tfer
+context:
+  - docs/release-norms.context.tfer
+skills:
+  - conformance/ledger:skills/ledger-lookup.skill.tfer
+  - skills/release-notes.skill.tfer
+with:
+  team: data/release.context.tfer
+---

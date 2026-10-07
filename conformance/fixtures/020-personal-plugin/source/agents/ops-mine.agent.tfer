@@ -1,0 +1,7 @@
+---
+description: Operations for {{team.name}}, with my conventions.
+extends: conformance/team:agents/ops.agent.tfer
+copilot:
+  model: my-model
+---
+Prefer the smallest reversible change.

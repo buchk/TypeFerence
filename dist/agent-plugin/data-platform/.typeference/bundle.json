@@ -1,16 +1,59 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "id": "helio/data-platform/plugins/data-platform@1.0.2",
   "name": "data-platform",
   "mode": "manual",
   "version": "1.0.2",
   "description": "The Helio data platform operations agent.",
-  "sourceDigest": "sha256:13edd5ba21cdf17e1d4ab3acd3ac116fba81d1d8138a52d7ab3049cb09c1a4f2",
+  "sourceDigest": "sha256:6bd67cd55a061b8a18205e5fb89d5d22fccf7bb5af1a476e086e558788300d10",
   "dependencies": [
     {
       "name": "helio/core",
       "version": "3.1.0",
-      "digest": "sha256:0887f5deff78efb00c40b8a1232c78f33150c28cf9ac50a098190c433711b874"
+      "digest": "sha256:8625e406a9d6c9433d4a95962f35a8969ea87cbf8979a0f5b1231d6b9955ea96"
+    }
+  ],
+  "embeds": [
+    "helio/core/profiles/team-ops@3.1.0"
+  ],
+  "bindings": [
+    {
+      "parameter": "team",
+      "data": "helio/data-platform/data/data-team@1.0.2",
+      "contextType": "helio/core/context-types/team@3.1.0",
+      "values": {
+        "id": "data-platform",
+        "name": "Data Platform",
+        "onCall": "the team lead",
+        "queue": "DATA-REQ",
+        "tier": "standard"
+      }
+    }
+  ],
+  "provenance": [
+    {
+      "field": "embeds",
+      "source": "helio/core/profiles/team-ops@3.1.0"
+    },
+    {
+      "field": "with",
+      "source": "helio/data-platform/plugins/data-platform@1.0.2"
+    },
+    {
+      "field": "agents",
+      "source": "helio/data-platform/plugins/data-platform@1.0.2"
+    },
+    {
+      "field": "rules",
+      "source": "helio/core/profiles/team-ops@3.1.0"
+    },
+    {
+      "field": "commands",
+      "source": "helio/core/profiles/team-ops@3.1.0"
+    },
+    {
+      "field": "hooks",
+      "source": "helio/core/profiles/team-ops@3.1.0"
     }
   ],
   "agents": [
@@ -19,23 +62,7 @@
       "name": "data-ops",
       "displayName": "data-ops",
       "description": "Operations agent for the Helio data platform team.",
-      "embeds": [
-        "helio/core/profiles/team-ops@3.1.0"
-      ],
-      "bindings": [
-        {
-          "parameter": "team",
-          "data": "helio/data-platform/data/data-team@1.0.2",
-          "contextType": "helio/core/context-types/team@3.1.0",
-          "values": {
-            "id": "data-platform",
-            "name": "Data Platform",
-            "onCall": "the team lead",
-            "queue": "DATA-REQ",
-            "tier": "standard"
-          }
-        }
-      ],
+      "extends": [],
       "objectives": [
         {
           "source": "helio/data-platform/agents/data-ops@1.0.2",
@@ -48,63 +75,11 @@
         "data-platform-queue-summary",
         "data-platform-self-heal"
       ],
-      "rules": [
-        {
-          "name": "working-norms",
-          "id": "helio/core/rules/working-norms@3.1.0",
-          "templateId": "",
-          "bindings": []
-        }
-      ],
-      "commands": [
-        {
-          "name": "data-platform-standup",
-          "id": "helio/core/commands/standup@3.1.0",
-          "templateId": "helio/core/commands/standup@3.1.0",
-          "bindings": [
-            {
-              "parameter": "team",
-              "data": "helio/data-platform/data/data-team@1.0.2",
-              "contextType": "helio/core/context-types/team@3.1.0",
-              "values": {
-                "id": "data-platform",
-                "name": "Data Platform",
-                "onCall": "the team lead",
-                "queue": "DATA-REQ",
-                "tier": "standard"
-              }
-            }
-          ]
-        }
-      ],
-      "hooks": [
-        "helio/core/hooks/policy-check@3.1.0"
-      ],
       "servers": [],
       "provenance": [
         {
           "field": "objectives",
           "source": "helio/data-platform/agents/data-ops@1.0.2"
-        },
-        {
-          "field": "embeds",
-          "source": "helio/core/profiles/team-ops@3.1.0"
-        },
-        {
-          "field": "with",
-          "source": "helio/data-platform/agents/data-ops@1.0.2"
-        },
-        {
-          "field": "rules",
-          "source": "helio/core/profiles/team-ops@3.1.0"
-        },
-        {
-          "field": "commands",
-          "source": "helio/core/profiles/team-ops@3.1.0"
-        },
-        {
-          "field": "hooks",
-          "source": "helio/core/profiles/team-ops@3.1.0"
         }
       ]
     }

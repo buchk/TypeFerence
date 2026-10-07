@@ -1,6 +1,4 @@
 ---
 description: Operations for {{team.note}}
-with:
-  team: data/alpha.context.tfer
 ---
 You support {{team.name}}.

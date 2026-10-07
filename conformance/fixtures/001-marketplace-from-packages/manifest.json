@@ -3,6 +3,6 @@
   "expect": "success",
   "packages": "packages",
   "digests": {
-    "agent-plugin": "sha256:0767e913067106240b1a1d83c1cabc60c97b72dc7767255f625975544b0f1861"
+    "agent-plugin": "sha256:af202a50246e7850c20a726e3147cf59b14e64bf3e37e5490b35b822f19ae73f"
   }
 }

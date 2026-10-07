@@ -1,0 +1,5 @@
+---
+description: A.
+extends: agents/b.agent.tfer
+---
+A.

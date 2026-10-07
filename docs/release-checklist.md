@@ -7,7 +7,7 @@ release entry before that tag is created.
 
 ## Before tagging
 
-1. On `main`, CI fully green: the Go test suite, the version 7 conformance
+1. On `main`, CI fully green: the Go test suite, the version 8 conformance
    corpus, the Helio reference test, and the self-host drift gate.
 2. `CHANGELOG.md`: move the `Unreleased` heading to the release date; confirm every
    spec-affecting entry names its ADR.
@@ -38,7 +38,7 @@ maintainer plugin; and publishes a GitHub Release with per-platform archives and
 ## Versioning notes
 
 - Tool releases (this checklist) version the CLIs and libraries. They do **not**
-  version the source format: manifests stay `schemaVersion: 7` until an
+  version the source format: manifests stay `schemaVersion: 8` until an
   incompatible format change, which requires a specification change and an ADR
   first.
 - Pre-1.0, breaking tool changes are allowed in any release but must be listed

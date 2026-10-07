@@ -353,7 +353,7 @@ Commands:
   typeference import <copilot-source> --out <dir> [--name ns/name]
       [--version x.y.z] [--plugin name] [--lossy]
       (turns existing Copilot custom agents, Agent Skills, or an Agent Plugin
-       into a version 7 package; fails on anything it cannot represent
+       into a version 8 package; fails on anything it cannot represent
        unless --lossy)
   typeference validate <source> [--packages-dir obj/typeference/packages]
       [--candidate <package-dir>]

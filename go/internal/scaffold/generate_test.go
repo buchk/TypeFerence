@@ -57,7 +57,7 @@ func TestGeneratedTreeCompilesWithOrdinaryCompiler(t *testing.T) {
 	}
 	loaded, err := resource.LoadPackage(src, resource.PackageOptions{})
 	if err != nil {
-		t.Fatalf("generated tree must load as an ordinary version 7 package: %v", err)
+		t.Fatalf("generated tree must load as an ordinary version 8 package: %v", err)
 	}
 	if len(loaded.Documents) < 5 {
 		t.Fatalf("expected at least 5 documents, got %d", len(loaded.Documents))

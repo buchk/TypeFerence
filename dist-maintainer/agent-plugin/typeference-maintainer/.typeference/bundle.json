@@ -1,24 +1,103 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "id": "typeference/maintainer/plugins/typeference-maintainer@0.2.0",
   "name": "typeference-maintainer",
   "mode": "manual",
   "version": "0.2.0",
   "description": "The TypeFerence repository\u0027s maintainer agent, with its conformance and self-host drift skills.",
-  "sourceDigest": "sha256:53d793a7c0fbce5f39236e53598ee129fedaf63e7518984fb53f969daf62ec8a",
+  "sourceDigest": "sha256:aff8535fafd37a781b64abf56c7e3de9b86b92812697cbc605aa588bed5d6e9d",
   "dependencies": [],
+  "embeds": [
+    "typeference/maintainer/profiles/spec-conformance@0.2.0",
+    "typeference/maintainer/profiles/determinism-guardian@0.2.0",
+    "typeference/maintainer/profiles/contribution-workflow@0.2.0"
+  ],
+  "bindings": [],
+  "provenance": [
+    {
+      "field": "embeds",
+      "source": "typeference/maintainer/profiles/spec-conformance@0.2.0"
+    },
+    {
+      "field": "embeds",
+      "source": "typeference/maintainer/profiles/determinism-guardian@0.2.0"
+    },
+    {
+      "field": "embeds",
+      "source": "typeference/maintainer/profiles/contribution-workflow@0.2.0"
+    },
+    {
+      "field": "context",
+      "source": "typeference/maintainer/profiles/spec-conformance@0.2.0"
+    },
+    {
+      "field": "context",
+      "source": "typeference/maintainer/profiles/spec-conformance@0.2.0"
+    },
+    {
+      "field": "context",
+      "source": "typeference/maintainer/profiles/spec-conformance@0.2.0"
+    },
+    {
+      "field": "context",
+      "source": "typeference/maintainer/profiles/spec-conformance@0.2.0"
+    },
+    {
+      "field": "context",
+      "source": "typeference/maintainer/profiles/spec-conformance@0.2.0"
+    },
+    {
+      "field": "context",
+      "source": "typeference/maintainer/profiles/determinism-guardian@0.2.0"
+    },
+    {
+      "field": "context",
+      "source": "typeference/maintainer/profiles/determinism-guardian@0.2.0"
+    },
+    {
+      "field": "context",
+      "source": "typeference/maintainer/profiles/determinism-guardian@0.2.0"
+    },
+    {
+      "field": "context",
+      "source": "typeference/maintainer/profiles/determinism-guardian@0.2.0"
+    },
+    {
+      "field": "context",
+      "source": "typeference/maintainer/profiles/determinism-guardian@0.2.0"
+    },
+    {
+      "field": "context",
+      "source": "typeference/maintainer/profiles/contribution-workflow@0.2.0"
+    },
+    {
+      "field": "context",
+      "source": "typeference/maintainer/profiles/contribution-workflow@0.2.0"
+    },
+    {
+      "field": "context",
+      "source": "typeference/maintainer/profiles/contribution-workflow@0.2.0"
+    },
+    {
+      "field": "context",
+      "source": "typeference/maintainer/profiles/contribution-workflow@0.2.0"
+    },
+    {
+      "field": "context",
+      "source": "typeference/maintainer/profiles/contribution-workflow@0.2.0"
+    },
+    {
+      "field": "agents",
+      "source": "typeference/maintainer/plugins/typeference-maintainer@0.2.0"
+    }
+  ],
   "agents": [
     {
       "id": "typeference/maintainer/agents/typeference-maintainer@0.2.0",
       "name": "typeference-maintainer",
       "displayName": "TypeFerence Maintainer",
       "description": "The agent that maintains the TypeFerence repository, defined in TypeFerence\u0027s own terms and compiled into this repository\u0027s AGENTS.md.",
-      "embeds": [
-        "typeference/maintainer/profiles/spec-conformance@0.2.0",
-        "typeference/maintainer/profiles/determinism-guardian@0.2.0",
-        "typeference/maintainer/profiles/contribution-workflow@0.2.0"
-      ],
-      "bindings": [],
+      "extends": [],
       "objectives": [
         {
           "source": "typeference/maintainer/agents/typeference-maintainer@0.2.0",
@@ -95,9 +174,6 @@
         "audit-drift",
         "verify-conformance"
       ],
-      "rules": [],
-      "commands": [],
-      "hooks": [],
       "servers": [],
       "provenance": [
         {
@@ -106,79 +182,7 @@
         },
         {
           "field": "context",
-          "source": "typeference/maintainer/profiles/spec-conformance@0.2.0"
-        },
-        {
-          "field": "context",
-          "source": "typeference/maintainer/profiles/spec-conformance@0.2.0"
-        },
-        {
-          "field": "context",
-          "source": "typeference/maintainer/profiles/spec-conformance@0.2.0"
-        },
-        {
-          "field": "context",
-          "source": "typeference/maintainer/profiles/spec-conformance@0.2.0"
-        },
-        {
-          "field": "context",
-          "source": "typeference/maintainer/profiles/spec-conformance@0.2.0"
-        },
-        {
-          "field": "context",
-          "source": "typeference/maintainer/profiles/determinism-guardian@0.2.0"
-        },
-        {
-          "field": "context",
-          "source": "typeference/maintainer/profiles/determinism-guardian@0.2.0"
-        },
-        {
-          "field": "context",
-          "source": "typeference/maintainer/profiles/determinism-guardian@0.2.0"
-        },
-        {
-          "field": "context",
-          "source": "typeference/maintainer/profiles/determinism-guardian@0.2.0"
-        },
-        {
-          "field": "context",
-          "source": "typeference/maintainer/profiles/determinism-guardian@0.2.0"
-        },
-        {
-          "field": "context",
-          "source": "typeference/maintainer/profiles/contribution-workflow@0.2.0"
-        },
-        {
-          "field": "context",
-          "source": "typeference/maintainer/profiles/contribution-workflow@0.2.0"
-        },
-        {
-          "field": "context",
-          "source": "typeference/maintainer/profiles/contribution-workflow@0.2.0"
-        },
-        {
-          "field": "context",
-          "source": "typeference/maintainer/profiles/contribution-workflow@0.2.0"
-        },
-        {
-          "field": "context",
-          "source": "typeference/maintainer/profiles/contribution-workflow@0.2.0"
-        },
-        {
-          "field": "context",
           "source": "typeference/maintainer/agents/typeference-maintainer@0.2.0"
-        },
-        {
-          "field": "embeds",
-          "source": "typeference/maintainer/profiles/spec-conformance@0.2.0"
-        },
-        {
-          "field": "embeds",
-          "source": "typeference/maintainer/profiles/determinism-guardian@0.2.0"
-        },
-        {
-          "field": "embeds",
-          "source": "typeference/maintainer/profiles/contribution-workflow@0.2.0"
         }
       ]
     }

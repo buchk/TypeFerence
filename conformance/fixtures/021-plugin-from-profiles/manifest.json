@@ -1,0 +1,8 @@
+{
+  "description": "A plugin assembles itself from a core profile (documents, a template skill, a rule, an LSP server), another team's skill profile, one skill a third package exports, and its own agent and document (ADR-0006); its own documents follow the embedded ones in the agent file, and its data instantiates the core template.",
+  "expect": "success",
+  "packages": "packages",
+  "digests": {
+    "agent-plugin": "sha256:e3f08348214b02b09d1624128b3a3c470fc0d0705475338348e9f1f9e961e27c"
+  }
+}

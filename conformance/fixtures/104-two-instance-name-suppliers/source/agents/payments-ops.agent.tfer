@@ -1,9 +1,4 @@
 ---
 description: Payments operations.
-embeds:
-  - profiles/team-ops.profile.tfer
-with:
-  team: data/payments.context.tfer
-  region: data/east.context.tfer
 ---
 Help.

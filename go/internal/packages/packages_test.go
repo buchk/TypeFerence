@@ -18,13 +18,13 @@ func feedPackages(t *testing.T) string {
 	t.Helper()
 	feed := t.TempDir()
 	base := t.TempDir()
-	write(t, base, "typeference.tfer", "---\nschemaVersion: 7\nname: acme/base\nversion: 1.0.0\nexports:\n  - profiles/base.profile.tfer\n---\n")
+	write(t, base, "typeference.tfer", "---\nschemaVersion: 8\nname: acme/base\nversion: 1.0.0\nexports:\n  - profiles/base.profile.tfer\n---\n")
 	write(t, base, "profiles/base.profile.tfer", "---\ncontext:\n  - context/norm.context.tfer\n---\n")
 	write(t, base, "context/norm.context.tfer", "---\ndisplayName: Base norm\n---\nCite evidence.\n")
 	packToFeed(t, base, feed, "acme/base", "1.0.0", "base")
 
 	foundations := t.TempDir()
-	write(t, foundations, "typeference.tfer", "---\nschemaVersion: 7\nname: acme/foundations\nversion: 2.0.0\ndependencies:\n  acme/base: 1.0.0\nexports:\n  - profiles/foundations.profile.tfer\n  - skills/review.skill.tfer\n---\n")
+	write(t, foundations, "typeference.tfer", "---\nschemaVersion: 8\nname: acme/foundations\nversion: 2.0.0\ndependencies:\n  acme/base: 1.0.0\nexports:\n  - profiles/foundations.profile.tfer\n  - skills/review.skill.tfer\n---\n")
 	write(t, foundations, "profiles/foundations.profile.tfer", "---\nembeds:\n  - acme/base:profiles/base.profile.tfer\nskills:\n  - skills/review.skill.tfer\n---\n")
 	write(t, foundations, "skills/review.skill.tfer", reviewSkill)
 	write(t, foundations, "skills/internal.skill.tfer", "---\ndescription: Not exported.\n---\nInternal.\n")
@@ -36,9 +36,9 @@ func feedPackages(t *testing.T) string {
 func TestRestoreMaterializesTransitiveGraphForOfflineBuild(t *testing.T) {
 	feed := feedPackages(t)
 	root := t.TempDir()
-	write(t, root, "typeference.tfer", "---\nschemaVersion: 7\nname: acme/agents\nversion: 1.0.0\ndependencies:\n  acme/foundations: 2.0.0\nplugins:\n  - plugins/payments.plugin.tfer\n---\n")
-	write(t, root, "plugins/payments.plugin.tfer", "---\ndescription: Payments kit.\nagents:\n  - agents/payments.agent.tfer\n---\n")
-	write(t, root, "agents/payments.agent.tfer", "---\ndescription: Payments agent.\nembeds:\n  - acme/foundations:profiles/foundations.profile.tfer\nskills:\n  - skills/payments-review.skill.tfer\n---\n")
+	write(t, root, "typeference.tfer", "---\nschemaVersion: 8\nname: acme/agents\nversion: 1.0.0\ndependencies:\n  acme/foundations: 2.0.0\nplugins:\n  - plugins/payments.plugin.tfer\n---\n")
+	write(t, root, "plugins/payments.plugin.tfer", "---\ndescription: Payments kit.\nembeds:\n  - acme/foundations:profiles/foundations.profile.tfer\nagents:\n  - agents/payments.agent.tfer\nskills:\n  - skills/payments-review.skill.tfer\n---\n")
+	write(t, root, "agents/payments.agent.tfer", "---\ndescription: Payments agent.\n---\n")
 	// A skill may extend an exported skill of a dependency (ADR-0006).
 	write(t, root, "skills/payments-review.skill.tfer", "---\ndescription: Review a payments change.\nextends: acme/foundations:skills/review.skill.tfer\n---\nAlso check reconciliation.\n")
 	packagesDir := filepath.Join(root, "obj", "typeference", "packages")
@@ -78,7 +78,7 @@ func TestRestoreMaterializesTransitiveGraphForOfflineBuild(t *testing.T) {
 func TestReferenceToUnexportedDependencyResourceFails(t *testing.T) {
 	feed := feedPackages(t)
 	root := t.TempDir()
-	write(t, root, "typeference.tfer", "---\nschemaVersion: 7\nname: acme/agents\nversion: 1.0.0\ndependencies:\n  acme/foundations: 2.0.0\nplugins:\n  - plugins/kit.plugin.tfer\n---\n")
+	write(t, root, "typeference.tfer", "---\nschemaVersion: 8\nname: acme/agents\nversion: 1.0.0\ndependencies:\n  acme/foundations: 2.0.0\nplugins:\n  - plugins/kit.plugin.tfer\n---\n")
 	write(t, root, "plugins/kit.plugin.tfer", "---\ndescription: Kit.\nskills:\n  - acme/foundations:skills/internal.skill.tfer\n---\n")
 	restoreProject(t, root, feed)
 	if _, err := compile.Build(root, t.TempDir(), compile.BuildOptions{}); err == nil ||
@@ -89,7 +89,7 @@ func TestReferenceToUnexportedDependencyResourceFails(t *testing.T) {
 
 func TestReferenceToUndeclaredPackageFails(t *testing.T) {
 	root := t.TempDir()
-	write(t, root, "typeference.tfer", "---\nschemaVersion: 7\nname: acme/agents\nversion: 1.0.0\nplugins:\n  - plugins/kit.plugin.tfer\n---\n")
+	write(t, root, "typeference.tfer", "---\nschemaVersion: 8\nname: acme/agents\nversion: 1.0.0\nplugins:\n  - plugins/kit.plugin.tfer\n---\n")
 	write(t, root, "plugins/kit.plugin.tfer", "---\ndescription: Kit.\nskills:\n  - acme/other:skills/review.skill.tfer\n---\n")
 	if _, err := compile.Build(root, t.TempDir(), compile.BuildOptions{}); err == nil ||
 		!strings.Contains(err.Error(), "does not declare as a dependency") {
@@ -113,7 +113,7 @@ func restoreProject(t *testing.T, source, feed string) {
 func minimalPackage(t *testing.T) string {
 	t.Helper()
 	source := t.TempDir()
-	write(t, source, "typeference.tfer", "---\nschemaVersion: 7\nname: acme/package\nversion: 1.0.0\nplugins:\n  - plugins/kit.plugin.tfer\nexports:\n  - skills/review.skill.tfer\n---\n")
+	write(t, source, "typeference.tfer", "---\nschemaVersion: 8\nname: acme/package\nversion: 1.0.0\nplugins:\n  - plugins/kit.plugin.tfer\nexports:\n  - skills/review.skill.tfer\n---\n")
 	write(t, source, "plugins/kit.plugin.tfer", "---\ndescription: Kit.\nskills:\n  - skills/review.skill.tfer\n---\n")
 	write(t, source, "skills/review.skill.tfer", reviewSkill)
 	return source
@@ -207,7 +207,7 @@ func write(t *testing.T, root, name, content string) {
 
 func TestBinarySkillFilesPackByteForByte(t *testing.T) {
 	source := t.TempDir()
-	write(t, source, "typeference.tfer", "---\nschemaVersion: 7\nname: acme/assets\nversion: 1.0.0\nplugins:\n  - plugins/kit.plugin.tfer\n---\n")
+	write(t, source, "typeference.tfer", "---\nschemaVersion: 8\nname: acme/assets\nversion: 1.0.0\nplugins:\n  - plugins/kit.plugin.tfer\n---\n")
 	write(t, source, "plugins/kit.plugin.tfer", "---\ndescription: Kit.\nskills:\n  - skills/logo.skill.tfer\n---\n")
 	write(t, source, "skills/logo.skill.tfer", "---\ndescription: Use the logo.\nfiles:\n  - path: files/logo.bin\n    as: assets/logo.bin\n  - files/notes.md\n---\nUse assets/logo.bin.\n")
 	binary := []byte{0xff, 0xfe, 0x00, 0x10, 0x0d, 0x0a}

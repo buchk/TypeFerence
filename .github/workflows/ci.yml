@@ -31,7 +31,7 @@ jobs:
           go run ./cmd/playground-pack -root .. -out /tmp/examples.json
         working-directory: go
 
-  # Determinism suite: the Go compiler compiles the version 7 fixture corpus in
+  # Determinism suite: the Go compiler compiles the version 8 fixture corpus in
   # conformance/ and must reproduce the committed digests on every platform
   # (ADR-0003). The Helio reference test (go test ./internal/compile) also
   # byte-compares the committed dist/ on every platform.

@@ -1,0 +1,4 @@
+{
+  "description": "A profile embeds only profiles; a plugin embeds the profile instead (ADR-0006).",
+  "expect": "error"
+}

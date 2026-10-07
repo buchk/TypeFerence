@@ -135,7 +135,7 @@ func TestServerReportsDocumentsOutsideAPackage(t *testing.T) {
 	uri := pathToURI(writeFile(t, root, "orphan.skill.tfer", text))
 	frames := runSession(t, pathToURI(root), frame("textDocument/didOpen", nil, docParams(uri, text)))
 	diags := diagnosticsFor(frames, uri)
-	if len(diags) != 1 || !strings.Contains(diags[0].(map[string]any)["message"].(string), "not part of a version 7 package") {
+	if len(diags) != 1 || !strings.Contains(diags[0].(map[string]any)["message"].(string), "not part of a version 8 package") {
 		t.Errorf("a document outside any package must say so, got %v", diags)
 	}
 }

@@ -1,0 +1,13 @@
+---
+description: What every team plugin starts from.
+parameters:
+  team: context-types/team.contexttype.tfer
+context:
+  - docs/norms.context.tfer
+skills:
+  - skills/status.skill.tfer
+rules:
+  - rules/evidence.rule.tfer
+lspServers:
+  - lsp/core-config.lsp.tfer
+---

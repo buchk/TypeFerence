@@ -1,0 +1,6 @@
+---
+description: Kit.
+agents:
+  - agents/base.agent.tfer
+  - agents/left.agent.tfer
+---

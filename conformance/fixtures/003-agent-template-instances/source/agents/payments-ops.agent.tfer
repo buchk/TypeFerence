@@ -1,8 +1,4 @@
 ---
 description: Operations agent for {{team.name}}.
-embeds:
-  - profiles/team-ops.profile.tfer
-with:
-  team: data/payments.context.tfer
 ---
 You support the {{team.name}} team.

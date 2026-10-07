@@ -7,4 +7,6 @@ agents:
 modes:
   - manual
   - pipeline
+skills:
+  - skills/triage.skill.tfer
 ---

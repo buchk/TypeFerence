@@ -1,0 +1,6 @@
+---
+contextType: conformance/core:context-types/team.contexttype.tfer
+values:
+  id: release
+  name: Release
+---

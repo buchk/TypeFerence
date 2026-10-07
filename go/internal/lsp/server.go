@@ -1,4 +1,4 @@
-// Package lsp implements a Language Server Protocol server for version 7
+// Package lsp implements a Language Server Protocol server for version 8
 // TypeFerence packages. Each open `.tfer` buffer gets the loader's
 // single-document diagnostics, positioned at the reported line; on open and
 // save it also gets the package's composition diagnostics. Completion offers
@@ -178,7 +178,7 @@ func (s *Server) handleInitialize(raw json.RawMessage) {
 	s.buildIndex()
 }
 
-// buildIndex maps every document identity under the workspace's version 7
+// buildIndex maps every document identity under the workspace's version 8
 // packages to its file uri, deriving identities from paths without parsing so
 // a broken document still has an entry.
 func (s *Server) buildIndex() {
@@ -317,7 +317,7 @@ func (s *Server) publish(uri, text string, withComposition bool) {
 			Range:    lineRange(text, 0),
 			Severity: 1,
 			Source:   "typeference",
-			Message:  "not part of a version 7 package: no ancestor directory has a typeference.tfer declaring schemaVersion 7",
+			Message:  "not part of a version 8 package: no ancestor directory has a typeference.tfer declaring schemaVersion 8",
 		})
 		s.publishDiagnostics(uri, diags)
 		return

@@ -1,0 +1,15 @@
+---
+description: A helper that reviews changes.
+extends: agents/helper.agent.tfer
+context:
+  - docs/base.context.tfer
+  - docs/extra.context.tfer
+servers:
+  - servers/acme-docs.server.tfer
+copilot:
+  tools:
+    - read
+    - acme-linter/*
+    - acme-docs/*
+---
+Also review every change for risk.

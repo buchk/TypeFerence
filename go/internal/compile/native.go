@@ -53,56 +53,22 @@ func (n *nativeSet) addHooks(ids []string) {
 	}
 }
 
-// planNative resolves the native components a plugin ships: those of its
-// agents and profiles, and those it lists itself.
-func planNative(c *compilation, doc *resource.Document, plan *pluginPlan, profiles []*resolve.ResolvedProfile) error {
+// planNative collects the native components a plugin's composition holds,
+// one per emitted name.
+func planNative(doc *resource.Document, plan *pluginPlan, resolved *resolve.ResolvedPlugin) error {
 	set := newNativeSet(doc.Path)
-	for _, agent := range plan.Agents {
-		for _, rule := range agent.Rules {
-			if err := set.addRule(rule); err != nil {
-				return err
-			}
-		}
-		for _, command := range agent.Commands {
-			if err := set.addCommand(command); err != nil {
-				return err
-			}
-		}
-		set.addHooks(agent.Hooks)
-	}
-	for _, profile := range profiles {
-		for _, rule := range profile.Rules {
-			if err := set.addRule(rule); err != nil {
-				return err
-			}
-		}
-		for _, command := range profile.Commands {
-			if err := set.addCommand(command); err != nil {
-				return err
-			}
-		}
-		set.addHooks(profile.Hooks)
-	}
-	for _, id := range doc.Rules {
-		rule, err := c.resolver.ResolveRule(id)
-		if err != nil {
-			return err
-		}
+	for _, rule := range resolved.Rules {
 		if err := set.addRule(rule); err != nil {
 			return err
 		}
 	}
-	for _, id := range doc.Commands {
-		command, err := c.resolver.ResolveCommand(id)
-		if err != nil {
-			return err
-		}
+	for _, command := range resolved.Commands {
 		if err := set.addCommand(command); err != nil {
 			return err
 		}
 	}
-	set.addHooks(doc.Hooks)
-	for _, id := range doc.PluginLSP {
+	set.addHooks(resolved.Hooks)
+	for _, id := range resolved.LSP {
 		set.lsp[id] = true
 	}
 	skillNames := map[string]bool{}

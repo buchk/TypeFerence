@@ -1,7 +1,4 @@
 ---
 description: A.
-embeds:
-  - profiles/one.profile.tfer
-  - profiles/two.profile.tfer
 ---
 A.

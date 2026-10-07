@@ -126,13 +126,13 @@ func candidate(t *testing.T, files map[string]string) (string, string) {
 	return source, pkg
 }
 
-const candidateManifest = "---\nschemaVersion: 7\nname: conformance/data\nversion: 1.2.0\ndependencies:\n  conformance/core: 1.0.0\nplugins:\n  - plugins/data.plugin.tfer\n---\n"
+const candidateManifest = "---\nschemaVersion: 8\nname: conformance/data\nversion: 1.2.0\ndependencies:\n  conformance/core: 1.0.0\nplugins:\n  - plugins/data.plugin.tfer\n---\n"
 
 func TestCandidateThatFitsValidates(t *testing.T) {
 	source, pkg := candidate(t, map[string]string{
 		"typeference.tfer":             candidateManifest,
-		"plugins/data.plugin.tfer":     "---\ndescription: The data platform agent.\nagents:\n  - agents/data-agent.agent.tfer\n---\n",
-		"agents/data-agent.agent.tfer": "---\ndescription: Data agent.\nembeds:\n  - conformance/core:profiles/engineering.profile.tfer\n---\nHelp the data team.\n",
+		"plugins/data.plugin.tfer":     "---\ndescription: The data platform agent.\nembeds:\n  - conformance/core:profiles/engineering.profile.tfer\nagents:\n  - agents/data-agent.agent.tfer\n---\n",
+		"agents/data-agent.agent.tfer": "---\ndescription: Data agent.\n---\nHelp the data team.\n",
 	})
 	summary, err := compile.Summarize(source, compile.BuildOptions{Candidate: pkg})
 	if err != nil {
@@ -163,7 +163,7 @@ func TestCandidateCollisionIsReported(t *testing.T) {
 func TestCandidateVersionSkewIsReported(t *testing.T) {
 	// Releasing a new core while payments and data still pin the old one.
 	source, pkg := candidate(t, map[string]string{
-		"typeference.tfer":         "---\nschemaVersion: 7\nname: conformance/core\nversion: 1.1.0\nexports:\n  - skills/status.skill.tfer\n---\n",
+		"typeference.tfer":         "---\nschemaVersion: 8\nname: conformance/core\nversion: 1.1.0\nexports:\n  - skills/status.skill.tfer\n---\n",
 		"skills/status.skill.tfer": "---\ndescription: Status.\n---\nReport status.\n",
 	})
 	_, err := compile.Summarize(source, compile.BuildOptions{Candidate: pkg})
@@ -174,7 +174,7 @@ func TestCandidateVersionSkewIsReported(t *testing.T) {
 
 func TestCandidateDependenciesMustBeLocked(t *testing.T) {
 	source, pkg := candidate(t, map[string]string{
-		"typeference.tfer":                  "---\nschemaVersion: 7\nname: conformance/data\nversion: 1.2.0\ndependencies:\n  conformance/core: 2.0.0\nplugins:\n  - plugins/data.plugin.tfer\n---\n",
+		"typeference.tfer":                  "---\nschemaVersion: 8\nname: conformance/data\nversion: 1.2.0\ndependencies:\n  conformance/core: 2.0.0\nplugins:\n  - plugins/data.plugin.tfer\n---\n",
 		"plugins/data.plugin.tfer":          "---\ndescription: The data kit.\nskills:\n  - skills/pipeline-status.skill.tfer\n---\n",
 		"skills/pipeline-status.skill.tfer": "---\ndescription: Pipeline status.\n---\nReport pipeline status.\n",
 	})

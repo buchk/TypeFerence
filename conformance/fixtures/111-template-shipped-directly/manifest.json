@@ -1,4 +1,4 @@
 {
-  "description": "A template skill ships only as an instance, never through a plugin's skills.",
+  "description": "A plugin that lists a template skill must bind its parameters; the template itself never ships.",
   "expect": "error"
 }

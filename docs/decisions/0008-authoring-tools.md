@@ -14,7 +14,7 @@ become a second semantics.
 
 1. **`import` fails closed.** It converts a skill directory, an Agent Plugin,
    a Copilot CLI plugin, or a repository's agents and skills into a new
-   package: one plugin linking everything, with metadata, skill files,
+   package: one plugin listing everything, with metadata, skill files,
    servers, native components, and every other plugin file carried. Anything
    the language cannot represent fails the import and is listed item by item;
    `--lossy` drops those items and lists them. Names are never rewritten.

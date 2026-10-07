@@ -1,0 +1,7 @@
+{
+  "description": "Agent extension (ADR-0006): an extension appends its objectives and documents to its base's, accumulates agent-scoped servers, overlays Copilot fields one by one, and takes its base's place when a plugin lists it over a profile that holds the base.",
+  "expect": "success",
+  "digests": {
+    "agent-plugin": "sha256:a5b12078d6d13db3cd92d7693db3c7f7526232e3c78ebc0a177ae9937d9f5b28"
+  }
+}

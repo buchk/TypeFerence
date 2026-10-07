@@ -1,0 +1,6 @@
+---
+description: Kit.
+embeds:
+  - profiles/left.profile.tfer
+  - profiles/right.profile.tfer
+---

@@ -1,0 +1,4 @@
+---
+description: Look up a ledger entry.
+---
+Find the entry by its identifier and report its state.

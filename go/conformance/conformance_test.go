@@ -1,4 +1,4 @@
-// Package conformance runs the version 7 golden conformance corpus: each
+// Package conformance runs the version 8 golden conformance corpus: each
 // fixture either compiles to recorded agent-plugin digests or fails with a
 // diagnostic.
 package conformance

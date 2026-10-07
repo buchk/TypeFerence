@@ -1,0 +1,9 @@
+---
+description: Operations for {{team.name}}.
+copilot:
+  model: team-model
+  tools:
+    - read
+    - search
+---
+You support the {{team.name}} team. Lead with evidence.

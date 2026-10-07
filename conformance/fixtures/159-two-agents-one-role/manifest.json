@@ -1,0 +1,4 @@
+{
+  "description": "One resource cannot list an agent and its extension: they share a role, and a plugin ships one agent per role (ADR-0006).",
+  "expect": "error"
+}

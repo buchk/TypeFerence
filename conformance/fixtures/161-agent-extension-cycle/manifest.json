@@ -1,0 +1,4 @@
+{
+  "description": "An agent extension chain cannot contain a cycle (ADR-0006).",
+  "expect": "error"
+}

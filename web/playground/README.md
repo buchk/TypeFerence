@@ -13,7 +13,7 @@ design rationale in [ADR-0008](../../docs/decisions/0008-authoring-tools.md).
 - **Graph:** the declared composition: embeds, bindings, extension,
   parameters, `with` bindings, held documents, servers, and what each plugin
   ships.
-- **Bundle:** each resolved agent with its bindings and provenance.
+- **Bundle:** each resolved agent with its extension chain and provenance.
 - **Instantiate:** a form generated from a context type (ADR-0006). Pick a data
   document; every field of its context type becomes an input, with labels,
   help text, defaults, and choices. Editing the form rewrites the data

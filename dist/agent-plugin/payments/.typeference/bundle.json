@@ -1,16 +1,59 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "id": "helio/payments/plugins/payments@2.4.0",
   "name": "payments",
   "mode": "manual",
   "version": "2.4.0",
   "description": "The Helio payments operations agent, for engineers and release pipelines.",
-  "sourceDigest": "sha256:ee499185f4033e52be0248b36f93083735cae57ad1c501e84208f753479e830a",
+  "sourceDigest": "sha256:5e8199f41a1c291a5716af2f703ba6b2cbb0240aff9c521f83f9316e68feaf0b",
   "dependencies": [
     {
       "name": "helio/core",
       "version": "3.1.0",
-      "digest": "sha256:0887f5deff78efb00c40b8a1232c78f33150c28cf9ac50a098190c433711b874"
+      "digest": "sha256:8625e406a9d6c9433d4a95962f35a8969ea87cbf8979a0f5b1231d6b9955ea96"
+    }
+  ],
+  "embeds": [
+    "helio/core/profiles/team-ops@3.1.0"
+  ],
+  "bindings": [
+    {
+      "parameter": "team",
+      "data": "helio/payments/data/payments-team@2.4.0",
+      "contextType": "helio/core/context-types/team@3.1.0",
+      "values": {
+        "id": "payments",
+        "name": "Payments",
+        "onCall": "payments-oncall",
+        "queue": "PAY-OPS",
+        "tier": "critical"
+      }
+    }
+  ],
+  "provenance": [
+    {
+      "field": "embeds",
+      "source": "helio/core/profiles/team-ops@3.1.0"
+    },
+    {
+      "field": "with",
+      "source": "helio/payments/plugins/payments@2.4.0"
+    },
+    {
+      "field": "agents",
+      "source": "helio/payments/plugins/payments@2.4.0"
+    },
+    {
+      "field": "rules",
+      "source": "helio/core/profiles/team-ops@3.1.0"
+    },
+    {
+      "field": "commands",
+      "source": "helio/core/profiles/team-ops@3.1.0"
+    },
+    {
+      "field": "hooks",
+      "source": "helio/core/profiles/team-ops@3.1.0"
     }
   ],
   "agents": [
@@ -19,23 +62,7 @@
       "name": "payments-ops",
       "displayName": "payments-ops",
       "description": "Operations agent for the Helio payments team.",
-      "embeds": [
-        "helio/core/profiles/team-ops@3.1.0"
-      ],
-      "bindings": [
-        {
-          "parameter": "team",
-          "data": "helio/payments/data/payments-team@2.4.0",
-          "contextType": "helio/core/context-types/team@3.1.0",
-          "values": {
-            "id": "payments",
-            "name": "Payments",
-            "onCall": "payments-oncall",
-            "queue": "PAY-OPS",
-            "tier": "critical"
-          }
-        }
-      ],
+      "extends": [],
       "objectives": [
         {
           "source": "helio/payments/agents/payments-ops@2.4.0",
@@ -48,38 +75,6 @@
         "payments-queue-summary",
         "payments-self-heal"
       ],
-      "rules": [
-        {
-          "name": "working-norms",
-          "id": "helio/core/rules/working-norms@3.1.0",
-          "templateId": "",
-          "bindings": []
-        }
-      ],
-      "commands": [
-        {
-          "name": "payments-standup",
-          "id": "helio/core/commands/standup@3.1.0",
-          "templateId": "helio/core/commands/standup@3.1.0",
-          "bindings": [
-            {
-              "parameter": "team",
-              "data": "helio/payments/data/payments-team@2.4.0",
-              "contextType": "helio/core/context-types/team@3.1.0",
-              "values": {
-                "id": "payments",
-                "name": "Payments",
-                "onCall": "payments-oncall",
-                "queue": "PAY-OPS",
-                "tier": "critical"
-              }
-            }
-          ]
-        }
-      ],
-      "hooks": [
-        "helio/core/hooks/policy-check@3.1.0"
-      ],
       "servers": [
         "helio/payments/servers/helio-ledger@2.4.0"
       ],
@@ -87,26 +82,6 @@
         {
           "field": "objectives",
           "source": "helio/payments/agents/payments-ops@2.4.0"
-        },
-        {
-          "field": "embeds",
-          "source": "helio/core/profiles/team-ops@3.1.0"
-        },
-        {
-          "field": "with",
-          "source": "helio/payments/agents/payments-ops@2.4.0"
-        },
-        {
-          "field": "rules",
-          "source": "helio/core/profiles/team-ops@3.1.0"
-        },
-        {
-          "field": "commands",
-          "source": "helio/core/profiles/team-ops@3.1.0"
-        },
-        {
-          "field": "hooks",
-          "source": "helio/core/profiles/team-ops@3.1.0"
         }
       ]
     }
@@ -226,7 +201,7 @@
         },
         {
           "field": "binding",
-          "source": "helio/payments/agents/payments-ops@2.4.0"
+          "source": "helio/payments/plugins/payments@2.4.0"
         }
       ]
     }

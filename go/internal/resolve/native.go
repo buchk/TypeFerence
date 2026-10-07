@@ -52,7 +52,7 @@ func (r *Resolver) componentBindings(doc *resource.Document, available map[strin
 	for _, name := range resource.SortedKeys(doc.Parameters) {
 		b, ok := available[name]
 		if !ok {
-			return nil, resource.Errorf("%s: parameter '%s' is unbound; a %s with parameters ships only through an agent that binds them", doc.Path, name, doc.Kind)
+			return nil, resource.Errorf("%s: parameter '%s' is unbound; a %s with parameters ships only as an instance, through a plugin that binds them", doc.Path, name, doc.Kind)
 		}
 		bindings[name] = b
 	}
@@ -65,7 +65,7 @@ func componentName(doc *resource.Document, instanceName string) (string, string,
 		return name, "", nil
 	}
 	if instanceName == "" {
-		return "", "", resource.Errorf("%s: a template %s needs an instance name from its agent's data", doc.Path, doc.Kind)
+		return "", "", resource.Errorf("%s: a template %s needs an instance name from its plugin's data", doc.Path, doc.Kind)
 	}
 	return instanceName + "-" + name, doc.ID, nil
 }
@@ -137,25 +137,6 @@ func (r *Resolver) resolveCommand(id string, available map[string]*Binding, inst
 	}, nil
 }
 
-// ResolveRule resolves a rule a plugin ships directly. A rule with
-// parameters ships only through an agent that binds them.
-func (r *Resolver) ResolveRule(id string) (ResolvedRule, error) {
-	doc := r.docs[id]
-	if doc == nil || doc.Kind != "rule" {
-		return ResolvedRule{}, resource.Errorf("%s is not a rule in this build", id)
-	}
-	return r.resolveRule(id, nil, "")
-}
-
-// ResolveCommand resolves a command a plugin ships directly.
-func (r *Resolver) ResolveCommand(id string) (ResolvedCommand, error) {
-	doc := r.docs[id]
-	if doc == nil || doc.Kind != "command" {
-		return ResolvedCommand{}, resource.Errorf("%s is not a command in this build", id)
-	}
-	return r.resolveCommand(id, nil, "")
-}
-
 // validateNative checks the native component references of one document.
 func (r *Resolver) validateNative(doc *resource.Document) error {
 	check := func(ids []string, kind string) error {
@@ -175,7 +156,7 @@ func (r *Resolver) validateNative(doc *resource.Document) error {
 	if err := check(doc.Hooks, "hook"); err != nil {
 		return err
 	}
-	if err := check(doc.PluginLSP, "lsp"); err != nil {
+	if err := check(doc.LSPServers, "lsp"); err != nil {
 		return err
 	}
 	if err := check(doc.Servers, "server"); err != nil {

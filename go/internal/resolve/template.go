@@ -1,5 +1,5 @@
-// Package resolve composes version 7 documents into resolved agents, skills,
-// and profiles: promoted bindings, held documents, bound parameters, and
+// Package resolve composes version 8 documents into resolved plugins, agents,
+// and skills: promoted bindings, held documents, bound parameters, and
 // rendered field references (docs/specification.md).
 package resolve
 

@@ -1,0 +1,9 @@
+---
+schemaVersion: 8
+name: conformance/personal
+version: 1.0.0
+dependencies:
+  conformance/team: 1.0.0
+plugins:
+  - plugins/ops-mine.plugin.tfer
+---

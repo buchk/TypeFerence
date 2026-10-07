@@ -1,8 +1,5 @@
 ---
 description: The team lead agent.
-embeds:
-  - agents/member.agent.tfer
-skills:
-  - skills/team-status.skill.tfer
+extends: agents/member.agent.tfer
 ---
 Also review the team's plans.

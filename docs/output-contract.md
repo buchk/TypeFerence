@@ -28,7 +28,7 @@ directory: `<plugin>` for manual mode, `<plugin>-pipeline` for pipeline mode.
 | `<artifact>/com.github.copilot/hooks/hooks.json` | Copilot | the artifact ships a hook | `conformance/schemas/copilot/hooks.schema.json` |
 | `<artifact>/com.github.copilot/lsp.json` | Copilot | the artifact ships an LSP server | `conformance/schemas/copilot/lsp.schema.json` |
 | `<artifact>/<plugin file>` | the author's | the plugin's `files` lists it | digest only |
-| `<artifact>/.typeference/bundle.json` | TypeFerence (`schemaVersion` 4) | always | `conformance/schemas/typeference/bundle.schema.json` |
+| `<artifact>/.typeference/bundle.json` | TypeFerence (`schemaVersion` 5) | always | `conformance/schemas/typeference/bundle.schema.json` |
 
 Nothing else is emitted. In particular, build never writes repository or
 enterprise settings (no carried file may land beneath `.github/copilot/`), and
@@ -52,8 +52,10 @@ Copilot ignores them.
 - `compatibility.json` lists capabilities that two or more distinct skill
   implementations provide in one mode, so a marketplace can warn before
   installing plugins that compete for the same requests.
-- `bundle.json` records what one artifact ships and why: resolved agents with
-  every contributor, skills with their template and bound data, servers,
+- `bundle.json` records what one artifact ships and why: the plugin's
+  embeds, bound data, and the contributors of every member of its
+  composition; resolved agents with their extension chains; skills with
+  their template and bound data; servers,
   rules, commands, hooks, LSP servers, and the plugin's carried files. Identities have the form
   `<package>/<path>@<version>`. `templateId` is empty for a skill, rule, or
   command that is not an instance.

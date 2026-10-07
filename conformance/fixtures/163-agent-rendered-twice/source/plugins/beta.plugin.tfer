@@ -1,0 +1,7 @@
+---
+description: Beta.
+embeds:
+  - plugins/alpha.plugin.tfer
+with:
+  team: data/beta.context.tfer
+---

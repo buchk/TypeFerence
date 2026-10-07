@@ -167,7 +167,7 @@ func LoadPackage(sourceDir string, options PackageOptions) (*Package, error) {
 		return nil, err
 	}
 	if project == nil {
-		return nil, Errorf("%s has no %s; a package root needs a manifest with schemaVersion 7", root, ManifestFile)
+		return nil, Errorf("%s has no %s; a package root needs a manifest with schemaVersion 8", root, ManifestFile)
 	}
 	l := &packageLoader{
 		root:        root,
@@ -420,9 +420,6 @@ func (d *documentDecoder) ref(n *tferlex.Node, raw string, allowed ...string) (s
 		}
 		return "", d.errorf(n, "'%s' must reference a %s document, got '%s'", n.Key, strings.Join(names, " or "), raw)
 	}
-	if kind == "plugin" {
-		return "", d.errorf(n, "plugins are listed by the manifest and cannot be referenced")
-	}
 	if pkg == "" {
 		if d.sink != nil {
 			d.sink.local(target, d.doc.Path)
@@ -569,25 +566,22 @@ func (d *documentDecoder) decodeKind(n *tferlex.Node) error {
 	switch doc.Kind {
 	case "agent":
 		return d.decode(n, with(map[string]func(*tferlex.Node) error{
-			"embeds":   d.refListInto(&doc.Embeds, "profile", "agent"),
-			"context":  d.contextEntries(false),
-			"skills":   d.bindings,
-			"with":     d.withField(),
-			"copilot":  d.copilot(false),
-			"rules":    d.refListInto(&doc.Rules, "rule"),
-			"commands": d.refListInto(&doc.Commands, "command"),
-			"hooks":    d.refListInto(&doc.Hooks, "hook"),
-			"servers":  d.refListInto(&doc.Servers, "server"),
+			"extends": d.refInto(&doc.Extends, "agent"),
+			"context": d.contextEntries(false),
+			"copilot": d.copilot(false),
+			"servers": d.refListInto(&doc.Servers, "server"),
 		}))
 	case "profile":
 		return d.decode(n, with(map[string]func(*tferlex.Node) error{
 			"embeds":     d.refListInto(&doc.Embeds, "profile"),
 			"parameters": d.parametersField(),
+			"agents":     d.refListInto(&doc.Agents, "agent"),
 			"context":    d.contextEntries(false),
 			"skills":     d.bindings,
 			"rules":      d.refListInto(&doc.Rules, "rule"),
 			"commands":   d.refListInto(&doc.Commands, "command"),
 			"hooks":      d.refListInto(&doc.Hooks, "hook"),
+			"lspServers": d.refListInto(&doc.LSPServers, "lsp"),
 		}))
 	case "capability":
 		return d.decode(n, with(map[string]func(*tferlex.Node) error{
@@ -667,14 +661,16 @@ func (d *documentDecoder) decodeKind(n *tferlex.Node) error {
 	case "plugin":
 		return d.decode(n, map[string]func(*tferlex.Node) error{
 			"description": d.stringInto(&doc.Description),
-			"agents":      d.refListInto(&doc.PluginAgents, "agent"),
-			"profiles":    d.refListInto(&doc.PluginProfiles, "profile"),
-			"skills":      d.refListInto(&doc.PluginSkills, "skill"),
+			"embeds":      d.refListInto(&doc.Embeds, "profile", "plugin"),
+			"agents":      d.refListInto(&doc.Agents, "agent"),
+			"context":     d.contextEntries(false),
+			"skills":      d.bindings,
+			"with":        d.withField(),
 			"modes":       d.stringListInto(&doc.PluginModes),
 			"rules":       d.refListInto(&doc.Rules, "rule"),
 			"commands":    d.refListInto(&doc.Commands, "command"),
 			"hooks":       d.refListInto(&doc.Hooks, "hook"),
-			"lspServers":  d.refListInto(&doc.PluginLSP, "lsp"),
+			"lspServers":  d.refListInto(&doc.LSPServers, "lsp"),
 			"author":      d.pluginAuthor(&doc.PluginMetadata.Author),
 			"homepage":    d.metadataString(&doc.PluginMetadata.Homepage),
 			"repository":  d.metadataString(&doc.PluginMetadata.Repository),
@@ -999,7 +995,7 @@ func (d *documentDecoder) contextTypeFields(n *tferlex.Node) error {
 		case field.Type == "":
 			return d.errorf(item, "field '%s' must declare a type", item.Key)
 		case field.Type == "number" || field.Type == "decimal":
-			return d.errorf(item, "field '%s': type '%s' does not exist in version 7; use integer or string", item.Key, field.Type)
+			return d.errorf(item, "field '%s': type '%s' does not exist in version 8; use integer or string", item.Key, field.Type)
 		case strings.HasPrefix(field.Type, "map<"):
 			return d.errorf(item, "field '%s': map types were removed in version 7", item.Key)
 		case !fieldTypes[field.Type]:
@@ -1185,8 +1181,8 @@ func (d *documentDecoder) validate() error {
 			doc.Values = map[string]FieldValue{}
 		}
 	case "plugin":
-		if len(doc.PluginAgents)+len(doc.PluginProfiles)+len(doc.PluginSkills)+len(doc.Rules)+len(doc.Commands)+len(doc.Hooks)+len(doc.PluginLSP) == 0 {
-			return Errorf("%s: a plugin must link at least one agent, profile, skill, rule, command, hook, or LSP server", file)
+		if len(doc.Embeds)+len(doc.Agents)+len(doc.Skills)+len(doc.Rules)+len(doc.Commands)+len(doc.Hooks)+len(doc.LSPServers) == 0 {
+			return Errorf("%s: a plugin must embed or list at least one profile, plugin, agent, skill, rule, command, hook, or LSP server", file)
 		}
 		seen := map[string]bool{}
 		for _, mode := range doc.PluginModes {

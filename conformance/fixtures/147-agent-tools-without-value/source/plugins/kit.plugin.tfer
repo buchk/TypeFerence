@@ -1,10 +1,12 @@
 ---
 description: Tool allowlist kit.
 agents:
-  - agents/quiet.agent.tfer
   - agents/ops.agent.tfer
   - agents/open.agent.tfer
 modes:
   - manual
   - pipeline
+skills:
+  - skills/triage.skill.tfer
+  - skills/notes.skill.tfer
 ---

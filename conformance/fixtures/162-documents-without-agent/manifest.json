@@ -1,0 +1,4 @@
+{
+  "description": "A plugin that ships no agent cannot hold documents, directly or through a profile: there is nowhere to deliver them (ADR-0006).",
+  "expect": "error"
+}

@@ -85,11 +85,14 @@ func TestImportCarriesFilesServersAndCopilotFields(t *testing.T) {
 	write(t, plugin, "skills/code-review/SKILL.md", "---\nname: code-review\ndescription: Review a diff.\nargument-hint: \"[pr]\"\nuser-invocable: false\n---\n"+skillBody)
 	write(t, plugin, "skills/code-review/references/checklist.md", "- Correctness first.\n")
 	write(t, plugin, "skills/code-review/scripts/diff.sh", "git diff\n")
-	write(t, plugin, "com.github.copilot/agents/reviewer.agent.md", "---\ndescription: Reviews pull requests.\ntools: ['read', 'search']\n---\nReview.\n")
+	write(t, plugin, "com.github.copilot/agents/reviewer.agent.md", "---\ndescription: Reviews pull requests.\ntools: ['read', 'search', 'team-tickets/*']\n---\nReview.\n")
 	write(t, plugin, "mcp.json", `{"$schema":"https://agent-plugins.org/schemas/1.0.0/mcp.schema.json","mcpServers":{"team-tickets":{"type":"streamable-http","url":"https://tickets.example/mcp"}}}`)
 	result, err := Import(plugin, Options{Name: "acme/team", Version: "1.0.0"})
 	if err != nil {
 		t.Fatal(err)
+	}
+	if notes := strings.Join(result.Notes, "\n"); strings.Contains(notes, "tools list does not name") {
+		t.Fatalf("an agent whose tools name every imported server needs no note:\n%s", notes)
 	}
 	out := t.TempDir()
 	if err := Write(result.Files, out); err != nil {
@@ -113,8 +116,33 @@ func TestImportCarriesFilesServersAndCopilotFields(t *testing.T) {
 		}
 	}
 	agent, err := os.ReadFile(filepath.Join(root, "com.github.copilot", "agents", "reviewer.agent.md"))
-	if err != nil || !strings.Contains(string(agent), "tools:\n  - \"read\"\n  - \"search\"") {
+	if err != nil || !strings.Contains(string(agent), "tools:\n  - \"read\"\n  - \"search\"\n  - \"team-tickets/*\"") {
 		t.Fatalf("Copilot agent fields survive the round trip: %v\n%s", err, agent)
+	}
+}
+
+// Every skill a plugin ships sits beside every agent it ships, and import
+// assumes every skill requires every server, so an agent whose tools list
+// omits a server cannot validate as imported; import says so.
+func TestImportNotesAgentToolsThatMissAServer(t *testing.T) {
+	plugin := t.TempDir()
+	write(t, plugin, "plugin.json", `{"$schema":"https://agent-plugins.org/schemas/1.0.0/plugin.schema.json","name":"team-kit","description":"Our team kit."}`)
+	write(t, plugin, "skills/code-review/SKILL.md", "---\nname: code-review\ndescription: Review a diff.\n---\n"+skillBody)
+	write(t, plugin, "com.github.copilot/agents/reviewer.agent.md", "---\ndescription: Reviews pull requests.\ntools: ['read']\n---\nReview.\n")
+	write(t, plugin, "mcp.json", `{"$schema":"https://agent-plugins.org/schemas/1.0.0/mcp.schema.json","mcpServers":{"team-tickets":{"type":"streamable-http","url":"https://tickets.example/mcp"}}}`)
+	result, err := Import(plugin, Options{Name: "acme/team", Version: "1.0.0"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if notes := strings.Join(result.Notes, "\n"); !strings.Contains(notes, "com.github.copilot/agents/reviewer.agent.md: its tools list does not name team-tickets") {
+		t.Fatalf("import names the agent and the server its tools miss:\n%s", notes)
+	}
+	out := t.TempDir()
+	if err := Write(result.Files, out); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := compile.Build(out, t.TempDir(), compile.BuildOptions{}); err == nil || !strings.Contains(err.Error(), "team-tickets") {
+		t.Fatalf("the imported package fails closed on the missing grant, got %v", err)
 	}
 }
 

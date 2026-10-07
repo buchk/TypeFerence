@@ -1,7 +1,4 @@
 ---
 description: Operations for another team.
-embeds:
-  - agents/base.agent.tfer
-with:
-  team: data/beta.context.tfer
+extends: agents/base.agent.tfer
 ---

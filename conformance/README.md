@@ -1,7 +1,7 @@
 # TypeFerence determinism suite
 
 Language-neutral fixtures the compiler must reproduce as byte-identical
-artifacts. The version 7 corpus pins the specification's canonical output:
+artifacts. The version 8 corpus pins the specification's canonical output:
 the Go implementation runs it in CI, and a digest mismatch on any success
 fixture is a broken build. Error fixtures must fail with a diagnostic; the
 diagnostic text is not part of the contract (ADR-0003).

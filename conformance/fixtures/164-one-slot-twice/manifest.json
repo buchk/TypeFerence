@@ -1,0 +1,4 @@
+{
+  "description": "One resource binds each slot once: a skill and its extension share a capability, so listing both is an error rather than shipping two competing skills (ADR-0006).",
+  "expect": "error"
+}

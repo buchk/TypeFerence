@@ -1,0 +1,10 @@
+---
+schemaVersion: 8
+name: conformance/team
+version: 1.0.0
+plugins:
+  - plugins/team-ops.plugin.tfer
+exports:
+  - agents/ops.agent.tfer
+  - skills/triage.skill.tfer
+---

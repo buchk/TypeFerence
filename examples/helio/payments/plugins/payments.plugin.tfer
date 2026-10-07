@@ -1,7 +1,13 @@
 ---
 description: The Helio payments operations agent, for engineers and release pipelines.
+embeds:
+  - helio/core:profiles/team-ops.profile.tfer
 agents:
   - agents/payments-ops.agent.tfer
+skills:
+  - skills/self-heal.skill.tfer
+with:
+  team: data/payments-team.context.tfer
 modes:
   - manual
   - pipeline

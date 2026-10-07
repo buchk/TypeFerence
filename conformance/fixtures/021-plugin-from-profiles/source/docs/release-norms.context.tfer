@@ -1,0 +1,4 @@
+---
+displayName: Release norms
+---
+Ship only from a green main branch.

@@ -1,0 +1,4 @@
+{
+  "description": "Two plugins in one build that ship one agent with different results fail: one custom agent name denotes one agent file (ADR-0006).",
+  "expect": "error"
+}

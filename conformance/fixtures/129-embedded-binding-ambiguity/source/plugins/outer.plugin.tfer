@@ -1,0 +1,6 @@
+---
+description: Outer.
+embeds:
+  - plugins/one.plugin.tfer
+  - plugins/two.plugin.tfer
+---

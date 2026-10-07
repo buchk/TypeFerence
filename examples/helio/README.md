@@ -1,7 +1,7 @@
-# Helio, version 7
+# Helio, version 8
 
 A fictional organization, Helio Works, authoring its Copilot plugins with
-version 7 of the language.
+version 8 of the language.
 
 The reference test (`go test ./internal/compile -run TestHelioReference`)
 stages the four team packages into a temporary feed, restores the marketplace,
@@ -14,8 +14,8 @@ specification by hand; the compiler's output in `dist/` matches them.
 | Package | Role |
 | --- | --- |
 | `core/` (`helio/core`) | The platform team's library: the team contract, the team operations profile, shared skills, servers, the organization's rule, command, and hook, a language server, and a skills-only plugin |
-| `payments/` (`helio/payments`) | A team that instantiates the profile and specializes one skill |
-| `data-platform/` (`helio/data-platform`) | A team that only instantiates the profile: one data file, one agent, one plugin |
+| `payments/` (`helio/payments`) | A team plugin that embeds the profile and specializes one skill |
+| `data-platform/` (`helio/data-platform`) | A team plugin that only embeds the profile: one data file, one agent, one plugin |
 | `integrations/` (`helio/integrations`) | One developer's README skills for several integration repositories, as skill instances |
 | `marketplace/` (`helio/marketplace`) | The organization marketplace: pins every package and lists the plugins to ship |
 
@@ -28,15 +28,19 @@ specification by hand; the compiler's output in `dist/` matches them.
 - **A template profile.** `core/profiles/team-ops.profile.tfer` declares the
   `team` parameter. Its skills use `{{team.name}}`, `{{team.queue}}`, and
   `{{team.tier}}`.
+- **The plugin binds.** Each team plugin embeds the profile and binds its
+  team's data with `with`; its thin agent holds only identity and
+  objectives, and every member renders with the plugin's data
+  ([ADR-0006](../../docs/decisions/0006-composition-and-templates.md)).
 - **Pure instantiation.** `data-platform/` holds a data file
-  (`data/data-team.context.tfer`) and an agent whose `with` binds it. That is
-  exactly what a form would generate.
+  (`data/data-team.context.tfer`), an agent, and a plugin that embeds the
+  profile and binds the data. That is exactly what a form would generate.
 - **Specialization.** `payments/skills/self-heal.skill.tfer` extends the core
-  template and adds reconciliation checks. Binding it in the payments agent
+  template and adds reconciliation checks. Listing it in the payments plugin
   replaces the profile's `self-heal`. Because it inherits the template's
   parameter, it is still instantiated, as `payments-self-heal`.
 - **Enterprise defaults as rules.** `core/rules/working-norms.rule.tfer` is
-  held by the profile, so every plugin that ships an agent embedding it ships
+  held by the profile, so every plugin that embeds it ships
   `com.github.copilot/rules/working-norms.md`. Copilot loads plugin rules for
   the whole session, so the norms reach slash commands, model-invoked skills,
   and pipeline runs, not only the agent.
@@ -48,7 +52,7 @@ specification by hand; the compiler's output in `dist/` matches them.
 - **A language server.** `engineering-kit` lists
   `core/lsp/helio-config.lsp.tfer`, emitted into `lsp.json`.
 - **Explicit tool permissions.** The payments agent restricts its tools, so
-  it lists every server its skills and its own `mcp-servers` use
+  it lists every server its plugin's skills and its own `mcp-servers` use
   (`helio-tickets/*`, `helio-builds/*`, `helio-ledger/*`). Build checks the
   list against those servers in each mode and fails on a gap; it never adds a
   grant. `helio-builds` ships only in pipeline mode, and Copilot ignores tool

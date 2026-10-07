@@ -36,7 +36,7 @@ adopting organization and are out of scope.
   diagnostic text is intentionally not yet contractual.
 - [ ] Add a review check that every normative specification edit updates
   `docs/conformance-matrix.md` and, for canonicalization or composition, adds a
-  version 7 golden fixture.
+  version 8 golden fixture.
 - [ ] Isolate mutable resolver normalization state from loaded source documents.
   Source identity is already computed from canonical source files, but a cloned
   resolver input would make that boundary structural rather than conventional.

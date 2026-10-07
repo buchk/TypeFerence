@@ -1,10 +1,6 @@
 ---
 displayName: TypeFerence Maintainer
 description: The agent that maintains the TypeFerence repository, defined in TypeFerence's own terms and compiled into this repository's AGENTS.md.
-embeds:
-  - profiles/spec-conformance.profile.tfer
-  - profiles/determinism-guardian.profile.tfer
-  - profiles/contribution-workflow.profile.tfer
 context:
   - context/repository-map.context.tfer
 ---

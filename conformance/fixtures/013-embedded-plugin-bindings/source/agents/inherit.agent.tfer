@@ -1,6 +1,5 @@
 ---
 description: Operations with the base team.
-embeds:
-  - agents/base.agent.tfer
+extends: agents/base.agent.tfer
 ---
 Also escalate blocked requests.

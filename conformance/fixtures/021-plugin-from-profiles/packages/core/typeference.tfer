@@ -1,0 +1,8 @@
+---
+schemaVersion: 8
+name: conformance/core
+version: 1.0.0
+exports:
+  - profiles/baseline.profile.tfer
+  - context-types/team.contexttype.tfer
+---

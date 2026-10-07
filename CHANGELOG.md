@@ -3,13 +3,36 @@
 All notable changes to TypeFerence are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semantic
 versioning. Tool versions (this file) are independent of the source-package
-`schemaVersion` declared in the project manifest (currently 7), which only
+`schemaVersion` declared in the project manifest (currently 8), which only
 changes when the source format changes incompatibly.
 
 TypeFerence is an experimental reference implementation; pre-1.0 versions make no
 compatibility promises between minor versions.
 
 ## [Unreleased]
+
+### Changed
+
+- **Source version 8: the plugin is the composition and binding root**
+  ([ADR-0006](docs/decisions/0006-composition-and-templates.md)). Copilot
+  installs every skill of a plugin beside every agent in it, so composition
+  moves from agents to plugins. A plugin embeds profiles and other plugins
+  (a dependency's plugin when that package lists it), lists agents, binds
+  skills, holds documents and native components, and binds parameters with
+  `with`; the promotion rules are unchanged. Packaging (description,
+  metadata, modes, files) is never inherited. Profiles may hold agents and
+  LSP servers. Agents lose `embeds`, `skills`, `with`, `rules`, `commands`,
+  and `hooks`, and gain single-base additive `extends`: an extension
+  replaces its base in the plugin that lists it. A binding's slot is its
+  capability, or a skill instance's own identity, so instances of one
+  template still ship side by side. An agent file lists every skill its
+  artifact ships and is checked against those skills' servers; two plugins
+  that ship one agent with different results fail the build. `bundle.json`
+  is `schemaVersion` 5. `import` notes an imported agent whose tools omit an
+  imported server. Every committed fixture, Helio, and the maintainer
+  definition were converted; Helio's emitted agents, skills, and native
+  components are byte-identical, and only its `bundle.json` and `build.json`
+  changed.
 
 ### Added
 

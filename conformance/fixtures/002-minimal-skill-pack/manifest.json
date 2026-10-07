@@ -2,6 +2,6 @@
   "description": "A skills-only plugin with one plain skill: the smallest artifact.",
   "expect": "success",
   "digests": {
-    "agent-plugin": "sha256:d540ce0e3679f738156edd1e45efa2fa926170a18510f963eb76c28edbf6f5ad"
+    "agent-plugin": "sha256:a276de66695041c8ae816b5ba1c0bf254b69ed2bf1f3c3b8612a17caa19c940a"
   }
 }

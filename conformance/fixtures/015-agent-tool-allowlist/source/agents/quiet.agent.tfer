@@ -1,7 +1,5 @@
 ---
 description: Answers from what it is given, with no tools.
-skills:
-  - skills/notes.skill.tfer
 copilot:
   tools: []
 ---

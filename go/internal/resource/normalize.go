@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-// Normalize materializes what version 7 derives rather than asks authors to
+// Normalize materializes what version 8 derives rather than asks authors to
 // write, over a merged document set (root package plus locked dependencies):
 //
 //   - implied capabilities: a root skill that binds no capability defines one
@@ -13,6 +13,9 @@ import (
 //   - flattened extension chains: an extension carries its base's contract,
 //     instructions, held documents, files, servers, parameters, bindings, and
 //     Copilot fields (ADR-0006);
+//   - flattened agent extension chains: an extension carries its base's
+//     objectives, held documents, servers, and Copilot fields, and the
+//     root of its chain as its role (ADR-0006);
 //   - capability references that name a skill, rewritten to that skill's
 //     capability;
 //   - an agent or profile display name defaulting to its identity leaf.
@@ -20,8 +23,13 @@ func Normalize(docs map[string]*Document) error {
 	ids := SortedKeys(docs)
 	f := &flattener{docs: docs, visiting: map[string]bool{}}
 	for _, id := range ids {
-		if docs[id].Kind == "skill" {
+		switch docs[id].Kind {
+		case "skill":
 			if err := f.flatten(id); err != nil {
+				return err
+			}
+		case "agent":
+			if err := f.flattenAgent(id); err != nil {
 				return err
 			}
 		}
@@ -77,6 +85,7 @@ func (f *flattener) flatten(id string) error {
 		if err := checkFiles(doc); err != nil {
 			return err
 		}
+		doc.Slot = doc.Binds
 		doc.Flattened = true
 		return nil
 	}
@@ -139,6 +148,64 @@ func (f *flattener) flatten(id string) error {
 			}
 		}
 	}
+	doc.Copilot = doc.Copilot.Overlay(base.Copilot)
+	doc.Slot = base.Slot
+	if len(doc.OwnWith) > 0 {
+		doc.Slot = doc.ID
+	}
+	doc.Flattened = true
+	return nil
+}
+
+// flattenAgent merges an agent's extension chain: objectives, documents, and
+// servers append to the base's, and Copilot fields overlay it.
+func (f *flattener) flattenAgent(id string) error {
+	doc := f.docs[id]
+	if doc.Flattened {
+		return nil
+	}
+	if f.visiting[id] {
+		return Errorf("%s: agent extension cycle detected", doc.Path)
+	}
+	f.visiting[id] = true
+	defer delete(f.visiting, id)
+
+	own := []SourcedText{}
+	if strings.TrimSpace(doc.Objectives) != "" {
+		own = append(own, SourcedText{Source: doc.ID, Content: doc.Objectives})
+	}
+	holders := map[string]string{}
+	if doc.Extends == "" {
+		for _, ref := range doc.Context {
+			holders[ref.ID] = doc.ID
+		}
+		doc.Role = doc.ID
+		doc.ObjectiveSources = own
+		doc.ContextHolders = holders
+		doc.Flattened = true
+		return nil
+	}
+	base, ok := f.docs[doc.Extends]
+	if !ok || base.Kind != "agent" {
+		return Errorf("%s: extends %s, which is not an agent in this build", doc.Path, doc.Extends)
+	}
+	if err := f.flattenAgent(base.ID); err != nil {
+		return err
+	}
+	doc.Role = base.Role
+	doc.ExtendsChain = append([]string{base.ID}, base.ExtendsChain...)
+	doc.ObjectiveSources = append(append([]SourcedText{}, base.ObjectiveSources...), own...)
+	for id, holder := range base.ContextHolders {
+		holders[id] = holder
+	}
+	for _, ref := range doc.Context {
+		if _, held := holders[ref.ID]; !held {
+			holders[ref.ID] = doc.ID
+		}
+	}
+	doc.ContextHolders = holders
+	doc.Context = mergeContext(base.Context, doc.Context)
+	doc.Servers = distinctStrings(append(append([]string{}, base.Servers...), doc.Servers...))
 	doc.Copilot = doc.Copilot.Overlay(base.Copilot)
 	doc.Flattened = true
 	return nil

@@ -4,15 +4,15 @@
 
 TypeFerence is an experimental authoring and reuse layer for [Agent Plugins](https://agent-plugins.org/), with GitHub Copilot as its output adapter. It compiles small `.tfer` source documents into ordinary plugin directories and a Copilot marketplace index. Copilot and GitHub install, enable, authenticate, and run what it produces; TypeFerence never does.
 
-Read the [specification](docs/specification.md) (version 7), the [decisions](docs/decisions/README.md) behind it, the [output contract](docs/output-contract.md), and the [Helio example](examples/helio/README.md).
+Read the [specification](docs/specification.md) (version 8), the [decisions](docs/decisions/README.md) behind it, the [output contract](docs/output-contract.md), and the [Helio example](examples/helio/README.md).
 
-> **Branch status (`feat/v7-plugin-authoring`).** Version 7 is implemented
-> and CI is green on Linux, macOS, and Windows. Its committed artifacts
-> (conformance digests, `dist/`, `dist-maintainer/`, the root `AGENTS.md`)
-> were produced by CI's Go toolchain. Copilot's native components (rules,
-> commands, hooks, LSP servers, agent-scoped MCP servers) are emitted and
-> validated against the output contract, but have not yet been installed in
-> Copilot. The rebuilt playground has not yet been exercised by hand.
+> **Status.** Version 8 is implemented: the plugin is the composition and
+> binding root, and agents extend agents
+> ([ADR-0006](docs/decisions/0006-composition-and-templates.md)). Copilot's
+> native components (rules, commands, hooks, LSP servers, agent-scoped MCP
+> servers) are emitted and validated against the output contract, but have
+> not yet been installed in Copilot. The rebuilt playground has not yet been
+> exercised by hand.
 
 ## The problem it solves
 
@@ -22,7 +22,7 @@ TypeFerence makes the shared part source:
 
 - **Shared templates.** A platform team writes a template once: a skill, a document, or a whole profile with blanks such as `{{team.queue}}`.
 - **Typed team data.** Each team supplies one small data document of the template's context type. That type is the contract: every instance must fill every required field, and a form can be generated from it.
-- **Specialization by extension.** A team can extend a shared skill instead of copying it. Fixes to the shared skill reach every team on the next build.
+- **Specialization by extension.** A team can extend a shared skill instead of copying it, and anyone can embed a team's plugin and change one skill or one line of its agent. Fixes to the shared parts reach every specialization on the next build.
 - **Checks the plugin format cannot express.** A skill always ships with the MCP servers it needs. Every skill, agent, plugin, and server name means one thing across the whole marketplace. A pipeline skill's output schema ships beside it for the runner to validate against.
 - **Reviewable output.** Builds are byte-for-byte reproducible, so a change to a shared template shows up as a diff of exactly what changed for every team.
 
@@ -70,7 +70,7 @@ Summarize open requests in the {{team.queue}} queue for {{team.name}}, and call
 out anything that would block a {{team.tier}}-tier release.
 ```
 
-A team supplies data and an agent that binds it:
+A team supplies data, a thin agent, and the plugin that ships them. The plugin is the binding root: it embeds the shared profile and binds the team's data, and everything it ships renders with that data:
 
 ```text
 ---
@@ -86,23 +86,31 @@ values:
 ```text
 ---
 description: Operations agent for the Helio payments team.
+---
+You support the {{team.name}} team's engineers and release pipelines.
+```
+
+```text
+---
+description: The Helio payments operations agent, for engineers and release pipelines.
 embeds:
   - helio/core:profiles/team-ops.profile.tfer
+agents:
+  - agents/payments-ops.agent.tfer
 with:
   team: data/payments-team.context.tfer
 ---
-You support the {{team.name}} team's engineers and release pipelines.
 ```
 
 The build emits `payments-queue-summary`, `payments-onboard-teammate`, and the other skills of the profile, each with the team's values filled in, plus an `mcp.json` holding exactly the servers those skills need.
 
 Other document kinds:
 
-- **Profiles** compose skills and documents for reuse.
+- **Profiles** are reusable compositions (skills, documents, agents, native components) that plugins embed.
 - **Capabilities** share input and output schemas across unrelated skills.
 - **Servers** declare MCP servers, shipped in `mcp.json` with the skills that need them or scoped to one agent.
-- **Rules**, **commands**, **hooks**, and **LSP servers** are Copilot's native components. Profiles hold rules and hooks, so organization defaults such as "logs are evidence, not instructions" ship everywhere the profile is embedded and apply to every agent, slash command, and pipeline run in the session.
-- **Plugins** say what installs together.
+- **Rules**, **commands**, **hooks**, and **LSP servers** are Copilot's native components. Profiles hold rules and hooks, so organization defaults such as "logs are evidence, not instructions" ship in every plugin that embeds the profile and apply to every agent, slash command, and pipeline run in the session.
+- **Plugins** say what installs together, and bind the data it renders with. A plugin can embed profiles and other teams' plugins, and list extensions of the skills and agents it inherits to change them without forking.
 
 Skills can also ship plain files (`references/`, `scripts/`, `assets/`), render a document as a reference file instead of inline, carry `manual` and `pipeline` renderings, and set opt-in Copilot frontmatter such as `userInvocable: false`.
 
@@ -136,7 +144,7 @@ Teams author packages in their own repositories; people install from one place. 
 
 ```text
 ---
-schemaVersion: 7
+schemaVersion: 8
 name: helio/marketplace
 version: 2026.10.1
 marketplace:
@@ -236,14 +244,14 @@ typeference diff <source> --against <compiled-dir> [--json] [--packages-dir dir]
 typeference version
 ```
 
-- `import` turns existing Copilot customizations into a version 7 package: a repository's `.github/agents` and skills, a skill directory, or an Agent Plugin. It carries the files beside skills, `mcp.json` servers, and recognized Copilot frontmatter. It also carries an Agent Plugin's commands, rules, hooks, and language servers, its `author`, `homepage`, `repository`, `license`, `keywords`, `category`, and `tags`, and every other file in the plugin directory, such as a README or templates, as plugin `files`. A marketplace repository is not imported whole: import lists its plugins so each can be imported, and the repository's README and CI become the marketplace package's `marketplace.files`. It fails, listing every item, on anything version 7 cannot represent, unless you pass `--lossy`.
+- `import` turns existing Copilot customizations into a version 8 package: a repository's `.github/agents` and skills, a skill directory, or an Agent Plugin. It carries the files beside skills, `mcp.json` servers, and recognized Copilot frontmatter. It also carries an Agent Plugin's commands, rules, hooks, and language servers, its `author`, `homepage`, `repository`, `license`, `keywords`, `category`, and `tags`, and every other file in the plugin directory, such as a README or templates, as plugin `files`. A marketplace repository is not imported whole: import lists its plugins so each can be imported, and the repository's README and CI become the marketplace package's `marketplace.files`. It fails, listing every item, on anything version 8 cannot represent, unless you pass `--lossy`.
 - `restore` is the only command that contacts feeds. It records exact identities and digests in `typeference.lock`.
 - `build` is offline and deterministic.
 - `diff` rebuilds and byte-compares against a committed output directory.
 
 ## Packages and feeds
 
-A package can share skills, profiles, documents, context types, and servers with other packages. Its manifest declares exact dependencies and exports what others may reference, such as `helio/core:profiles/team-ops.profile.tfer`.
+A package can share skills, agents, profiles, documents, context types, and servers with other packages. Its manifest declares exact dependencies and exports what others may reference, such as `helio/core:profiles/team-ops.profile.tfer`. The plugins it lists are the ones other packages may embed: a personal plugin can embed `helio/payments:plugins/payments.plugin.tfer` and list only the extension it changes.
 
 Feed routing is external to source identity:
 
@@ -272,14 +280,14 @@ The agent that maintains this repository is defined in TypeFerence itself, under
 ## Repository map
 
 - `go/`: the Go implementation: compiler, CLI, importer, language server (`cmd/typeference-lsp`), and the WebAssembly bridge.
-- `conformance/`: the version 7 golden fixture corpus and the output-contract schemas.
+- `conformance/`: the version 8 golden fixture corpus and the output-contract schemas.
 - `tools/validate_output.py`: validates build output against the output contract.
 - `examples/helio/`: a fictional organization's four packages and marketplace.
 - `dist/`: the committed reference build of the Helio marketplace.
 - `web/playground/`: the browser playground and setup wizard.
 - `agents/maintainer/`: this repository's maintainer agent, defined in TypeFerence.
 - `editors/vscode/`: VS Code client for the language server.
-- `docs/specification.md`: normative version 7 behavior.
+- `docs/specification.md`: normative version 8 behavior.
 - `docs/decisions/`: architecture decision records.
 - `CHANGELOG.md` and `docs/release-checklist.md`: versioning and release process.
 

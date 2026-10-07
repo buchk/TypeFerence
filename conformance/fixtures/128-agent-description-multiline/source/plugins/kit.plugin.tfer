@@ -2,4 +2,6 @@
 description: Kit.
 agents:
   - agents/a.agent.tfer
+with:
+  team: data/alpha.context.tfer
 ---

@@ -1,10 +1,10 @@
-// Package resource loads and validates version 7 TypeFerence source packages
+// Package resource loads and validates version 8 TypeFerence source packages
 // (docs/specification.md).
 package resource
 
 import "fmt"
 
-// Document is one version 7 source document as authored, after reference
+// Document is one version 8 source document as authored, after reference
 // paths have been converted to identities.
 type Document struct {
 	Kind        string
@@ -14,13 +14,25 @@ type Document struct {
 	DisplayName string
 	Description string
 
-	// Agents and profiles.
+	// Plugins and profiles compose: they embed profiles (and, for plugins,
+	// plugins), list agents, and bind skills (ADR-0006).
 	Embeds []string
+	Agents []string
 	Skills []SkillBinding
-	// Objectives is an agent's body.
-	Objectives string
 
-	// Agents, profiles, and skills hold documents.
+	// Agents. Objectives is an agent's body; ObjectiveSources are its
+	// resolved objectives once its extension chain is flattened, base
+	// first. Role is the root of the chain, and ExtendsChain lists its
+	// bases, nearest first.
+	Objectives       string
+	ObjectiveSources []SourcedText
+	Role             string
+	ExtendsChain     []string
+	// ContextHolders maps each document an agent holds to the agent in its
+	// chain that first held it.
+	ContextHolders map[string]string
+
+	// Plugins, profiles, agents, and skills hold documents.
 	Context []ContextRef
 
 	// Profiles, skills, and documents declare parameters: name to context
@@ -29,22 +41,26 @@ type Document struct {
 	// OwnParameters records the parameters a skill declared itself, before
 	// its extension chain was flattened.
 	OwnParameters map[string]string
-	// Agents and skills bind parameters: name to data identity.
+	// Plugins and skills bind parameters: name to data identity.
 	With map[string]string
 	// OwnWith records the bindings a skill declared itself.
 	OwnWith map[string]string
 
-	// Capabilities and skills.
+	// Capabilities and skills; skills and agents extend one base.
 	Binds           string
 	Extends         string
 	InputSchema     string
 	OutputSchema    string
 	HasInputSchema  bool
 	HasOutputSchema bool
+	// Slot is what a skill binding occupies: the skill's capability, or the
+	// identity of the skill instance in its chain (ADR-0006).
+	Slot string
 	// ImpliedCapability marks a skill whose capability is the skill itself
 	// (or the root of its extension chain).
 	ImpliedCapability bool
-	Flattened         bool
+	// Flattened marks a skill or agent whose extension chain is merged in.
+	Flattened bool
 
 	// Skills.
 	Instructions    string
@@ -65,22 +81,20 @@ type Document struct {
 	Values      map[string]FieldValue
 	Content     string
 
-	// Plugins link; they do not compose.
-	PluginAgents   []string
-	PluginProfiles []string
-	PluginSkills   []string
-	PluginModes    []string
-	PluginLSP      []string
+	// Plugins: packaging, which is never inherited through embedding.
+	PluginModes []string
 	// PluginMetadata is the plugin's descriptive manifest members
 	// (ADR-0007). A plugin's Files ship at the root of each artifact (ADR-0004).
 	PluginMetadata PluginMetadata
 
-	// Native Copilot components (ADR-0007). Agents, profiles, and plugins
-	// hold rules, commands, and hooks; agents hold agent-scoped servers.
-	Rules    []string
-	Commands []string
-	Hooks    []string
-	Servers  []string
+	// Native Copilot components (ADR-0007). Plugins and profiles hold
+	// rules, commands, hooks, and LSP servers; agents hold agent-scoped
+	// servers.
+	Rules      []string
+	Commands   []string
+	Hooks      []string
+	LSPServers []string
+	Servers    []string
 
 	// Rules: an optional path glob scoping the rule to matching files.
 	RulePaths string
@@ -147,11 +161,18 @@ func (d *Document) IsTemplate() bool {
 }
 
 // SkillBinding attaches a skill implementation, or an abstract capability
-// requirement, to an agent or profile.
+// requirement, to a plugin or profile.
 type SkillBinding struct {
 	Ref        string
 	Capability *string
 	Required   bool
+}
+
+// SourcedText is one source document's contribution to composed text, such
+// as an agent's objectives.
+type SourcedText struct {
+	Source  string
+	Content string
 }
 
 // ContextRef is a held document and how a skill renders it.

@@ -4,8 +4,17 @@ agents:
   - agents/ops.agent.tfer
 commands:
   - commands/changelog.command.tfer
+  - commands/standup.command.tfer
 hooks:
   - hooks/greet.hook.tfer
 lspServers:
   - lsp/acme-config.lsp.tfer
+embeds:
+  - profiles/enterprise.profile.tfer
+with:
+  team: data/payments.context.tfer
+rules:
+  - rules/team.rule.tfer
+skills:
+  - skills/review.skill.tfer
 ---

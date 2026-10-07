@@ -1,42 +1,42 @@
 {
   "schemaVersion": 3,
   "target": "agent-plugin",
-  "sourceDigest": "sha256:786104276d14eb2538aa54af38ddd83d222341bfe4b687934fe523a49ec3a900",
+  "sourceDigest": "sha256:c50ba4a2bb370d1ec1c1f8cb51616669340e803e4df8826946b4cddaa999e077",
   "artifacts": [
     {
       "id": "helio/data-platform/plugins/data-platform@1.0.2",
       "mode": "manual",
       "path": "data-platform",
-      "sourceDigest": "sha256:13edd5ba21cdf17e1d4ab3acd3ac116fba81d1d8138a52d7ab3049cb09c1a4f2",
-      "digest": "sha256:d1c3509f9f29073426e63017242b81c16ed11881001676c093e0a3958da6fdb2"
+      "sourceDigest": "sha256:6bd67cd55a061b8a18205e5fb89d5d22fccf7bb5af1a476e086e558788300d10",
+      "digest": "sha256:1d0b92997176b18d5a90c8cb5d566d7a3cdd9c144a082540411da129c6b37062"
     },
     {
       "id": "helio/core/plugins/engineering-kit@3.1.0",
       "mode": "manual",
       "path": "engineering-kit",
-      "sourceDigest": "sha256:0887f5deff78efb00c40b8a1232c78f33150c28cf9ac50a098190c433711b874",
-      "digest": "sha256:84abd02ea70d1f5313ae8f2c6ff53a8908fbf2b9a0f1046de4616fbec461ca30"
+      "sourceDigest": "sha256:8625e406a9d6c9433d4a95962f35a8969ea87cbf8979a0f5b1231d6b9955ea96",
+      "digest": "sha256:2e07351ea0cbd9b022ecab904cf55a2834fc8b879e9e7feb2d234837fae8a84d"
     },
     {
       "id": "helio/integrations/plugins/integrations@0.3.0",
       "mode": "manual",
       "path": "integrations",
-      "sourceDigest": "sha256:0a575a6a141af36461feacd30b5c73ed5cbd2a959703ca8a6597bce91398af1e",
-      "digest": "sha256:8e913ffd0748ed1f55d6cfae9c64a4924fdd2d20180135d67f2c59b613fe7d7a"
+      "sourceDigest": "sha256:30c3c07eae3a9239f6a250913215c6632476760c61a73acbad749ba98b7a763e",
+      "digest": "sha256:fd694ca77bc56c105b587facb7e30e6b0b344e5fe9887a1f9ae2a0e33f4c4fbd"
     },
     {
       "id": "helio/payments/plugins/payments@2.4.0",
       "mode": "manual",
       "path": "payments",
-      "sourceDigest": "sha256:ee499185f4033e52be0248b36f93083735cae57ad1c501e84208f753479e830a",
-      "digest": "sha256:56d756d3228525b275bcd84a8482e701bea1b6213a6bdb29a955d8557ff8a7ab"
+      "sourceDigest": "sha256:5e8199f41a1c291a5716af2f703ba6b2cbb0240aff9c521f83f9316e68feaf0b",
+      "digest": "sha256:ee7f46fd2dd07a3090293be6e07903a9a81a93e14bc15a2f4ab59d25d49969ce"
     },
     {
       "id": "helio/payments/plugins/payments@2.4.0",
       "mode": "pipeline",
       "path": "payments-pipeline",
-      "sourceDigest": "sha256:ee499185f4033e52be0248b36f93083735cae57ad1c501e84208f753479e830a",
-      "digest": "sha256:da469296f9db84d0b6a8784a42472a40d06c3a47b3acfa66c23fa8799d0ef85a"
+      "sourceDigest": "sha256:5e8199f41a1c291a5716af2f703ba6b2cbb0240aff9c521f83f9316e68feaf0b",
+      "digest": "sha256:8019ec670dab5031a781ef799b25aba156f42641d2f4cfe53ba20e9b5889e3a6"
     }
   ],
   "files": []

@@ -2,4 +2,6 @@
 description: The data platform agent.
 agents:
   - agents/data-agent.agent.tfer
+embeds:
+  - conformance/core:profiles/engineering.profile.tfer
 ---

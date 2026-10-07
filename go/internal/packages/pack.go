@@ -69,7 +69,7 @@ func PackBytes(source string) ([]byte, *resource.Project, error) {
 		return nil, nil, err
 	}
 	if project == nil {
-		return nil, nil, resource.Errorf("typeference pack requires a %s with schemaVersion 7", resource.ManifestFile)
+		return nil, nil, resource.Errorf("typeference pack requires a %s with schemaVersion 8", resource.ManifestFile)
 	}
 	lock, err := LoadLock(source)
 	if err != nil {

@@ -1,0 +1,7 @@
+---
+description: One.
+agents:
+  - agents/one.agent.tfer
+with:
+  team: data/alpha.context.tfer
+---

@@ -20,7 +20,7 @@ type File struct {
 	Data    []byte
 }
 
-// Result is a generated version 7 source tree and what a person should know
+// Result is a generated version 8 source tree and what a person should know
 // about it.
 type Result struct {
 	Files []File
@@ -36,7 +36,7 @@ type Options struct {
 	// Plugin names the generated plugin; defaults to the imported plugin's
 	// name or the source directory's name.
 	Plugin string
-	// Lossy drops what version 7 cannot represent, listing each item in the
+	// Lossy drops what version 8 cannot represent, listing each item in the
 	// notes, instead of failing (ADR-0008).
 	Lossy bool
 }
@@ -67,7 +67,7 @@ type importedAgent struct {
 }
 
 // copilotField is one recognized Copilot frontmatter field, renamed to its
-// version 7 source key.
+// version 8 source key.
 type copilotField struct {
 	key    string
 	text   string
@@ -107,8 +107,8 @@ type importer struct {
 // Import reads GitHub Copilot customizations under source (an Agent Plugins
 // 1.0 plugin, a Copilot CLI plugin, a repository's .github/agents and skill
 // directories, or a single skill directory) and returns an equivalent
-// version 7 package: one plugin linking the imported agents and skills, the
-// files beside each skill, and the plugin's MCP servers. Anything version 7
+// version 8 package: one plugin linking the imported agents and skills, the
+// files beside each skill, and the plugin's MCP servers. Anything version 8
 // cannot represent fails the import unless Lossy is set.
 func Import(source string, options Options) (*Result, error) {
 	root, err := filepath.Abs(source)
@@ -146,7 +146,7 @@ func Import(source string, options Options) (*Result, error) {
 	}
 	if len(im.unsupported) > 0 && !im.lossy {
 		sort.Strings(im.unsupported)
-		return nil, resource.Errorf("version 7 cannot represent:\n  %s\nrerun with --lossy to import without them", strings.Join(im.unsupported, "\n  "))
+		return nil, resource.Errorf("version 8 cannot represent:\n  %s\nrerun with --lossy to import without them", strings.Join(im.unsupported, "\n  "))
 	}
 	for _, item := range im.unsupported {
 		im.notes = append(im.notes, "dropped: "+item)
@@ -202,6 +202,9 @@ func Import(source string, options Options) (*Result, error) {
 		}
 		fm.raw(0, "description", agent.description)
 		writeCopilot(fm, agent.copilot)
+		if missing := ungrantedServers(agent, serverNames); len(missing) > 0 && len(skillNames) > 0 {
+			im.notes = append(im.notes, agent.source+": its tools list does not name "+strings.Join(missing, ", ")+", but every skill in the plugin ships beside it and is assumed to require every server, so the package will not validate until requiresServers is narrowed or the tools are listed")
+		}
 		path := "agents/" + agent.name + ".agent.tfer"
 		result.Files = append(result.Files, File{Path: path, Content: document(fm, agent.body)})
 		agentPaths = append(agentPaths, path)
@@ -249,7 +252,7 @@ func Import(source string, options Options) (*Result, error) {
 	pluginPath := "plugins/" + pluginName + ".plugin.tfer"
 	result.Files = append(result.Files, File{Path: pluginPath, Content: document(plugin, "")})
 	manifest := &frontmatter{}
-	manifest.token(0, "schemaVersion", "7")
+	manifest.token(0, "schemaVersion", "8")
 	manifest.raw(0, "name", name)
 	manifest.raw(0, "version", version)
 	manifest.list(0, "plugins", []string{pluginPath})
@@ -404,7 +407,7 @@ func (im *importer) skillFiles(dir string) ([]importedFile, error) {
 }
 
 // skillCopilotFields and agentCopilotFields map recognized Copilot
-// frontmatter keys to version 7 copilot keys.
+// frontmatter keys to version 8 copilot keys.
 var skillCopilotFields = map[string]string{
 	"argument-hint":            "argumentHint",
 	"user-invocable":           "userInvocable",
@@ -720,7 +723,7 @@ func (im *importer) plugin() (string, string, error) {
 			case metadataKeys[key]:
 				im.readMetadata(source, key, manifest[key])
 			default:
-				im.unsupported = append(im.unsupported, source+": manifest member '"+key+"' has no version 7 source form")
+				im.unsupported = append(im.unsupported, source+": manifest member '"+key+"' has no version 8 source form")
 			}
 		}
 		if err := im.skillsIn(filepath.Join(im.root, "skills")); err != nil {
@@ -782,15 +785,15 @@ func (im *importer) plugin() (string, string, error) {
 		case metadataKeys[key]:
 			im.readMetadata(source, key, manifest[key])
 		case key == "hooks" || key == "mcpServers" || key == "commands" || key == "lspServers":
-			im.unsupported = append(im.unsupported, source+": '"+key+"' has no version 7 source kind")
+			im.unsupported = append(im.unsupported, source+": '"+key+"' has no version 8 source kind")
 		default:
-			im.unsupported = append(im.unsupported, source+": manifest member '"+key+"' has no version 7 source form")
+			im.unsupported = append(im.unsupported, source+": manifest member '"+key+"' has no version 8 source form")
 		}
 	}
 	legacyComponents := []string{"hooks", "hooks.json", ".mcp.json", "commands"}
 	for _, unsupported := range legacyComponents {
 		if exists(filepath.Join(im.root, unsupported)) {
-			im.unsupported = append(im.unsupported, unsupported+": has no version 7 source kind")
+			im.unsupported = append(im.unsupported, unsupported+": has no version 8 source kind")
 		}
 	}
 	agentsPrefix := strings.Trim(strings.TrimPrefix(agentsDir, "./"), "/") + "/"
@@ -859,6 +862,33 @@ func Write(files []File, out string) error {
 		if err := os.WriteFile(full, data, 0o644); err != nil {
 			return resource.Errorf("Cannot write file: %s", full)
 		}
+	}
+	return nil
+}
+
+// ungrantedServers lists the imported servers an agent's explicit tools list
+// does not name, by `<server>/*`, `<server>/<tool>`, or `*`.
+func ungrantedServers(agent importedAgent, servers []string) []string {
+	for _, field := range agent.copilot {
+		if field.key != "tools" {
+			continue
+		}
+		granted := map[string]bool{}
+		for _, tool := range field.list {
+			if tool == "*" {
+				return nil
+			}
+			if server, _, found := strings.Cut(tool, "/"); found {
+				granted[server] = true
+			}
+		}
+		missing := []string{}
+		for _, server := range servers {
+			if !granted[server] {
+				missing = append(missing, server)
+			}
+		}
+		return missing
 	}
 	return nil
 }

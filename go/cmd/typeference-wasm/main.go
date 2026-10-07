@@ -357,7 +357,7 @@ func buildGraph(resources map[string]*resource.Document) map[string]any {
 		if doc.Kind == "skill" && doc.Binds != "" && doc.Binds != doc.ID {
 			edge(doc.ID, doc.Binds, "binds")
 		}
-		if doc.Kind == "skill" && doc.Extends != "" {
+		if doc.Extends != "" {
 			edge(doc.ID, doc.Extends, "extends")
 		}
 		for _, name := range resource.SortedKeys(doc.Parameters) {
@@ -375,8 +375,8 @@ func buildGraph(resources map[string]*resource.Document) map[string]any {
 		if doc.ContextType != "" {
 			edge(doc.ID, doc.ContextType, "contextType")
 		}
-		for _, shipped := range append(append(append([]string{}, doc.PluginAgents...), doc.PluginProfiles...), doc.PluginSkills...) {
-			edge(doc.ID, shipped, "ships")
+		for _, agent := range doc.Agents {
+			edge(doc.ID, agent, "ships")
 		}
 		for _, id := range doc.Rules {
 			edge(doc.ID, id, "rule")
@@ -387,7 +387,7 @@ func buildGraph(resources map[string]*resource.Document) map[string]any {
 		for _, id := range doc.Hooks {
 			edge(doc.ID, id, "hook")
 		}
-		for _, id := range append(append([]string{}, doc.Servers...), doc.PluginLSP...) {
+		for _, id := range append(append([]string{}, doc.Servers...), doc.LSPServers...) {
 			edge(doc.ID, id, "server")
 		}
 	}

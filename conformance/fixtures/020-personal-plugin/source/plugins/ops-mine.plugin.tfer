@@ -1,0 +1,9 @@
+---
+description: The payments operations plugin, with my conventions.
+embeds:
+  - conformance/team:plugins/team-ops.plugin.tfer
+agents:
+  - agents/ops-mine.agent.tfer
+skills:
+  - skills/triage-mine.skill.tfer
+---

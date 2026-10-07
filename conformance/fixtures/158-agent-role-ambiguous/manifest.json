@@ -1,0 +1,4 @@
+{
+  "description": "Two embedded profiles that list different extensions of one agent at one depth are ambiguous unless the plugin lists the one that ships (ADR-0006).",
+  "expect": "error"
+}

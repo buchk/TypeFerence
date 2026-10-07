@@ -1,4 +1,4 @@
 {
-  "description": "tools: [] grants nothing, so an agent with no tools cannot bind a skill that requires a server (ADR-0007).",
+  "description": "tools: [] grants nothing, so an agent with no tools cannot ship in a plugin with a skill that requires a server (ADR-0007).",
   "expect": "error"
 }

@@ -1,5 +1,9 @@
 ---
 description: The TypeFerence repository's maintainer agent, with its conformance and self-host drift skills.
+embeds:
+  - profiles/spec-conformance.profile.tfer
+  - profiles/determinism-guardian.profile.tfer
+  - profiles/contribution-workflow.profile.tfer
 agents:
   - agents/typeference-maintainer.agent.tfer
 ---

@@ -1,5 +1,5 @@
 ---
-schemaVersion: 7
+schemaVersion: 8
 name: helio/payments
 version: 2.4.0
 dependencies:

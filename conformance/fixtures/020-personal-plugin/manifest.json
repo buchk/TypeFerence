@@ -1,0 +1,8 @@
+{
+  "description": "A personal plugin embeds a team's plugin from a dependency and lists only what it changes (ADR-0006): an extension of one skill rebinds that skill, an extension of the agent replaces it and inherits its objectives and Copilot fields, the team's data and other members come through unchanged, and the team plugin's packaging (license, modes) is not inherited.",
+  "expect": "success",
+  "packages": "packages",
+  "digests": {
+    "agent-plugin": "sha256:10d97fe1804c8587bd7795d3dc2dd7523103a1bfb93908d4f07785ad882414f8"
+  }
+}

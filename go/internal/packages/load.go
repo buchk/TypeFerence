@@ -129,6 +129,9 @@ func loadDependencySet(source, packagesDir, candidateDir string) (*DependencySet
 			for _, id := range set.Exports[pkg] {
 				exported[id] = true
 			}
+			for _, id := range set.Plugins[pkg] {
+				exported[id] = true
+			}
 			for _, id := range loaded.Qualified[pkg] {
 				if !exported[id] {
 					return nil, resource.Errorf("candidate %s references %s, which package %s does not export", candidate.Name, id, pkg)

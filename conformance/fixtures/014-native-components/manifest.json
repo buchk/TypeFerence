@@ -2,6 +2,6 @@
   "description": "Native Copilot components (ADR-0007): enterprise rules and hooks held by a profile ship wherever an agent embeds it, a template rule and command are instantiated with the agent's data, a plugin ships its own command, hook, and language server, and an agent scopes a server to itself.",
   "expect": "success",
   "digests": {
-    "agent-plugin": "sha256:cac5d2a20b21c830ade156b1dfbb34b9c4eb1f9fca3d76f18ade7b3e91389782"
+    "agent-plugin": "sha256:09508065ffc322a62bd79eeea482b7af079d6d5d5fcf8d72612610d3f692e23f"
   }
 }

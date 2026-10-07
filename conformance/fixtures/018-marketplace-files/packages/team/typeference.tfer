@@ -1,5 +1,5 @@
 ---
-schemaVersion: 7
+schemaVersion: 8
 name: conformance/team
 version: 1.2.0
 plugins:

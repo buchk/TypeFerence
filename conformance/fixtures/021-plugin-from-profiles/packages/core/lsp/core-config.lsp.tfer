@@ -1,0 +1,7 @@
+---
+command: core-config-lsp
+args:
+  - --stdio
+fileExtensions:
+  corecfg: core-config
+---

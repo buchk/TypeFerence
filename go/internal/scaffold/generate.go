@@ -26,10 +26,10 @@ type Manifest struct {
 	SchemaVersion    int    `json:"schemaVersion"`
 }
 
-// Scaffold maps a validated AnswerSet to an ordinary version 7 package: norm
+// Scaffold maps a validated AnswerSet to an ordinary version 8 package: norm
 // statements as Markdown documents, a team contract and a template skill, a
-// profile embedding chain, one concrete agent that binds its team's data, and
-// the plugin that ships it. The output contains only
+// profile embedding chain, one agent, and the plugin that embeds the chain,
+// ships the agent, and binds its team's data. The output contains only
 // constructs a human could hand-author. No wizard-only syntax, no hidden
 // metadata (ADR-0008).
 func Scaffold(as *AnswerSet) (*SourceTree, Manifest, error) {
@@ -86,7 +86,7 @@ func Scaffold(as *AnswerSet) (*SourceTree, Manifest, error) {
 	)+"Summarize where {{team.name}}'s work stands: what shipped, what is blocked,\nand the next accountable action. Mark anything you could not check.\n")
 
 	// Base profile holds the norms and declares the team contract; each team
-	// level embeds its parent; the agent completes the chain and binds its
+	// level embeds its parent; the plugin completes the chain and binds its
 	// team's data.
 	add("profiles/base.profile.tfer", fence(
 		"displayName: Base Defaults",
@@ -121,19 +121,19 @@ func Scaffold(as *AnswerSet) (*SourceTree, Manifest, error) {
 	add(agentPath, fence(
 		fmt.Sprintf("displayName: %s", titleize(agentName)),
 		"description: Generated from a setup answer set; edit freely.",
-		listField("embeds", []string{parent}),
-		"with:",
-		fmt.Sprintf("  team: %s", dataPath),
 	))
 
 	pluginPath := fmt.Sprintf("plugins/%s.plugin.tfer", agentName)
 	add(pluginPath, fence(
 		fmt.Sprintf("description: The %s agent with the %s defaults it inherits.", titleize(agentName), org),
+		listField("embeds", []string{parent}),
 		listField("agents", []string{agentPath}),
+		"with:",
+		fmt.Sprintf("  team: %s", dataPath),
 	))
 
 	add("typeference.tfer", fence(
-		"schemaVersion: 7",
+		"schemaVersion: 8",
 		fmt.Sprintf("name: %s/starter-suite", org),
 		fmt.Sprintf("version: %s", ver),
 		listField("plugins", []string{pluginPath}),

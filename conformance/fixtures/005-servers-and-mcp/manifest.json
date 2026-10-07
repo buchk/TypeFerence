@@ -2,6 +2,6 @@
   "description": "MCP servers as source (ADR-0007): each artifact's mcp.json holds exactly the servers its skills require in that mode, stdio and streamable-http entries in canonical member order, a pipeline variant adding a server, and plugin path variables kept verbatim.",
   "expect": "success",
   "digests": {
-    "agent-plugin": "sha256:059f2235604bdf6b0ae112bf0e29f955a734b7cc1df2e7f7fbfa15d6383f742c"
+    "agent-plugin": "sha256:93f1ccfb2bb165b7dbe03d6ba469a24bdefe67ab6b2279196c8ce2dca71d740d"
   }
 }

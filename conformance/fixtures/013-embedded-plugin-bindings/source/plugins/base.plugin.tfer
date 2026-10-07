@@ -1,0 +1,9 @@
+---
+description: Base operations.
+embeds:
+  - profiles/kit.profile.tfer
+agents:
+  - agents/base.agent.tfer
+with:
+  team: data/alpha.context.tfer
+---

@@ -1,0 +1,14 @@
+---
+displayName: Helper
+description: A general helper.
+context:
+  - docs/base.context.tfer
+servers:
+  - servers/acme-linter.server.tfer
+copilot:
+  model: base-model
+  tools:
+    - read
+    - acme-linter/*
+---
+Answer from evidence.

@@ -1,7 +1,5 @@
 ---
 description: Operations agent.
-skills:
-  - skills/triage.skill.tfer
 servers:
   - servers/acme-linter.server.tfer
 copilot:

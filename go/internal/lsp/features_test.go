@@ -8,11 +8,11 @@ import (
 	"testing"
 )
 
-// packageDir writes a minimal version 7 package manifest and returns its root.
+// packageDir writes a minimal version 8 package manifest and returns its root.
 func packageDir(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
-	writeFile(t, root, "typeference.tfer", "---\nschemaVersion: 7\nname: acme/test\nversion: 1.0.0\nplugins:\n  - plugins/kit.plugin.tfer\n---\n")
+	writeFile(t, root, "typeference.tfer", "---\nschemaVersion: 8\nname: acme/test\nversion: 1.0.0\nplugins:\n  - plugins/kit.plugin.tfer\n---\n")
 	return root
 }
 
@@ -34,20 +34,21 @@ func TestCompletionsByKindAndReference(t *testing.T) {
 	writeFile(t, root, "skills/lint.skill.tfer", "---\ndescription: Lint.\n---\nLint.\n")
 	writeFile(t, root, "profiles/base.profile.tfer", "---\n---\n")
 	agentPath := filepath.Join(root, "agents", "a.agent.tfer")
+	pluginPath := filepath.Join(root, "plugins", "kit.plugin.tfer")
 
 	fields := completions("---\nde\n---\n", agentPath, root, 1, 2)
-	if !contains(fields, "description") || !contains(fields, "embeds") || contains(fields, "binds") {
+	if !contains(fields, "description") || !contains(fields, "extends") || contains(fields, "embeds") || contains(fields, "binds") {
 		t.Errorf("an agent's key position offers agent fields only, got %v", fields)
 	}
-	skills := completions("---\nskills:\n  - \n---\n", agentPath, root, 2, 4)
+	skills := completions("---\nskills:\n  - \n---\n", pluginPath, root, 2, 4)
 	if !contains(skills, "skills/review.skill.tfer") || !contains(skills, "skills/lint.skill.tfer") || contains(skills, "profiles/base.profile.tfer") {
 		t.Errorf("a skills item offers skill paths, got %v", skills)
 	}
-	embeds := completions("---\nembeds: \n---\n", agentPath, root, 1, 8)
+	embeds := completions("---\nembeds: \n---\n", pluginPath, root, 1, 8)
 	if !contains(embeds, "profiles/base.profile.tfer") {
 		t.Errorf("embeds offers profile paths, got %v", embeds)
 	}
-	modes := completions("---\nmodes:\n  - \n---\n", filepath.Join(root, "plugins", "kit.plugin.tfer"), root, 2, 4)
+	modes := completions("---\nmodes:\n  - \n---\n", pluginPath, root, 2, 4)
 	if !contains(modes, "manual") || !contains(modes, "pipeline") {
 		t.Errorf("plugin modes are enumerated, got %v", modes)
 	}

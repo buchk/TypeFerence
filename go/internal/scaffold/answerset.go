@@ -1,6 +1,6 @@
 // Package scaffold implements the deterministic setup wizard generator
 // (ADR-0008): a versioned AnswerSet maps through Scaffold() to an in-memory
-// SourceTree of an ordinary version 7 package. The package knows nothing
+// SourceTree of an ordinary version 8 package. The package knows nothing
 // about browsers, filesystems, tar archives, or standard output; the CLI and
 // wasm bridge are its only intended consumers.
 package scaffold

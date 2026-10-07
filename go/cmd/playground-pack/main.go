@@ -37,7 +37,7 @@ var examples = []example{
 	{
 		Name:        "starter",
 		Title:       "Starter",
-		Description: "One package: a team contract, a template skill, and an agent that instantiates it with its team's data.",
+		Description: "One package: a team contract, a template skill, an agent, and a plugin that instantiates them with its team's data.",
 		Files:       starterFiles,
 		Form:        "data/support-team.context.tfer",
 	},
@@ -138,7 +138,7 @@ func fatal(format string, args ...any) {
 
 var starterFiles = map[string]string{
 	"typeference.tfer": `---
-schemaVersion: 7
+schemaVersion: 8
 name: acme/support
 version: 1.0.0
 plugins:
@@ -147,8 +147,12 @@ plugins:
 `,
 	"plugins/support.plugin.tfer": `---
 description: Acme's support agent and its team skills.
+embeds:
+  - profiles/support-kit.profile.tfer
 agents:
   - agents/support-agent.agent.tfer
+with:
+  team: data/support-team.context.tfer
 ---
 `,
 	"context-types/team.contexttype.tfer": `---
@@ -216,10 +220,6 @@ apology. One idea per sentence.
 	"agents/support-agent.agent.tfer": `---
 displayName: Acme Support Agent
 description: Answers customer tickets for {{team.name}}.
-embeds:
-  - profiles/support-kit.profile.tfer
-with:
-  team: data/support-team.context.tfer
 ---
 You answer customer tickets for {{team.name}}.
 `,

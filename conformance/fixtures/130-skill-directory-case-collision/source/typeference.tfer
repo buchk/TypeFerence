@@ -1,5 +1,5 @@
 ---
-schemaVersion: 7
+schemaVersion: 8
 name: test/directory-case
 version: 1.0.0
 plugins:

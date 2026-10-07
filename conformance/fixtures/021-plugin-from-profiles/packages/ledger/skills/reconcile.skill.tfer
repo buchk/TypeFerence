@@ -1,0 +1,4 @@
+---
+description: Reconcile a ledger batch.
+---
+Compare the batch totals with the ledger and list every difference.

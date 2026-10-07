@@ -2,4 +2,8 @@
 description: Operations kit.
 agents:
   - agents/payments-ops.agent.tfer
+embeds:
+  - profiles/team-ops.profile.tfer
+with:
+  team: data/payments.context.tfer
 ---

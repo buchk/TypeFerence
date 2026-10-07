@@ -1,0 +1,6 @@
+---
+description: Summarize where {{team.name}}'s work stands.
+parameters:
+  team: context-types/team.contexttype.tfer
+---
+Report what {{team.name}} shipped, what is blocked, and the next action.

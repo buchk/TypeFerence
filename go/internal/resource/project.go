@@ -18,7 +18,7 @@ var semanticVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.
 var marketplaceName = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$`)
 
 // SchemaVersion is the source language version this implementation reads.
-const SchemaVersion = 7
+const SchemaVersion = 8
 
 // Marketplace is the optional publication identity a manifest declares for
 // its generated marketplace index.
@@ -104,10 +104,10 @@ func ParseProjectManifest(text string) (*Project, error) {
 	}
 	versionNode := child(root, "schemaVersion")
 	if versionNode == nil || !versionNode.IsScalar || versionNode.Value.Kind != tferlex.KindPlain {
-		return nil, Errorf("%s: schemaVersion must be 7 (docs/specification.md)", ManifestFile)
+		return nil, Errorf("%s: schemaVersion must be 8 (docs/specification.md)", ManifestFile)
 	}
-	if versionNode.Value.Text != "7" {
-		return nil, Errorf("%s: schemaVersion %s is not supported; TypeFerence reads version 7 sources (docs/specification.md)", ManifestFile, versionNode.Value.Text)
+	if versionNode.Value.Text != "8" {
+		return nil, Errorf("%s: schemaVersion %s is not supported; TypeFerence reads version 8 sources (docs/specification.md)", ManifestFile, versionNode.Value.Text)
 	}
 	if strings.TrimSpace(body) != "" {
 		return nil, Errorf("%s: the project manifest does not take a body", ManifestFile)

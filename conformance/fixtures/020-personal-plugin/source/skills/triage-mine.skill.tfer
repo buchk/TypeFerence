@@ -1,0 +1,5 @@
+---
+description: Triage a failed run, starting from the newest failure.
+extends: conformance/team:skills/triage.skill.tfer
+---
+Start from the newest failing run, and stop at the first cause you can prove.

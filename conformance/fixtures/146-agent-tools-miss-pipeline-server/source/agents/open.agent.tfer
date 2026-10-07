@@ -1,7 +1,5 @@
 ---
 description: Operations agent with every tool.
-skills:
-  - skills/triage.skill.tfer
 copilot:
   tools:
     - "*"

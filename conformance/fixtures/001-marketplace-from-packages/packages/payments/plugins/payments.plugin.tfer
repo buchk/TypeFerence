@@ -5,4 +5,8 @@ agents:
 modes:
   - manual
   - pipeline
+embeds:
+  - conformance/core:profiles/engineering.profile.tfer
+skills:
+  - skills/payments-status.skill.tfer
 ---

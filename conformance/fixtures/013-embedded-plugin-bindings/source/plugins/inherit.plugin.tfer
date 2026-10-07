@@ -1,0 +1,7 @@
+---
+description: Base operations with the base team, and one more objective.
+embeds:
+  - plugins/base.plugin.tfer
+agents:
+  - agents/inherit.agent.tfer
+---

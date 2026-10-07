@@ -35,11 +35,11 @@ type pluginPlan struct {
 	// packages in its dependency closure.
 	Provenance buildProvenance
 	Modes      []string
-	Agents     []*resolve.ResolvedAgent
-	// Skills are every linked agent's resolved skills, every linked
-	// profile's skills, and every directly linked skill, one per emitted
-	// name, ordered by name.
-	Skills []resolve.ResolvedSkill
+	// Resolved is the plugin's composition; Agents and Skills are what it
+	// ships, skills ordered by emitted name.
+	Resolved *resolve.ResolvedPlugin
+	Agents   []*resolve.ResolvedAgent
+	Skills   []resolve.ResolvedSkill
 	// Native Copilot components (ADR-0007), one per emitted name.
 	Rules    []resolve.ResolvedRule
 	Commands []resolve.ResolvedCommand
@@ -80,14 +80,14 @@ func validPluginName(name string) bool {
 
 // planPlugins resolves every plugin the build ships (its own and the
 // dependency plugins its manifest lists, sorted by identity).
-func planPlugins(c *compilation, agents map[string]*resolve.ResolvedAgent, ids []string, owners map[string]buildProvenance) ([]*pluginPlan, error) {
+func planPlugins(c *compilation, ids []string, owners map[string]buildProvenance) ([]*pluginPlan, error) {
 	plans := []*pluginPlan{}
 	for _, id := range ids {
 		doc, ok := c.docs[id]
 		if !ok || doc.Kind != "plugin" {
 			return nil, resource.Errorf("%s ships %s, which is not a plugin in this build", c.project.Name, id)
 		}
-		plan, err := planPlugin(c, doc, agents, owners[doc.Package])
+		plan, err := planPlugin(c, doc, owners[doc.Package])
 		if err != nil {
 			return nil, err
 		}
@@ -96,7 +96,7 @@ func planPlugins(c *compilation, agents map[string]*resolve.ResolvedAgent, ids [
 	return plans, nil
 }
 
-func planPlugin(c *compilation, doc *resource.Document, agents map[string]*resolve.ResolvedAgent, owner buildProvenance) (*pluginPlan, error) {
+func planPlugin(c *compilation, doc *resource.Document, owner buildProvenance) (*pluginPlan, error) {
 	plan := &pluginPlan{
 		ID:          doc.ID,
 		Name:        resource.Leaf(doc.ID),
@@ -115,53 +115,20 @@ func planPlugin(c *compilation, doc *resource.Document, agents map[string]*resol
 			return nil, resource.Errorf("%s: plugin name '%s-%s' for the %s artifact exceeds the Agent Plugins name limit", doc.Path, plan.Name, mode, mode)
 		}
 	}
-	byName := map[string]resolve.ResolvedSkill{}
-	add := func(skill resolve.ResolvedSkill) error {
-		if prior, exists := byName[skill.Name]; exists {
-			if prior.Key() != skill.Key() {
-				return resource.Errorf("%s: %s and %s both emit the skill name '%s'", doc.Path, prior.Key(), skill.Key(), skill.Name)
-			}
-			return nil
-		}
-		byName[skill.Name] = skill
-		return nil
+	resolved, err := c.resolver.ResolvePlugin(doc.ID)
+	if err != nil {
+		return nil, err
 	}
-	for _, agentID := range doc.PluginAgents {
-		agent, ok := agents[agentID]
-		if !ok {
-			return nil, resource.Errorf("%s: links agent %s, which is not an agent in this build", doc.Path, agentID)
-		}
+	plan.Resolved = resolved
+	for _, agent := range resolved.Agents {
 		if name := resource.Leaf(agent.ID); !resource.IsHostName(name) {
 			return nil, resource.Errorf("%s: agent name '%s' must use lowercase letters, digits, and single hyphens (at most 64 characters) to be a Copilot custom agent", doc.Path, name)
 		}
 		plan.Agents = append(plan.Agents, agent)
-		for _, skill := range agent.Skills {
-			if err := add(skill); err != nil {
-				return nil, err
-			}
-		}
 	}
-	profiles := []*resolve.ResolvedProfile{}
-	for _, profileID := range doc.PluginProfiles {
-		profile, err := c.resolver.ResolveProfile(profileID)
-		if err != nil {
-			return nil, err
-		}
-		profiles = append(profiles, profile)
-		for _, skill := range profile.Skills {
-			if err := add(skill); err != nil {
-				return nil, err
-			}
-		}
-	}
-	for _, skillID := range doc.PluginSkills {
-		skill, err := c.resolver.ResolveSkill(skillID)
-		if err != nil {
-			return nil, err
-		}
-		if err := add(skill); err != nil {
-			return nil, err
-		}
+	byName := map[string]resolve.ResolvedSkill{}
+	for _, skill := range resolved.Skills {
+		byName[skill.Name] = skill
 	}
 	for _, name := range resource.SortedKeys(byName) {
 		skill := byName[name]
@@ -180,7 +147,7 @@ func planPlugin(c *compilation, doc *resource.Document, agents map[string]*resol
 		}
 		plan.Skills = append(plan.Skills, skill)
 	}
-	if err := planNative(c, doc, plan, profiles); err != nil {
+	if err := planNative(doc, plan, resolved); err != nil {
 		return nil, err
 	}
 	return plan, nil
@@ -210,7 +177,7 @@ func validateAgentTools(c *compilation) error {
 				continue
 			}
 			path := c.docs[agent.ID].Path
-			for _, skill := range agent.Skills {
+			for _, skill := range artifact.plan.Skills {
 				for _, id := range skill.ServersFor(artifact.mode) {
 					if name := resource.Leaf(id); !listed[name] {
 						return resource.Errorf("%s: skill '%s' needs MCP server '%s' in %s mode, but copilot.tools lists neither '%s/*' nor one of its tools; Copilot enables only the tools an agent lists, and build never adds one", path, skill.Name, name, artifact.mode, name)
@@ -233,7 +200,8 @@ func validateAgentTools(c *compilation) error {
 // one plugin and mode, and every server name to one server document.
 func validateLibraryNames(c *compilation) error {
 	skills := map[string]string{}
-	agentNames := map[string]string{}
+	type shippedAgent struct{ id, plugin, rendered string }
+	agentNames := map[string]shippedAgent{}
 	artifactNames := map[string]string{}
 	servers := map[string]string{}
 	rules := map[string]string{}
@@ -276,10 +244,16 @@ func validateLibraryNames(c *compilation) error {
 		}
 		for _, agent := range plan.Agents {
 			name := resource.Leaf(agent.ID)
-			if prior, exists := agentNames[name]; exists && prior != agent.ID {
-				return resource.Errorf("agents %s and %s both emit the custom agent name '%s'", prior, agent.ID, name)
+			rendered := renderAgent(agent, c.docs)
+			if prior, exists := agentNames[name]; exists {
+				if prior.id != agent.ID {
+					return resource.Errorf("agents %s and %s both emit the custom agent name '%s'", prior.id, agent.ID, name)
+				}
+				if prior.rendered != rendered {
+					return resource.Errorf("plugins %s and %s both ship agent %s, but its file differs between them (bindings, documents, or skills); list an extension of the agent under its own name in one of them", prior.plugin, plan.ID, agent.ID)
+				}
 			}
-			agentNames[name] = agent.ID
+			agentNames[name] = shippedAgent{id: agent.ID, plugin: plan.ID, rendered: rendered}
 		}
 	}
 	for _, name := range resource.SortedKeys(commands) {
@@ -605,7 +579,8 @@ func frontmatterFields(b *strings.Builder, c resource.CopilotFields, skill bool)
 }
 
 // renderAgent renders a Copilot custom agent profile: identity and
-// objectives, held documents, and the names of the skills it uses.
+// objectives, held documents, and the names of the skills its artifact
+// ships beside it.
 func renderAgent(agent *resolve.ResolvedAgent, docs map[string]*resource.Document) string {
 	var b strings.Builder
 	b.WriteString("---\nname: " + resource.Leaf(agent.ID) + "\ndescription: " + escapeYAML(agent.Description) + "\n")
@@ -681,14 +656,10 @@ func agentValue(agent *resolve.ResolvedAgent) jsonx.Obj {
 		{K: "name", V: jsonx.Str(resource.Leaf(agent.ID))},
 		{K: "displayName", V: jsonx.Str(agent.DisplayName)},
 		{K: "description", V: jsonx.Str(agent.Description)},
-		{K: "embeds", V: stringArr(agent.Embeds)},
-		{K: "bindings", V: bindingsValue(agent.Bindings)},
+		{K: "extends", V: stringArr(agent.Extends)},
 		{K: "objectives", V: objectives},
 		{K: "documents", V: documentsValue(agent.Documents)},
 		{K: "skills", V: skills},
-		{K: "rules", V: rulesValue(agent.Rules)},
-		{K: "commands", V: commandsValue(agent.Commands)},
-		{K: "hooks", V: stringArr(agent.Hooks)},
 		{K: "servers", V: stringArr(agent.Servers)},
 		{K: "provenance", V: provenanceValue(agent.Provenance)},
 	}
@@ -775,8 +746,9 @@ func bundleJSON(artifact pluginArtifact, servers []*resource.Document) string {
 		serverIDs = append(serverIDs, doc.ID)
 	}
 	provenance := artifact.plan.Provenance
+	resolved := artifact.plan.Resolved
 	return jsonx.Indented(jsonx.Obj{
-		{K: "schemaVersion", V: jsonx.Num("4")},
+		{K: "schemaVersion", V: jsonx.Num("5")},
 		{K: "id", V: jsonx.Str(artifact.plan.ID)},
 		{K: "name", V: jsonx.Str(artifact.dir)},
 		{K: "mode", V: jsonx.Str(artifact.mode)},
@@ -784,6 +756,9 @@ func bundleJSON(artifact pluginArtifact, servers []*resource.Document) string {
 		{K: "description", V: jsonx.Str(artifact.plan.Description)},
 		{K: "sourceDigest", V: jsonx.Str(provenance.SourceDigest)},
 		{K: "dependencies", V: dependenciesJSON(provenance)},
+		{K: "embeds", V: stringArr(resolved.Embeds)},
+		{K: "bindings", V: bindingsValue(resolved.Bindings)},
+		{K: "provenance", V: provenanceValue(resolved.Provenance)},
 		{K: "agents", V: agents},
 		{K: "skills", V: skills},
 		{K: "servers", V: stringArr(serverIDs)},

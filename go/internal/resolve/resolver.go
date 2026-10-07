@@ -91,35 +91,44 @@ func (s ResolvedSkill) ServersFor(mode string) []string {
 	return out
 }
 
-// ResolvedAgent is a concrete agent after composition.
+// ResolvedAgent is an agent as one plugin ships it: its flattened extension
+// chain rendered with the plugin's bindings.
 type ResolvedAgent struct {
 	ID          string
 	DisplayName string
 	Description string
-	Embeds      []string
-	Objectives  []Objective
-	Documents   []ResolvedDocument
-	// Skills are ordered by emitted name.
+	// Extends lists the agent's bases, nearest first.
+	Extends    []string
+	Objectives []Objective
+	// Documents are the plugin's held documents, then the agent's own.
+	Documents []ResolvedDocument
+	// Skills are every skill the plugin ships, ordered by emitted name:
+	// Copilot gives an agent every skill installed beside it.
+	Skills     []ResolvedSkill
+	Copilot    resource.CopilotFields
+	Servers    []string
+	Provenance []ProvenanceEntry
+}
+
+// ResolvedPlugin is a plugin's composition after resolution: what it ships
+// in every mode, rendered with its bindings (ADR-0006).
+type ResolvedPlugin struct {
+	ID     string
+	Embeds []string
+	// Agents are ordered by emitted name, skills by emitted name.
+	Agents       []*ResolvedAgent
 	Skills       []ResolvedSkill
 	Bindings     []*Binding
 	InstanceName string
-	Copilot      resource.CopilotFields
-	Provenance   []ProvenanceEntry
-	// Native components the agent composes (ADR-0007): rules and commands
-	// rendered with its bindings, hooks, and agent-scoped servers.
+	// Native components (ADR-0007): rules and commands rendered with the
+	// plugin's bindings, hooks, and LSP servers.
 	Rules    []ResolvedRule
 	Commands []ResolvedCommand
 	Hooks    []string
-	Servers  []string
-}
-
-// ResolvedProfile is a profile shipped without an agent.
-type ResolvedProfile struct {
-	ID       string
-	Skills   []ResolvedSkill
-	Rules    []ResolvedRule
-	Commands []ResolvedCommand
-	Hooks    []string
+	LSP      []string
+	// Provenance records the contributors of every member the plugin's
+	// composition holds.
+	Provenance []ProvenanceEntry
 }
 
 // Resolver resolves documents from one merged, normalized document set.
@@ -162,6 +171,11 @@ func (r *Resolver) validate(doc *resource.Document) error {
 	for _, embed := range doc.Embeds {
 		if r.docs[embed] == nil {
 			return resource.Errorf("%s: embeds %s, which is not in this build", doc.Path, embed)
+		}
+	}
+	for _, agentID := range doc.Agents {
+		if r.kindOf(agentID) != "agent" {
+			return resource.Errorf("%s: lists agent %s, which is not an agent in this build", doc.Path, agentID)
 		}
 	}
 	for _, ref := range doc.Context {
@@ -226,7 +240,7 @@ func (r *Resolver) validate(doc *resource.Document) error {
 				return err
 			}
 		}
-	case "agent":
+	case "plugin":
 		for _, name := range resource.SortedKeys(doc.With) {
 			if err := r.checkData(doc.Path, name, doc.With[name], ""); err != nil {
 				return err
@@ -262,40 +276,37 @@ func (r *Resolver) binding(name, dataID string) *Binding {
 	return &Binding{Name: name, DataID: dataID, ContextType: data.ContextType, Values: r.data[dataID]}
 }
 
-// ResolveAll resolves every agent in the document set, ordered by identity.
-func (r *Resolver) ResolveAll() ([]*ResolvedAgent, error) {
-	agents := []*ResolvedAgent{}
-	for _, id := range resource.SortedKeys(r.docs) {
-		if r.docs[id].Kind != "agent" {
-			continue
-		}
-		agent, err := r.ResolveAgent(id)
-		if err != nil {
-			return nil, err
-		}
-		agents = append(agents, agent)
-	}
-	return agents, nil
-}
-
-// ResolveAgent composes one agent: its promoted bindings and documents, its
-// parameter bindings, and its skills and skill instances.
-func (r *Resolver) ResolveAgent(id string) (*ResolvedAgent, error) {
+// ResolvePlugin composes one plugin: its promoted agents, bindings,
+// documents, and native components, its parameter bindings, and its skills
+// and skill instances.
+func (r *Resolver) ResolvePlugin(id string) (*ResolvedPlugin, error) {
 	doc := r.docs[id]
-	if doc == nil || doc.Kind != "agent" {
-		return nil, resource.Errorf("%s is not an agent in this build", id)
+	if doc == nil || doc.Kind != "plugin" {
+		return nil, resource.Errorf("%s is not a plugin in this build", id)
 	}
 	c, err := r.compose(id, nil)
 	if err != nil {
 		return nil, err
 	}
-	skillIDs, err := c.finalSkills(doc.Path)
+	skillIDs, err := r.finalSkills(c, doc.Path)
 	if err != nil {
 		return nil, err
 	}
+	agentIDs := []string{}
+	for _, role := range resource.SortedKeys(c.agents) {
+		agentIDs = append(agentIDs, c.agents[role].member)
+	}
+	sort.Slice(agentIDs, func(i, j int) bool { return resource.Leaf(agentIDs[i]) < resource.Leaf(agentIDs[j]) })
+	if len(agentIDs)+len(skillIDs)+len(c.rules)+len(c.commands)+len(c.hooks)+len(c.lsp) == 0 {
+		return nil, resource.Errorf("%s: the plugin's composition ships nothing; embed or list at least one agent, skill, rule, command, hook, or LSP server", doc.Path)
+	}
+	if len(agentIDs) == 0 && len(c.documents) > 0 {
+		return nil, resource.Errorf("%s: the plugin holds document %s but ships no agent to deliver it; list an agent, or hold the document in a skill", doc.Path, c.documents[0])
+	}
 
-	// What the agent must bind: declared contracts, its template skills'
-	// unbound parameters, and its held documents' parameters.
+	// What the plugin must bind: declared contracts, its template skills'
+	// unbound parameters, its and its agents' held documents' parameters,
+	// and its template rules' and commands' parameters.
 	need := map[string]string{}
 	needSource := map[string]string{}
 	addNeed := func(name, typeID, source string) error {
@@ -310,20 +321,26 @@ func (r *Resolver) ResolveAgent(id string) (*ResolvedAgent, error) {
 			return nil, err
 		}
 	}
-	templateSkills := false
+	templates := false
 	for _, skillID := range skillIDs {
 		skill := r.docs[skillID]
 		for _, name := range resource.SortedKeys(skill.Parameters) {
 			if _, bound := skill.With[name]; bound {
 				continue
 			}
-			templateSkills = true
+			templates = true
 			if err := addNeed(name, skill.Parameters[name], skillID); err != nil {
 				return nil, err
 			}
 		}
 	}
-	for _, docID := range c.documents {
+	heldDocuments := append([]string{}, c.documents...)
+	for _, agentID := range agentIDs {
+		for _, ref := range r.docs[agentID].Context {
+			heldDocuments = append(heldDocuments, ref.ID)
+		}
+	}
+	for _, docID := range heldDocuments {
 		held := r.docs[docID]
 		for _, name := range resource.SortedKeys(held.Parameters) {
 			if err := addNeed(name, held.Parameters[name], docID); err != nil {
@@ -334,33 +351,37 @@ func (r *Resolver) ResolveAgent(id string) (*ResolvedAgent, error) {
 	for _, componentID := range append(append([]string{}, c.rules...), c.commands...) {
 		component := r.docs[componentID]
 		for _, name := range resource.SortedKeys(component.Parameters) {
-			templateSkills = true
+			templates = true
 			if err := addNeed(name, component.Parameters[name], componentID); err != nil {
 				return nil, err
 			}
 		}
 	}
-	// The agent's bindings are its own 'with' plus those of the agents it
-	// embeds, shallowest first (composite.with).
+	// The plugin's bindings are its own 'with' plus those of the plugins it
+	// embeds, shallowest first (composite.with). Agents' objectives and
+	// descriptions may reference any of them.
 	template := len(c.with) > 0
 	referenced := map[string]bool{}
 	if template {
-		for _, objective := range c.objectives {
-			for _, name := range referencedNames(objective.Content) {
+		for _, agentID := range agentIDs {
+			agent := r.docs[agentID]
+			for _, objective := range agent.ObjectiveSources {
+				for _, name := range referencedNames(objective.Content) {
+					referenced[name] = true
+				}
+			}
+			for _, name := range referencedNames(agent.Description) {
 				referenced[name] = true
 			}
-		}
-		for _, name := range referencedNames(doc.Description) {
-			referenced[name] = true
 		}
 	}
 	bindings := map[string]*Binding{}
 	for _, name := range resource.SortedKeys(c.with) {
-		dataID := c.with[name].data
+		dataID := c.with[name].member
 		typeID, needed := need[name]
 		_, own := doc.With[name]
 		if own && !needed && !referenced[name] {
-			return nil, resource.Errorf("%s: 'with' binds '%s', but nothing the agent composes declares that parameter and its objectives do not reference it", doc.Path, name)
+			return nil, resource.Errorf("%s: 'with' binds '%s', but nothing the plugin composes declares that parameter and no agent's objectives or description reference it", doc.Path, name)
 		}
 		if err := r.checkData(doc.Path, name, dataID, typeID); err != nil {
 			return nil, err
@@ -373,7 +394,7 @@ func (r *Resolver) ResolveAgent(id string) (*ResolvedAgent, error) {
 		}
 	}
 	instanceName := ""
-	if templateSkills {
+	if templates {
 		suppliers := []string{}
 		for _, name := range resource.SortedKeys(bindings) {
 			b := bindings[name]
@@ -384,17 +405,103 @@ func (r *Resolver) ResolveAgent(id string) (*ResolvedAgent, error) {
 			}
 		}
 		if len(suppliers) != 1 {
-			return nil, resource.Errorf("%s: the agent instantiates templates, so exactly one bound data document must supply an instance name (a context type with instanceName); found %d", doc.Path, len(suppliers))
+			return nil, resource.Errorf("%s: the plugin instantiates templates, so exactly one bound data document must supply an instance name (a context type with instanceName); found %d", doc.Path, len(suppliers))
 		}
 	}
 
-	agent := &ResolvedAgent{
-		ID:           id,
-		DisplayName:  doc.DisplayName,
-		Embeds:       append([]string{}, doc.Embeds...),
-		InstanceName: instanceName,
-		Copilot:      doc.Copilot,
+	plugin := &ResolvedPlugin{ID: id, Embeds: append([]string{}, doc.Embeds...), InstanceName: instanceName}
+	for _, embed := range doc.Embeds {
+		plugin.Provenance = append(plugin.Provenance, ProvenanceEntry{Field: "embeds", Source: embed})
 	}
+	for _, name := range resource.SortedKeys(bindings) {
+		plugin.Bindings = append(plugin.Bindings, bindings[name])
+		for _, source := range c.with[name].sources {
+			plugin.Provenance = append(plugin.Provenance, ProvenanceEntry{Field: "with", Source: source})
+		}
+	}
+	for _, skillID := range skillIDs {
+		skill, err := r.resolveSkill(skillID, bindings, instanceName, c.bindingSource[skillID])
+		if err != nil {
+			return nil, err
+		}
+		plugin.Skills = append(plugin.Skills, skill)
+	}
+	sort.Slice(plugin.Skills, func(i, j int) bool { return plugin.Skills[i].Name < plugin.Skills[j].Name })
+	for i := 1; i < len(plugin.Skills); i++ {
+		if plugin.Skills[i].Name == plugin.Skills[i-1].Name {
+			return nil, resource.Errorf("%s: skills %s and %s both emit the skill name '%s'", doc.Path, plugin.Skills[i-1].ImplementationID, plugin.Skills[i].ImplementationID, plugin.Skills[i].Name)
+		}
+	}
+	documents := []ResolvedDocument{}
+	for _, docID := range c.documents {
+		resolved, err := r.resolveDocument(docID, "inline", bindings)
+		if err != nil {
+			return nil, err
+		}
+		documents = append(documents, resolved)
+		for _, source := range c.documentSource[docID] {
+			plugin.Provenance = append(plugin.Provenance, ProvenanceEntry{Field: "context", Source: source})
+		}
+	}
+	for _, agentID := range agentIDs {
+		agent, err := r.resolveAgent(agentID, bindings, template, documents, plugin.Skills)
+		if err != nil {
+			return nil, err
+		}
+		plugin.Agents = append(plugin.Agents, agent)
+		for _, source := range c.agents[r.docs[agentID].Role].sources {
+			plugin.Provenance = append(plugin.Provenance, ProvenanceEntry{Field: "agents", Source: source})
+		}
+	}
+	for _, ruleID := range c.rules {
+		rule, err := r.resolveRule(ruleID, bindings, instanceName)
+		if err != nil {
+			return nil, err
+		}
+		plugin.Rules = append(plugin.Rules, rule)
+		for _, source := range c.nativeSource[ruleID] {
+			plugin.Provenance = append(plugin.Provenance, ProvenanceEntry{Field: "rules", Source: source})
+		}
+	}
+	for _, commandID := range c.commands {
+		command, err := r.resolveCommand(commandID, bindings, instanceName)
+		if err != nil {
+			return nil, err
+		}
+		plugin.Commands = append(plugin.Commands, command)
+		for _, source := range c.nativeSource[commandID] {
+			plugin.Provenance = append(plugin.Provenance, ProvenanceEntry{Field: "commands", Source: source})
+		}
+	}
+	for _, hookID := range c.hooks {
+		plugin.Hooks = append(plugin.Hooks, hookID)
+		for _, source := range c.nativeSource[hookID] {
+			plugin.Provenance = append(plugin.Provenance, ProvenanceEntry{Field: "hooks", Source: source})
+		}
+	}
+	for _, lspID := range c.lsp {
+		plugin.LSP = append(plugin.LSP, lspID)
+		for _, source := range c.nativeSource[lspID] {
+			plugin.Provenance = append(plugin.Provenance, ProvenanceEntry{Field: "lspServers", Source: source})
+		}
+	}
+	return plugin, nil
+}
+
+// resolveAgent renders one agent with its plugin's bindings: its flattened
+// objectives, the plugin's documents followed by its own, and the skills the
+// plugin ships beside it.
+func (r *Resolver) resolveAgent(id string, bindings map[string]*Binding, template bool, pluginDocuments []ResolvedDocument, skills []ResolvedSkill) (*ResolvedAgent, error) {
+	doc := r.docs[id]
+	agent := &ResolvedAgent{
+		ID:          id,
+		DisplayName: doc.DisplayName,
+		Extends:     append([]string{}, doc.ExtendsChain...),
+		Skills:      skills,
+		Copilot:     doc.Copilot,
+		Servers:     append([]string{}, doc.Servers...),
+	}
+	var err error
 	agent.Description, err = r.render(doc.Description, doc.Path+" description", template, bindings)
 	if err != nil {
 		return nil, err
@@ -405,7 +512,10 @@ func (r *Resolver) ResolveAgent(id string) (*ResolvedAgent, error) {
 	if !singleLine(agent.Description) {
 		return nil, resource.Errorf("%s: description must stay a single line after field references are resolved", doc.Path)
 	}
-	for _, objective := range c.objectives {
+	for _, base := range doc.ExtendsChain {
+		agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "extends", Source: base})
+	}
+	for _, objective := range doc.ObjectiveSources {
 		content, err := r.render(objective.Content, objective.Source, template, bindings)
 		if err != nil {
 			return nil, err
@@ -413,131 +523,29 @@ func (r *Resolver) ResolveAgent(id string) (*ResolvedAgent, error) {
 		agent.Objectives = append(agent.Objectives, Objective{Source: objective.Source, Content: content})
 		agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "objectives", Source: objective.Source})
 	}
-	for _, docID := range c.documents {
-		resolved, err := r.resolveDocument(docID, "inline", bindings)
+	seen := map[string]bool{}
+	for _, document := range pluginDocuments {
+		seen[document.ID] = true
+		agent.Documents = append(agent.Documents, document)
+	}
+	for _, ref := range doc.Context {
+		if seen[ref.ID] {
+			continue
+		}
+		seen[ref.ID] = true
+		resolved, err := r.resolveDocument(ref.ID, "inline", bindings)
 		if err != nil {
 			return nil, err
 		}
 		agent.Documents = append(agent.Documents, resolved)
-		for _, source := range c.documentSource[docID] {
-			agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "context", Source: source})
-		}
-	}
-	for _, embed := range doc.Embeds {
-		agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "embeds", Source: embed})
-	}
-	for _, name := range resource.SortedKeys(bindings) {
-		agent.Bindings = append(agent.Bindings, bindings[name])
-		for _, source := range c.with[name].sources {
-			agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "with", Source: source})
-		}
-	}
-	for _, skillID := range skillIDs {
-		skill, err := r.resolveSkill(skillID, bindings, instanceName, c.bindingSource[skillID])
-		if err != nil {
-			return nil, err
-		}
-		agent.Skills = append(agent.Skills, skill)
-	}
-	sort.Slice(agent.Skills, func(i, j int) bool { return agent.Skills[i].Name < agent.Skills[j].Name })
-	for _, ruleID := range c.rules {
-		rule, err := r.resolveRule(ruleID, bindings, instanceName)
-		if err != nil {
-			return nil, err
-		}
-		agent.Rules = append(agent.Rules, rule)
-		for _, source := range c.nativeSource[ruleID] {
-			agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "rules", Source: source})
-		}
-	}
-	for _, commandID := range c.commands {
-		command, err := r.resolveCommand(commandID, bindings, instanceName)
-		if err != nil {
-			return nil, err
-		}
-		agent.Commands = append(agent.Commands, command)
-		for _, source := range c.nativeSource[commandID] {
-			agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "commands", Source: source})
-		}
-	}
-	for _, hookID := range c.hooks {
-		agent.Hooks = append(agent.Hooks, hookID)
-		for _, source := range c.nativeSource[hookID] {
-			agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "hooks", Source: source})
-		}
-	}
-	agent.Servers = append([]string{}, doc.Servers...)
-	for i := 1; i < len(agent.Skills); i++ {
-		if agent.Skills[i].Name == agent.Skills[i-1].Name {
-			return nil, resource.Errorf("%s: skills %s and %s both emit the skill name '%s'", doc.Path, agent.Skills[i-1].ImplementationID, agent.Skills[i].ImplementationID, agent.Skills[i].Name)
-		}
+		agent.Provenance = append(agent.Provenance, ProvenanceEntry{Field: "context", Source: doc.ContextHolders[ref.ID]})
 	}
 	return agent, nil
 }
 
-// ResolveSkill resolves a skill shipped directly, without an agent. A
-// template cannot ship this way; only its instances can.
-func (r *Resolver) ResolveSkill(id string) (ResolvedSkill, error) {
-	skill := r.docs[id]
-	if skill == nil || skill.Kind != "skill" {
-		return ResolvedSkill{}, resource.Errorf("%s is not a skill in this build", id)
-	}
-	if skill.IsTemplate() {
-		return ResolvedSkill{}, resource.Errorf("%s is a template (it has unbound parameters), so it ships only as an instance: through an agent's 'with', or a skill that extends it and supplies 'with'", skill.Path)
-	}
-	return r.resolveSkill(id, nil, "", nil)
-}
-
-// ResolveProfile resolves a profile shipped without an agent. It must be
-// complete, hold no documents, and declare no parameters.
-func (r *Resolver) ResolveProfile(id string) (*ResolvedProfile, error) {
-	doc := r.docs[id]
-	if doc == nil || doc.Kind != "profile" {
-		return nil, resource.Errorf("%s is not a profile in this build", id)
-	}
-	c, err := r.compose(id, nil)
-	if err != nil {
-		return nil, err
-	}
-	if len(c.declared) > 0 {
-		return nil, resource.Errorf("%s: a profile that declares parameters is instantiated by an agent; link an agent that binds them", doc.Path)
-	}
-	if len(c.documents) > 0 {
-		return nil, resource.Errorf("%s: the profile holds document %s, which only an agent can deliver; link an agent that embeds the profile instead", doc.Path, c.documents[0])
-	}
-	skillIDs, err := c.finalSkills(doc.Path)
-	if err != nil {
-		return nil, err
-	}
-	profile := &ResolvedProfile{ID: id}
-	for _, skillID := range skillIDs {
-		skill, err := r.ResolveSkill(skillID)
-		if err != nil {
-			return nil, err
-		}
-		profile.Skills = append(profile.Skills, skill)
-	}
-	for _, ruleID := range c.rules {
-		rule, err := r.ResolveRule(ruleID)
-		if err != nil {
-			return nil, err
-		}
-		profile.Rules = append(profile.Rules, rule)
-	}
-	for _, commandID := range c.commands {
-		command, err := r.ResolveCommand(commandID)
-		if err != nil {
-			return nil, err
-		}
-		profile.Commands = append(profile.Commands, command)
-	}
-	profile.Hooks = append(profile.Hooks, c.hooks...)
-	return profile, nil
-}
-
-// resolveSkill renders one skill. agentBindings supply the parameters the
+// resolveSkill renders one skill. pluginBindings supply the parameters the
 // skill leaves unbound; a template is named after the instance.
-func (r *Resolver) resolveSkill(id string, agentBindings map[string]*Binding, instanceName string, boundBy []string) (ResolvedSkill, error) {
+func (r *Resolver) resolveSkill(id string, pluginBindings map[string]*Binding, instanceName string, boundBy []string) (ResolvedSkill, error) {
 	skill := r.docs[id]
 	bindings := map[string]*Binding{}
 	for _, name := range resource.SortedKeys(skill.Parameters) {
@@ -545,7 +553,7 @@ func (r *Resolver) resolveSkill(id string, agentBindings map[string]*Binding, in
 			bindings[name] = r.binding(name, dataID)
 			continue
 		}
-		b, ok := agentBindings[name]
+		b, ok := pluginBindings[name]
 		if !ok {
 			return ResolvedSkill{}, resource.Errorf("%s: parameter '%s' is unbound", skill.Path, name)
 		}
@@ -554,7 +562,7 @@ func (r *Resolver) resolveSkill(id string, agentBindings map[string]*Binding, in
 	name := resource.Leaf(id)
 	if skill.IsTemplate() {
 		if instanceName == "" {
-			return ResolvedSkill{}, resource.Errorf("%s: a template skill needs an instance name from its agent's data", skill.Path)
+			return ResolvedSkill{}, resource.Errorf("%s: a template skill needs an instance name from its plugin's data", skill.Path)
 		}
 		name = instanceName + "-" + name
 	}

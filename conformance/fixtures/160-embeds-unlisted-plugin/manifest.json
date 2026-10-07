@@ -1,0 +1,4 @@
+{
+  "description": "A plugin can embed only a plugin its package's manifest lists (ADR-0006).",
+  "expect": "error"
+}

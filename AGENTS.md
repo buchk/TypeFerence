@@ -131,10 +131,10 @@ Commit messages are conventional and written for a critical human reader.
 | `docs/whitepaper.md` | Motivation and design narrative. |
 | `docs/decisions/` | Architecture decision records. |
 | `go/` | The implementation (static binary; module `github.com/buchk/TypeFerence/go`). |
-| `go/cmd/typeference-lsp/` | Language server for version 7 `.tfer` packages. |
+| `go/cmd/typeference-lsp/` | Language server for version 8 `.tfer` packages. |
 | `editors/vscode/` | VS Code client for the language server. |
 | `go/conformance/` | Determinism runner (`-update` regenerates digests). |
-| `conformance/` | Golden-file fixture corpus for version 7. |
+| `conformance/` | Golden-file fixture corpus for version 8. |
 | `examples/helio` | Example packages and marketplace used by tests and the quick start. |
 | `dist/` | Committed reference output of the Helio marketplace (byte-compared in tests). |
 | `web/playground/` | Browser playground running the compiler as WebAssembly. |

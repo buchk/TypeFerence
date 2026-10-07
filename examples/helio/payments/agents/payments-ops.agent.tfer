@@ -1,11 +1,5 @@
 ---
 description: Operations agent for the Helio payments team.
-embeds:
-  - helio/core:profiles/team-ops.profile.tfer
-with:
-  team: data/payments-team.context.tfer
-skills:
-  - skills/self-heal.skill.tfer
 servers:
   - servers/helio-ledger.server.tfer
 copilot:

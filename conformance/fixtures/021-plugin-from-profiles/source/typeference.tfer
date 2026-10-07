@@ -1,0 +1,10 @@
+---
+schemaVersion: 8
+name: conformance/release
+version: 1.0.0
+dependencies:
+  conformance/core: 1.0.0
+  conformance/ledger: 1.0.0
+plugins:
+  - plugins/release-desk.plugin.tfer
+---

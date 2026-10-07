@@ -11,10 +11,11 @@ import (
 // compilation is a loaded, resolved, and planned source package: everything
 // the target writer needs, computed once.
 type compilation struct {
-	source     string
-	project    *resource.Project
-	docs       map[string]*resource.Document
-	resolver   *resolve.Resolver
+	source   string
+	project  *resource.Project
+	docs     map[string]*resource.Document
+	resolver *resolve.Resolver
+	// resolved are the agents the build ships, plugin by plugin.
 	resolved   []*resolve.ResolvedAgent
 	plugins    []*pluginPlan
 	provenance buildProvenance
@@ -34,7 +35,7 @@ func prepare(source string, options BuildOptions) (*compilation, error) {
 		return nil, err
 	}
 	if project == nil {
-		return nil, resource.Errorf("%s has no %s; TypeFerence builds sources whose manifest declares schemaVersion 7 (docs/specification.md)", source, resource.ManifestFile)
+		return nil, resource.Errorf("%s has no %s; TypeFerence builds sources whose manifest declares schemaVersion 8 (docs/specification.md)", source, resource.ManifestFile)
 	}
 	var dependencies *packages.DependencySet
 	if options.Candidate != "" {
@@ -66,17 +67,35 @@ func prepare(source string, options BuildOptions) (*compilation, error) {
 		all[id] = doc
 	}
 	for id, doc := range dependencies.Documents {
-		if doc.Kind == "plugin" && !shipped[id] {
-			continue // a dependency's plugins ship only where a manifest lists them
-		}
 		if _, exists := all[id]; exists {
 			return nil, resource.Errorf("root document cannot shadow locked dependency document: %s", id)
 		}
 		all[id] = doc
 	}
+	// A plugin is embeddable where its package's manifest lists it among
+	// the package's own plugins; it is never an export.
+	listed := map[string]bool{}
+	for _, id := range root.OwnPlugins {
+		listed[id] = true
+	}
+	for _, ids := range dependencies.Plugins {
+		for _, id := range ids {
+			listed[id] = true
+		}
+	}
+	for _, id := range resource.SortedKeys(all) {
+		for _, embed := range all[id].Embeds {
+			if target := all[embed]; target != nil && target.Kind == "plugin" && !listed[embed] {
+				return nil, resource.Errorf("%s: embeds plugin %s, which its package's manifest does not list among its plugins", all[id].Path, embed)
+			}
+		}
+	}
 	for _, pkg := range resource.SortedKeys(root.Qualified) {
 		exported := map[string]bool{}
 		for _, id := range dependencies.Exports[pkg] {
+			exported[id] = true
+		}
+		for _, id := range dependencies.Plugins[pkg] {
 			exported[id] = true
 		}
 		for _, id := range root.Qualified[pkg] {
@@ -92,10 +111,6 @@ func prepare(source string, options BuildOptions) (*compilation, error) {
 	if err != nil {
 		return nil, err
 	}
-	resolved, err := r.ResolveAll()
-	if err != nil {
-		return nil, err
-	}
 	sourceDigest, err := HashSource(source)
 	if err != nil {
 		return nil, err
@@ -105,23 +120,21 @@ func prepare(source string, options BuildOptions) (*compilation, error) {
 		project:    root.Project,
 		docs:       all,
 		resolver:   r,
-		resolved:   resolved,
 		provenance: buildProvenance{SourceDigest: "sha256:" + sourceDigest, Dependencies: dependencies.Locked},
-	}
-	byID := map[string]*resolve.ResolvedAgent{}
-	for _, agent := range resolved {
-		byID[agent.ID] = agent
 	}
 	pluginIDs := append([]string{}, root.OwnPlugins...)
 	for id := range shipped {
 		pluginIDs = append(pluginIDs, id)
 	}
 	sort.Strings(pluginIDs)
-	plugins, err := planPlugins(c, byID, pluginIDs, ownerProvenance(c, dependencies.Locked))
+	plugins, err := planPlugins(c, pluginIDs, ownerProvenance(c, dependencies.Locked))
 	if err != nil {
 		return nil, err
 	}
 	c.plugins = plugins
+	for _, plan := range plugins {
+		c.resolved = append(c.resolved, plan.Agents...)
+	}
 	if err := validateLibraryNames(c); err != nil {
 		return nil, err
 	}

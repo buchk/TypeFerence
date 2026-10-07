@@ -1,0 +1,16 @@
+---
+description: The payments team's operations plugin.
+license: MIT
+agents:
+  - agents/ops.agent.tfer
+skills:
+  - skills/triage.skill.tfer
+  - skills/queue-summary.skill.tfer
+rules:
+  - rules/evidence.rule.tfer
+with:
+  team: data/payments.context.tfer
+modes:
+  - manual
+  - pipeline
+---
