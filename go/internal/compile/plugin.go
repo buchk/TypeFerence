@@ -427,6 +427,19 @@ func metadataMembers(m resource.PluginMetadata) jsonx.Obj {
 	return members
 }
 
+// catalogMembers renders the Copilot marketplace entry members that Agent
+// Plugins 1.0 does not define in plugin.json, omitting undeclared ones.
+func catalogMembers(m resource.PluginMetadata) jsonx.Obj {
+	members := jsonx.Obj{}
+	if m.Category != "" {
+		members = append(members, jsonx.Member{K: "category", V: jsonx.Str(m.Category)})
+	}
+	if m.Tags != nil {
+		members = append(members, jsonx.Member{K: "tags", V: stringArr(m.Tags)})
+	}
+	return members
+}
+
 // filesValue records skill or carried files by source and destination.
 func filesValue(files []resource.PackageFile) jsonx.Arr {
 	arr := jsonx.Arr{}
@@ -794,12 +807,17 @@ func marketplaceJSON(marketplace *resource.Marketplace, version string, artifact
 			{K: "description", V: jsonx.Str(artifact.plan.Description)},
 			{K: "version", V: jsonx.Str(artifact.plan.Version)},
 		}
-		plugins = append(plugins, append(entry, metadataMembers(artifact.plan.Metadata)...))
+		entry = append(entry, metadataMembers(artifact.plan.Metadata)...)
+		plugins = append(plugins, append(entry, catalogMembers(artifact.plan.Metadata)...))
+	}
+	metadata := jsonx.Obj{}
+	if marketplace.Description != "" {
+		metadata = append(metadata, jsonx.Member{K: "description", V: jsonx.Str(marketplace.Description)})
 	}
 	return jsonx.Indented(jsonx.Obj{
 		{K: "name", V: jsonx.Str(marketplace.Name)},
 		{K: "owner", V: jsonx.Obj{{K: "name", V: jsonx.Str(marketplace.Owner)}}},
-		{K: "metadata", V: jsonx.Obj{{K: "version", V: jsonx.Str(version)}}},
+		{K: "metadata", V: append(metadata, jsonx.Member{K: "version", V: jsonx.Str(version)})},
 		{K: "plugins", V: plugins},
 	})
 }

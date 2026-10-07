@@ -1,0 +1,11 @@
+---
+schemaVersion: 7
+name: conformance/case
+version: 1.0.0
+marketplace:
+  name: conformance-agents
+  owner: Conformance Platform
+  description: ''
+plugins:
+  - plugins/plain.plugin.tfer
+---

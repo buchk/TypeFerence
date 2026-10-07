@@ -19,6 +19,8 @@ type pluginMetadata struct {
 	repository string
 	license    string
 	keywords   []string
+	category   string
+	tags       []string
 }
 
 // carriedFile is a file in the plugin directory that no component reads; it
@@ -33,7 +35,7 @@ type carriedFile struct {
 const pluginFilesRoot = "plugin-files/"
 
 // metadataKeys are the manifest members import carries as plugin metadata.
-var metadataKeys = map[string]bool{"author": true, "homepage": true, "repository": true, "license": true, "keywords": true}
+var metadataKeys = map[string]bool{"author": true, "homepage": true, "repository": true, "license": true, "keywords": true, "category": true, "tags": true}
 
 // readMetadata carries one manifest member, or lists it as unsupported when
 // its value is not one "Plugin metadata" accepts.
@@ -72,7 +74,7 @@ func (im *importer) readMetadata(source, key string, value any) {
 			return
 		}
 		im.metadata.author = author
-	case "homepage", "repository", "license":
+	case "homepage", "repository", "license", "category":
 		text, ok := value.(string)
 		if !ok || !resource.IsMetadataValue(text) {
 			bad("must be a non-empty single-line string")
@@ -83,17 +85,19 @@ func (im *importer) readMetadata(source, key string, value any) {
 			im.metadata.homepage = text
 		case "repository":
 			im.metadata.repository = text
+		case "category":
+			im.metadata.category = text
 		default:
 			im.metadata.license = text
 		}
-	case "keywords":
+	case "keywords", "tags":
 		items, ok := value.([]any)
 		if !ok || len(items) == 0 {
 			bad("must be a non-empty list of strings")
 			return
 		}
 		seen := map[string]bool{}
-		keywords := []string{}
+		values := []string{}
 		for _, item := range items {
 			text, isString := item.(string)
 			if !isString || !resource.IsMetadataValue(text) || seen[text] {
@@ -101,9 +105,13 @@ func (im *importer) readMetadata(source, key string, value any) {
 				return
 			}
 			seen[text] = true
-			keywords = append(keywords, text)
+			values = append(values, text)
 		}
-		im.metadata.keywords = keywords
+		if key == "tags" {
+			im.metadata.tags = values
+		} else {
+			im.metadata.keywords = values
+		}
 	}
 }
 
@@ -119,6 +127,8 @@ func writeMetadata(fm *frontmatter, m pluginMetadata) {
 	fm.scalar(0, "repository", m.repository)
 	fm.scalar(0, "license", m.license)
 	fm.list(0, "keywords", m.keywords)
+	fm.scalar(0, "category", m.category)
+	fm.list(0, "tags", m.tags)
 }
 
 // copilotComponent matches the files under com.github.copilot/ that the

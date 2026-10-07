@@ -169,6 +169,10 @@ type PluginMetadata struct {
 	Repository string
 	License    string
 	Keywords   []string
+	// Category and Tags are Copilot marketplace entry members; build emits
+	// them only into the marketplace index.
+	Category string
+	Tags     []string
 }
 
 // PluginAuthor is a plugin manifest's author.

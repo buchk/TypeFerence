@@ -679,7 +679,9 @@ func (d *documentDecoder) decodeKind(n *tferlex.Node) error {
 			"homepage":    d.metadataString(&doc.PluginMetadata.Homepage),
 			"repository":  d.metadataString(&doc.PluginMetadata.Repository),
 			"license":     d.metadataString(&doc.PluginMetadata.License),
-			"keywords":    d.keywords(&doc.PluginMetadata.Keywords),
+			"keywords":    d.metadataList("keyword", &doc.PluginMetadata.Keywords),
+			"category":    d.metadataString(&doc.PluginMetadata.Category),
+			"tags":        d.metadataList("tag", &doc.PluginMetadata.Tags),
 			"files":       d.files(pluginFiles),
 		})
 	case "rule":

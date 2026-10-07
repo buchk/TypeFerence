@@ -1,0 +1,7 @@
+{
+  "description": "Marketplace catalog fields (ADR-0007): a plugin's category and tags ship unchanged in every marketplace entry of the plugin, after its other metadata, and never in plugin.json; the manifest's marketplace description ships in the index metadata before its version; an undeclared member is absent.",
+  "expect": "success",
+  "digests": {
+    "agent-plugin": "sha256:935dd94c72b4cf2c251c114d622b7dc7b931ede283372d6cad9edb168f8d3776"
+  }
+}

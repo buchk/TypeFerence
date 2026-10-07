@@ -25,6 +25,8 @@ const SchemaVersion = 7
 type Marketplace struct {
 	Name  string
 	Owner string
+	// Description is the index's optional metadata.description.
+	Description string
 	// Files ship at the target root (ADR-0004). LoadPackage reads their
 	// bytes; LoadProject alone leaves Data empty.
 	Files []PackageFile
@@ -119,8 +121,9 @@ func ParseProjectManifest(text string) (*Project, error) {
 		"marketplace": func(n *tferlex.Node) error {
 			m := &Marketplace{}
 			if err := d.decode(n, map[string]func(*tferlex.Node) error{
-				"name":  d.stringInto(&m.Name),
-				"owner": d.stringInto(&m.Owner),
+				"name":        d.stringInto(&m.Name),
+				"owner":       d.stringInto(&m.Owner),
+				"description": d.metadataString(&m.Description),
 				"files": func(n *tferlex.Node) error {
 					files, err := d.fileEntries(n, project.Name, marketplaceFiles)
 					m.Files = files
