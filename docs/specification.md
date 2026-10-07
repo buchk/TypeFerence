@@ -771,7 +771,20 @@ requires them.
 | agent | `disableModelInvocation` | boolean | `disable-model-invocation` |
 
 `allowedTools` pre-approves tool use for everyone who installs the plugin and is
-never inferred. A skill meant to be used only by its agent sets
+never inferred. It lists at least one tool or is omitted.
+
+An agent's `tools` is its tool allowlist. Omitting it gives the agent Copilot's
+default tools; `tools: []` gives it none and is emitted as `tools: []`; a key
+without a value is an error, because it could mean either. MCP server tools
+are named `<server>/<tool>` or `<server>/*`, and `*` names every tool. When an
+agent declares `tools` without `*`, then in every artifact that ships the
+agent, each server that a skill the agent binds requires in that artifact's
+mode, and each server in the agent's own `servers`, MUST be named by an entry
+`<server>/*` or `<server>/<tool>`. Copilot enables a server's tools for an
+agent only when the agent's `tools` names them, and build never adds an entry,
+so a missing one fails compilation. Entries naming servers an artifact does not
+ship are emitted unchanged; Copilot ignores tool names it does not
+recognize. A skill meant to be used only by its agent sets
 `userInvocable: false`. Extensions inherit their base's `copilot` fields; an
 extension's own fields replace the base's field by field.
 

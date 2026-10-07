@@ -293,6 +293,35 @@ func TestEmbeddedAgentBindingsShallowestWins(t *testing.T) {
 }
 
 // Native Copilot components render in Copilot's own formats (ADR-0040).
+func TestAgentToolAllowlists(t *testing.T) {
+	source, err := filepath.Abs(filepath.Join("..", "..", "..", "conformance", "fixtures", "015-agent-tool-allowlist", "source"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := t.TempDir()
+	if _, err := compile.Build(source, out, compile.BuildOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	agents := filepath.Join(out, compile.TargetName, "kit", "com.github.copilot", "agents")
+	if got := read(t, agents, "quiet.agent.md"); !strings.Contains(got, "
+tools: []
+") {
+		t.Errorf("tools: [] means no tools and must be emitted, not omitted:
+%s", got)
+	}
+	want := "tools:
+  - \"read\"
+  - \"acme-tickets/search\"
+  - \"acme-builds/*\"
+  - \"acme-linter/*\"
+mcp-servers:
+"
+	if got := read(t, agents, "ops.agent.md"); !strings.Contains(got, want) {
+		t.Errorf("an explicit allowlist is emitted exactly as written, with nothing added:
+%s", got)
+	}
+}
+
 func TestNativeComponentsRender(t *testing.T) {
 	source, err := filepath.Abs(filepath.Join("..", "..", "..", "conformance", "fixtures", "014-native-components", "source"))
 	if err != nil {

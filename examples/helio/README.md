@@ -47,6 +47,12 @@ specification by hand; the compiler's output in `dist/` matches them.
   parameter and ships as `payments-standup` and `data-platform-standup`.
 - **A language server.** `engineering-kit` lists
   `core/lsp/helio-config.lsp.tfer`, emitted into `lsp.json`.
+- **Explicit tool permissions.** The payments agent restricts its tools, so
+  it lists every server its skills and its own `mcp-servers` use
+  (`helio-tickets/*`, `helio-builds/*`, `helio-ledger/*`). Build checks the
+  list against those servers in each mode and fails on a gap; it never adds a
+  grant. `helio-builds` ships only in pipeline mode, and Copilot ignores tool
+  names it does not recognize, so one list serves both artifacts.
 - **A server scoped to one agent.** `payments/servers/helio-ledger.server.tfer`
   is listed in the payments agent's `servers`, so it renders in that agent's
   `mcp-servers` instead of the plugin's `mcp.json`.
@@ -156,6 +162,9 @@ description: "Operations agent for the Helio payments team."
 tools:
   - "read"
   - "search"
+  - "helio-tickets/*"
+  - "helio-builds/*"
+  - "helio-ledger/*"
 mcp-servers:
   helio-ledger:
     type: "http"

@@ -125,6 +125,9 @@ func prepare(source string, options BuildOptions) (*compilation, error) {
 	if err := validateLibraryNames(c); err != nil {
 		return nil, err
 	}
+	if err := validateAgentTools(c); err != nil {
+		return nil, err
+	}
 	return c, nil
 }
 

@@ -69,9 +69,16 @@ had no documented contract.
    - HTTPS for http hooks;
    - LSP launch fields and extensions;
    - no `${PLUGIN_DATA}` in agent-scoped servers.
-6. **Import carries them.** `import` turns an Agent Plugin's commands, rules,
+6. **Agent tool allowlists are explicit and checked.** An agent's `tools: []`
+   means no tools and is emitted; omitting `tools` keeps Copilot's defaults.
+   An agent that declares `tools` must name every MCP server its skills
+   require in each shipped mode and every server it scopes to itself
+   (`<server>/*` or `<server>/<tool>`), because Copilot enables only the tools
+   an agent lists. Build fails on a gap and never adds a grant: dependencies
+   are not permissions.
+7. **Import carries them.** `import` turns an Agent Plugin's commands, rules,
    hooks, and language servers into version 7 documents.
-7. **The output contract is tested.**
+8. **The output contract is tested.**
    - `docs/output-contract.md` documents every file the target emits and the
      schema version of TypeFerence's own `.typeference/` files.
    - `conformance/schemas/` holds the Agent Plugins 1.0 schemas (vendored

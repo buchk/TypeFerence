@@ -919,13 +919,19 @@ func (d *documentDecoder) files(n *tferlex.Node) error {
 func (d *documentDecoder) copilot(skill bool) func(*tferlex.Node) error {
 	return func(n *tferlex.Node) error {
 		c := &d.doc.Copilot
-		tools := func(target *[]string) func(*tferlex.Node) error {
+		// An agent's `tools: []` means no tools, which omitting the field does
+		// not express: Copilot then enables its default set. A pre-approval
+		// list of nothing is the same as no list, so it must be omitted.
+		tools := func(target *[]string, noneAllowed bool) func(*tferlex.Node) error {
 			return func(n *tferlex.Node) error {
+				if noneAllowed && isNull(n) {
+					return d.errorf(n, "'%s' needs a value: list tools, write [] for no tools, or omit it for Copilot's default tools", n.Key)
+				}
 				items, err := d.stringList(n)
 				if err != nil {
 					return err
 				}
-				if len(items) == 0 {
+				if len(items) == 0 && !noneAllowed {
 					return d.errorf(n, "'%s' must list at least one tool; omit it otherwise", n.Key)
 				}
 				*target = items
@@ -938,10 +944,10 @@ func (d *documentDecoder) copilot(skill bool) func(*tferlex.Node) error {
 		}
 		if skill {
 			fields["argumentHint"] = d.optionalString(&c.ArgumentHint)
-			fields["allowedTools"] = tools(&c.AllowedTools)
+			fields["allowedTools"] = tools(&c.AllowedTools, false)
 		} else {
 			fields["model"] = d.optionalString(&c.Model)
-			fields["tools"] = tools(&c.Tools)
+			fields["tools"] = tools(&c.Tools, true)
 		}
 		return d.decode(n, fields)
 	}

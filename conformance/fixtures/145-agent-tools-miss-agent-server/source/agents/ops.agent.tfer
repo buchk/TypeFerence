@@ -1,0 +1,13 @@
+---
+description: Operations agent.
+skills:
+  - skills/triage.skill.tfer
+servers:
+  - servers/acme-linter.server.tfer
+copilot:
+  tools:
+    - read
+    - acme-tickets/*
+    - acme-builds/*
+---
+Triage failures.

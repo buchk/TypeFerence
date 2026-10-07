@@ -154,6 +154,36 @@ func TestImportCarriesCopilotComponents(t *testing.T) {
 	}
 }
 
+func TestImportKeepsAnAgentWithNoTools(t *testing.T) {
+	plugin := t.TempDir()
+	write(t, plugin, "plugin.json", `{"$schema":"https://agent-plugins.org/schemas/1.0.0/plugin.schema.json","name":"team-kit","description":"Our team kit."}`)
+	write(t, plugin, "com.github.copilot/agents/quiet.agent.md", "---
+description: Answers with no tools.
+tools: []
+---
+Answer only from the conversation.
+")
+	result, err := Import(plugin, Options{Name: "acme/team", Version: "1.0.0"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := t.TempDir()
+	if err := Write(result.Files, out); err != nil {
+		t.Fatal(err)
+	}
+	built := t.TempDir()
+	if _, err := compile.Build(out, built, compile.BuildOptions{}); err != nil {
+		t.Fatalf("imported sources must build: %v", err)
+	}
+	agent, err := os.ReadFile(filepath.Join(built, "agent-plugin", "team-kit", "com.github.copilot", "agents", "quiet.agent.md"))
+	if err != nil || !strings.Contains(string(agent), "
+tools: []
+") {
+		t.Fatalf("an agent with no tools must not gain Copilot's default tools on import: %v
+%s", err, agent)
+	}
+}
+
 func TestImportRejectsGenericServerNames(t *testing.T) {
 	plugin := t.TempDir()
 	write(t, plugin, "plugin.json", `{"$schema":"https://agent-plugins.org/schemas/1.0.0/plugin.schema.json","name":"team-kit","description":"Our team kit."}`)

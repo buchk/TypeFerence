@@ -450,7 +450,9 @@ func (im *importer) copilotFields(source string, values map[string]any, keys []s
 			im.unsupported = append(im.unsupported, source+": frontmatter field '"+key+"' must be true or false")
 			continue
 		}
-		if field.isList && len(field.list) == 0 {
+		// An empty tools list means no tools; dropping it would grant
+		// Copilot's default set. An empty pre-approval list approves nothing.
+		if field.isList && len(field.list) == 0 && target != "tools" {
 			continue
 		}
 		byKey[target] = field
@@ -473,6 +475,8 @@ func writeCopilot(fm *frontmatter, fields []copilotField) {
 		switch {
 		case field.isBool:
 			fm.token(2, field.key, field.text)
+		case field.isList && len(field.list) == 0:
+			fm.token(2, field.key, "[]")
 		case field.isList:
 			fm.list(2, field.key, field.list)
 		default:

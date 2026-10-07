@@ -12,6 +12,9 @@ copilot:
   tools:
     - read
     - search
+    - helio-tickets/*
+    - helio-builds/*
+    - helio-ledger/*
 ---
 You support the {{team.name}} team's engineers and release pipelines. Lead with evidence,
 and keep changes small enough to review in one sitting.

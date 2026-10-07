@@ -1,0 +1,4 @@
+{
+  "description": "An agent that lists its tools must list the servers its skills require; build never adds the grant (ADR-0040).",
+  "expect": "error"
+}

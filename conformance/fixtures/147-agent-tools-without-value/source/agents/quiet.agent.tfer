@@ -1,0 +1,8 @@
+---
+description: Answers with no tools.
+skills:
+  - skills/notes.skill.tfer
+copilot:
+  tools:
+---
+Answer only from the conversation.

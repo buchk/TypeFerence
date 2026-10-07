@@ -178,6 +178,47 @@ func planPlugin(c *compilation, doc *resource.Document, agents map[string]*resol
 	return plan, nil
 }
 
+// validateAgentTools keeps an agent's explicit tool allowlist consistent with
+// the MCP servers it depends on in each artifact (ADR-0040). Copilot enables
+// a server's tools for an agent only when the agent's tools name them, even
+// for servers in the agent's own mcp-servers, and build never adds a grant,
+// so a missing entry fails. An agent without a tools list gets Copilot's
+// default tools and is not checked.
+func validateAgentTools(c *compilation) error {
+	for _, artifact := range artifactsOf(c.plugins) {
+		for _, agent := range artifact.plan.Agents {
+			if agent.Copilot.Tools == nil {
+				continue
+			}
+			listed := map[string]bool{}
+			for _, tool := range agent.Copilot.Tools {
+				if tool == "*" {
+					listed["*"] = true
+				} else if server, _, found := strings.Cut(tool, "/"); found {
+					listed[server] = true
+				}
+			}
+			if listed["*"] {
+				continue
+			}
+			path := c.docs[agent.ID].Path
+			for _, skill := range agent.Skills {
+				for _, id := range skill.ServersFor(artifact.mode) {
+					if name := resource.Leaf(id); !listed[name] {
+						return resource.Errorf("%s: skill '%s' needs MCP server '%s' in %s mode, but copilot.tools lists neither '%s/*' nor one of its tools; Copilot enables only the tools an agent lists, and build never adds one", path, skill.Name, name, artifact.mode, name)
+					}
+				}
+			}
+			for _, id := range agent.Servers {
+				if name := resource.Leaf(id); !listed[name] {
+					return resource.Errorf("%s: the agent scopes MCP server '%s' to itself, but copilot.tools lists neither '%s/*' nor one of its tools; Copilot enables only the tools an agent lists, and build never adds one", path, name, name)
+				}
+			}
+		}
+	}
+	return nil
+}
+
 // validateLibraryNames enforces the names a GitHub Copilot install pools:
 // every emitted skill name maps to one skill or instance across the whole
 // build, every custom agent name to one agent, every plugin artifact name to
@@ -441,6 +482,10 @@ func frontmatterFields(b *strings.Builder, c resource.CopilotFields, skill bool)
 	}
 	list := func(key string, values []string) {
 		if values == nil {
+			return
+		}
+		if len(values) == 0 {
+			b.WriteString(key + ": []\n")
 			return
 		}
 		b.WriteString(key + ":\n")

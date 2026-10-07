@@ -1,0 +1,4 @@
+{
+  "description": "An agent's tools: [] means no tools and is emitted as such; an explicit allowlist names every MCP server the agent's skills require in each mode and every server it scopes to itself, by server/* or server/tool; '*' covers all (ADR-0040).",
+  "expect": "success"
+}

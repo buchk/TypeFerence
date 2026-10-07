@@ -24,6 +24,12 @@ compatibility promises between minor versions.
   prompt hooks, HTTPS hook URLs, LSP launch fields, command and skill name
   clashes, and `${PLUGIN_DATA}` in agent-scoped servers. `import` carries
   these components from an Agent Plugin.
+- An agent's `copilot.tools: []` means no tools and is emitted; previously it
+  could not be written, and `import` dropped it, silently granting Copilot's
+  default tools. An agent that declares `tools` must name every MCP server its
+  skills require in each mode and every server it scopes to itself; build
+  fails on a gap and never adds a grant. Helio's payments agent now lists
+  `helio-tickets/*`, `helio-builds/*`, and `helio-ledger/*`.
 - **Output contract** ([docs/output-contract.md](docs/output-contract.md)):
   the vendored Agent Plugins 1.0 schemas, TypeFerence-authored schemas for
   `.typeference/` files, `hooks.json`, `lsp.json`, and the marketplace index,
