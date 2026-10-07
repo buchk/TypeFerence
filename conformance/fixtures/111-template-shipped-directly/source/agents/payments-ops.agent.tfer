@@ -1,8 +1,0 @@
----
-description: Payments operations.
-embeds:
-  - profiles/team-ops.profile.tfer
-with:
-  team: data/payments.context.tfer
----
-You support {{team.name}}.

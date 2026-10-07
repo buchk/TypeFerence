@@ -503,9 +503,9 @@ one level deeper than in that resource.
    embedding order, then the resource's own, and deduplicate in first-seen
    order. Provenance records every contributing profile or plugin for every
    member, including each contributor of a member several layers hold.
-3. Capability bindings promote by capability identity. Requirements
-   accumulate: a capability is required when any layer at any depth requires
-   it, and an abstract requirement (a binding with no skill) adds that
+3. Capability bindings promote by slot (see "Capabilities, skills, and
+   bindings"). Requirements accumulate: a capability is required when any
+   layer at any depth requires it, and an abstract requirement (a binding with no skill) adds that
    obligation without selecting, replacing, or erasing an implementation.
    Among implementations, the shallowest wins. At the same depth, bindings with
    the same resolved implementation converge as one member and provenance
@@ -557,8 +557,14 @@ MUST implement it. An entry without a skill MUST name a capability and set
 `required: true`. `required` demands that the plugin that ships the
 composition contains a binding.
 
-Binding a skill whose capability an embedded layer already binds rebinds that
-capability under rule 3 of "Composition".
+A binding occupies a **slot**: its skill's capability, except that a skill
+instance (see "Instances"), and every extension of one, occupies the slot of
+the instance's identity, because instances of one template are distinct
+members by design. One resource binds each slot at most once. Binding a skill
+whose slot an embedded layer already binds rebinds that slot under rule 3 of
+"Composition": an extension of a skill an embedded plugin ships replaces it. An
+abstract requirement names a capability, and any shipped skill that implements
+the capability fulfills it.
 
 ## Skill extension
 
@@ -1156,8 +1162,12 @@ build, including the building package's own identity or other packages it
 ships, reaches an artifact's bytes.
 
 Across a build, every emitted name denotes one thing: an emitted skill name one
-skill or instance, a custom agent name one agent, a plugin artifact name one
-plugin mode, and a server name one server document. The rule spans packages: it
+skill or instance, a custom agent name one agent file, a plugin artifact name
+one plugin mode, and a server name one server document. Because an agent
+renders with the bindings, documents, and skills of the plugin that ships it,
+two plugins that ship one agent with different results fail the build; a
+plugin that needs a different rendering lists an extension of the agent under
+its own name. The rule spans packages: it
 covers every plugin the build ships, whichever package owns it. If two distinct
 resources collapse to one emitted name, compilation fails rather than
 overwriting either.
@@ -1329,11 +1339,14 @@ Import writes:
 - `commands/<name>.command.tfer` and `rules/<name>.rule.tfer` for each
   command and rule (a rule's `paths` or `applyTo` becomes `paths`),
   `hooks/<event>-<n>.hook.tfer` for each hook entry, and `lsp/<name>.lsp.tfer`
-  for each language server, all linked from the plugin.
+  for each language server, all listed by the plugin.
 
 Imported skills require every imported server, because the source format does
 not record which skill uses which server. Authors narrow `requiresServers`
-afterwards.
+afterwards. Because every skill a plugin ships sits beside every agent it
+ships, an imported agent whose `tools` names neither `*` nor every imported
+server keeps the package from validating until the author narrows
+`requiresServers` or lists the server's tools; import notes each such agent.
 
 The plugin name is `--plugin`, else the source plugin's name, else the source
 directory's name. The package is `--name` and `--version`, defaulting to
