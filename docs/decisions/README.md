@@ -51,3 +51,4 @@ their decision.
 | [0038](0038-v7-review-rulings.md) | Version 7 review rulings: portable bytes, requirements, provenance, and inherited bindings | Proposed | — |
 | [0039](0039-skill-directory-path-consistency.md) | Consistent paths throughout a skill directory | Proposed | Extends [0038](0038-v7-review-rulings.md) |
 | [0040](0040-native-copilot-components-and-enterprise-defaults.md) | Native Copilot components, enterprise defaults, and the output contract | Proposed | — |
+| [0041](0041-plugin-metadata-and-carried-files.md) | Plugin metadata and carried files | Proposed | — |

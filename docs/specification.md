@@ -75,6 +75,13 @@ target identity. Feed URLs and credentials identify where bytes can be
 retrieved, not what those bytes mean, and MUST NOT appear in a lockfile or
 source digest.
 
+A plugin's descriptive metadata (see "Plugin metadata"), including its
+`homepage` and `repository` URLs, is source: it is shown to people who browse
+a marketplace, never used to retrieve anything, and part of the emitted bytes.
+The same holds for files a plugin or marketplace carries (see "Carried
+files"): TypeFerence does not interpret their content, so an author who writes
+a deployment fact into one makes it source.
+
 ## Project manifest
 
 A version 7 source root contains `typeference.tfer`:
@@ -87,6 +94,10 @@ version: 1.4.0
 marketplace:
   name: helio-agents
   owner: Helio Platform
+  files:
+    - files/marketplace/README.md
+    - path: files/marketplace/validate.yml
+      as: .github/workflows/validate.yml
 dependencies:
   helio/core: 3.1.0
 plugins:
@@ -108,7 +119,9 @@ on itself.
   lowercase letters, digits, `.`, and `-`, starting and ending with a letter or
   digit, and `owner` is a required non-empty display name. Build then emits the
   marketplace index (see "The agent-plugin target"); it never invents either
-  value.
+  value. `files` optionally lists files the marketplace repository carries at
+  its root, such as a README, a license, or CI workflows (see "Carried
+  files").
 - `plugins` lists the plugins the package ships: its own plugin documents
   (`.plugin.tfer` paths), and plugins of direct dependencies written
   `<package>:<path>` (see "Organization marketplaces").
@@ -288,7 +301,7 @@ marketplace entries, and bundle metadata, never in an instruction body.
 | contextType | `displayName`, `description`, `instanceName`, `fields` |
 | context (document) | `displayName`, `description`, `parameters` |
 | context (data) | `displayName`, `description`, `contextType` (context type), `values` |
-| plugin | `description`, `agents` (agents), `profiles` (profiles), `skills` (skills), `modes`, `rules` (rules), `commands` (commands), `hooks` (hooks), `lspServers` (LSP servers) |
+| plugin | `description`, `agents` (agents), `profiles` (profiles), `skills` (skills), `modes`, `rules` (rules), `commands` (commands), `hooks` (hooks), `lspServers` (LSP servers), `author`, `homepage`, `repository`, `license`, `keywords`, `files` |
 | rule | `displayName`, `description`, `parameters`, `paths` |
 | command | `displayName`, `description`, `parameters`, `argumentHint`, `allowedTools`, `disableModelInvocation` |
 | hook | `displayName`, `description`, `event`, `matcher`, `type`, `bash`, `powershell`, `command`, `exec`, `args`, `cwd`, `env`, `timeoutSec`, `url`, `headers`, `allowedEnvVars`, `prompt` |
@@ -355,6 +368,77 @@ plugin and each of its modes:
 - each shipped skill's emitted name MUST satisfy the same grammar, and no two
   shipped skills may share an emitted name;
 - each shipped multimodal skill MUST define a variant for the mode.
+
+### Plugin metadata
+
+A plugin may declare the descriptive members of the Agent Plugins 1.0
+manifest, which hosts show when people browse or search a marketplace:
+
+```text
+---
+description: Payments team agent and skills.
+author:
+  name: Payments Platform
+  email: payments-platform@example.com
+  url: https://example.com/teams/payments
+homepage: https://example.com/docs/payments-agents
+repository: https://example.com/git/payments-agents
+license: MIT
+keywords:
+  - payments
+  - incidents
+agents:
+  - agents/payments-ops.agent.tfer
+---
+```
+
+- `author` is a mapping of `name` (required), `email`, and `url`;
+- `homepage`, `repository`, and `license` are strings. An SPDX license
+  identifier is recommended but not checked;
+- `keywords` lists at least one keyword, each at most once, in authored order.
+
+Every value is a non-empty single line without control characters or
+surrounding whitespace. TypeFerence never fetches or checks a URL. Build emits
+the metadata unchanged into every artifact of the plugin, in `plugin.json` and
+in the plugin's marketplace entry (see "The agent-plugin target"); it never
+invents a value, and a member the plugin does not declare is absent. The
+manifest member `extensions` has no source form.
+
+### Carried files
+
+A plugin's `files` lists package files that ship at the root of each of its
+artifacts, such as a README or templates people copy into their repositories.
+A marketplace's `files` (see "Project manifest") lists package files that ship
+at the target root, such as the marketplace repository's README, license, and
+CI workflows. Both use the entry grammar of skill files:
+
+```text
+files:
+  - files/payments/README.md
+  - path: files/payments/settings.template.json
+    as: templates/settings.json
+```
+
+`path` follows the rule for skill files (see "Skill files"). `as` is the
+destination, relative to the artifact directory for a plugin and to the target
+root for a marketplace, and defaults to the file name of `path`. A destination
+MUST be a clean path and MUST NOT claim a path build emits itself. Compared
+after lowercasing:
+
+- a plugin file's destination MUST NOT be `plugin.json` or `mcp.json`, and its
+  first segment MUST NOT be `skills`, `com.github.copilot`, `.typeference`, or
+  `.git`;
+- a marketplace file's first segment MUST NOT be `.typeference`, `.git`, or the
+  name of an artifact directory the build emits, and the destination MUST NOT
+  lie beneath `.github/plugin` or `.github/copilot`. The first is where the
+  marketplace index lives; the second holds repository settings, which build
+  never emits.
+
+Destinations within one plugin's files, and within the marketplace's files,
+follow the collision and directory-spelling rules of skill files (ADR-0038,
+ADR-0039). Carried files are source members, read and normalized like skill
+files; field references are not resolved in them. A plugin's files ship
+identically in each of its artifacts.
 
 ## Agents and objectives
 
@@ -914,9 +998,10 @@ are:
 - the project manifest;
 - the lockfile, when present;
 - every document in the closure of references from the manifest's own plugins
-  and its exports, and every file a member skill lists in `files` (see "Skill
-  files"). A dependency's plugin that the manifest lists is a member of that
-  dependency's package, not of this one.
+  and its exports, every file a member skill or member plugin lists in
+  `files` (see "Skill files" and "Carried files"), and every file the
+  manifest's `marketplace` lists in `files`. A dependency's plugin that the
+  manifest lists is a member of that dependency's package, not of this one.
 
 Files outside the closure are not members: they are neither parsed nor hashed.
 The set excludes `.git`, `dist`, `bin`, `obj`, restored packages, deployment
@@ -927,8 +1012,8 @@ source root itself is never a valid output directory.
 
 `typeference-resource-set-v1` sorts normalized source-relative paths by UTF-8 byte
 order and hashes, for each file, `path`, NUL, content, NUL using SHA-256, where
-content is normalized text for `.tfer` documents and for skill files that are
-valid UTF-8, and the exact bytes of any other skill file. Target provenance records the root source digest, the ordered locked
+content is normalized text for `.tfer` documents and for skill and carried
+files that are valid UTF-8, and the exact bytes of any other such file. Target provenance records the root source digest, the ordered locked
 dependency digests, and target adapter identity. Release metadata belongs to the
 distributed compiler binary, not the reproducible source-derived artifact.
 
@@ -950,6 +1035,7 @@ agent-plugin/
   .github/plugin/marketplace.json
   .typeference/build.json
   .typeference/compatibility.json
+  <marketplace file>...
   <artifact>/
     plugin.json
     mcp.json
@@ -962,16 +1048,19 @@ agent-plugin/
     skills/<skill>/references/...
     skills/<skill>/scripts/...
     skills/<skill>/assets/...
+    <plugin file>...
     .typeference/bundle.json
 ```
 
 Each plugin mode is one artifact directory: `manual` emits `<plugin>` and
 `pipeline` emits `<plugin>-pipeline`. An artifact renders exactly one mode.
 
-- `plugin.json` holds exactly `$schema`
+- `plugin.json` holds `$schema`
   (`https://agent-plugins.org/schemas/1.0.0/plugin.schema.json`), `name` (the
   artifact name), `version` (the owning package's version), and `description`
-  (the plugin's), in that order.
+  (the plugin's), then, each when the plugin declares it, `author` (`name`,
+  `email`, `url`), `homepage`, `repository`, `license`, and `keywords`, in
+  that order.
 - `mcp.json` is emitted when a shipped skill requires a server in the
   artifact's mode. It holds `$schema`
   (`https://agent-plugins.org/schemas/1.0.0/mcp.schema.json`) and `mcpServers`,
@@ -992,12 +1081,14 @@ Each plugin mode is one artifact directory: `manual` emits `<plugin>` and
   documents, skill files, and schemas are emitted beside it.
 - rules, commands, hooks, and LSP servers are emitted as "Native Copilot
   components" defines.
-- `.typeference/bundle.json` (`schemaVersion` 3) records the plugin identity,
+- each of the plugin's carried files is emitted at its destination.
+- `.typeference/bundle.json` (`schemaVersion` 4) records the plugin identity,
   artifact name, mode, version, description, the owning package's provenance,
   the resolved agents, the shipped skills with, for each instance, the template
   identity (`templateId`, empty for a skill that is not an instance) and each
   bound parameter's data identity and canonical values, the shipped
-  servers, and the shipped rules, commands, hooks, and LSP servers. The owning package's provenance is its source digest
+  servers, the shipped rules, commands, hooks, and LSP servers, and the
+  plugin's carried files, each with its source and destination. The owning package's provenance is its source digest
   (the build's source digest when the building package owns the plugin, the
   locked digest otherwise) and the locked packages in its dependency closure,
   in lock order.
@@ -1018,15 +1109,21 @@ covers every plugin the build ships, whichever package owns it. If two distinct
 resources collapse to one emitted name, compilation fails rather than
 overwriting either.
 
-The target root holds `.typeference/build.json` (`schemaVersion` 2: target,
-the build's source digest, and each artifact's plugin identity, mode, path,
-owning package source digest, and directory digest) and
-`.typeference/compatibility.json` (`schemaVersion` 1). When the manifest
-declares `marketplace`, it also holds `.github/plugin/marketplace.json`:
-`name`; `owner` with `name`; `metadata` with the building package's `version`;
-and `plugins`, one entry per artifact with `name`, `source` (`./<artifact>`),
-`description`, and `version` (the owning package's). The target directory is
-therefore publishable as a marketplace repository root.
+The target root holds `.typeference/build.json` (`schemaVersion` 3: target,
+the build's source digest, each artifact's plugin identity, mode, path,
+owning package source digest, and directory digest, and each marketplace
+file's path, source, and file digest) and `.typeference/compatibility.json`
+(`schemaVersion` 1). A file digest is `sha256:` and the SHA-256 of the file's
+content as `typeference-directory-v1` reads it. When the manifest declares
+`marketplace`, the root also holds `.github/plugin/marketplace.json`: `name`;
+`owner` with `name`; `metadata` with the building package's `version`; and
+`plugins`, one entry per artifact with `name`, `source` (`./<artifact>`),
+`description`, `version` (the owning package's), then the plugin's metadata
+members as `plugin.json` orders them; and each marketplace file at its
+destination. The target directory is therefore publishable as a marketplace
+repository root. Every file in it is an index file build derives, or is
+covered by a digest in `build.json`: an artifact's files by its directory
+digest, and each marketplace file by its file digest.
 
 The compatibility report lists, for each mode, every capability whose emitted
 skills across the build's artifacts come from more than one implementation,
@@ -1109,7 +1206,9 @@ package.
 
 The published marketplace repository holds only compiler output: the
 marketplace package's `agent-plugin` target. Publication replaces the repository's contents with that output, so
-anything else in the repository is drift. Where the repository lives, who may
+anything else in the repository is drift. A README, license, or CI workflow the
+repository needs is a marketplace file the marketplace package declares, and
+reaches the repository through build like everything else. Where the repository lives, who may
 write to it, and how hosts are told about it are deployment facts.
 
 
@@ -1137,21 +1236,33 @@ customizations into a version 7 package. The source is, in this order of
 detection:
 
 1. a skill directory, one that contains `SKILL.md`;
-2. a plugin. A `plugin.json` that declares `$schema` is read as an Agent
+2. a marketplace repository, one that contains `.github/plugin/marketplace.json`
+   or `.claude-plugin/marketplace.json` and no plugin manifest. Import does not
+   convert a marketplace: it fails, naming the plugin directories the index
+   lists so each can be imported, and noting that root files become the
+   marketplace package's `files`;
+3. a plugin. A `plugin.json` that declares `$schema` is read as an Agent
    Plugins 1.0 plugin (`skills/*/SKILL.md`, `mcp.json`,
    `com.github.copilot/agents/*.agent.md`, and the commands, rules,
    `hooks/hooks.json`, and `lsp.json` under `com.github.copilot/`). Otherwise `plugin.json` or
    `.claude-plugin/plugin.json` is read as a Copilot CLI plugin, whose `agents`
    and `skills` members locate its components (defaults `agents/` and
    `skills/`);
-3. a repository: `.github/agents/*.agent.md`, and skills under
+4. a repository: `.github/agents/*.agent.md`, and skills under
    `.github/skills/`, `.agents/skills/`, and `.claude/skills/`.
 
 Import writes:
 
 - a manifest;
 - one plugin, `plugins/<plugin>.plugin.tfer`, that links every imported agent
-  and skill;
+  and skill and carries the source plugin's metadata (see "Plugin metadata");
+- for a plugin source, a plugin `files` entry for each file in the plugin
+  directory that is not a component import reads, copied to
+  `plugin-files/` with its destination preserved. The components are the
+  plugin manifest, `mcp.json`, the skill and agent directories, and, for an
+  Agent Plugins 1.0 plugin, `com.github.copilot/`. A file in a component
+  directory that import does not read is not carried (see below).
+  `.typeference/`, which build regenerates, and `.git/` are skipped;
 - `agents/<name>.agent.tfer` for each agent, carrying its description, its
   `name` as `displayName` when that differs from its file name, its body as
   objectives, and its recognized Copilot fields;
@@ -1172,7 +1283,8 @@ afterwards.
 
 The plugin name is `--plugin`, else the source plugin's name, else the source
 directory's name. The package is `--name` and `--version`, defaulting to
-`local/<plugin>` and `0.1.0`. The plugin's description is the source plugin's,
+`local/<plugin>` and to the source plugin's `version` when that is an exact
+semantic version, else `0.1.0`. The plugin's description is the source plugin's,
 else that of the only agent, else that of the only skill when there are no
 agents, else a sentence naming the plugin.
 
@@ -1185,11 +1297,16 @@ Import fails closed:
   item: unrecognized frontmatter fields, files beside `SKILL.md` outside
   `references/`, `scripts/`, and `assets/`, server values that contain `${`
   other than the plugin variables, hook or LSP fields version 7 does not
-  declare, and a legacy Copilot CLI plugin's `hooks`, `commands`, and
-  `lspServers`.
+  declare, plugin manifest members other than `name`, `description`,
+  `version`, the metadata members, and a legacy plugin's component paths
+  (`extensions` among them), metadata values that "Plugin metadata" rejects,
+  files in a component directory that are not components, `.tfer` files in a
+  plugin directory, and a legacy Copilot CLI plugin's `hooks`, `commands`,
+  and `lspServers`.
   With `--lossy`, import proceeds without them and lists each item it dropped;
-- plugin metadata other than `name`, `description`, and `version` is noted as
-  not carried, and `.github/copilot-instructions.md` is noted as not imported.
+- a source plugin `version` that is not an exact semantic version is noted,
+  `.typeference/` is noted as not imported, and
+  `.github/copilot-instructions.md` is noted as not imported.
 
 Import writes only into a new or empty directory, performs no network access,
 and validates the written package with the compiler, failing if it does not
