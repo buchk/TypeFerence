@@ -1,0 +1,15 @@
+---
+description: Repository health kit.
+license: MIT
+keywords:
+  - health
+category: developer-tools
+tags:
+  - 'repository status'
+  - health
+skills:
+  - skills/status.skill.tfer
+modes:
+  - manual
+  - pipeline
+---

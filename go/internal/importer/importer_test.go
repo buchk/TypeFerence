@@ -253,6 +253,47 @@ func TestImportCarriesPluginMetadataAndFiles(t *testing.T) {
 	}
 }
 
+func TestImportCarriesCatalogFields(t *testing.T) {
+	plugin := t.TempDir()
+	write(t, plugin, "plugin.json", `{"name":"team-kit","description":"Our team kit.","category":"developer-tools","tags":["review","incidents"]}`)
+	write(t, plugin, "skills/code-review/SKILL.md", "---\nname: code-review\ndescription: Review a diff.\n---\n"+skillBody)
+	result, err := Import(plugin, Options{Name: "acme/team"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc string
+	for _, file := range result.Files {
+		if file.Path == "plugins/team-kit.plugin.tfer" {
+			doc = file.Content
+		}
+	}
+	for _, want := range []string{"category:", "developer-tools", "tags:", "review", "incidents"} {
+		if !strings.Contains(doc, want) {
+			t.Fatalf("the plugin document must carry %s:\n%s", want, doc)
+		}
+	}
+	out := t.TempDir()
+	if err := Write(result.Files, out); err != nil {
+		t.Fatal(err)
+	}
+	built := t.TempDir()
+	if _, err := compile.Build(out, built, compile.BuildOptions{}); err != nil {
+		t.Fatalf("imported sources must build: %v", err)
+	}
+	manifest, err := os.ReadFile(filepath.Join(built, "agent-plugin", "team-kit", "plugin.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(manifest), "category") || strings.Contains(string(manifest), "tags") {
+		t.Fatalf("catalog fields belong only to the marketplace entry:\n%s", manifest)
+	}
+
+	write(t, plugin, "plugin.json", `{"name":"team-kit","description":"Our team kit.","tags":["review","review"]}`)
+	if _, err := Import(plugin, Options{}); err == nil || !strings.Contains(err.Error(), "plugin metadata 'tags'") {
+		t.Fatalf("a repeated tag must fail the import, got %v", err)
+	}
+}
+
 func TestImportFailsClosedOnPluginManifestAndStrayComponentFiles(t *testing.T) {
 	plugin := t.TempDir()
 	write(t, plugin, "plugin.json", `{"$schema":"https://agent-plugins.org/schemas/1.0.0/plugin.schema.json","name":"team-kit","description":"Our team kit.","extensions":{"com.example":{}},"keywords":[]}`)

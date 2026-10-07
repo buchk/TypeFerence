@@ -160,22 +160,24 @@ func (d *fieldDecoder) pluginAuthor(target **PluginAuthor) func(*tferlex.Node) e
 	}
 }
 
-func (d *fieldDecoder) keywords(target *[]string) func(*tferlex.Node) error {
+// metadataList decodes plugin `keywords` or `tags`: at least one distinct
+// metadata value, in authored order.
+func (d *fieldDecoder) metadataList(noun string, target *[]string) func(*tferlex.Node) error {
 	return func(n *tferlex.Node) error {
 		items, err := d.stringList(n)
 		if err != nil {
 			return err
 		}
 		if len(items) == 0 {
-			return d.errorf(n, "'keywords' must list at least one keyword; omit it otherwise")
+			return d.errorf(n, "'%s' must list at least one %s; omit it otherwise", n.Key, noun)
 		}
 		seen := map[string]bool{}
 		for _, item := range items {
 			if !metadataValue(item) {
-				return d.errorf(n, "keyword '%s' must be a non-empty single line without surrounding whitespace", item)
+				return d.errorf(n, "%s '%s' must be a non-empty single line without surrounding whitespace", noun, item)
 			}
 			if seen[item] {
-				return d.errorf(n, "keyword '%s' is listed more than once", item)
+				return d.errorf(n, "%s '%s' is listed more than once", noun, item)
 			}
 			seen[item] = true
 		}

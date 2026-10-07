@@ -1,0 +1,4 @@
+{
+  "description": "A marketplace description, when declared, is a non-empty single line (ADR-0007).",
+  "expect": "error"
+}

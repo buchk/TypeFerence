@@ -28,8 +28,7 @@ adopting organization and are out of scope.
 - [ ] Decide whether one agent may bind two values to one parameter name.
 - [ ] Import a whole marketplace repository into one marketplace package with
   a plugin document per plugin; today import lists the plugins and stops.
-- [ ] Marketplace-only entry fields (`category`, `tags`) and package-level
-  metadata defaults, if a consumer needs them.
+- [ ] Package-level plugin metadata defaults, if a consumer needs them.
 
 ## Near term
 

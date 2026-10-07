@@ -35,7 +35,8 @@ enterprise settings (no carried file may land beneath `.github/copilot/`), and
 it writes no file under `com.github.copilot/` other than those listed.
 `plugin.json` and each marketplace entry carry the plugin's `author`,
 `homepage`, `repository`, `license`, and `keywords` only when the plugin
-declares them (ADR-0007).
+declares them; each marketplace entry also carries its `category` and `tags`,
+and the index's `metadata` its `description`, only when declared (ADR-0007).
 
 ## TypeFerence's own files
 

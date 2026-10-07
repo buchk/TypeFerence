@@ -70,6 +70,7 @@ version: 1.4.0
 marketplace:
   name: helio-agents
   owner: Helio Platform
+  description: Helio's agents and skills for Copilot.
   files:
     - files/marketplace/README.md
     - path: files/marketplace/validate.yml
@@ -93,9 +94,10 @@ on itself.
 
 - `marketplace` is optional. When present, `name` is at most 64 characters of
   lowercase letters, digits, `.`, and `-`, starting and ending with a letter or
-  digit, and `owner` is a required non-empty display name. Build then emits the
-  marketplace index (see "The agent-plugin target"); it never invents either
-  value. `files` optionally lists files the marketplace repository carries at
+  digit, and `owner` is a required non-empty display name. `description` is
+  optional and follows the rules of plugin metadata values (see "Plugin
+  metadata"). Build then emits the marketplace index (see "The agent-plugin
+  target"); it never invents a value. `files` optionally lists files the marketplace repository carries at
   its root, such as a README, a license, or CI workflows (see "Carried
   files").
 - `plugins` lists the plugins the package ships: its own plugin documents
@@ -277,7 +279,7 @@ marketplace entries, and bundle metadata, never in an instruction body.
 | contextType | `displayName`, `description`, `instanceName`, `fields` |
 | context (document) | `displayName`, `description`, `parameters` |
 | context (data) | `displayName`, `description`, `contextType` (context type), `values` |
-| plugin | `description`, `agents` (agents), `profiles` (profiles), `skills` (skills), `modes`, `rules` (rules), `commands` (commands), `hooks` (hooks), `lspServers` (LSP servers), `author`, `homepage`, `repository`, `license`, `keywords`, `files` |
+| plugin | `description`, `agents` (agents), `profiles` (profiles), `skills` (skills), `modes`, `rules` (rules), `commands` (commands), `hooks` (hooks), `lspServers` (LSP servers), `author`, `homepage`, `repository`, `license`, `keywords`, `category`, `tags`, `files` |
 | rule | `displayName`, `description`, `parameters`, `paths` |
 | command | `displayName`, `description`, `parameters`, `argumentHint`, `allowedTools`, `disableModelInvocation` |
 | hook | `displayName`, `description`, `event`, `matcher`, `type`, `bash`, `powershell`, `command`, `exec`, `args`, `cwd`, `env`, `timeoutSec`, `url`, `headers`, `allowedEnvVars`, `prompt` |
@@ -363,6 +365,9 @@ license: MIT
 keywords:
   - payments
   - incidents
+category: operations
+tags:
+  - on-call
 agents:
   - agents/payments-ops.agent.tfer
 ---
@@ -371,14 +376,18 @@ agents:
 - `author` is a mapping of `name` (required), `email`, and `url`;
 - `homepage`, `repository`, and `license` are strings. An SPDX license
   identifier is recommended but not checked;
-- `keywords` lists at least one keyword, each at most once, in authored order.
+- `keywords` lists at least one keyword, each at most once, in authored order;
+- `category` is a string, and `tags` lists at least one tag, each at most
+  once, in authored order. These are Copilot marketplace entry members; Agent
+  Plugins 1.0 does not define them in `plugin.json`.
 
 Every value is a non-empty single line without control characters or
 surrounding whitespace. TypeFerence never fetches or checks a URL. Build emits
-the metadata unchanged into every artifact of the plugin, in `plugin.json` and
-in the plugin's marketplace entry (see "The agent-plugin target"); it never
-invents a value, and a member the plugin does not declare is absent. The
-manifest member `extensions` has no source form.
+`author`, `homepage`, `repository`, `license`, and `keywords` unchanged into
+every artifact of the plugin, in `plugin.json`, and emits all of the metadata
+unchanged into the plugin's marketplace entries (see "The agent-plugin
+target"); it never invents a value, and a member the plugin does not declare is
+absent. The manifest member `extensions` has no source form.
 
 ### Carried files
 
@@ -1092,10 +1101,11 @@ file's path, source, and file digest) and `.typeference/compatibility.json`
 (`schemaVersion` 1). A file digest is `sha256:` and the SHA-256 of the file's
 content as `typeference-directory-v1` reads it. When the manifest declares
 `marketplace`, the root also holds `.github/plugin/marketplace.json`: `name`;
-`owner` with `name`; `metadata` with the building package's `version`; and
-`plugins`, one entry per artifact with `name`, `source` (`./<artifact>`),
-`description`, `version` (the owning package's), then the plugin's metadata
-members as `plugin.json` orders them; and each marketplace file at its
+`owner` with `name`; `metadata` with the manifest's `description` when declared,
+then the building package's `version`; and `plugins`, one entry per artifact
+with `name`, `source` (`./<artifact>`), `description`, `version` (the owning
+package's), then the plugin's metadata members as `plugin.json` orders them,
+then its `category` and `tags` when declared; and each marketplace file at its
 destination. The target directory is therefore publishable as a marketplace
 repository root. Every file in it is an index file build derives, or is
 covered by a digest in `build.json`: an artifact's files by its directory

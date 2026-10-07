@@ -36,7 +36,10 @@ model-invoked skills, agents, pipelines), not only agent files.
    prompt-hook placement, HTTPS hooks, LSP launch fields).
 5. **Plugin metadata.** A plugin's `author`, `homepage`, `repository`,
    `license`, and `keywords` are emitted into `plugin.json` and its
-   marketplace entry only when declared.
+   marketplace entry only when declared. Its `category` and `tags`, and the
+   marketplace's `description`, are emitted only into the marketplace index:
+   Copilot documents them there, and Agent Plugins 1.0 does not define them
+   in `plugin.json`.
 6. **The output contract is tested.** `docs/output-contract.md` lists every
    emitted file; CI validates them against the vendored Agent Plugins schemas
    and TypeFerence's schemas for Copilot formats that GitHub does not publish.

@@ -1,0 +1,4 @@
+{
+  "description": "A plugin lists each tag at most once (ADR-0007).",
+  "expect": "error"
+}

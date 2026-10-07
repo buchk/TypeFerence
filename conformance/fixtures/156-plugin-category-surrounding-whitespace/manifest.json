@@ -1,0 +1,4 @@
+{
+  "description": "A plugin category is a non-empty single line without surrounding whitespace (ADR-0007).",
+  "expect": "error"
+}
