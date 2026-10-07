@@ -2,6 +2,6 @@
   "description": "Canonical text: a byte order mark and CRLF line endings are normalized, Unicode survives, and frontmatter strings are escaped.",
   "expect": "success",
   "digests": {
-    "agent-plugin": "sha256:3ea6f849d7d70de3872949b755aa55fe2cd015d9412e5bca46fbb52a657b838b"
+    "agent-plugin": "sha256:a6642d9b1743dd8da060f88dc22e9b3d701421d2158e51c5fa6f5546d1d19fa7"
   }
 }

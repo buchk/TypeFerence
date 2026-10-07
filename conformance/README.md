@@ -4,11 +4,7 @@ Language-neutral fixtures the compiler must reproduce as byte-identical
 artifacts. The version 7 corpus pins the specification's canonical output:
 the Go implementation runs it in CI, and a digest mismatch on any success
 fixture is a broken build. Error fixtures must fail with a diagnostic; the
-diagnostic text is not part of the contract (ADR-0005).
-
-The version 6 corpus and the archival legacy-v5 and legacy-v3 corpora were
-removed with ADR-0035: they pinned the neutral target, ARD catalogs, and
-retired languages, none of which version 7 emits or reads.
+diagnostic text is not part of the contract (ADR-0003).
 
 ## Layout
 

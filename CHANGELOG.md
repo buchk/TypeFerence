@@ -13,8 +13,23 @@ compatibility promises between minor versions.
 
 ### Added
 
+- **Plugin metadata and carried files**
+  ([ADR-0041](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0041-plugin-metadata-and-carried-files.md)):
+  a plugin declares `author`, `homepage`, `repository`, `license`, and
+  `keywords`, emitted into `plugin.json` and its marketplace entry. A
+  plugin's `files` ship at each artifact's root (a README, adoption
+  templates); a manifest's `marketplace.files` ship at the target root (the
+  marketplace repository's README, license, and CI workflows), each listed in
+  `build.json` with a file digest. Build rejects destinations that claim its
+  own paths or `.github/copilot/`. `import` carries plugin metadata and every
+  file in a plugin directory that is not a component, fails closed on
+  manifest members such as `extensions` and on stray files in component
+  directories, takes the package version from the plugin's `version`, and
+  fails on a marketplace repository with the list of its plugins instead of
+  importing nothing. `tools/validate_output.py` rejects any target-root file
+  that `build.json` does not list or whose digest does not match.
 - **Native Copilot components**
-  ([ADR-0040](docs/decisions/0040-native-copilot-components-and-enterprise-defaults.md)):
+  ([ADR-0040](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0040-native-copilot-components-and-enterprise-defaults.md)):
   `.rule.tfer`, `.command.tfer`, `.hook.tfer`, and `.lsp.tfer` documents emit
   `com.github.copilot/rules/`, `commands/`, `hooks/hooks.json`, and
   `lsp.json`, and an agent's `servers` render as its own `mcp-servers`.
@@ -39,21 +54,29 @@ compatibility promises between minor versions.
 
 ### Changed
 
-- `bundle.json` is `schemaVersion` 3: it records shipped rules, commands,
-  hooks, and LSP servers, and each agent's rules, commands, hooks, and
-  servers.
+- **Decision records consolidated.** The 41 ADRs that traced the path from a
+  general agent-ecosystem model to the current design are replaced by eight
+  current records, one per topic, amended in place from now on
+  ([docs/decisions](docs/decisions/README.md)). The specification drops its
+  version history and "Removed in version 7" list, the obsolete design notes
+  are deleted, and the maintainer definition no longer asks for an ADR per
+  ruling. ADR links in this changelog point at the archived records.
+- `bundle.json` is `schemaVersion` 4: it records shipped rules, commands,
+  hooks, and LSP servers, each agent's rules, commands, hooks, and servers,
+  and the plugin's carried files. `build.json` is `schemaVersion` 3: it lists
+  marketplace files with their digests (ADR-0041).
 - Helio's working norms are a rule held by the team profile instead of a
   document rendered into agent files.
 - Skill directories reject inconsistent casing in shared directory prefixes
   and file/directory conflicts before writing output, including inherited and
-  generated files ([ADR-0039](docs/decisions/0039-skill-directory-path-consistency.md)).
+  generated files ([ADR-0039](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0039-skill-directory-path-consistency.md)).
 - **Version 7: an authoring and reuse layer for Copilot plugins**
-  ([ADR-0035](docs/decisions/0035-v7-copilot-plugin-authoring-layer.md)).
+  ([ADR-0035](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0035-v7-copilot-plugin-authoring-layer.md)).
   `agent-plugin` is the only build target, and build emits complete plugins.
   Manifests declare `schemaVersion: 7`; version 6 sources are not accepted.
   Packages may also restore from Git repositories by tag.
 - **Documents, typed data, and templates**
-  ([ADR-0036](docs/decisions/0036-v7-documents-data-and-templates.md)).
+  ([ADR-0036](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0036-v7-documents-data-and-templates.md)).
   - A context document is free Markdown, or typed data (`contextType` plus
     `values`). Context types are flat records with form metadata
     (`displayName`, `description`, `choices`) and an optional `instanceName`
@@ -67,7 +90,7 @@ compatibility promises between minor versions.
     can render a held document as a reference file, and emit their input and
     output schemas as `references/*.schema.json`.
 - **MCP servers and Copilot fields emitted by build**
-  ([ADR-0037](docs/decisions/0037-v7-build-emitted-host-configuration.md)).
+  ([ADR-0037](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0037-v7-build-emitted-host-configuration.md)).
   `.server.tfer` documents declare stdio or streamable-http servers with
   namespaced names. Skills require them with `requiresServers`, and each
   artifact's `mcp.json` holds exactly the servers its skills need. A
@@ -76,7 +99,7 @@ compatibility promises between minor versions.
   Copilot fields.
 - The playground builds multi-package marketplaces and generates an
   "Instantiate" form from a context type.
-- **Review rulings** ([ADR-0038](docs/decisions/0038-v7-review-rulings.md)):
+- **Review rulings** ([ADR-0038](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0038-v7-review-rulings.md)):
   - skill-file destinations that differ only in case collide;
   - target digests and `diff` compare non-UTF-8 files byte for byte;
   - abstract requirements accumulate without erasing inherited
@@ -101,7 +124,7 @@ compatibility promises between minor versions.
 ### Added
 
 - **GitHub Agent Plugins as the primary build target**
-  ([ADR-0029](docs/decisions/0029-agent-plugins-primary-target.md)). The new
+  ([ADR-0029](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0029-agent-plugins-primary-target.md)). The new
   `agent-plugin` target writes a marketplace repository root: one Agent
   Plugins 1.0 package per plugin and mode (`plugin.json`, Copilot custom
   agents under `com.github.copilot/agents/`, `skills/<name>/SKILL.md`), a
@@ -113,8 +136,8 @@ compatibility promises between minor versions.
   environment-forwarded or bearer-token credentials. `build` emits
   `agent-plugin` and `neutral` by default.
 - **Version 6 source language**
-  ([ADR-0030](docs/decisions/0030-plugin-documents-and-v6-authoring.md),
-  [ADR-0032](docs/decisions/0032-v6-grammar-and-schema-directed-scalars.md)).
+  ([ADR-0030](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0030-plugin-documents-and-v6-authoring.md),
+  [ADR-0032](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0032-v6-grammar-and-schema-directed-scalars.md)).
   Plugin documents (`.plugin.tfer`) state what ships together; the manifest
   (`schemaVersion: 6`) lists plugins and exports, and source membership is the
   closure of references from them. A document's kind comes from its file
@@ -128,12 +151,12 @@ compatibility promises between minor versions.
   scalar typing: plain text needs no quotes, and each field's declared type
   decides what a value means.
 - **Additive skill extension**
-  ([ADR-0031](docs/decisions/0031-additive-skill-extension.md)). `extends`
+  ([ADR-0031](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0031-additive-skill-extension.md)). `extends`
   appends a skill's instructions, per mode, to a shared base skill's, keeps the
   base's contract, and accumulates requirements and context; `sealed: true`
   on a skill forbids extending it.
 - **`typeference import`**
-  ([ADR-0033](docs/decisions/0033-import-copilot-customizations.md)) converts a
+  ([ADR-0033](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0033-import-copilot-customizations.md)) converts a
   repository's custom agents and skills, a skill directory, or an existing
   plugin into a version 6 package, failing with a list of everything it cannot
   represent unless `--lossy` is passed.
@@ -143,7 +166,7 @@ compatibility promises between minor versions.
   report, closure membership, CRLF/BOM and Unicode handling, exported-interface
   satisfaction, context refinement, allow-lists, mode-scoped tool imports,
   signed and fail-closed trust publication, and every new error.
-- **Deterministic setup wizard** ([ADR-0028](docs/decisions/0028-deterministic-setup-wizard.md)).
+- **Deterministic setup wizard** ([ADR-0028](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0028-deterministic-setup-wizard.md)).
   `typeference init --answers answers.json [--out DIR] [--verify sha256:...]`
   scaffolds a complete multilevel v5 suite — typed norm contexts, a profile
   embedding chain, one concrete agent — from a strict, versioned answer set.
@@ -154,8 +177,8 @@ compatibility promises between minor versions.
   generator × schema to bytes in CI.
 
 - **v5 closure: one closed frontmatter grammar, no untyped behavioral prose**
-  ([ADR-0026](docs/decisions/0026-v5-closed-frontmatter-grammar.md),
-  [ADR-0027](docs/decisions/0027-v5-no-untyped-behavioral-prose.md)).
+  ([ADR-0026](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0026-v5-closed-frontmatter-grammar.md),
+  [ADR-0027](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0027-v5-no-untyped-behavioral-prose.md)).
   `.tfer` is now the sole source format, parsed by TypeFerence's own closed
   indentation grammar with syntactic scalar typing: quoted strings,
   arbitrary-precision integers, verbatim decimal lexemes (`0.50` ≠ `0.5`),
@@ -166,14 +189,14 @@ compatibility promises between minor versions.
   `description` is inert metadata and emitters keep it out of model-facing
   output. The conformance corpus, helio, and the self-hosted maintainer
   definition are migrated; digests were regenerated via `-update`.
-- **Closed v4 source language** ([ADR-0020](docs/decisions/0020-close-the-source-language.md)).
+- **Closed v4 source language** ([ADR-0020](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0020-close-the-source-language.md)).
   Native context types replace embedded JSON Schema, context values and typed
   slots are complete compile-time values, `contextFiles` is removed, mode
   requirements remain conditional, sealed abstract requirements fail, and
   normal product entrypoints reject legacy v3 input.
 - **Closed serialization and clarified v4 boundaries**
-  ([ADR-0023](docs/decisions/0023-tfer-source-format.md),
-  [ADR-0024](docs/decisions/0024-clarify-v4-type-and-composition-boundaries.md)).
+  ([ADR-0023](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0023-tfer-source-format.md),
+  [ADR-0024](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0024-clarify-v4-type-and-composition-boundaries.md)).
   `.tfer` fences and bodied kinds are normative; interfaces remain structural,
   context trust refinement is nominal through explicit embedding, visibility is
   orthogonal to interface satisfaction, tools are independent extern
@@ -185,22 +208,22 @@ compatibility promises between minor versions.
   fail-closed trust publication. A specification evidence matrix tracks the
   normative test surface, and resolver responsibilities are separated by phase.
 - **Build/link separation and source identity**
-  ([ADR-0022](docs/decisions/0022-build-link-and-source-identity.md)). Build emits
+  ([ADR-0022](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0022-build-link-and-source-identity.md)). Build emits
   deterministic unlinked targets and integrity indexes; explicit deployment
   files bind tools, modes, commands, environment references, and endpoints.
   Linked Codex MCP configuration and neutral A2A cards are structurally
   serialized without changing source or unlinked-target identity. Link now
   replaces a non-empty output only when valid root provenance identifies a prior
-  TypeFerence link ([ADR-0025](docs/decisions/0025-own-linked-output-before-reset.md)),
+  TypeFerence link ([ADR-0025](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0025-own-linked-output-before-reset.md)),
   and the stdio `{bundle}` projection is specified explicitly.
-- **Go-only implementation** ([ADR-0014](docs/decisions/0014-go-only-implementation.md)).
+- **Go-only implementation** ([ADR-0014](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0014-go-only-implementation.md)).
   The C# reference implementation was retired; the Go implementation is now the
   sole implementation. The specification stays normative in principle. The
   cross-implementation conformance suite becomes a single-implementation
   golden-file determinism suite over the same fixtures — the determinism
   guarantee is unchanged.
 - **Locked source packages and enterprise restore**
-  ([ADR-0021](docs/decisions/0021-restore-locked-source-packages.md)):
+  ([ADR-0021](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0021-restore-locked-source-packages.md)):
   `pack`, `restore`, and `update`, canonical `.tferpkg` archives and lockfiles,
   complete offline dependency materialization, scoped filesystem/HTTP/JFrog/
   Azure Artifacts routes, and dependency provenance in target artifacts.
@@ -214,7 +237,7 @@ compatibility promises between minor versions.
   and `.yaml` sources.
 
 - **One organization marketplace, built from source packages**
-  ([ADR-0034](docs/decisions/0034-organization-marketplace-from-source-packages.md)).
+  ([ADR-0034](https://github.com/buchk/TypeFerence/blob/3839fb0/docs/decisions/0034-organization-marketplace-from-source-packages.md)).
   A manifest's `plugins` may list `<package>:<path>` plugins of direct
   dependencies, so a marketplace package that pins every team's published
   package builds the whole marketplace at once. Plugin, agent, and skill

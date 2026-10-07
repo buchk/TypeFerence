@@ -1,0 +1,4 @@
+{
+  "description": "A plugin's author requires a name (ADR-0004).",
+  "expect": "error"
+}

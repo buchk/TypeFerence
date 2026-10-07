@@ -7,9 +7,13 @@ displayName: Contribution Workflow
   release outside the checklist in `docs/release-checklist.md`.
 - Before any commit: `go test ./...` (from `go/`) and the determinism suite
   (`make conformance`) both pass. A commit that breaks either does not land.
-- Design decisions with real tradeoffs — spec semantics, canonical bytes,
-  dependencies — are recorded in `docs/decisions/` as numbered ADRs in the
-  same change.
+- `docs/decisions/` holds one short ADR per direction-level topic: scope, the
+  implementation, determinism, the package model, the grammar, composition,
+  emitted host configuration, and the authoring tools. A change that moves one
+  of those tradeoffs amends that ADR in place, in the same change; it does not
+  add a new one on top. Rulings and clarifications go into the specification
+  with a fixture, not into an ADR. What stops being true is deleted; git keeps
+  the history.
 - Generated artifacts (root `AGENTS.md`, `dist/`) are only ever changed by
   regenerating them from source (`make selfhost`, `typeference build`); hand edits
   to generated files are drift and CI rejects them.

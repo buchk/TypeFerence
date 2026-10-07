@@ -1,0 +1,4 @@
+{
+  "description": "Two carried files whose destinations differ only in letter case collide (ADR-0004, ADR-0003).",
+  "expect": "error"
+}

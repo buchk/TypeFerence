@@ -54,7 +54,7 @@ func artifactDigest(t *testing.T, root, artifact string) string {
 }
 
 // A plugin artifact is a function of its owning package and that package's
-// locked closure (ADR-0034): releasing one team's package rewrites only that
+// locked closure (ADR-0004): releasing one team's package rewrites only that
 // team's plugins.
 func TestMarketplaceBumpRewritesOnlyTheOwnersPlugins(t *testing.T) {
 	baseDir, baseManifest := marketplaceFixture(t)

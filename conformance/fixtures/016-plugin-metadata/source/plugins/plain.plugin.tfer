@@ -1,0 +1,7 @@
+---
+description: The same skill with only an author.
+author:
+  name: Conformance Platform
+skills:
+  - skills/status.skill.tfer
+---

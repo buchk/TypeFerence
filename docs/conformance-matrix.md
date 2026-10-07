@@ -29,6 +29,7 @@ tests cover diagnostics, internal invariants, and rendered content.
 | Native components: rules, commands, hooks, LSP servers, agent-scoped servers; enterprise defaults | 014, 137, 138, 139, 140, 141, 142, 143 | `internal/compile`: `TestNativeComponentsRender`; `internal/importer`: `TestImportCarriesCopilotComponents` |
 | Output contract | every success fixture | `tools/validate_output.py` in CI's `output-contract` job |
 | Agent tool allowlists: `tools: []`, server coverage per mode | 015, 144, 145, 146, 147, 148 | `internal/compile`: `TestAgentToolAllowlists`; `internal/importer`: `TestImportKeepsAnAgentWithNoTools` |
+| Plugin metadata; plugin and marketplace carried files; root files covered by `build.json` | 016, 017, 018, 149, 150, 151, 152, 153, 154 | `internal/importer`: `TestImportCarriesPluginMetadataAndFiles`, `TestImportFailsClosedOnPluginManifestAndStrayComponentFiles`, `TestImportRejectsAMarketplaceRepository`; `tools/validate_output.py` root-file digests |
 | Copilot fields | 007 | `internal/compile`: `TestCopilotFieldsRenderInTableOrder`; `internal/importer`: `TestImportCarriesFilesServersAndCopilotFields` |
 | Build-wide name uniqueness | 117, 118 | `go/conformance`: `TestCandidateCollisionIsReported` |
 | Packages, restore, lockfiles, Git routes | 001 | `internal/packages`: all tests |

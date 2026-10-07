@@ -6,7 +6,7 @@ import (
 
 // fieldDecoder applies schema-directed scalar typing to tferlex nodes: every
 // field declares its type, and a scalar's spelling never decides it
-// (ADR-0032). A quoted or block scalar is always a string.
+// (ADR-0005). A quoted or block scalar is always a string.
 type fieldDecoder struct {
 	file string
 }

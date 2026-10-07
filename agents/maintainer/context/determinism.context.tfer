@@ -20,7 +20,7 @@ Rules that protect the guarantee:
 - Digest values are regenerated (`go test ./conformance -update`), never typed by
   hand.
 - Canonical serialization is defined in `docs/specification.md` ("Canonicalization");
-  any change to it is a specification change with an ADR.
+  any change to it is a specification change.
 - Nothing about determinism, provenance, or fail-closed behavior is ever relaxed to
   make an unrelated change easier. If a change fights the determinism rules, the
-  change is wrong or the specification needs a recorded amendment.
+  change is wrong or the specification needs an explicit amendment.

@@ -12,7 +12,7 @@ import (
 )
 
 // initCommand scaffolds a starter suite from a versioned answer set
-// (ADR-0028). It is the CLI front door of the same generator the browser
+// (ADR-0008). It is the CLI front door of the same generator the browser
 // wizard uses; identical answers must produce identical bytes.
 //
 //	typeference init --answers answers.json [--out DIR] [--verify sha256:...]

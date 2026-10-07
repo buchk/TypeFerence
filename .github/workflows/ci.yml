@@ -33,7 +33,7 @@ jobs:
 
   # Determinism suite: the Go compiler compiles the version 7 fixture corpus in
   # conformance/ and must reproduce the committed digests on every platform
-  # (ADR-0014). The Helio reference test (go test ./internal/compile) also
+  # (ADR-0003). The Helio reference test (go test ./internal/compile) also
   # byte-compares the committed dist/ on every platform.
   determinism:
     strategy:

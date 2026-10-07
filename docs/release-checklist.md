@@ -1,6 +1,6 @@
 # Release checklist
 
-Releases ship the Go CLI as single static binaries per platform (see ADR-0007).
+Releases ship the Go CLI as single static binaries per platform (see ADR-0002).
 The release version is the git tag; the Go binary receives it at build time via
 `-ldflags -X main.version`. `CHANGELOG.md` must contain the matching dated
 release entry before that tag is created.

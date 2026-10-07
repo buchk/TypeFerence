@@ -50,7 +50,7 @@ type ResolvedSkill struct {
 	HasInputSchema  bool
 	HasOutputSchema bool
 	Documents       []ResolvedDocument
-	Files           []resource.SkillFile
+	Files           []resource.PackageFile
 	Copilot         resource.CopilotFields
 	// Bindings are the parameters this instance binds, sorted by name.
 	Bindings   []*Binding
@@ -105,7 +105,7 @@ type ResolvedAgent struct {
 	InstanceName string
 	Copilot      resource.CopilotFields
 	Provenance   []ProvenanceEntry
-	// Native components the agent composes (ADR-0040): rules and commands
+	// Native components the agent composes (ADR-0007): rules and commands
 	// rendered with its bindings, hooks, and agent-scoped servers.
 	Rules    []ResolvedRule
 	Commands []ResolvedCommand
@@ -581,7 +581,7 @@ func (r *Resolver) resolveSkill(id string, agentBindings map[string]*Binding, in
 		OutputSchema:     skill.OutputSchema,
 		HasInputSchema:   skill.HasInputSchema,
 		HasOutputSchema:  skill.HasOutputSchema,
-		Files:            append([]resource.SkillFile{}, skill.Files...),
+		Files:            append([]resource.PackageFile{}, skill.Files...),
 		Copilot:          skill.Copilot,
 	}
 	var err error

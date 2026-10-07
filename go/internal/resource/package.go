@@ -35,8 +35,8 @@ var kindSuffixes = []struct {
 // removedSuffixes name the document kinds version 7 removed, so a stray file
 // fails with a pointer rather than as an unknown suffix.
 var removedSuffixes = map[string]string{
-	".interface.tfer": "interfaces were removed in version 7 (ADR-0035)",
-	".tool.tfer":      "tools were replaced by .server.tfer documents in version 7 (ADR-0037)",
+	".interface.tfer": "interfaces were removed in version 7",
+	".tool.tfer":      "tools were replaced by .server.tfer documents in version 7",
 }
 
 // KindSuffix returns the file suffix for a document kind.
@@ -114,9 +114,9 @@ type Package struct {
 	Documents map[string]*Document
 	// Files are the source-relative document paths in the closure, sorted.
 	Files []string
-	// SkillFiles are the source-relative paths of the files member skills
-	// ship, sorted.
-	SkillFiles []string
+	// MemberFiles are the source-relative paths of the files member skills
+	// and plugins ship and the marketplace carries, sorted.
+	MemberFiles []string
 	// Qualified maps a dependency package name to the identities this
 	// package references in it; each must be exported by that package.
 	Qualified map[string][]string
@@ -142,13 +142,13 @@ type pendingRef struct {
 }
 
 type packageLoader struct {
-	root       string
-	project    *Project
-	deps       map[string]string
-	queue      []pendingRef
-	seen       map[string]bool
-	qualified  map[string]map[string]bool
-	skillFiles map[string]bool
+	root        string
+	project     *Project
+	deps        map[string]string
+	queue       []pendingRef
+	seen        map[string]bool
+	qualified   map[string]map[string]bool
+	memberFiles map[string]bool
 }
 
 // LoadPackage loads the closure of a package: every document reachable from
@@ -170,12 +170,12 @@ func LoadPackage(sourceDir string, options PackageOptions) (*Package, error) {
 		return nil, Errorf("%s has no %s; a package root needs a manifest with schemaVersion 7", root, ManifestFile)
 	}
 	l := &packageLoader{
-		root:       root,
-		project:    project,
-		deps:       options.Dependencies,
-		seen:       map[string]bool{},
-		qualified:  map[string]map[string]bool{},
-		skillFiles: map[string]bool{},
+		root:        root,
+		project:     project,
+		deps:        options.Dependencies,
+		seen:        map[string]bool{},
+		qualified:   map[string]map[string]bool{},
+		memberFiles: map[string]bool{},
 	}
 	if l.deps == nil {
 		l.deps = project.Dependencies
@@ -203,6 +203,15 @@ func LoadPackage(sourceDir string, options PackageOptions) (*Package, error) {
 		exports = append(exports, DeriveID(project.Name, project.Version, p))
 	}
 	sort.Strings(exports)
+	if project.Marketplace != nil {
+		for i, file := range project.Marketplace.Files {
+			data, text, err := l.packageFile(file.Source)
+			if err != nil {
+				return nil, Errorf("%s: marketplace files: %s", ManifestFile, err.(*Error).Message)
+			}
+			project.Marketplace.Files[i].Data, project.Marketplace.Files[i].Text = data, text
+		}
+	}
 	documents := map[string]*Document{}
 	files := []string{}
 	for len(l.queue) > 0 {
@@ -225,7 +234,7 @@ func LoadPackage(sourceDir string, options PackageOptions) (*Package, error) {
 	}
 	return &Package{
 		Project: project, Root: root, Documents: documents, Files: files,
-		SkillFiles: SortedKeys(l.skillFiles), Qualified: qualified, Exports: exports,
+		MemberFiles: SortedKeys(l.memberFiles), Qualified: qualified, Exports: exports,
 		OwnPlugins: ownPlugins, DependencyPlugins: dependencyPlugins,
 	}, nil
 }
@@ -253,13 +262,13 @@ func ReadDocument(root, relative string) (string, error) {
 	return NormalizeText(string(raw)), nil
 }
 
-// ReadSkillFile reads a skill file: normalized text when its bytes are valid
+// ReadPackageFile reads a skill or carried file: normalized text when its bytes are valid
 // UTF-8, the exact bytes otherwise.
-func ReadSkillFile(root, relative string) ([]byte, bool, error) {
+func ReadPackageFile(root, relative string) ([]byte, bool, error) {
 	full := filepath.Join(root, filepath.FromSlash(relative))
 	info, err := os.Lstat(full)
 	if err != nil || !info.Mode().IsRegular() {
-		return nil, false, Errorf("skill file does not exist or is not a regular file: %s", relative)
+		return nil, false, Errorf("file does not exist or is not a regular file: %s", relative)
 	}
 	raw, err := os.ReadFile(full)
 	if err != nil {
@@ -288,7 +297,7 @@ type refSink interface {
 	local(relative, from string)
 	qualifiedRef(pkg, id string)
 	dependencyVersion(pkg string) (string, bool)
-	skillFile(relative string) ([]byte, bool, error)
+	packageFile(relative string) ([]byte, bool, error)
 }
 
 func (l *packageLoader) local(relative, from string) { l.enqueue(relative, from) }
@@ -305,12 +314,12 @@ func (l *packageLoader) dependencyVersion(pkg string) (string, bool) {
 	return version, ok
 }
 
-func (l *packageLoader) skillFile(relative string) ([]byte, bool, error) {
-	data, text, err := ReadSkillFile(l.root, relative)
+func (l *packageLoader) packageFile(relative string) ([]byte, bool, error) {
+	data, text, err := ReadPackageFile(l.root, relative)
 	if err != nil {
 		return nil, false, err
 	}
-	l.skillFiles[relative] = true
+	l.memberFiles[relative] = true
 	return data, text, nil
 }
 
@@ -594,7 +603,7 @@ func (d *documentDecoder) decodeKind(n *tferlex.Node) error {
 			"inputSchema":     d.jsonSchema(&doc.InputSchema, &doc.HasInputSchema),
 			"outputSchema":    d.jsonSchema(&doc.OutputSchema, &doc.HasOutputSchema),
 			"context":         d.contextEntries(true),
-			"files":           d.files,
+			"files":           d.files(skillFiles),
 			"requiresServers": d.refListInto(&doc.RequiresServers, "server"),
 			"variants":        d.variants,
 			"copilot":         d.copilot(true),
@@ -666,6 +675,12 @@ func (d *documentDecoder) decodeKind(n *tferlex.Node) error {
 			"commands":    d.refListInto(&doc.Commands, "command"),
 			"hooks":       d.refListInto(&doc.Hooks, "hook"),
 			"lspServers":  d.refListInto(&doc.PluginLSP, "lsp"),
+			"author":      d.pluginAuthor(&doc.PluginMetadata.Author),
+			"homepage":    d.metadataString(&doc.PluginMetadata.Homepage),
+			"repository":  d.metadataString(&doc.PluginMetadata.Repository),
+			"license":     d.metadataString(&doc.PluginMetadata.License),
+			"keywords":    d.keywords(&doc.PluginMetadata.Keywords),
+			"files":       d.files(pluginFiles),
 		})
 	case "rule":
 		return d.decode(n, with(map[string]func(*tferlex.Node) error{
@@ -860,60 +875,25 @@ func (d *documentDecoder) bindings(n *tferlex.Node) error {
 	return nil
 }
 
-var skillFileRoots = map[string]bool{"references": true, "scripts": true, "assets": true}
-
-// files decodes a skill's plain files. An entry is a package path, or a
-// mapping {path, as}.
-func (d *documentDecoder) files(n *tferlex.Node) error {
-	if isNull(n) {
-		return nil
-	}
-	if !n.IsSeq {
-		return d.errorf(n, "'files' must be a list")
-	}
-	for _, item := range n.Items {
-		item.Key = "files"
-		file := SkillFile{Package: d.packageName}
-		switch {
-		case item.IsScalar && item.Value.Kind != tferlex.KindNull:
-			file.Source = item.Value.Text
-		case item.IsMap:
-			err := d.decode(item, map[string]func(*tferlex.Node) error{
-				"path": d.stringInto(&file.Source),
-				"as":   d.stringInto(&file.As),
-			})
-			if err != nil {
-				return err
-			}
-		default:
-			return d.errorf(item, "a files entry is a path or a mapping {path, as}")
-		}
-		if !cleanRelative(file.Source) {
-			return d.errorf(item, "file '%s' must be a clean path relative to the package root", file.Source)
-		}
-		if strings.HasSuffix(file.Source, ".tfer") {
-			return d.errorf(item, "file '%s' is a .tfer document; skill files are plain files", file.Source)
-		}
-		switch strings.SplitN(file.Source, "/", 2)[0] {
-		case "dist", "bin", "obj", ".git":
-			return d.errorf(item, "file '%s' is beneath a generated or excluded directory", file.Source)
-		}
-		if file.As == "" {
-			file.As = "references/" + path.Base(file.Source)
-		}
-		if !cleanRelative(file.As) || !strings.Contains(file.As, "/") || !skillFileRoots[strings.SplitN(file.As, "/", 2)[0]] {
-			return d.errorf(item, "destination '%s' must be a clean path beneath references/, scripts/, or assets/", file.As)
+// files decodes the files a skill or plugin ships and reads their bytes.
+func (d *documentDecoder) files(target fileTarget) func(*tferlex.Node) error {
+	return func(n *tferlex.Node) error {
+		files, err := d.fileEntries(n, d.packageName, target)
+		if err != nil {
+			return err
 		}
 		if d.sink != nil {
-			data, text, err := d.sink.skillFile(file.Source)
-			if err != nil {
-				return d.errorf(item, "%s", err.(*Error).Message)
+			for i := range files {
+				data, text, err := d.sink.packageFile(files[i].Source)
+				if err != nil {
+					return d.errorf(n, "%s", err.(*Error).Message)
+				}
+				files[i].Data, files[i].Text = data, text
 			}
-			file.Data, file.Text = data, text
 		}
-		d.doc.Files = append(d.doc.Files, file)
+		d.doc.Files = append(d.doc.Files, files...)
+		return nil
 	}
-	return nil
 }
 
 func (d *documentDecoder) copilot(skill bool) func(*tferlex.Node) error {

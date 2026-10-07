@@ -1,6 +1,6 @@
 # TypeFerence build entry points. Requires: Go 1.24+ and nothing else. All
 # artifacts are deterministic; run `make conformance` to verify the compiler
-# reproduces the committed digests byte-for-byte (ADR-0014).
+# reproduces the committed digests byte-for-byte (ADR-0003).
 
 GO ?= go
 VERSION ?= dev
@@ -29,7 +29,7 @@ test-go:
 	cd go && $(GO) test ./...
 
 # Determinism suite: the compiler compiles the shared fixture corpus and must
-# reproduce the committed digests (ADR-0014).
+# reproduce the committed digests (ADR-0003).
 conformance:
 	cd go && $(GO) test ./conformance -v
 

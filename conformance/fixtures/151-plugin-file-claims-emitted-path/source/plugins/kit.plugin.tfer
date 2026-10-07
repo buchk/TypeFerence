@@ -1,0 +1,8 @@
+---
+description: Repository health kit.
+skills:
+  - skills/status.skill.tfer
+files:
+  - path: files/manifest.json
+    as: Plugin.json
+---

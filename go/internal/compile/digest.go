@@ -21,7 +21,7 @@ var runtimeCaseInsensitive = runtime.GOOS == "windows"
 // each file's forward-slash relative path and content, each followed by NUL,
 // with files in canonical (code point) path order. Content is normalized text
 // (byte order mark removed, CRLF to LF) for a file whose bytes are valid
-// UTF-8, and the exact bytes of any other file (ADR-0038).
+// UTF-8, and the exact bytes of any other file (ADR-0003).
 func HashDirectory(directory string) (string, error) {
 	files, err := relativeFiles(directory)
 	if err != nil {
@@ -91,7 +91,7 @@ func relativeFiles(root string) ([]string, error) {
 // readTextFile reads an artifact for comparison: normalized text when its
 // bytes are valid UTF-8 (so a Windows checkout's CRLF conversion of committed
 // text does not change identity), and the exact bytes otherwise, so a change
-// to a binary file is never normalized away (ADR-0038).
+// to a binary file is never normalized away (ADR-0003).
 func readTextFile(path string) (string, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
@@ -155,7 +155,7 @@ func CompareDirs(expected, actual string) (*DiffResult, error) {
 
 // fileContents maps relative slash paths to comparable content: text with
 // its byte order mark stripped and line endings normalized when the file is
-// valid UTF-8, and the exact bytes otherwise (ADR-0038).
+// valid UTF-8, and the exact bytes otherwise (ADR-0003).
 func fileContents(root string) (map[string]string, error) {
 	result := map[string]string{}
 	if info, err := os.Stat(root); err != nil || !info.IsDir() {

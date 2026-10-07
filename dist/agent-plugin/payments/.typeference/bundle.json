@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "id": "helio/payments/plugins/payments@2.4.0",
   "name": "payments",
   "mode": "manual",
@@ -266,5 +266,6 @@
   "hooks": [
     "helio/core/hooks/policy-check@3.1.0"
   ],
-  "lspServers": []
+  "lspServers": [],
+  "files": []
 }

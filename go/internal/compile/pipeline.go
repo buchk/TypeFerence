@@ -102,7 +102,7 @@ func prepare(source string, options BuildOptions) (*compilation, error) {
 	}
 	c := &compilation{
 		source:     source,
-		project:    project,
+		project:    root.Project,
 		docs:       all,
 		resolver:   r,
 		resolved:   resolved,

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "id": "helio/data-platform/plugins/data-platform@1.0.2",
   "name": "data-platform",
   "mode": "manual",
@@ -260,5 +260,6 @@
   "hooks": [
     "helio/core/hooks/policy-check@3.1.0"
   ],
-  "lspServers": []
+  "lspServers": [],
+  "files": []
 }

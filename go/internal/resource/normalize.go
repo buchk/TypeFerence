@@ -12,7 +12,7 @@ import (
 //   - capability schemas carried onto the skills that bind them;
 //   - flattened extension chains: an extension carries its base's contract,
 //     instructions, held documents, files, servers, parameters, bindings, and
-//     Copilot fields (ADR-0031, ADR-0036);
+//     Copilot fields (ADR-0006);
 //   - capability references that name a skill, rewritten to that skill's
 //     capability;
 //   - an agent or profile display name defaulting to its identity leaf.
@@ -101,7 +101,7 @@ func (f *flattener) flatten(id string) error {
 	}
 	doc.RequiresServers = distinctStrings(append(append([]string{}, base.RequiresServers...), doc.RequiresServers...))
 	doc.Context = mergeContext(base.Context, doc.Context)
-	doc.Files = append(append([]SkillFile{}, base.Files...), doc.Files...)
+	doc.Files = append(append([]PackageFile{}, base.Files...), doc.Files...)
 	if err := checkFiles(doc); err != nil {
 		return err
 	}

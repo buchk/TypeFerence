@@ -1,6 +1,8 @@
 package compile
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -38,11 +40,15 @@ type pluginPlan struct {
 	// profile's skills, and every directly linked skill, one per emitted
 	// name, ordered by name.
 	Skills []resolve.ResolvedSkill
-	// Native Copilot components (ADR-0040), one per emitted name.
+	// Native Copilot components (ADR-0007), one per emitted name.
 	Rules    []resolve.ResolvedRule
 	Commands []resolve.ResolvedCommand
 	Hooks    []string
 	LSP      []string
+	// Metadata and Files are the plugin's descriptive manifest members and
+	// carried files, identical in every artifact (ADR-0004).
+	Metadata resource.PluginMetadata
+	Files    []resource.PackageFile
 }
 
 // pluginArtifact is one emitted directory: a plugin rendered in one mode.
@@ -98,6 +104,8 @@ func planPlugin(c *compilation, doc *resource.Document, agents map[string]*resol
 		Version:     resource.VersionOf(doc.ID),
 		Provenance:  owner,
 		Modes:       append([]string{}, doc.PluginModes...),
+		Metadata:    doc.PluginMetadata,
+		Files:       sortedFiles(doc.Files),
 	}
 	if !validPluginName(plan.Name) {
 		return nil, resource.Errorf("%s: plugin name '%s' is not a valid Agent Plugins name (lowercase letters, digits, '.', '-'; no '--' or '..'; at most 64 characters)", doc.Path, plan.Name)
@@ -179,7 +187,7 @@ func planPlugin(c *compilation, doc *resource.Document, agents map[string]*resol
 }
 
 // validateAgentTools keeps an agent's explicit tool allowlist consistent with
-// the MCP servers it depends on in each artifact (ADR-0040). Copilot enables
+// the MCP servers it depends on in each artifact (ADR-0007). Copilot enables
 // a server's tools for an agent only when the agent's tools name them, even
 // for servers in the agent's own mcp-servers, and build never adds a grant,
 // so a missing entry fails. An agent without a tools list gets Copilot's
@@ -285,6 +293,14 @@ func validateLibraryNames(c *compilation) error {
 		}
 		artifactNames[artifact.dir] = artifact.plan.ID
 	}
+	if marketplace := c.project.Marketplace; marketplace != nil {
+		for _, file := range marketplace.Files {
+			first := strings.ToLower(strings.SplitN(file.As, "/", 2)[0])
+			if id, clash := artifactNames[first]; clash {
+				return resource.Errorf("%s: marketplace file %s ships as %s, inside the artifact directory of %s; build owns that directory", resource.ManifestFile, file.Source, file.As, id)
+			}
+		}
+	}
 	return nil
 }
 
@@ -351,15 +367,76 @@ func (c *compilation) writeAgentPlugins(root string, written *[]string) error {
 			return err
 		}
 	}
+	var rootFiles []resource.PackageFile
 	if marketplace := c.project.Marketplace; marketplace != nil {
 		if err := writeFile(filepath.Join(root, ".github", "plugin", "marketplace.json"), marketplaceJSON(marketplace, c.project.Version, artifacts)+"\n", written); err != nil {
+			return err
+		}
+		rootFiles = sortedFiles(marketplace.Files)
+		if err := writeCarried(root, rootFiles, written); err != nil {
 			return err
 		}
 	}
 	if err := writeFile(filepath.Join(root, ".typeference", "compatibility.json"), compatibilityJSON(artifacts)+"\n", written); err != nil {
 		return err
 	}
-	return writeBuildIndex(root, artifacts, c.provenance, written)
+	return writeBuildIndex(root, artifacts, rootFiles, c.provenance, written)
+}
+
+// sortedFiles orders carried files by destination.
+func sortedFiles(files []resource.PackageFile) []resource.PackageFile {
+	out := append([]resource.PackageFile{}, files...)
+	sort.Slice(out, func(i, j int) bool { return out[i].As < out[j].As })
+	return out
+}
+
+// writeCarried writes carried files at their destinations beneath dir.
+func writeCarried(dir string, files []resource.PackageFile, written *[]string) error {
+	for _, file := range files {
+		if err := writeBytes(filepath.Join(dir, filepath.FromSlash(file.As)), file.Data, written); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// metadataMembers renders a plugin's descriptive manifest members in Agent
+// Plugins schema order, omitting undeclared ones.
+func metadataMembers(m resource.PluginMetadata) jsonx.Obj {
+	members := jsonx.Obj{}
+	if m.Author != nil {
+		author := jsonx.Obj{{K: "name", V: jsonx.Str(m.Author.Name)}}
+		if m.Author.Email != "" {
+			author = append(author, jsonx.Member{K: "email", V: jsonx.Str(m.Author.Email)})
+		}
+		if m.Author.URL != "" {
+			author = append(author, jsonx.Member{K: "url", V: jsonx.Str(m.Author.URL)})
+		}
+		members = append(members, jsonx.Member{K: "author", V: author})
+	}
+	for _, member := range []struct{ key, value string }{
+		{"homepage", m.Homepage}, {"repository", m.Repository}, {"license", m.License},
+	} {
+		if member.value != "" {
+			members = append(members, jsonx.Member{K: member.key, V: jsonx.Str(member.value)})
+		}
+	}
+	if m.Keywords != nil {
+		members = append(members, jsonx.Member{K: "keywords", V: stringArr(m.Keywords)})
+	}
+	return members
+}
+
+// filesValue records skill or carried files by source and destination.
+func filesValue(files []resource.PackageFile) jsonx.Arr {
+	arr := jsonx.Arr{}
+	for _, file := range files {
+		arr = append(arr, jsonx.Obj{
+			{K: "source", V: jsonx.Str(file.Package + ":" + file.Source)},
+			{K: "as", V: jsonx.Str(file.As)},
+		})
+	}
+	return arr
 }
 
 // artifactServers returns the servers an artifact's skills require in its
@@ -386,6 +463,7 @@ func (c *compilation) writePluginArtifact(root string, artifact pluginArtifact, 
 		{K: "version", V: jsonx.Str(artifact.plan.Version)},
 		{K: "description", V: jsonx.Str(artifact.plan.Description)},
 	}
+	manifest = append(manifest, metadataMembers(artifact.plan.Metadata)...)
 	if err := writeFile(filepath.Join(dir, "plugin.json"), jsonx.Indented(manifest)+"\n", written); err != nil {
 		return err
 	}
@@ -417,6 +495,9 @@ func (c *compilation) writePluginArtifact(root string, artifact pluginArtifact, 
 		}
 	}
 	if err := c.writeNative(dir, artifact, written); err != nil {
+		return err
+	}
+	if err := writeCarried(dir, artifact.plan.Files, written); err != nil {
 		return err
 	}
 	return writeFile(filepath.Join(dir, ".typeference", "bundle.json"), bundleJSON(artifact, servers)+"\n", written)
@@ -641,13 +722,6 @@ func documentsValue(documents []resolve.ResolvedDocument) jsonx.Arr {
 }
 
 func skillValue(skill resolve.ResolvedSkill, mode string) jsonx.Obj {
-	files := jsonx.Arr{}
-	for _, file := range skill.Files {
-		files = append(files, jsonx.Obj{
-			{K: "source", V: jsonx.Str(file.Package + ":" + file.Source)},
-			{K: "as", V: jsonx.Str(file.As)},
-		})
-	}
 	return jsonx.Obj{
 		{K: "name", V: jsonx.Str(skill.Name)},
 		{K: "implementationId", V: jsonx.Str(skill.ImplementationID)},
@@ -657,7 +731,7 @@ func skillValue(skill resolve.ResolvedSkill, mode string) jsonx.Obj {
 		{K: "bindings", V: bindingsValue(skill.Bindings)},
 		{K: "servers", V: stringArr(skill.ServersFor(mode))},
 		{K: "documents", V: documentsValue(skill.Documents)},
-		{K: "files", V: files},
+		{K: "files", V: filesValue(skill.Files)},
 		{K: "provenance", V: provenanceValue(skill.Provenance)},
 	}
 }
@@ -689,7 +763,7 @@ func bundleJSON(artifact pluginArtifact, servers []*resource.Document) string {
 	}
 	provenance := artifact.plan.Provenance
 	return jsonx.Indented(jsonx.Obj{
-		{K: "schemaVersion", V: jsonx.Num("3")},
+		{K: "schemaVersion", V: jsonx.Num("4")},
 		{K: "id", V: jsonx.Str(artifact.plan.ID)},
 		{K: "name", V: jsonx.Str(artifact.dir)},
 		{K: "mode", V: jsonx.Str(artifact.mode)},
@@ -704,6 +778,7 @@ func bundleJSON(artifact pluginArtifact, servers []*resource.Document) string {
 		{K: "commands", V: commandsValue(artifact.plan.Commands)},
 		{K: "hooks", V: stringArr(artifact.plan.Hooks)},
 		{K: "lspServers", V: stringArr(artifact.plan.LSP)},
+		{K: "files", V: filesValue(artifact.plan.Files)},
 	})
 }
 
@@ -713,12 +788,13 @@ func bundleJSON(artifact pluginArtifact, servers []*resource.Document) string {
 func marketplaceJSON(marketplace *resource.Marketplace, version string, artifacts []pluginArtifact) string {
 	plugins := jsonx.Arr{}
 	for _, artifact := range artifacts {
-		plugins = append(plugins, jsonx.Obj{
+		entry := jsonx.Obj{
 			{K: "name", V: jsonx.Str(artifact.dir)},
 			{K: "source", V: jsonx.Str("./" + artifact.dir)},
 			{K: "description", V: jsonx.Str(artifact.plan.Description)},
 			{K: "version", V: jsonx.Str(artifact.plan.Version)},
-		})
+		}
+		plugins = append(plugins, append(entry, metadataMembers(artifact.plan.Metadata)...))
 	}
 	return jsonx.Indented(jsonx.Obj{
 		{K: "name", V: jsonx.Str(marketplace.Name)},
@@ -729,8 +805,9 @@ func marketplaceJSON(marketplace *resource.Marketplace, version string, artifact
 }
 
 // writeBuildIndex writes the target's integrity index: one entry per plugin
-// and mode, each with its owning package's source digest.
-func writeBuildIndex(root string, artifacts []pluginArtifact, provenance buildProvenance, written *[]string) error {
+// and mode, each with its owning package's source digest, and one per
+// marketplace file with its file digest.
+func writeBuildIndex(root string, artifacts []pluginArtifact, files []resource.PackageFile, provenance buildProvenance, written *[]string) error {
 	entries := jsonx.Arr{}
 	for _, artifact := range artifacts {
 		digest, err := HashDirectory(filepath.Join(root, artifact.dir))
@@ -745,11 +822,21 @@ func writeBuildIndex(root string, artifacts []pluginArtifact, provenance buildPr
 			{K: "digest", V: jsonx.Str("sha256:" + digest)},
 		})
 	}
+	fileEntries := jsonx.Arr{}
+	for _, file := range files {
+		sum := sha256.Sum256([]byte(comparableContent(file.Data)))
+		fileEntries = append(fileEntries, jsonx.Obj{
+			{K: "path", V: jsonx.Str(file.As)},
+			{K: "source", V: jsonx.Str(file.Package + ":" + file.Source)},
+			{K: "digest", V: jsonx.Str("sha256:" + hex.EncodeToString(sum[:]))},
+		})
+	}
 	index := jsonx.Indented(jsonx.Obj{
-		{K: "schemaVersion", V: jsonx.Num("2")},
+		{K: "schemaVersion", V: jsonx.Num("3")},
 		{K: "target", V: jsonx.Str(TargetName)},
 		{K: "sourceDigest", V: jsonx.Str(provenance.SourceDigest)},
 		{K: "artifacts", V: entries},
+		{K: "files", V: fileEntries},
 	}) + "\n"
 	return writeFile(filepath.Join(root, ".typeference", "build.json"), index, written)
 }

@@ -205,7 +205,7 @@ func stagePackages(sourceRoot string, request js.Value) error {
 }
 
 // formShapes describes every context type as the fields of a form whose
-// result is a data document (ADR-0036).
+// result is a data document (ADR-0006).
 func formShapes(docs map[string]*resource.Document) []any {
 	shapes := []any{}
 	for _, id := range resource.SortedKeys(docs) {

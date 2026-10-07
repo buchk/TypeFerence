@@ -21,7 +21,7 @@ var (
 	// and instance names.
 	hostName = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 	// serverName requires at least two hyphen-separated segments so every
-	// emitted MCP server name is namespaced (ADR-0037).
+	// emitted MCP server name is namespaced (ADR-0007).
 	serverName = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)+$`)
 )
 

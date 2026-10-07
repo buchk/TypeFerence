@@ -96,7 +96,7 @@ func TestMultiWordLevelNamesBecomePathSegments(t *testing.T) {
 func TestRetiredHostNamesStayAccepted(t *testing.T) {
 	raw := strings.Replace(validJSON(), `"hosts": ["neutral"]`, `"hosts": ["codex", "cursor"]`, 1)
 	if _, err := ParseAnswerSet([]byte(raw)); err != nil {
-		t.Fatalf("answer sets written before ADR-0029 must stay valid: %v", err)
+		t.Fatalf("answer sets naming retired hosts must stay valid: %v", err)
 	}
 }
 

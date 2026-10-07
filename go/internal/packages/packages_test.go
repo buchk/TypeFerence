@@ -39,7 +39,7 @@ func TestRestoreMaterializesTransitiveGraphForOfflineBuild(t *testing.T) {
 	write(t, root, "typeference.tfer", "---\nschemaVersion: 7\nname: acme/agents\nversion: 1.0.0\ndependencies:\n  acme/foundations: 2.0.0\nplugins:\n  - plugins/payments.plugin.tfer\n---\n")
 	write(t, root, "plugins/payments.plugin.tfer", "---\ndescription: Payments kit.\nagents:\n  - agents/payments.agent.tfer\n---\n")
 	write(t, root, "agents/payments.agent.tfer", "---\ndescription: Payments agent.\nembeds:\n  - acme/foundations:profiles/foundations.profile.tfer\nskills:\n  - skills/payments-review.skill.tfer\n---\n")
-	// A skill may extend an exported skill of a dependency (ADR-0031).
+	// A skill may extend an exported skill of a dependency (ADR-0006).
 	write(t, root, "skills/payments-review.skill.tfer", "---\ndescription: Review a payments change.\nextends: acme/foundations:skills/review.skill.tfer\n---\nAlso check reconciliation.\n")
 	packagesDir := filepath.Join(root, "obj", "typeference", "packages")
 	restorer := packages.Restorer{

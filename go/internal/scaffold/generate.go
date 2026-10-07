@@ -31,7 +31,7 @@ type Manifest struct {
 // profile embedding chain, one concrete agent that binds its team's data, and
 // the plugin that ships it. The output contains only
 // constructs a human could hand-author. No wizard-only syntax, no hidden
-// metadata (ADR-0028).
+// metadata (ADR-0008).
 func Scaffold(as *AnswerSet) (*SourceTree, Manifest, error) {
 	org := as.Organization.Name
 	ver := as.Organization.Version
@@ -61,7 +61,7 @@ func Scaffold(as *AnswerSet) (*SourceTree, Manifest, error) {
 	}
 
 	// The team contract: what the agent's team supplies. Its id names the
-	// team's skill instances (ADR-0036).
+	// team's skill instances (ADR-0006).
 	add("context-types/team.contexttype.tfer", fence(
 		"displayName: Team",
 		"description: What a team supplies to instantiate the starter kit.",

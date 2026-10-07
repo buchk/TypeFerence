@@ -517,7 +517,7 @@ function initExamples() {
 
 /* ----------------------------------------------------- instantiate form */
 
-// The Instantiate tab is a form generated from a context type (ADR-0036):
+// The Instantiate tab is a form generated from a context type (ADR-0006):
 // editing it rewrites one data document, which recompiles every instance
 // that binds it. The form knows no TypeFerence rules; the compiler is still
 // the validator.

@@ -1,4 +1,4 @@
 ---
 displayName: A conformance digest is regenerated only together with the s...
 ---
-A conformance digest is regenerated only together with the specification change and ADR that justify it; never hand-edit a digest.
+A conformance digest is regenerated only together with the specification change that justifies it; never hand-edit a digest.

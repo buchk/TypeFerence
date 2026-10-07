@@ -1,4 +1,4 @@
 {
-  "description": "tools: [] grants nothing, so an agent with no tools cannot bind a skill that requires a server (ADR-0040).",
+  "description": "tools: [] grants nothing, so an agent with no tools cannot bind a skill that requires a server (ADR-0007).",
   "expect": "error"
 }

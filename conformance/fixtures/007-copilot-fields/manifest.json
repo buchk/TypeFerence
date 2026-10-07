@@ -1,7 +1,7 @@
 {
-  "description": "Opt-in Copilot frontmatter (ADR-0037): skill and agent fields render as Copilot's kebab-case keys in table order, and an extension overrides its base's fields one by one.",
+  "description": "Opt-in Copilot frontmatter (ADR-0007): skill and agent fields render as Copilot's kebab-case keys in table order, and an extension overrides its base's fields one by one.",
   "expect": "success",
   "digests": {
-    "agent-plugin": "sha256:d5dfad399d501b155e50c61b72e6d4fb76d5f11d1ace689233ca22c91289f903"
+    "agent-plugin": "sha256:efa79d770ee253a5a65720e56ed369cd5ad0f6a9782c83fb705e35a6770134c6"
   }
 }

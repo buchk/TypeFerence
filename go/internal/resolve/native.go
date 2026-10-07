@@ -7,7 +7,7 @@ import (
 )
 
 // ResolvedRule is a Copilot rule as it ships: always-on guidance that applies
-// wherever the plugin is active (ADR-0040).
+// wherever the plugin is active (ADR-0007).
 type ResolvedRule struct {
 	Name        string
 	ID          string

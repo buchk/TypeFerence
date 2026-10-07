@@ -4,7 +4,7 @@
 
 TypeFerence is an experimental authoring and reuse layer for [Agent Plugins](https://agent-plugins.org/), with GitHub Copilot as its output adapter. It compiles small `.tfer` source documents into ordinary plugin directories and a Copilot marketplace index. Copilot and GitHub install, enable, authenticate, and run what it produces; TypeFerence never does.
 
-Read the [specification](docs/specification.md) (version 7), the decisions that shaped it ([ADR-0035](docs/decisions/0035-v7-copilot-plugin-authoring-layer.md), [ADR-0036](docs/decisions/0036-v7-documents-data-and-templates.md), [ADR-0037](docs/decisions/0037-v7-build-emitted-host-configuration.md), [ADR-0040](docs/decisions/0040-native-copilot-components-and-enterprise-defaults.md)), the [output contract](docs/output-contract.md), and the [Helio example](examples/helio/README.md).
+Read the [specification](docs/specification.md) (version 7), the [decisions](docs/decisions/README.md) behind it, the [output contract](docs/output-contract.md), and the [Helio example](examples/helio/README.md).
 
 > **Branch status (`feat/v7-plugin-authoring`).** Version 7 is implemented
 > and CI is green on Linux, macOS, and Windows. Its committed artifacts
@@ -163,6 +163,8 @@ Because the marketplace is one build:
 
 `typeference validate <marketplace> --candidate <package-dir>` checks an unpublished package against the marketplace without writing anything.
 
+The published repository holds only build output. Anything else it needs, such as a README, a license, or CI workflows, is listed in the manifest's `marketplace.files` and reaches the repository through build, with a digest in `build.json`. A plugin's own `files` (a README, adoption templates) ship in its directory, and its `author`, `homepage`, `repository`, `license`, and `keywords` appear in `plugin.json` and its marketplace entry ([ADR-0004](docs/decisions/0004-packages-and-one-marketplace-build.md)).
+
 ## Using the plugins with Copilot
 
 Publish the `agent-plugin` directory as a repository, then install from it with [Copilot CLI](https://docs.github.com/en/enterprise-cloud@latest/copilot/reference/copilot-cli-reference/cli-plugin-reference):
@@ -188,7 +190,7 @@ MCP servers that need sign-in rely on Copilot's OAuth support (discovery and dyn
 
 ## Try it in your browser
 
-The **[playground](https://buchk.github.io/TypeFerence/)** runs the real Go compiler, built for WebAssembly, entirely in your tab. Edit source, including every package of the Helio marketplace, and watch the plugins, the composition graph, and the diagnostics update live. The **Instantiate** tab generates a form from a context type: change a team's data and see every instance of every template rebuild. There is no backend; nothing you type leaves the browser ([ADR-0010](docs/decisions/0010-browser-playground.md)).
+The **[playground](https://buchk.github.io/TypeFerence/)** runs the real Go compiler, built for WebAssembly, entirely in your tab. Edit source, including every package of the Helio marketplace, and watch the plugins, the composition graph, and the diagnostics update live. The **Instantiate** tab generates a form from a context type: change a team's data and see every instance of every template rebuild. There is no backend; nothing you type leaves the browser ([ADR-0008](docs/decisions/0008-authoring-tools.md)).
 
 ## Quick start
 
@@ -234,7 +236,7 @@ typeference diff <source> --against <compiled-dir> [--json] [--packages-dir dir]
 typeference version
 ```
 
-- `import` turns existing Copilot customizations into a version 7 package: a repository's `.github/agents` and skills, a skill directory, or an Agent Plugin. It carries the files beside skills, `mcp.json` servers, and recognized Copilot frontmatter. It also carries an Agent Plugin's commands, rules, hooks, and language servers. It fails, listing every item, on anything version 7 cannot represent, unless you pass `--lossy`.
+- `import` turns existing Copilot customizations into a version 7 package: a repository's `.github/agents` and skills, a skill directory, or an Agent Plugin. It carries the files beside skills, `mcp.json` servers, and recognized Copilot frontmatter. It also carries an Agent Plugin's commands, rules, hooks, and language servers, its `author`, `homepage`, `repository`, `license`, and `keywords`, and every other file in the plugin directory, such as a README or templates, as plugin `files`. A marketplace repository is not imported whole: import lists its plugins so each can be imported, and the repository's README and CI become the marketplace package's `marketplace.files`. It fails, listing every item, on anything version 7 cannot represent, unless you pass `--lossy`.
 - `restore` is the only command that contacts feeds. It records exact identities and digests in `typeference.lock`.
 - `build` is offline and deterministic.
 - `diff` rebuilds and byte-compares against a committed output directory.

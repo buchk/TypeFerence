@@ -44,7 +44,7 @@ type composite struct {
 	objectives    []Objective
 	bindingSource map[string][]string
 	// rules, commands, and hooks are the native components the composition
-	// holds, in first-seen order, with every contributor (ADR-0040).
+	// holds, in first-seen order, with every contributor (ADR-0007).
 	rules        []string
 	commands     []string
 	hooks        []string

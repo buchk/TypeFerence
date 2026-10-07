@@ -37,7 +37,7 @@ type Options struct {
 	// name or the source directory's name.
 	Plugin string
 	// Lossy drops what version 7 cannot represent, listing each item in the
-	// notes, instead of failing (ADR-0033).
+	// notes, instead of failing (ADR-0008).
 	Lossy bool
 }
 
@@ -98,6 +98,10 @@ type importer struct {
 	native      nativeImport
 	unsupported []string
 	notes       []string
+	// A plugin source's metadata, version, and carried files (ADR-0007, ADR-0004).
+	metadata      pluginMetadata
+	sourceVersion string
+	carried       []carriedFile
 }
 
 // Import reads GitHub Copilot customizations under source (an Agent Plugins
@@ -116,6 +120,11 @@ func Import(source string, options Options) (*Result, error) {
 	}
 	im := &importer{root: root, lossy: options.Lossy, skills: map[string]importedSkill{}, agents: map[string]importedAgent{}, servers: map[string]importedServer{}}
 	pluginName, pluginDescription := "", ""
+	if !exists(filepath.Join(root, "SKILL.md")) && !exists(filepath.Join(root, "plugin.json")) && !exists(filepath.Join(root, ".claude-plugin", "plugin.json")) {
+		if err := marketplaceError(root); err != nil {
+			return nil, err
+		}
+	}
 	switch {
 	case exists(filepath.Join(root, "SKILL.md")):
 		if err := im.skill(root); err != nil {
@@ -155,6 +164,13 @@ func Import(source string, options Options) (*Result, error) {
 	name, version := options.Name, options.Version
 	if name == "" {
 		name = "local/" + pluginName
+	}
+	if version == "" && im.sourceVersion != "" {
+		if resource.IsSemanticVersion(im.sourceVersion) {
+			version = im.sourceVersion
+		} else {
+			im.notes = append(im.notes, "the plugin's version '"+im.sourceVersion+"' is not an exact semantic version, so the package version is 0.1.0; pass --version to choose one")
+		}
 	}
 	if version == "" {
 		version = "0.1.0"
@@ -227,6 +243,8 @@ func Import(source string, options Options) (*Result, error) {
 	plugin.list(0, "commands", im.native.commands)
 	plugin.list(0, "hooks", im.native.hooks)
 	plugin.list(0, "lspServers", im.native.lsp)
+	writeMetadata(plugin, im.metadata)
+	writeCarried(plugin, im.carried, result)
 	result.Files = append(result.Files, im.native.files...)
 	pluginPath := "plugins/" + pluginName + ".plugin.tfer"
 	result.Files = append(result.Files, File{Path: pluginPath, Content: document(plugin, "")})
@@ -691,12 +709,18 @@ func (im *importer) plugin() (string, string, error) {
 	name, _ := manifest["name"].(string)
 	description, _ := manifest["description"].(string)
 	_, isV1 := manifest["$schema"]
+	if version, ok := manifest["version"].(string); ok {
+		im.sourceVersion = version
+	}
+	source := im.rel(manifestPath)
 	if isV1 {
 		for _, key := range sortedKeys(manifest) {
-			switch key {
-			case "$schema", "name", "description", "version":
+			switch {
+			case key == "$schema" || key == "name" || key == "description" || key == "version":
+			case metadataKeys[key]:
+				im.readMetadata(source, key, manifest[key])
 			default:
-				im.notes = append(im.notes, im.rel(manifestPath)+": plugin metadata '"+key+"' is not carried into the source (the build derives plugin.json)")
+				im.unsupported = append(im.unsupported, source+": manifest member '"+key+"' has no version 7 source form")
 			}
 		}
 		if err := im.skillsIn(filepath.Join(im.root, "skills")); err != nil {
@@ -711,6 +735,13 @@ func (im *importer) plugin() (string, string, error) {
 			}
 		}
 		if err := im.copilotComponents(); err != nil {
+			return "", "", err
+		}
+		components := func(rel string) bool {
+			return rel == "plugin.json" || rel == "mcp.json" || copilotComponent.MatchString(rel) ||
+				nestedComponent.MatchString(rel) || im.inImportedSkill(rel, "skills")
+		}
+		if err := im.carryPluginFiles(components, []string{"skills/", "com.github.copilot/"}); err != nil {
 			return "", "", err
 		}
 		return name, description, nil
@@ -745,17 +776,69 @@ func (im *importer) plugin() (string, string, error) {
 			return "", "", err
 		}
 	}
-	for _, key := range []string{"hooks", "mcpServers", "commands", "lspServers"} {
-		if _, ok := manifest[key]; ok {
-			im.unsupported = append(im.unsupported, im.rel(manifestPath)+": '"+key+"' has no version 7 source kind")
+	for _, key := range sortedKeys(manifest) {
+		switch {
+		case key == "name" || key == "description" || key == "version" || key == "agents" || key == "skills":
+		case metadataKeys[key]:
+			im.readMetadata(source, key, manifest[key])
+		case key == "hooks" || key == "mcpServers" || key == "commands" || key == "lspServers":
+			im.unsupported = append(im.unsupported, source+": '"+key+"' has no version 7 source kind")
+		default:
+			im.unsupported = append(im.unsupported, source+": manifest member '"+key+"' has no version 7 source form")
 		}
 	}
-	for _, unsupported := range []string{"hooks", "hooks.json", ".mcp.json", "commands"} {
+	legacyComponents := []string{"hooks", "hooks.json", ".mcp.json", "commands"}
+	for _, unsupported := range legacyComponents {
 		if exists(filepath.Join(im.root, unsupported)) {
 			im.unsupported = append(im.unsupported, unsupported+": has no version 7 source kind")
 		}
 	}
+	agentsPrefix := strings.Trim(strings.TrimPrefix(agentsDir, "./"), "/") + "/"
+	claimed := []string{".claude-plugin/", agentsPrefix}
+	for _, dir := range skillDirs {
+		claimed = append(claimed, strings.Trim(dir, "/")+"/")
+	}
+	components := func(rel string) bool {
+		if rel == "plugin.json" || rel == ".claude-plugin/plugin.json" {
+			return true
+		}
+		for _, unsupported := range legacyComponents {
+			if rel == unsupported || strings.HasPrefix(rel, unsupported+"/") {
+				return true // already listed as unsupported
+			}
+		}
+		if strings.HasPrefix(rel, agentsPrefix) && !strings.Contains(strings.TrimPrefix(rel, agentsPrefix), "/") && strings.HasSuffix(rel, ".agent.md") {
+			return true
+		}
+		for _, dir := range skillDirs {
+			dir = strings.Trim(dir, "/")
+			if exists(filepath.Join(im.root, filepath.FromSlash(dir), "SKILL.md")) {
+				if strings.HasPrefix(rel, dir+"/") {
+					return true
+				}
+			} else if im.inImportedSkill(rel, dir) {
+				return true
+			}
+		}
+		return false
+	}
+	if err := im.carryPluginFiles(components, claimed); err != nil {
+		return "", "", err
+	}
 	return name, description, nil
+}
+
+// inImportedSkill reports whether rel lies in an imported skill directory
+// directly beneath dir. Import reads, or lists as unsupported, every file
+// there.
+func (im *importer) inImportedSkill(rel, dir string) bool {
+	rest, found := strings.CutPrefix(rel, dir+"/")
+	if !found {
+		return false
+	}
+	name, _, nested := strings.Cut(rest, "/")
+	_, imported := im.skills[name]
+	return nested && imported
 }
 
 // Write writes a generated tree beneath out, which must not exist or must be

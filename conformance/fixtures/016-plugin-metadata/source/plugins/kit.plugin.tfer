@@ -1,0 +1,18 @@
+---
+description: Repository health kit.
+author:
+  name: Conformance Platform
+  email: platform@example.com
+  url: https://example.com/platform
+homepage: https://example.com/docs/kit
+repository: https://example.com/git/kit
+license: MIT
+keywords:
+  - health
+  - 'repository status'
+skills:
+  - skills/status.skill.tfer
+modes:
+  - manual
+  - pipeline
+---

@@ -3,8 +3,7 @@
 A zero-install, zero-backend playground: the unmodified Go compiler built for
 `js/wasm`, running against an in-memory filesystem, recompiling every Copilot
 plugin on every edit. Deployed to GitHub Pages by `.github/workflows/pages.yml`;
-design rationale in [ADR-0010](../../docs/decisions/0010-browser-playground.md).
-Version 7 kept the playground as the project's showcase (ADR-0035).
+design rationale in [ADR-0008](../../docs/decisions/0008-authoring-tools.md).
 
 ## What it shows
 
@@ -15,7 +14,7 @@ Version 7 kept the playground as the project's showcase (ADR-0035).
   parameters, `with` bindings, held documents, servers, and what each plugin
   ships.
 - **Bundle:** each resolved agent with its bindings and provenance.
-- **Instantiate:** a form generated from a context type (ADR-0036). Pick a data
+- **Instantiate:** a form generated from a context type (ADR-0006). Pick a data
   document; every field of its context type becomes an input, with labels,
   help text, defaults, and choices. Editing the form rewrites the data
   document and recompiles, so every skill instance bound to it changes in

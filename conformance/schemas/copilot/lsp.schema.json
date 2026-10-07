@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/buchk/TypeFerence/conformance/schemas/copilot/lsp.schema.json",
   "title": "Copilot plugin lsp.json as TypeFerence reads the Copilot CLI reference",
-  "description": "com.github.copilot/lsp.json. Not published by GitHub; this records TypeFerence's reading of the Copilot CLI plugin reference (ADR-0040) and must follow it when it changes.",
+  "description": "com.github.copilot/lsp.json. Not published by GitHub; this records TypeFerence's reading of the Copilot CLI plugin reference (ADR-0007) and must follow it when it changes.",
   "type": "object",
   "additionalProperties": false,
   "required": [

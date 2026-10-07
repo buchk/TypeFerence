@@ -1,7 +1,7 @@
 # Helio, version 7
 
 A fictional organization, Helio Works, authoring its Copilot plugins with
-version 7 of the language (ADR-0035 through ADR-0040).
+version 7 of the language.
 
 The reference test (`go test ./internal/compile -run TestHelioReference`)
 stages the four team packages into a temporary feed, restores the marketplace,

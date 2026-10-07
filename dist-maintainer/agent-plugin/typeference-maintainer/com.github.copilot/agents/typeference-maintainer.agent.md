@@ -18,7 +18,7 @@ Semantic changes land in docs/specification.md before either implementation chan
 
 ### Where the specification and an implementation disagree, the ...
 
-Where the specification and an implementation disagree, the specification wins; record the ruling in docs/decisions and cover it with a conformance fixture.
+Where the specification and an implementation disagree, the specification wins; fix the side that is wrong, state the ruling in the specification, and cover it with a conformance fixture.
 
 ### Every canonicalization or composition ruling ships with a fi...
 
@@ -38,7 +38,8 @@ the source of truth; the Go implementation under `go/` is its reference realizat
 A semantic change alters valid source, composition, or compiled bytes. It follows:
 
 1. Amend `docs/specification.md`.
-2. Record the decision and rejected alternatives in `docs/decisions/`.
+2. If the change moves a direction-level tradeoff, amend the ADR in
+   `docs/decisions/` that owns it.
 3. Add or update `conformance/fixtures/`.
 4. Update the implementation until determinism passes.
 
@@ -55,7 +56,7 @@ Never weaken determinism, provenance, or fail-closed behavior to make a change e
 
 ### A conformance digest is regenerated only together with the s...
 
-A conformance digest is regenerated only together with the specification change and ADR that justify it; never hand-edit a digest.
+A conformance digest is regenerated only together with the specification change that justifies it; never hand-edit a digest.
 
 ### Repeated builds from identical source must stay byte-identic...
 
@@ -82,18 +83,18 @@ Rules that protect the guarantee:
 - Digest values are regenerated (`go test ./conformance -update`), never typed by
   hand.
 - Canonical serialization is defined in `docs/specification.md` ("Canonicalization");
-  any change to it is a specification change with an ADR.
+  any change to it is a specification change.
 - Nothing about determinism, provenance, or fail-closed behavior is ever relaxed to
   make an unrelated change easier. If a change fights the determinism rules, the
-  change is wrong or the specification needs a recorded amendment.
+  change is wrong or the specification needs an explicit amendment.
 
 ### Every commit builds and passes the test suite and the determ...
 
 Every commit builds and passes the test suite and the determinism suite.
 
-### Decisions with real tradeoffs are recorded as ADRs in docs/d...
+### Direction-level tradeoffs live in one ADR per topic
 
-Decisions with real tradeoffs are recorded as ADRs in docs/decisions before the change merges.
+Direction-level tradeoffs live in docs/decisions, one ADR per topic, amended in place in the same change; rulings belong in the specification with a fixture, and what stops being true is deleted.
 
 ### Documentation must be accurate against the code at the commi...
 
@@ -111,9 +112,13 @@ Commit messages are conventional and written for a critical human reader.
   release outside the checklist in `docs/release-checklist.md`.
 - Before any commit: `go test ./...` (from `go/`) and the determinism suite
   (`make conformance`) both pass. A commit that breaks either does not land.
-- Design decisions with real tradeoffs — spec semantics, canonical bytes,
-  dependencies — are recorded in `docs/decisions/` as numbered ADRs in the
-  same change.
+- `docs/decisions/` holds one short ADR per direction-level topic: scope, the
+  implementation, determinism, the package model, the grammar, composition,
+  emitted host configuration, and the authoring tools. A change that moves one
+  of those tradeoffs amends that ADR in place, in the same change; it does not
+  add a new one on top. Rulings and clarifications go into the specification
+  with a fixture, not into an ADR. What stops being true is deleted; git keeps
+  the history.
 - Generated artifacts (root `AGENTS.md`, `dist/`) are only ever changed by
   regenerating them from source (`make selfhost`, `typeference build`); hand edits
   to generated files are drift and CI rejects them.

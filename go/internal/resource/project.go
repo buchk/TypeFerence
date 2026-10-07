@@ -25,6 +25,9 @@ const SchemaVersion = 7
 type Marketplace struct {
 	Name  string
 	Owner string
+	// Files ship at the target root (ADR-0004). LoadPackage reads their
+	// bytes; LoadProject alone leaves Data empty.
+	Files []PackageFile
 }
 
 // Project is the source-root manifest: package identity, dependencies, the
@@ -102,7 +105,7 @@ func ParseProjectManifest(text string) (*Project, error) {
 		return nil, Errorf("%s: schemaVersion must be 7 (docs/specification.md)", ManifestFile)
 	}
 	if versionNode.Value.Text != "7" {
-		return nil, Errorf("%s: schemaVersion %s is not supported; TypeFerence reads version 7 sources (docs/specification.md, ADR-0035)", ManifestFile, versionNode.Value.Text)
+		return nil, Errorf("%s: schemaVersion %s is not supported; TypeFerence reads version 7 sources (docs/specification.md)", ManifestFile, versionNode.Value.Text)
 	}
 	if strings.TrimSpace(body) != "" {
 		return nil, Errorf("%s: the project manifest does not take a body", ManifestFile)
@@ -118,6 +121,11 @@ func ParseProjectManifest(text string) (*Project, error) {
 			if err := d.decode(n, map[string]func(*tferlex.Node) error{
 				"name":  d.stringInto(&m.Name),
 				"owner": d.stringInto(&m.Owner),
+				"files": func(n *tferlex.Node) error {
+					files, err := d.fileEntries(n, project.Name, marketplaceFiles)
+					m.Files = files
+					return err
+				},
 			}); err != nil {
 				return err
 			}

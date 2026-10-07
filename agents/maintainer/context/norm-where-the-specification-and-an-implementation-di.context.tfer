@@ -1,4 +1,4 @@
 ---
 displayName: Where the specification and an implementation disagree, the ...
 ---
-Where the specification and an implementation disagree, the specification wins; record the ruling in docs/decisions and cover it with a conformance fixture.
+Where the specification and an implementation disagree, the specification wins; fix the side that is wrong, state the ruling in the specification, and cover it with a conformance fixture.

@@ -1,4 +1,4 @@
 {
-  "description": "Different file names cannot use inconsistent casing for a shared destination directory (ADR-0039).",
+  "description": "Different file names cannot use inconsistent casing for a shared destination directory (ADR-0003).",
   "expect": "error"
 }

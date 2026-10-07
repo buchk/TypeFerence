@@ -9,7 +9,8 @@ the source of truth; the Go implementation under `go/` is its reference realizat
 A semantic change alters valid source, composition, or compiled bytes. It follows:
 
 1. Amend `docs/specification.md`.
-2. Record the decision and rejected alternatives in `docs/decisions/`.
+2. If the change moves a direction-level tradeoff, amend the ADR in
+   `docs/decisions/` that owns it.
 3. Add or update `conformance/fixtures/`.
 4. Update the implementation until determinism passes.
 
