@@ -23,7 +23,7 @@ rerun the output validation.
 
 GitHub does not publish JSON Schemas for Copilot's `hooks.json`, `lsp.json`,
 or marketplace index. These record TypeFerence's reading of the Copilot CLI
-plugin reference (ADR-0040). They are deliberately strict: they admit what
+plugin reference (ADR-0007). They are deliberately strict: they admit what
 TypeFerence emits and what the reference documents, and nothing else. When
 the reference changes, change the schema and the emitter together.
 

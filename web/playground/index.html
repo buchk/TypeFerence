@@ -6,7 +6,7 @@
   <!-- Defense in depth: scripts only from this origin (plus wasm), and no
        network destination other than this origin. The playground never sends
        anything anywhere — there is nothing to configure and no key to paste
-       (ADR-0011). -->
+       (ADR-0008). -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
   <title>TypeFerence Playground</title>
   <meta name="description" content="Author GitHub Copilot plugins with shared templates and typed team data, compiled live in your browser by the real Go compiler as WebAssembly.">

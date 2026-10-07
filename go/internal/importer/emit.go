@@ -1,6 +1,6 @@
 // Package importer turns existing GitHub Copilot customizations (custom
 // agents, Agent Skills, and Agent Plugins) into version 7 TypeFerence sources
-// (ADR-0033). It writes only constructs a person could hand-author.
+// (ADR-0008). It writes only constructs a person could hand-author.
 package importer
 
 import (

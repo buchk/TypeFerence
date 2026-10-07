@@ -11,7 +11,7 @@ import (
 )
 
 // Native Copilot components live under the client namespace directory
-// (ADR-0040).
+// (ADR-0007).
 const copilotDir = "com.github.copilot"
 
 // nativeSet collects the rules, commands, hooks, and language servers one
@@ -311,7 +311,7 @@ func lspJSON(docs map[string]*resource.Document, ids []string) (string, error) {
 }
 
 // agentServersFrontmatter renders an agent's own mcp-servers block, which
-// scopes those servers to the agent (ADR-0040).
+// scopes those servers to the agent (ADR-0007).
 func agentServersFrontmatter(b *strings.Builder, docs map[string]*resource.Document, ids []string) {
 	if len(ids) == 0 {
 		return

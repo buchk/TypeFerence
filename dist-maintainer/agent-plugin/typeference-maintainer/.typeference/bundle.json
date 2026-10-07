@@ -5,7 +5,7 @@
   "mode": "manual",
   "version": "0.2.0",
   "description": "The TypeFerence repository\u0027s maintainer agent, with its conformance and self-host drift skills.",
-  "sourceDigest": "sha256:ab4f23eee8e3d9b44233b3621152b218874c6c74d9102fefb73fab9a0ef86523",
+  "sourceDigest": "sha256:53d793a7c0fbce5f39236e53598ee129fedaf63e7518984fb53f969daf62ec8a",
   "dependencies": [],
   "agents": [
     {

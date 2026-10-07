@@ -40,13 +40,13 @@ type pluginPlan struct {
 	// profile's skills, and every directly linked skill, one per emitted
 	// name, ordered by name.
 	Skills []resolve.ResolvedSkill
-	// Native Copilot components (ADR-0040), one per emitted name.
+	// Native Copilot components (ADR-0007), one per emitted name.
 	Rules    []resolve.ResolvedRule
 	Commands []resolve.ResolvedCommand
 	Hooks    []string
 	LSP      []string
 	// Metadata and Files are the plugin's descriptive manifest members and
-	// carried files, identical in every artifact (ADR-0041).
+	// carried files, identical in every artifact (ADR-0004).
 	Metadata resource.PluginMetadata
 	Files    []resource.PackageFile
 }
@@ -187,7 +187,7 @@ func planPlugin(c *compilation, doc *resource.Document, agents map[string]*resol
 }
 
 // validateAgentTools keeps an agent's explicit tool allowlist consistent with
-// the MCP servers it depends on in each artifact (ADR-0040). Copilot enables
+// the MCP servers it depends on in each artifact (ADR-0007). Copilot enables
 // a server's tools for an agent only when the agent's tools name them, even
 // for servers in the agent's own mcp-servers, and build never adds a grant,
 // so a missing entry fails. An agent without a tools list gets Copilot's

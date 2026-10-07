@@ -23,7 +23,7 @@ func CheckTarget(value string) error {
 	case "", "all", TargetName:
 		return nil
 	case "neutral", "codex", "copilot", "cursor":
-		return resource.Errorf("The %s target was removed (ADR-0035); agent-plugin is the only target", strings.ToLower(value))
+		return resource.Errorf("The %s target was removed; agent-plugin is the only target", strings.ToLower(value))
 	}
 	return resource.Errorf("Unknown target: %s", value)
 }

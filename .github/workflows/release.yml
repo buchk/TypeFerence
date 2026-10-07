@@ -4,7 +4,7 @@ name: release
 # origin v0.0.3`) after the release checklist (docs/release-checklist.md) is
 # complete. The release ships the Go CLI as single static binaries per
 # platform — no installer and no runtime dependencies; users unpack one file
-# and put it on PATH. See ADR-0007.
+# and put it on PATH. See ADR-0002.
 
 on:
   push:

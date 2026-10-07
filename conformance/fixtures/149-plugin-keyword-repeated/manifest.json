@@ -1,4 +1,4 @@
 {
-  "description": "A plugin lists each keyword at most once (ADR-0041).",
+  "description": "A plugin lists each keyword at most once (ADR-0004).",
   "expect": "error"
 }

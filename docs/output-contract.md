@@ -35,7 +35,7 @@ enterprise settings (no carried file may land beneath `.github/copilot/`), and
 it writes no file under `com.github.copilot/` other than those listed.
 `plugin.json` and each marketplace entry carry the plugin's `author`,
 `homepage`, `repository`, `license`, and `keywords` only when the plugin
-declares them (ADR-0041).
+declares them (ADR-0007).
 
 ## TypeFerence's own files
 
@@ -68,7 +68,7 @@ A consumer should refuse a `schemaVersion` it does not know.
 The Agent Plugins schemas are vendored unchanged. Copilot publishes no schema
 for `hooks.json`, `lsp.json`, or its marketplace index, so TypeFerence's
 schemas for them record its reading of the Copilot CLI plugin reference
-(ADR-0040). They are strict on purpose. If the reference changes, the emitter,
+(ADR-0007). They are strict on purpose. If the reference changes, the emitter,
 the compile-time checks, and the schema change together.
 
 Frontmatter is checked by field list rather than by schema, because hosts read
@@ -94,5 +94,5 @@ reference, and the maintainer plugin, then validates all of them, including
 the committed `dist/` and `dist-maintainer/`.
 
 What this does not prove: that Copilot loads the output the way the reference
-says. That still has to be confirmed in Copilot itself; ADR-0040 lists the
-open questions.
+says. That still has to be confirmed in Copilot itself; `docs/next-steps.md`
+lists the open questions.

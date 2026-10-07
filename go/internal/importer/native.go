@@ -12,7 +12,7 @@ import (
 	"github.com/buchk/TypeFerence/go/internal/resource"
 )
 
-// nativeImport collects an Agent Plugin's Copilot components (ADR-0040):
+// nativeImport collects an Agent Plugin's Copilot components (ADR-0007):
 // commands, rules, hooks, and language servers, as version 7 documents.
 type nativeImport struct {
 	files    []File

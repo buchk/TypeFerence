@@ -202,7 +202,7 @@ func TestCopilotFieldsRenderInTableOrder(t *testing.T) {
 }
 
 // Binary artifacts are compared byte for byte; text still tolerates a
-// checkout's line-ending conversion (ADR-0038).
+// checkout's line-ending conversion (ADR-0003).
 func TestDiffAndDigestAreExactForBinaryFiles(t *testing.T) {
 	expected, actual := t.TempDir(), t.TempDir()
 	if err := os.WriteFile(filepath.Join(expected, "logo.bin"), []byte{0xEF, 0xBB, 0xBF, 0xFF, 0x0D, 0x0A}, 0o644); err != nil {
@@ -292,7 +292,7 @@ func TestEmbeddedAgentBindingsShallowestWins(t *testing.T) {
 	}
 }
 
-// Native Copilot components render in Copilot's own formats (ADR-0040).
+// Native Copilot components render in Copilot's own formats (ADR-0007).
 func TestAgentToolAllowlists(t *testing.T) {
 	source, err := filepath.Abs(filepath.Join("..", "..", "..", "conformance", "fixtures", "015-agent-tool-allowlist", "source"))
 	if err != nil {
@@ -357,7 +357,7 @@ func TestNativeComponentsRender(t *testing.T) {
 }
 
 func TestRemovedTargetsPointAtTheADR(t *testing.T) {
-	if err := compile.CheckTarget("neutral"); err == nil || !strings.Contains(err.Error(), "ADR-0035") {
+	if err := compile.CheckTarget("neutral"); err == nil || !strings.Contains(err.Error(), "agent-plugin is the only target") {
 		t.Fatalf("the neutral target is removed, got %v", err)
 	}
 	if err := compile.CheckTarget("agent-plugin"); err != nil {

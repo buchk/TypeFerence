@@ -1,4 +1,4 @@
 {
-  "description": "A tools key without a value is ambiguous: [] means no tools and omitting the key means Copilot's defaults (ADR-0040).",
+  "description": "A tools key without a value is ambiguous: [] means no tools and omitting the key means Copilot's defaults (ADR-0007).",
   "expect": "error"
 }

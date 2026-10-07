@@ -1,4 +1,4 @@
 ---
-displayName: Decisions with real tradeoffs are recorded as ADRs in docs/d...
+displayName: Direction-level tradeoffs live in one ADR per topic
 ---
-Decisions with real tradeoffs are recorded as ADRs in docs/decisions before the change merges.
+Direction-level tradeoffs live in docs/decisions, one ADR per topic, amended in place in the same change; rulings belong in the specification with a fixture, and what stops being true is deleted.

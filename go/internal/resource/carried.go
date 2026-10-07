@@ -29,7 +29,7 @@ var skillFiles = fileTarget{
 	},
 }
 
-// pluginFiles ship at the root of each of a plugin's artifacts (ADR-0041).
+// pluginFiles ship at the root of each of a plugin's artifacts (ADR-0004).
 var pluginFiles = fileTarget{
 	defaultAs: path.Base,
 	check: func(destination string) string {
@@ -45,7 +45,7 @@ var pluginFiles = fileTarget{
 	},
 }
 
-// marketplaceFiles ship at the target root (ADR-0041). That no destination
+// marketplaceFiles ship at the target root (ADR-0004). That no destination
 // enters an artifact directory is checked by build, which knows the
 // artifacts.
 var marketplaceFiles = fileTarget{
@@ -124,7 +124,7 @@ func (d *fieldDecoder) fileEntries(n *tferlex.Node, packageName string, target f
 	return files, nil
 }
 
-// metadataString decodes one plugin metadata value (ADR-0041).
+// metadataString decodes one plugin metadata value (ADR-0007).
 func (d *fieldDecoder) metadataString(target *string) func(*tferlex.Node) error {
 	return func(n *tferlex.Node) error {
 		value, null, err := d.text(n)

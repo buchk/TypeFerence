@@ -35,8 +35,8 @@ var kindSuffixes = []struct {
 // removedSuffixes name the document kinds version 7 removed, so a stray file
 // fails with a pointer rather than as an unknown suffix.
 var removedSuffixes = map[string]string{
-	".interface.tfer": "interfaces were removed in version 7 (ADR-0035)",
-	".tool.tfer":      "tools were replaced by .server.tfer documents in version 7 (ADR-0037)",
+	".interface.tfer": "interfaces were removed in version 7",
+	".tool.tfer":      "tools were replaced by .server.tfer documents in version 7",
 }
 
 // KindSuffix returns the file suffix for a document kind.

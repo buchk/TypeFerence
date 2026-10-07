@@ -12,7 +12,7 @@ import (
 )
 
 // pluginMetadata is a source plugin's descriptive manifest members, each
-// already checked against "Plugin metadata" (ADR-0041).
+// already checked against "Plugin metadata" (ADR-0007).
 type pluginMetadata struct {
 	author     [][2]string // name, then email and url when present
 	homepage   string

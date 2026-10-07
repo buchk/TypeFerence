@@ -18,7 +18,7 @@ Consumer workflows built on TypeFerence's output, such as forms that open pull
 requests, publishing pipelines, and marketplace installation, belong to the
 adopting organization and are out of scope.
 
-- [ ] Copilot behaviours to confirm for native components (ADR-0040):
+- [ ] Copilot behaviours to confirm for native components (ADR-0007):
   plugin rules active by default and loaded in `-p` runs, and plugin hooks
   on Copilot cloud agent.
 - [ ] Hooks that run scripts shipped inside the plugin, once the variable that
@@ -26,6 +26,10 @@ adopting organization and are out of scope.
 - [ ] Decide how `list<string>` fields render if a real case needs them in
   text.
 - [ ] Decide whether one agent may bind two values to one parameter name.
+- [ ] Import a whole marketplace repository into one marketplace package with
+  a plugin document per plugin; today import lists the plugins and stops.
+- [ ] Marketplace-only entry fields (`category`, `tags`) and package-level
+  metadata defaults, if a consumer needs them.
 
 ## Near term
 
@@ -39,7 +43,7 @@ adopting organization and are out of scope.
   resolver input would make that boundary structural rather than conventional.
 - [ ] Decide whether `typeference import` should recover shared structure
   (profiles, extensions) from near-duplicate imported skills, or leave that to
-  authors (ADR-0033).
+  authors (ADR-0008).
 
 ## Corpus ownership
 

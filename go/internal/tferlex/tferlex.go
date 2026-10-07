@@ -1,5 +1,5 @@
 // Package tferlex implements the closed TypeFerence frontmatter grammar
-// specified in docs/specification.md ("Frontmatter grammar", ADR-0032).
+// specified in docs/specification.md ("Frontmatter grammar", ADR-0005).
 //
 // The grammar is deliberately tiny: indentation-nested mappings and
 // sequences, single- and double-quoted strings, literal block scalars with

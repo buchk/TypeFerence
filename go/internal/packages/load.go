@@ -16,7 +16,7 @@ type DependencySet struct {
 	Locked    []LockedPackage
 	Exports   map[string][]string
 	// Plugins are the identities of each package's own plugins: the plugins
-	// a dependent may ship (ADR-0034).
+	// a dependent may ship (ADR-0004).
 	Plugins map[string][]string
 	// Candidate is the unpublished package the set was loaded with, if any.
 	Candidate *resource.Project
@@ -31,7 +31,7 @@ func LoadDependencySet(source, packagesDir string) (*DependencySet, error) {
 // LoadDependencySetWithCandidate loads a package's locked graph with an
 // unpublished candidate package, read from its source directory, in place of
 // the locked package of the same name, or added beside the graph when the
-// package does not depend on it yet (ADR-0034). The candidate's dependencies
+// package does not depend on it yet (ADR-0004). The candidate's dependencies
 // must be locked at the versions it declares, and every locked package that
 // depends on the candidate's name must declare the candidate's version. The
 // result is for validation only: the candidate has no published digest.

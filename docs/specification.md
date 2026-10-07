@@ -6,33 +6,9 @@ Its resource documents carry no schema version, kind, or identity field; the
 manifest and each document's path supply them. Unsupported fields and schema
 versions are errors rather than extension points.
 
-Version 7 narrows TypeFerence to an authoring and reuse layer for Agent Plugins,
-with GitHub Copilot as its only output adapter (ADR-0035 through ADR-0037). The
-changes from version 6:
-
-1. `agent-plugin` is the only build target, and build emits complete
-   artifacts, including `mcp.json`. The `neutral` target, ARD publication,
-   A2A, deployment files, `link`, and `publish` are removed.
-2. A context document is either a **document** (arbitrary Markdown) or **data**
-   (values of a context type). Types describe data only.
-3. Context types are instantiation contracts with form metadata and an optional
-   instance-name field. Refinement, `map<T>`, `decimal`, and bodies are
-   removed.
-4. Documents, skills, and profiles declare typed `parameters`; `{{name.field}}`
-   inserts a field value. Skills and agents bind parameters with `with`, and an
-   agent emits each parameterized skill as a named instance.
-5. Skills carry plain files and emit their input and output schemas as files.
-   A held document may render as a reference file.
-6. `.server.tfer` documents declare MCP servers that skills require. The `tool`
-   kind is removed.
-7. A `copilot` mapping holds opt-in Copilot-only frontmatter for skills and
-   agents.
-8. Interfaces, slots, `allowedContextTypes`, `sealed`, capability `visibility`,
-   trust metadata, the field-classification rule, and the archival languages
-   are removed. One provenance rule replaces the field-classification rule.
-9. Packages may be restored from Git repositories.
-
-Version 6 and earlier sources are not accepted.
+TypeFerence is an authoring and reuse layer for Agent Plugins, with GitHub
+Copilot as its only output adapter (ADR-0001). Earlier source versions are not
+accepted. Design rationale is in `docs/decisions/`.
 
 ## Purpose and pipeline
 
@@ -435,10 +411,10 @@ after lowercasing:
   never emits.
 
 Destinations within one plugin's files, and within the marketplace's files,
-follow the collision and directory-spelling rules of skill files (ADR-0038,
-ADR-0039). Carried files are source members, read and normalized like skill
-files; field references are not resolved in them. A plugin's files ship
-identically in each of its artifacts.
+follow the collision and directory-spelling rules of skill files (ADR-0003).
+Carried files are source members, read and normalized like skill files; field
+references are not resolved in them. A plugin's files ship identically in each
+of its artifacts.
 
 ## Agents and objectives
 
@@ -772,13 +748,13 @@ destination relative to the skill directory and defaults to
 is `references`, `scripts`, or `assets`, and MUST NOT collide with another
 file, a rendered document, or an emitted schema in the same skill directory.
 Two destinations collide when they are equal after lowercasing, because they
-name one file on case-insensitive filesystems (ADR-0038).
+name one file on case-insensitive filesystems (ADR-0003).
 Every shared directory prefix MUST also use identical spelling: destinations
 `references/A/one.txt` and `references/a/two.txt` are an error even though
 their file names differ. A path MUST NOT name both a file and a directory,
 including after lowercasing. These checks apply to the complete skill directory,
 including inherited files, rendered documents, and schemas, before output is
-written. Accepted destination spelling is preserved (ADR-0039).
+written. Accepted destination spelling is preserved (ADR-0003).
 
 Skill files are source members. A file whose bytes are valid UTF-8 is
 normalized like source text (BOM removed, CRLF to LF) and emitted normalized;
@@ -876,7 +852,7 @@ extension's own fields replace the base's field by field.
 
 Agent Plugins 1.0 defines skills and MCP servers as its portable components.
 Copilot reads further components from the plugin's `com.github.copilot/`
-directory; TypeFerence declares each as a document kind (ADR-0040).
+directory; TypeFerence declares each as a document kind (ADR-0007).
 
 **Rules** (`.rule.tfer`) are always-on guidance. A rule's body is Markdown; its
 optional `paths` is one glob that scopes it to matching files, and its
@@ -1020,7 +996,7 @@ distributed compiler binary, not the reproducible source-derived artifact.
 `typeference-directory-v1` is the target-directory digest: recursively sort
 forward-slash paths, then hash `path`, NUL, content, NUL, where content is
 normalized text (byte order mark removed, CRLF to LF) for a file whose bytes are
-valid UTF-8 and the exact bytes of any other file (ADR-0038). It applies only to
+valid UTF-8 and the exact bytes of any other file (ADR-0003). It applies only to
 already-defined artifact directories, not source identity.
 
 
@@ -1028,7 +1004,7 @@ already-defined artifact directories, not source identity.
 
 Build emits the `agent-plugin` target beneath `<out>/agent-plugin/`. It is
 complete: there is no later linking step. A request for any other target fails
-with a diagnostic naming ADR-0035.
+with a diagnostic.
 
 ```text
 agent-plugin/
@@ -1324,20 +1300,3 @@ Package extraction MUST prevent path traversal and overwrite outside its
 materialization directory. Logs MUST avoid secrets. Generated instructions and
 `allowed-tools` are descriptive, not authorization; hosts remain responsible for
 access control and user approval.
-
-## Removed in version 7
-
-The following version 6 surfaces no longer exist. Their records remain in
-`docs/decisions/`:
-
-- the `neutral` target, ARD catalogs, A2A Agent Cards, deployment files,
-  `link`, `publish`, and `.typeference/link.json` (ADR-0035, ADR-0037);
-- the `interface` and `tool` kinds, slots, `allowedContextTypes`, capability
-  `visibility`, skill and binding `sealed`, and `requiresContextTypes`
-  (ADR-0035, ADR-0036, ADR-0037);
-- context-type `embeds`, `body`, `map<T>`, `decimal`, and named-type field
-  values (ADR-0035);
-- trust metadata, signature import, and the manifest's `publisher` (ADR-0035);
-- the field-classification rule, replaced by the provenance rule (ADR-0035);
-- the `a2a` mode (ADR-0035);
-- the archival version 5 and version 3 languages (ADR-0035).

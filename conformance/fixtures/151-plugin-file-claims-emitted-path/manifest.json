@@ -1,4 +1,4 @@
 {
-  "description": "A plugin's carried file cannot claim a path build emits, such as plugin.json (ADR-0041).",
+  "description": "A plugin's carried file cannot claim a path build emits, such as plugin.json (ADR-0004).",
   "expect": "error"
 }

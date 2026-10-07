@@ -50,7 +50,7 @@ func run(args []string) int {
 	case "diff":
 		code, err = diff(args)
 	case "link", "publish", "eval", "equivalence":
-		return fail(fmt.Sprintf("the %s command was removed in version 7 (ADR-0035)", args[0]))
+		return fail(fmt.Sprintf("the %s command was removed in version 7", args[0]))
 	case "version", "--version":
 		fmt.Printf("typeference %s\n", version)
 		return 0
@@ -129,7 +129,7 @@ func build(args []string) (int, error) {
 
 // reportPluginConflicts prints the build's compatibility report: plugins
 // that ship different skills for one capability compete for the same
-// requests when installed together (ADR-0031). It informs; it never fails a
+// requests when installed together (ADR-0006). It informs; it never fails a
 // build, because a team may ship competing packs on purpose.
 func reportPluginConflicts(path string) {
 	data, err := os.ReadFile(path)

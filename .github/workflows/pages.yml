@@ -1,6 +1,6 @@
 # Builds the browser playground (web/playground) and deploys it to GitHub
 # Pages on every push to main. The playground is the unmodified Go compiler
-# built for js/wasm; see docs/decisions/0010-browser-playground.md.
+# built for js/wasm; see docs/decisions/0008-authoring-tools.md.
 name: pages
 
 on:

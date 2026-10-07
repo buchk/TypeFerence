@@ -1,4 +1,4 @@
-/* Setup wizard page (ADR-0028): collects a small AnswerSet, runs the same Go
+/* Setup wizard page (ADR-0008): collects a small AnswerSet, runs the same Go
  * generator as `typeference init` through the wasm bridge, and offers the
  * exit ramp: download the tree plus answers.json, or copy the exact
  * `typeference init --answers answers.json --verify <digest>` command.

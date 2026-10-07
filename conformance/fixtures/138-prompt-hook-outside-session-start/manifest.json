@@ -1,4 +1,4 @@
 {
-  "description": "Prompt hooks fire only on sessionStart (ADR-0040).",
+  "description": "Prompt hooks fire only on sessionStart (ADR-0007).",
   "expect": "error"
 }

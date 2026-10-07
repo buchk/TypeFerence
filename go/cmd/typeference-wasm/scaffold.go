@@ -12,7 +12,7 @@ import (
 )
 
 // scaffoldFunc implements TypeFerence.scaffold(request): the same generator
-// `typeference init` runs locally (ADR-0028). The request carries a raw
+// `typeference init` runs locally (ADR-0008). The request carries a raw
 // answerSet JSON string; the result carries ok, error, files (path -> bytes),
 // digest, and manifest. The digest is computed identically to the CLI so the
 // wizard's --verify exit ramp holds byte-for-byte.

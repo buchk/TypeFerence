@@ -9,7 +9,7 @@ type skillPath struct {
 }
 
 // SkillPaths checks files and their directory prefixes for conflicts using
-// the same rules on every platform (ADR-0039). Its zero value is ready to use.
+// the same rules on every platform (ADR-0003). Its zero value is ready to use.
 // Destinations must already be clean, skill-relative paths.
 type SkillPaths struct {
 	claims map[string]skillPath

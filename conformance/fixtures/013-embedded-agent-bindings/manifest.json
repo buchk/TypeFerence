@@ -1,5 +1,5 @@
 {
-  "description": "Embedded agents' bindings promote shallowest-first (ADR-0038): an agent that embeds another and binds the name re-points it at its own data, and one that embeds it without binding keeps the embedded agent's data; embedded objectives render with the embedding agent's bindings.",
+  "description": "Embedded agents' bindings promote shallowest-first (ADR-0003): an agent that embeds another and binds the name re-points it at its own data, and one that embeds it without binding keeps the embedded agent's data; embedded objectives render with the embedding agent's bindings.",
   "expect": "success",
   "digests": {
     "agent-plugin": "sha256:da889cc66ce6fc9e6c4b0475dacf892ad0ba01bf51c596cb2f215c28ec63195b"

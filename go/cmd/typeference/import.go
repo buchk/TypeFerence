@@ -10,7 +10,7 @@ import (
 )
 
 // importCommand turns existing GitHub Copilot customizations into a version 7
-// package (ADR-0033) and validates the result through the ordinary compiler.
+// package (ADR-0008) and validates the result through the ordinary compiler.
 //
 //	typeference import <source> --out <dir> [--name ns/name] [--version x.y.z]
 //	    [--plugin name] [--lossy]

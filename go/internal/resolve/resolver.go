@@ -105,7 +105,7 @@ type ResolvedAgent struct {
 	InstanceName string
 	Copilot      resource.CopilotFields
 	Provenance   []ProvenanceEntry
-	// Native components the agent composes (ADR-0040): rules and commands
+	// Native components the agent composes (ADR-0007): rules and commands
 	// rendered with its bindings, hooks, and agent-scoped servers.
 	Rules    []ResolvedRule
 	Commands []ResolvedCommand

@@ -290,7 +290,7 @@ def file_digest(path):
 
 def check_root_files(target, build, artifact_dirs):
     """Every file outside the artifact directories is an index file or a
-    marketplace file that build.json lists with a matching digest (ADR-0041)."""
+    marketplace file that build.json lists with a matching digest (ADR-0004)."""
     if not build:
         return
     listed = {entry["path"]: entry["digest"] for entry in build.get("files", [])}

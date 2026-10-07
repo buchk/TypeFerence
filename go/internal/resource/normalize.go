@@ -12,7 +12,7 @@ import (
 //   - capability schemas carried onto the skills that bind them;
 //   - flattened extension chains: an extension carries its base's contract,
 //     instructions, held documents, files, servers, parameters, bindings, and
-//     Copilot fields (ADR-0031, ADR-0036);
+//     Copilot fields (ADR-0006);
 //   - capability references that name a skill, rewritten to that skill's
 //     capability;
 //   - an agent or profile display name defaulting to its identity leaf.

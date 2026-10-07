@@ -1,5 +1,5 @@
 {
-  "description": "Plugin carried files (ADR-0041): files ship at each artifact's root, at the file name by default or at their 'as' path, identically in every mode, normalized like skill files, with a non-UTF-8 file kept byte for byte; bundle.json lists them by source and destination.",
+  "description": "Plugin carried files (ADR-0004): files ship at each artifact's root, at the file name by default or at their 'as' path, identically in every mode, normalized like skill files, with a non-UTF-8 file kept byte for byte; bundle.json lists them by source and destination.",
   "expect": "success",
   "digests": {
     "agent-plugin": "sha256:f3356f7dcfe3d98d4411a6718f02cfe251274b45eb135bffe26e751c926f156f"

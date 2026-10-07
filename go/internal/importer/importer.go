@@ -37,7 +37,7 @@ type Options struct {
 	// name or the source directory's name.
 	Plugin string
 	// Lossy drops what version 7 cannot represent, listing each item in the
-	// notes, instead of failing (ADR-0033).
+	// notes, instead of failing (ADR-0008).
 	Lossy bool
 }
 
@@ -98,7 +98,7 @@ type importer struct {
 	native      nativeImport
 	unsupported []string
 	notes       []string
-	// A plugin source's metadata, version, and carried files (ADR-0041).
+	// A plugin source's metadata, version, and carried files (ADR-0007, ADR-0004).
 	metadata      pluginMetadata
 	sourceVersion string
 	carried       []carriedFile

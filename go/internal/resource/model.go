@@ -24,7 +24,7 @@ type Document struct {
 	Context []ContextRef
 
 	// Profiles, skills, and documents declare parameters: name to context
-	// type identity (ADR-0036).
+	// type identity (ADR-0006).
 	Parameters map[string]string
 	// OwnParameters records the parameters a skill declared itself, before
 	// its extension chain was flattened.
@@ -53,10 +53,10 @@ type Document struct {
 	RequiresServers []string
 	Copilot         CopilotFields
 
-	// Servers (ADR-0037).
+	// Servers (ADR-0007).
 	Server *ServerConfig
 
-	// Context types (ADR-0036).
+	// Context types (ADR-0006).
 	Fields       []ContextField
 	InstanceName string
 
@@ -72,10 +72,10 @@ type Document struct {
 	PluginModes    []string
 	PluginLSP      []string
 	// PluginMetadata is the plugin's descriptive manifest members
-	// (ADR-0041). A plugin's Files ship at the root of each artifact.
+	// (ADR-0007). A plugin's Files ship at the root of each artifact (ADR-0004).
 	PluginMetadata PluginMetadata
 
-	// Native Copilot components (ADR-0040). Agents, profiles, and plugins
+	// Native Copilot components (ADR-0007). Agents, profiles, and plugins
 	// hold rules, commands, and hooks; agents hold agent-scoped servers.
 	Rules    []string
 	Commands []string
@@ -179,7 +179,7 @@ type PluginAuthor struct {
 }
 
 // PackageFile is a package file that ships as authored: in a skill
-// directory, at a plugin artifact's root, or at the target root (ADR-0041).
+// directory, at a plugin artifact's root, or at the target root (ADR-0004).
 type PackageFile struct {
 	// Source is the package-relative path of the file.
 	Source string
@@ -212,7 +212,7 @@ type ServerConfig struct {
 }
 
 // CopilotFields are the opt-in Copilot-only frontmatter fields of a skill or
-// agent (ADR-0037). Nil pointers and nil slices are absent fields.
+// agent (ADR-0007). Nil pointers and nil slices are absent fields.
 type CopilotFields struct {
 	ArgumentHint           *string
 	UserInvocable          *bool
