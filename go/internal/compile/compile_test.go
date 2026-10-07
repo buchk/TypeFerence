@@ -303,22 +303,12 @@ func TestAgentToolAllowlists(t *testing.T) {
 		t.Fatal(err)
 	}
 	agents := filepath.Join(out, compile.TargetName, "kit", "com.github.copilot", "agents")
-	if got := read(t, agents, "quiet.agent.md"); !strings.Contains(got, "
-tools: []
-") {
-		t.Errorf("tools: [] means no tools and must be emitted, not omitted:
-%s", got)
+	if got := read(t, agents, "quiet.agent.md"); !strings.Contains(got, "\ntools: []\n") {
+		t.Errorf("tools: [] means no tools and must be emitted, not omitted:\n%s", got)
 	}
-	want := "tools:
-  - \"read\"
-  - \"acme-tickets/search\"
-  - \"acme-builds/*\"
-  - \"acme-linter/*\"
-mcp-servers:
-"
+	want := "tools:\n  - \"read\"\n  - \"acme-tickets/search\"\n  - \"acme-builds/*\"\n  - \"acme-linter/*\"\nmcp-servers:\n"
 	if got := read(t, agents, "ops.agent.md"); !strings.Contains(got, want) {
-		t.Errorf("an explicit allowlist is emitted exactly as written, with nothing added:
-%s", got)
+		t.Errorf("an explicit allowlist is emitted exactly as written, with nothing added:\n%s", got)
 	}
 }
 
