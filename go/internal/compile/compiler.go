@@ -13,7 +13,7 @@ import (
 	"github.com/buchk/TypeFerence/go/internal/resource"
 )
 
-// TargetName is the only build target.
+// TargetName is the only build target. Agent Plugins 1.0 remains the package format.
 const TargetName = "agent-plugin"
 
 // CheckTarget accepts the CLI --target value. agent-plugin is the only
@@ -35,6 +35,9 @@ type BuildOptions struct {
 	// place of its locked version. Validation only: a build with a
 	// candidate is refused.
 	Candidate string
+	// Adapter selects client-specific output. Empty defaults to Copilot.
+	// "portable" emits only Agent Plugins 1.0 components and TypeFerence metadata.
+	Adapter string
 }
 
 // Validate resolves every agent in a source directory.
@@ -82,6 +85,10 @@ func Build(source, output string, options BuildOptions) ([]string, error) {
 	if options.Candidate != "" {
 		return nil, resource.Errorf("a candidate package is validated, never built; publish it and pin it to build")
 	}
+	adapter, err := outputAdapterFor(options.Adapter)
+	if err != nil {
+		return nil, err
+	}
 	c, err := prepare(source, options)
 	if err != nil {
 		return nil, err
@@ -112,7 +119,7 @@ func Build(source, output string, options BuildOptions) ([]string, error) {
 		return nil, resource.Errorf("Cannot create target directory: %s", targetRoot)
 	}
 	written := []string{}
-	if err := c.writeAgentPlugins(targetRoot, &written); err != nil {
+	if err := c.writeAgentPlugins(targetRoot, adapter, &written); err != nil {
 		return nil, err
 	}
 	sort.Strings(written)
