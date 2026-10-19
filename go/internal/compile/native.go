@@ -350,3 +350,71 @@ func commandsValue(commands []resolve.ResolvedCommand) jsonx.Arr {
 	}
 	return arr
 }
+
+// Copilot-specific frontmatter and custom agent rendering.
+func frontmatterFields(b *strings.Builder, c resource.CopilotFields, skill bool) {
+	boolean := func(key string, value *bool) {
+		if value == nil {
+			return
+		}
+		text := "false"
+		if *value {
+			text = "true"
+		}
+		b.WriteString(key + ": " + text + "\n")
+	}
+	list := func(key string, values []string) {
+		if values == nil {
+			return
+		}
+		if len(values) == 0 {
+			b.WriteString(key + ": []\n")
+			return
+		}
+		b.WriteString(key + ":\n")
+		for _, value := range values {
+			b.WriteString("  - " + escapeYAML(value) + "\n")
+		}
+	}
+	if skill {
+		if c.ArgumentHint != nil {
+			b.WriteString("argument-hint: " + escapeYAML(*c.ArgumentHint) + "\n")
+		}
+		boolean("user-invocable", c.UserInvocable)
+		boolean("disable-model-invocation", c.DisableModelInvocation)
+		list("allowed-tools", c.AllowedTools)
+		return
+	}
+	if c.Model != nil {
+		b.WriteString("model: " + escapeYAML(*c.Model) + "\n")
+	}
+	list("tools", c.Tools)
+	boolean("user-invocable", c.UserInvocable)
+	boolean("disable-model-invocation", c.DisableModelInvocation)
+}
+
+// renderAgent renders a Copilot custom agent profile: identity and
+// objectives, held documents, and the names of the skills its artifact
+// ships beside it.
+func renderAgent(agent *resolve.ResolvedAgent, docs map[string]*resource.Document) string {
+	var b strings.Builder
+	b.WriteString("---\nname: " + resource.Leaf(agent.ID) + "\ndescription: " + escapeYAML(agent.Description) + "\n")
+	frontmatterFields(&b, agent.Copilot, false)
+	agentServersFrontmatter(&b, docs, agent.Servers)
+	b.WriteString("---\n\n# " + agent.DisplayName + "\n\n")
+	for _, objective := range agent.Objectives {
+		if content := strings.TrimSpace(objective.Content); content != "" {
+			b.WriteString(content + "\n\n")
+		}
+	}
+	writeDocuments(&b, agent.Documents)
+	if len(agent.Skills) > 0 {
+		b.WriteString("## Skills\n\n")
+		for _, skill := range agent.Skills {
+			b.WriteString("- " + skill.Name + "\n")
+		}
+		b.WriteString("\n")
+	}
+	return strings.TrimRight(b.String(), "\n") + "\n"
+}
+
