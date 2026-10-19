@@ -417,4 +417,3 @@ func renderAgent(agent *resolve.ResolvedAgent, docs map[string]*resource.Documen
 	}
 	return strings.TrimRight(b.String(), "\n") + "\n"
 }
-
