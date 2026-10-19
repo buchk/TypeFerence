@@ -1,5 +1,5 @@
-// Command typeference is the reference CLI. It produces deterministic Copilot
-// plugin artifacts verified by the conformance corpus under conformance/.
+// Command typeference is the reference CLI. It produces deterministic Agent
+// Plugins 1.0 packages with optional client-specific output.
 package main
 
 import (
@@ -109,7 +109,11 @@ func build(args []string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	files, err := compile.Build(source, output, compile.BuildOptions{PackagesDir: packagesDir})
+	adapter, err := option(args, "--adapter")
+	if err != nil {
+		return 0, err
+	}
+	files, err := compile.Build(source, output, compile.BuildOptions{PackagesDir: packagesDir, Adapter: adapter})
 	if err != nil {
 		return 0, err
 	}
@@ -345,7 +349,7 @@ func fail(message string) int {
 }
 
 func help() int {
-	fmt.Print(`TypeFerence - authoring and reuse for GitHub Copilot plugins (Go implementation)
+	fmt.Print(`TypeFerence - typed authoring and reuse for Agent Plugins 1.0 (Go implementation)
 
 Commands:
   typeference init --answers <answers.json> [--out DIR] [--verify sha256:...]
@@ -365,7 +369,9 @@ Commands:
   typeference update <source> --feeds <external-config>
       [--packages-dir obj/typeference/packages]
   typeference build <source> [--out dist] [--packages-dir obj/typeference/packages]
-      (writes <out>/agent-plugin: a GitHub Copilot plugin marketplace root)
+      [--adapter copilot|portable]
+      (writes <out>/agent-plugin; Copilot is the default for compatibility.
+       Portable emits Agent Plugins 1.0 skills and MCP, without client files.)
   typeference inspect <agent-id> [--source path] [--packages-dir dir]
   typeference diff <source> --against <compiled-dir> [--json]
       [--packages-dir obj/typeference/packages]
