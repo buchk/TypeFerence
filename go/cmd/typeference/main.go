@@ -1,5 +1,5 @@
-// Command typeference is the reference CLI. It produces deterministic Copilot
-// plugin artifacts verified by the conformance corpus under conformance/.
+// Command typeference is the reference CLI. It produces deterministic Agent
+// Plugins 1.0 packages, with Copilot components where the source names them.
 package main
 
 import (
@@ -49,6 +49,8 @@ func run(args []string) int {
 		code, err = inspect(args)
 	case "diff":
 		code, err = diff(args)
+	case "mcp":
+		code, err = mcpCommand(args)
 	case "link", "publish", "eval", "equivalence":
 		return fail(fmt.Sprintf("the %s command was removed in version 7", args[0]))
 	case "version", "--version":
@@ -345,7 +347,7 @@ func fail(message string) int {
 }
 
 func help() int {
-	fmt.Print(`TypeFerence - authoring and reuse for GitHub Copilot plugins (Go implementation)
+	fmt.Print(`TypeFerence - typed authoring and reuse for Agent Plugins 1.0 (Go implementation)
 
 Commands:
   typeference init --answers <answers.json> [--out DIR] [--verify sha256:...]
@@ -353,7 +355,7 @@ Commands:
   typeference import <copilot-source> --out <dir> [--name ns/name]
       [--version x.y.z] [--plugin name] [--lossy]
       (turns existing Copilot custom agents, Agent Skills, or an Agent Plugin
-       into a version 8 package; fails on anything it cannot represent
+       into a version 9 package; fails on anything it cannot represent
        unless --lossy)
   typeference validate <source> [--packages-dir obj/typeference/packages]
       [--candidate <package-dir>]
@@ -365,10 +367,14 @@ Commands:
   typeference update <source> --feeds <external-config>
       [--packages-dir obj/typeference/packages]
   typeference build <source> [--out dist] [--packages-dir obj/typeference/packages]
-      (writes <out>/agent-plugin: a GitHub Copilot plugin marketplace root)
+      (writes <out>/agent-plugin: Agent Plugins 1.0 packages, with Copilot
+       components where the source lists them under 'copilot')
   typeference inspect <agent-id> [--source path] [--packages-dir dir]
   typeference diff <source> --against <compiled-dir> [--json]
       [--packages-dir obj/typeference/packages]
+  typeference mcp
+      (serves these commands as MCP tools over stdio; each tool call runs
+       this executable with the same arguments)
   typeference version
 `)
 	return 0

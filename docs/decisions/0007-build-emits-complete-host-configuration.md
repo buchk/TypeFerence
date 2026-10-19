@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted (2026-10-07).
+Accepted (2026-10-07). Amended 2026-10-19: Copilot components are listed in
+a `copilot` block; Claude Code and Codex adapters (ADR-0001).
 
 ## Context
 
@@ -29,8 +30,10 @@ model-invoked skills, agents, pipelines), not only agent files.
    `allowed-tools` is never derived from server requirements, and an agent
    that declares `tools` must list every server its plugin's skills need;
    build fails on a gap and never adds a grant. `tools: []` means no tools.
-4. **Native components.** Rules, commands, hooks, and LSP servers are document
-   kinds emitted into `com.github.copilot/`. Enterprise defaults are rules
+4. **Native components.** Custom agents, rules, commands, hooks, and LSP
+   servers are document kinds emitted into `com.github.copilot/`. A plugin or
+   profile lists them in its `copilot` block (ADR-0001); listed anywhere else
+   they are errors. Enterprise defaults are rules
    held by plugins and profiles, so they apply wherever the plugin is active. Build checks
    what Copilot would otherwise ignore silently (hook events and matchers,
    prompt-hook placement, HTTPS hooks, LSP launch fields).
@@ -40,7 +43,13 @@ model-invoked skills, agents, pipelines), not only agent files.
    marketplace's `description`, are emitted only into the marketplace index:
    Copilot documents them there, and Agent Plugins 1.0 does not define them
    in `plugin.json`.
-6. **The output contract is tested.** `docs/output-contract.md` lists every
+6. **Every client gets complete configuration in its own format.** The
+   Claude Code adapter writes `.claude-plugin/plugin.json` and `.mcp.json`,
+   spelling the plugin variables as Claude Code does; the Codex adapter
+   writes Agent Plugins 1.0, which Codex reads. Each client's marketplace
+   index is emitted at the path that client looks for, and Codex's required
+   `policy` and `category` come from fixed rules and the plugin's metadata.
+7. **The output contract is tested.** `docs/output-contract.md` lists every
    emitted file; CI validates them against the vendored Agent Plugins schemas
    and TypeFerence's schemas for Copilot formats that GitHub does not publish.
 
@@ -63,5 +72,5 @@ model-invoked skills, agents, pipelines), not only agent files.
   authority on its tools.
 - **Copy enterprise documents into every skill.** It multiplies text, and the
   guidance is not always on.
-- **Emit Copilot fields by default.** Output would be non-portable without the
-  author asking.
+- **Emit Copilot fields by default.** Every client's output would carry
+  Copilot-only fields without the author asking.

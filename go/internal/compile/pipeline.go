@@ -35,7 +35,7 @@ func prepare(source string, options BuildOptions) (*compilation, error) {
 		return nil, err
 	}
 	if project == nil {
-		return nil, resource.Errorf("%s has no %s; TypeFerence builds sources whose manifest declares schemaVersion 8 (docs/specification.md)", source, resource.ManifestFile)
+		return nil, resource.Errorf("%s has no %s; TypeFerence builds sources whose manifest declares schemaVersion 9 (docs/specification.md)", source, resource.ManifestFile)
 	}
 	var dependencies *packages.DependencySet
 	if options.Candidate != "" {

@@ -138,7 +138,7 @@ func fatal(format string, args ...any) {
 
 var starterFiles = map[string]string{
 	"typeference.tfer": `---
-schemaVersion: 8
+schemaVersion: 9
 name: acme/support
 version: 1.0.0
 plugins:
@@ -149,8 +149,9 @@ plugins:
 description: Acme's support agent and its team skills.
 embeds:
   - profiles/support-kit.profile.tfer
-agents:
-  - agents/support-agent.agent.tfer
+copilot:
+  agents:
+    - agents/support-agent.agent.tfer
 with:
   team: data/support-team.context.tfer
 ---

@@ -1,7 +1,8 @@
 ---
 description: The shared helper agent.
-agents:
-  - agents/helper.agent.tfer
+copilot:
+  agents:
+    - agents/helper.agent.tfer
 skills:
   - skills/review.skill.tfer
 ---

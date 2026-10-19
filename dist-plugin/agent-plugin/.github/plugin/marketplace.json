@@ -1,0 +1,31 @@
+{
+  "name": "typeference",
+  "owner": {
+    "name": "TypeFerence"
+  },
+  "metadata": {
+    "description": "The TypeFerence authoring plugin, published from the TypeFerence repository.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "typeference",
+      "source": "./copilot/typeference",
+      "description": "Author, extend, and check TypeFerence packages and marketplaces with the typeference compiler as an MCP server.",
+      "version": "0.1.0",
+      "homepage": "https://github.com/buchk/TypeFerence",
+      "repository": "https://github.com/buchk/TypeFerence",
+      "license": "Apache-2.0",
+      "keywords": [
+        "typeference",
+        "agent-plugins",
+        "authoring",
+        "marketplace"
+      ],
+      "category": "development",
+      "tags": [
+        "authoring"
+      ]
+    }
+  ]
+}

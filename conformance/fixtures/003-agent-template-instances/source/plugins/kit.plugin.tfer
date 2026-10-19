@@ -1,7 +1,8 @@
 ---
 description: Team operations kit.
-agents:
-  - agents/payments-ops.agent.tfer
+copilot:
+  agents:
+    - agents/payments-ops.agent.tfer
 embeds:
   - profiles/team-ops.profile.tfer
 with:

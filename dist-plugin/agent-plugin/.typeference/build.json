@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 4,
+  "target": "agent-plugin",
+  "sourceDigest": "sha256:25f6e9b2aafb2ffd40911a1aa6d86f4053c51163dd7815f5551522d4a20b32c9",
+  "artifacts": [
+    {
+      "client": "copilot",
+      "id": "typeference/authoring/plugins/typeference@0.1.0",
+      "mode": "manual",
+      "path": "copilot/typeference",
+      "sourceDigest": "sha256:25f6e9b2aafb2ffd40911a1aa6d86f4053c51163dd7815f5551522d4a20b32c9",
+      "digest": "sha256:2fd5924dce5fe81dc018a060280dcbcba7c654ccce0628e55b662852a758453b"
+    },
+    {
+      "client": "claude",
+      "id": "typeference/authoring/plugins/typeference@0.1.0",
+      "mode": "manual",
+      "path": "claude/typeference",
+      "sourceDigest": "sha256:25f6e9b2aafb2ffd40911a1aa6d86f4053c51163dd7815f5551522d4a20b32c9",
+      "digest": "sha256:4bc2f890a4de2f19bb36d52b1749f019802555d6cd25ba60c1b1ecefdd4d0878"
+    },
+    {
+      "client": "codex",
+      "id": "typeference/authoring/plugins/typeference@0.1.0",
+      "mode": "manual",
+      "path": "codex/typeference",
+      "sourceDigest": "sha256:25f6e9b2aafb2ffd40911a1aa6d86f4053c51163dd7815f5551522d4a20b32c9",
+      "digest": "sha256:2fd5924dce5fe81dc018a060280dcbcba7c654ccce0628e55b662852a758453b"
+    }
+  ],
+  "notBuilt": [],
+  "files": []
+}

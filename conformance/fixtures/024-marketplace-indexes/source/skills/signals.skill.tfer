@@ -1,0 +1,6 @@
+---
+description: Read build signals for the current branch.
+requiresServers:
+  - servers/case-signals.server.tfer
+---
+Report failing build signals for the current branch.

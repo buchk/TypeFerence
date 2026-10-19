@@ -1,0 +1,7 @@
+{
+  "description": "Each client's marketplace index (ADR-0001): Copilot's lists every plugin under ./copilot/; Claude Code's (.claude-plugin) and Codex's (.agents/plugins) list the plugins their adapters build, under ./claude/ and ./codex/. A plugin with a Copilot agent builds only for Copilot; one whose server sets cwd does not build for Claude Code; build.json records both under notBuilt. Codex entries carry the fixed policy and the plugin's category, or Productivity.",
+  "expect": "success",
+  "digests": {
+    "agent-plugin": "sha256:e13ad01dedb44d2d315a449538076f2a6b8806342efb6b64643c917c6daef943"
+  }
+}

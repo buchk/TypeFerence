@@ -4,6 +4,7 @@ embeds:
   - profiles/spec-conformance.profile.tfer
   - profiles/determinism-guardian.profile.tfer
   - profiles/contribution-workflow.profile.tfer
-agents:
-  - agents/typeference-maintainer.agent.tfer
+copilot:
+  agents:
+    - agents/typeference-maintainer.agent.tfer
 ---

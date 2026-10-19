@@ -1,14 +1,29 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "target": "agent-plugin",
-  "sourceDigest": "sha256:aff8535fafd37a781b64abf56c7e3de9b86b92812697cbc605aa588bed5d6e9d",
+  "sourceDigest": "sha256:6c7f5ba9e98b373398f2f8a9fdee26f24e75e45c943684a44975a1768054effd",
   "artifacts": [
     {
+      "client": "copilot",
       "id": "typeference/maintainer/plugins/typeference-maintainer@0.2.0",
       "mode": "manual",
-      "path": "typeference-maintainer",
-      "sourceDigest": "sha256:aff8535fafd37a781b64abf56c7e3de9b86b92812697cbc605aa588bed5d6e9d",
-      "digest": "sha256:311cbd48538c6928540d4a41d75d100833be4c727114a38e824fbf18d5600bbd"
+      "path": "copilot/typeference-maintainer",
+      "sourceDigest": "sha256:6c7f5ba9e98b373398f2f8a9fdee26f24e75e45c943684a44975a1768054effd",
+      "digest": "sha256:e8840368f0c9c87de4145fdead1cfb052da4d8fc3ba3925b48945bb8ec8636f2"
+    }
+  ],
+  "notBuilt": [
+    {
+      "client": "claude",
+      "id": "typeference/maintainer/plugins/typeference-maintainer@0.2.0",
+      "mode": "manual",
+      "reason": "copilot-components"
+    },
+    {
+      "client": "codex",
+      "id": "typeference/maintainer/plugins/typeference-maintainer@0.2.0",
+      "mode": "manual",
+      "reason": "copilot-components"
     }
   ],
   "files": []

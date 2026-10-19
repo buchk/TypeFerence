@@ -1,4 +1,4 @@
-// Package resolve composes version 8 documents into resolved plugins, agents,
+// Package resolve composes version 9 documents into resolved plugins, agents,
 // and skills: promoted bindings, held documents, bound parameters, and
 // rendered field references (docs/specification.md).
 package resolve

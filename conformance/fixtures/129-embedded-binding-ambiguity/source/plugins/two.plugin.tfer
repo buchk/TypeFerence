@@ -1,7 +1,8 @@
 ---
 description: Two.
-agents:
-  - agents/two.agent.tfer
+copilot:
+  agents:
+    - agents/two.agent.tfer
 with:
   team: data/beta.context.tfer
 ---

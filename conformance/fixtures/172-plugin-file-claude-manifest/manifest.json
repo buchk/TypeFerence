@@ -1,0 +1,4 @@
+{
+  "description": "A plugin file may not claim .claude-plugin/ or .mcp.json, which the Claude Code adapter writes.",
+  "expect": "error"
+}

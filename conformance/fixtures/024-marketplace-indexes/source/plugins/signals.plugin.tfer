@@ -1,0 +1,5 @@
+---
+description: Build signals from a bundled server binary.
+skills:
+  - skills/signals.skill.tfer
+---

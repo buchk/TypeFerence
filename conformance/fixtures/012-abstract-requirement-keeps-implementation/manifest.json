@@ -2,6 +2,6 @@
   "description": "Requirements accumulate without erasing implementations (ADR-0003): a profile supplies an implementation, an embedding profile and the agent each restate the capability as required, and the inherited implementation ships.",
   "expect": "success",
   "digests": {
-    "agent-plugin": "sha256:7240aaf95bd29f252a25a0f4acdd2ec000d55e45af5ec1f23ac13c73f9acd7cf"
+    "agent-plugin": "sha256:c9daa0651997f47c3d1547347bf36d86619b16ac21d0c97459c0050dda4dbe75"
   }
 }

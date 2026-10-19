@@ -66,7 +66,7 @@ func TestSkillDirectoryPaths(t *testing.T) {
 						t.Fatal(err)
 					}
 					for _, path := range paths {
-						if got := read(t, out, "agent-plugin/kit/skills/report/"+path); got != path+"\n" {
+						if got := read(t, out, "agent-plugin/copilot/kit/skills/report/"+path); got != path+"\n" {
 							t.Fatalf("%s content = %q", path, got)
 						}
 					}

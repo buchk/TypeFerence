@@ -1,10 +1,10 @@
-// Package resource loads and validates version 8 TypeFerence source packages
+// Package resource loads and validates version 9 TypeFerence source packages
 // (docs/specification.md).
 package resource
 
 import "fmt"
 
-// Document is one version 8 source document as authored, after reference
+// Document is one version 9 source document as authored, after reference
 // paths have been converted to identities.
 type Document struct {
 	Kind        string

@@ -167,7 +167,7 @@ func LoadPackage(sourceDir string, options PackageOptions) (*Package, error) {
 		return nil, err
 	}
 	if project == nil {
-		return nil, Errorf("%s has no %s; a package root needs a manifest with schemaVersion 8", root, ManifestFile)
+		return nil, Errorf("%s has no %s; a package root needs a manifest with schemaVersion 9", root, ManifestFile)
 	}
 	l := &packageLoader{
 		root:        root,
@@ -572,17 +572,12 @@ func (d *documentDecoder) decodeKind(n *tferlex.Node) error {
 			"servers": d.refListInto(&doc.Servers, "server"),
 		}))
 	case "profile":
-		return d.decode(n, with(map[string]func(*tferlex.Node) error{
+		return d.decode(n, d.withCopilotComponents(with(map[string]func(*tferlex.Node) error{
 			"embeds":     d.refListInto(&doc.Embeds, "profile"),
 			"parameters": d.parametersField(),
-			"agents":     d.refListInto(&doc.Agents, "agent"),
 			"context":    d.contextEntries(false),
 			"skills":     d.bindings,
-			"rules":      d.refListInto(&doc.Rules, "rule"),
-			"commands":   d.refListInto(&doc.Commands, "command"),
-			"hooks":      d.refListInto(&doc.Hooks, "hook"),
-			"lspServers": d.refListInto(&doc.LSPServers, "lsp"),
-		}))
+		})))
 	case "capability":
 		return d.decode(n, with(map[string]func(*tferlex.Node) error{
 			"inputSchema":  d.jsonSchema(&doc.InputSchema, &doc.HasInputSchema),
@@ -659,18 +654,13 @@ func (d *documentDecoder) decodeKind(n *tferlex.Node) error {
 			},
 		}))
 	case "plugin":
-		return d.decode(n, map[string]func(*tferlex.Node) error{
+		return d.decode(n, d.withCopilotComponents(map[string]func(*tferlex.Node) error{
 			"description": d.stringInto(&doc.Description),
 			"embeds":      d.refListInto(&doc.Embeds, "profile", "plugin"),
-			"agents":      d.refListInto(&doc.Agents, "agent"),
 			"context":     d.contextEntries(false),
 			"skills":      d.bindings,
 			"with":        d.withField(),
 			"modes":       d.stringListInto(&doc.PluginModes),
-			"rules":       d.refListInto(&doc.Rules, "rule"),
-			"commands":    d.refListInto(&doc.Commands, "command"),
-			"hooks":       d.refListInto(&doc.Hooks, "hook"),
-			"lspServers":  d.refListInto(&doc.LSPServers, "lsp"),
 			"author":      d.pluginAuthor(&doc.PluginMetadata.Author),
 			"homepage":    d.metadataString(&doc.PluginMetadata.Homepage),
 			"repository":  d.metadataString(&doc.PluginMetadata.Repository),
@@ -679,7 +669,7 @@ func (d *documentDecoder) decodeKind(n *tferlex.Node) error {
 			"category":    d.metadataString(&doc.PluginMetadata.Category),
 			"tags":        d.metadataList("tag", &doc.PluginMetadata.Tags),
 			"files":       d.files(pluginFiles),
-		})
+		}))
 	case "rule":
 		return d.decode(n, with(map[string]func(*tferlex.Node) error{
 			"parameters": d.parametersField(),
@@ -931,6 +921,33 @@ func (d *documentDecoder) copilot(skill bool) func(*tferlex.Node) error {
 	}
 }
 
+// copilotComponents are the members of a plugin's or profile's Copilot
+// block: components only Copilot reads, which ship into com.github.copilot/.
+var copilotComponents = []string{"agents", "rules", "commands", "hooks", "lspServers"}
+
+// withCopilotComponents adds the `copilot` block to a plugin's or profile's
+// field table. A component written beside the block instead of in it is an
+// error that names the block, so nothing Copilot-specific ships unless the
+// source says so.
+func (d *documentDecoder) withCopilotComponents(fields map[string]func(*tferlex.Node) error) map[string]func(*tferlex.Node) error {
+	doc := d.doc
+	fields["copilot"] = func(n *tferlex.Node) error {
+		return d.decode(n, map[string]func(*tferlex.Node) error{
+			"agents":     d.refListInto(&doc.Agents, "agent"),
+			"rules":      d.refListInto(&doc.Rules, "rule"),
+			"commands":   d.refListInto(&doc.Commands, "command"),
+			"hooks":      d.refListInto(&doc.Hooks, "hook"),
+			"lspServers": d.refListInto(&doc.LSPServers, "lsp"),
+		})
+	}
+	for _, key := range copilotComponents {
+		fields[key] = func(n *tferlex.Node) error {
+			return d.errorf(n, "'%s' are Copilot components; list them under 'copilot' (docs/specification.md, \"Clients, build adapters, and client keywords\")", n.Key)
+		}
+	}
+	return fields
+}
+
 func (d *documentDecoder) variants(n *tferlex.Node) error {
 	if !n.IsMap {
 		return d.errorf(n, "'variants' must be a mapping from mode name to variant")
@@ -995,7 +1012,7 @@ func (d *documentDecoder) contextTypeFields(n *tferlex.Node) error {
 		case field.Type == "":
 			return d.errorf(item, "field '%s' must declare a type", item.Key)
 		case field.Type == "number" || field.Type == "decimal":
-			return d.errorf(item, "field '%s': type '%s' does not exist in version 8; use integer or string", item.Key, field.Type)
+			return d.errorf(item, "field '%s': type '%s' does not exist in version 9; use integer or string", item.Key, field.Type)
 		case strings.HasPrefix(field.Type, "map<"):
 			return d.errorf(item, "field '%s': map types were removed in version 7", item.Key)
 		case !fieldTypes[field.Type]:

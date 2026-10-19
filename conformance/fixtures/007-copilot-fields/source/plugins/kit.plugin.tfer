@@ -1,7 +1,8 @@
 ---
 description: Helper kit.
-agents:
-  - agents/helper.agent.tfer
+copilot:
+  agents:
+    - agents/helper.agent.tfer
 skills:
   - skills/hidden.skill.tfer
 ---

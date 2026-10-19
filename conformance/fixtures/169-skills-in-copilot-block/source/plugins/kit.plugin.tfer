@@ -1,0 +1,6 @@
+---
+description: A kit with a skill inside its copilot block.
+copilot:
+  skills:
+    - skills/status.skill.tfer
+---

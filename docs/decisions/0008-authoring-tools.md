@@ -1,14 +1,15 @@
-# 0008 — Authoring tools: import, the setup wizard, and the playground
+# 0008 — Authoring tools: import, the setup wizard, the playground, and the compiler plugin
 
 ## Status
 
-Accepted (2026-10-07).
+Accepted (2026-10-07). Amended 2026-10-19: the compiler ships as a plugin.
 
 ## Context
 
 Most organizations already have Copilot agents, skills, and plugins, and
-people judge a language by trying it. The tools that get them in must not
-become a second semantics.
+people judge a language by trying it. Increasingly they author through an
+agent rather than an editor. The tools that get them in must not become a
+second semantics.
 
 ## Decision
 
@@ -31,6 +32,19 @@ become a second semantics.
    no backend; Helio reproduces the committed `dist/` digest there. Generated
    assets (`typeference.wasm`, `examples.json`, `wasm_exec.js`) are built, not
    committed, and CI builds the bridge on every push.
+4. **The compiler ships as a plugin.** `typeference mcp` serves the CLI's
+   commands as MCP tools over stdio. Each tool call runs the same binary with
+   the same arguments a person would type and returns its output and exit
+   code, so the server owns no semantics. `agents/typeference` is an ordinary
+   package whose plugin holds an authoring skill and that server and nothing
+   Copilot-specific, so it builds for every client. Its build is committed in
+   `dist-plugin/`, and the repository root's three marketplace indexes
+   (`.github/plugin/`, `.claude-plugin/`, and `.agents/plugins/`) are that
+   build's indexes with each plugin path prefixed by the committed path, which
+   makes this repository a marketplace for Copilot, Claude Code, and Codex. `make selfhost`
+   regenerates both and CI fails on drift, as it does for `AGENTS.md`. The
+   server is a bare `typeference` command: installing the plugin does not
+   install the compiler, and the skill says how to.
 
 ## Consequences
 
@@ -38,6 +52,12 @@ become a second semantics.
   anything left behind is visible.
 - Import does not infer composition; factoring shared profiles and extensions
   out of imported content is deliberate authoring work.
+- An agent with the plugin installed can stand up a package, its
+  dependencies, and its marketplace, and checks its work with the same
+  validate, build, and diff a person runs.
+- The root marketplace indexes are derived outside build, like `AGENTS.md`: the
+  path where this repository commits its build output is a fact about this
+  repository, not about the package.
 
 ## Alternatives considered
 
@@ -45,3 +65,10 @@ become a second semantics.
   change what an agent may do.
 - **Rewriting invalid names.** It would change slash commands people use.
 - **Scaffolding in JavaScript.** A second semantics that would drift.
+- **MCP tools that call the compiler's packages directly.** Commands print to
+  standard output, which is the MCP channel, and a second entry point to
+  each command would drift from the CLI.
+- **Compiler binaries inside the plugin.** Every install would carry a binary
+  per platform, and a committed artifact would hold executables.
+- **A WebAssembly server.** One portable file, but it needs a runtime the
+  client may not have, and the filesystem access build needs.

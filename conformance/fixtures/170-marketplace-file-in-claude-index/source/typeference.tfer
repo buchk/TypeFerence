@@ -1,0 +1,13 @@
+---
+schemaVersion: 9
+name: conformance/case
+version: 1.0.0
+marketplace:
+  name: case-agents
+  owner: Case Platform
+  files:
+    - path: files/marketplace.json
+      as: .claude-plugin/marketplace.json
+plugins:
+  - plugins/kit.plugin.tfer
+---

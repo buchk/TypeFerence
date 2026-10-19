@@ -2,8 +2,9 @@
 description: The Helio data platform operations agent.
 embeds:
   - helio/core:profiles/team-ops.profile.tfer
-agents:
-  - agents/data-ops.agent.tfer
+copilot:
+  agents:
+    - agents/data-ops.agent.tfer
 with:
   team: data/data-team.context.tfer
 ---

@@ -14,7 +14,12 @@ jobs:
           go-version: stable
           cache-dependency-path: go/go.sum
       - name: gofmt
-        run: test -z "$(gofmt -l .)"
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            printf 'Files requiring gofmt:\n%s\n' "$unformatted"
+            exit 1
+          fi
         working-directory: go
       - run: go vet ./...
         working-directory: go
@@ -31,7 +36,7 @@ jobs:
           go run ./cmd/playground-pack -root .. -out /tmp/examples.json
         working-directory: go
 
-  # Determinism suite: the Go compiler compiles the version 8 fixture corpus in
+  # Determinism suite: the Go compiler compiles the version 9 fixture corpus in
   # conformance/ and must reproduce the committed digests on every platform
   # (ADR-0003). The Helio reference test (go test ./internal/compile) also
   # byte-compares the committed dist/ on every platform.
@@ -66,7 +71,16 @@ jobs:
         working-directory: go
       - name: Root AGENTS.md is the compiled agent file without its frontmatter
         run: |
-          awk 'n >= 2 && (seen || $0 != "") { seen = 1; print } /^---$/ { n++ }'             dist-maintainer/agent-plugin/typeference-maintainer/com.github.copilot/agents/typeference-maintainer.agent.md             | cmp - AGENTS.md
+          awk 'n >= 2 && (seen || $0 != "") { seen = 1; print } /^---$/ { n++ }'             dist-maintainer/agent-plugin/copilot/typeference-maintainer/com.github.copilot/agents/typeference-maintainer.agent.md             | cmp - AGENTS.md
+      # dist-plugin is the build of agents/typeference (the TypeFerence
+      # plugin), and the root marketplace indexes are that build's indexes,
+      # one per client, with each plugin path prefixed by
+      # dist-plugin/agent-plugin/ (ADR-0008).
+      - name: Recompile the TypeFerence plugin and diff committed artifacts
+        run: go run ./cmd/typeference diff ../agents/typeference --against ../dist-plugin
+        working-directory: go
+      - name: Root marketplace indexes point into dist-plugin
+        run: sh tools/root-marketplaces.sh --check
 
   # Output contract (docs/output-contract.md): every emitted JSON file and
   # frontmatter block must satisfy the host formats and TypeFerence's own
@@ -88,7 +102,7 @@ jobs:
       - name: Build every success fixture and keep its output
         run: TF_OUTPUT_DIR="$RUNNER_TEMP/fixture-output" go test ./conformance -run TestConformance -count=1
         working-directory: go
-      - run: python tools/validate_output.py "$RUNNER_TEMP/fixture-output" dist dist-maintainer
+      - run: python tools/validate_output.py "$RUNNER_TEMP/fixture-output" dist dist-maintainer dist-plugin
 
   docs:
     runs-on: ubuntu-latest

@@ -47,7 +47,7 @@ func TestImportRepositoryRoundTrips(t *testing.T) {
 	if _, err := compile.Build(out, built, compile.BuildOptions{}); err != nil {
 		t.Fatalf("imported sources must build: %v", err)
 	}
-	skill, err := os.ReadFile(filepath.Join(built, "agent-plugin", "team", "skills", "code-review", "SKILL.md"))
+	skill, err := os.ReadFile(filepath.Join(built, "agent-plugin", "copilot", "team", "skills", "code-review", "SKILL.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestImportRepositoryRoundTrips(t *testing.T) {
 		!strings.Contains(string(skill), `description: "Review a diff. Use when asked to review a change."`) {
 		t.Fatalf("a built skill keeps the imported name, description, and instructions:\n%s", skill)
 	}
-	agent, err := os.ReadFile(filepath.Join(built, "agent-plugin", "team", "com.github.copilot", "agents", "reviewer.agent.md"))
+	agent, err := os.ReadFile(filepath.Join(built, "agent-plugin", "copilot", "team", "com.github.copilot", "agents", "reviewer.agent.md"))
 	if err != nil || !strings.Contains(string(agent), "You review pull requests.") {
 		t.Fatalf("a built agent keeps the imported instructions as its objectives: %v\n%s", err, agent)
 	}
@@ -102,7 +102,7 @@ func TestImportCarriesFilesServersAndCopilotFields(t *testing.T) {
 	if _, err := compile.Build(out, built, compile.BuildOptions{}); err != nil {
 		t.Fatalf("imported sources must build: %v", err)
 	}
-	root := filepath.Join(built, "agent-plugin", "team-kit")
+	root := filepath.Join(built, "agent-plugin", "copilot", "team-kit")
 	skill, err := os.ReadFile(filepath.Join(root, "skills", "code-review", "SKILL.md"))
 	if err != nil {
 		t.Fatal(err)
@@ -166,7 +166,7 @@ func TestImportCarriesCopilotComponents(t *testing.T) {
 	if _, err := compile.Build(out, built, compile.BuildOptions{}); err != nil {
 		t.Fatalf("imported sources must build: %v", err)
 	}
-	root := filepath.Join(built, "agent-plugin", "team-kit", "com.github.copilot")
+	root := filepath.Join(built, "agent-plugin", "copilot", "team-kit", "com.github.copilot")
 	for _, rel := range []string{"commands/changelog.md", "rules/api.md", "hooks/hooks.json", "lsp.json"} {
 		if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(rel))); err != nil {
 			t.Fatalf("%s must survive the round trip: %v", rel, err)
@@ -198,7 +198,7 @@ func TestImportKeepsAnAgentWithNoTools(t *testing.T) {
 	if _, err := compile.Build(out, built, compile.BuildOptions{}); err != nil {
 		t.Fatalf("imported sources must build: %v", err)
 	}
-	agent, err := os.ReadFile(filepath.Join(built, "agent-plugin", "team-kit", "com.github.copilot", "agents", "quiet.agent.md"))
+	agent, err := os.ReadFile(filepath.Join(built, "agent-plugin", "copilot", "team-kit", "com.github.copilot", "agents", "quiet.agent.md"))
 	if err != nil || !strings.Contains(string(agent), "\ntools: []\n") {
 		t.Fatalf("an agent with no tools must not gain Copilot's default tools on import: %v\n%s", err, agent)
 	}
@@ -261,7 +261,7 @@ func TestImportCarriesPluginMetadataAndFiles(t *testing.T) {
 	if _, err := compile.Build(out, built, compile.BuildOptions{}); err != nil {
 		t.Fatalf("imported sources must build: %v", err)
 	}
-	root := filepath.Join(built, "agent-plugin", "team-kit")
+	root := filepath.Join(built, "agent-plugin", "copilot", "team-kit")
 	manifest, err := os.ReadFile(filepath.Join(root, "plugin.json"))
 	if err != nil {
 		t.Fatal(err)
@@ -308,7 +308,7 @@ func TestImportCarriesCatalogFields(t *testing.T) {
 	if _, err := compile.Build(out, built, compile.BuildOptions{}); err != nil {
 		t.Fatalf("imported sources must build: %v", err)
 	}
-	manifest, err := os.ReadFile(filepath.Join(built, "agent-plugin", "team-kit", "plugin.json"))
+	manifest, err := os.ReadFile(filepath.Join(built, "agent-plugin", "copilot", "team-kit", "plugin.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

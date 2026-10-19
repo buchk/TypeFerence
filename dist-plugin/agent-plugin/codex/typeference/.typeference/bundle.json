@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 5,
+  "id": "typeference/authoring/plugins/typeference@0.1.0",
+  "name": "typeference",
+  "mode": "manual",
+  "version": "0.1.0",
+  "description": "Author, extend, and check TypeFerence packages and marketplaces with the typeference compiler as an MCP server.",
+  "sourceDigest": "sha256:25f6e9b2aafb2ffd40911a1aa6d86f4053c51163dd7815f5551522d4a20b32c9",
+  "dependencies": [],
+  "embeds": [],
+  "bindings": [],
+  "provenance": [],
+  "agents": [],
+  "skills": [
+    {
+      "name": "edit-typeference",
+      "implementationId": "typeference/authoring/skills/edit-typeference@0.1.0",
+      "templateId": "",
+      "capabilityId": "typeference/authoring/skills/edit-typeference@0.1.0",
+      "description": "Stand up, extend, and check TypeFerence packages - plugins, skills, agents, MCP servers, typed team data, dependencies, and an organization marketplace. Use when asked to create or change .tfer sources, import existing Copilot customizations, add or bump a dependency, or build and publish a marketplace.",
+      "bindings": [],
+      "servers": [
+        "typeference/authoring/servers/typeference-compiler@0.1.0"
+      ],
+      "documents": [],
+      "files": [
+        {
+          "source": "typeference/authoring:files/edit-typeference/language.md",
+          "as": "references/language.md"
+        },
+        {
+          "source": "typeference/authoring:files/edit-typeference/ecosystem.md",
+          "as": "references/ecosystem.md"
+        }
+      ],
+      "provenance": [
+        {
+          "field": "implementation",
+          "source": "typeference/authoring/skills/edit-typeference@0.1.0"
+        },
+        {
+          "field": "binding",
+          "source": "typeference/authoring/plugins/typeference@0.1.0"
+        }
+      ]
+    }
+  ],
+  "servers": [
+    "typeference/authoring/servers/typeference-compiler@0.1.0"
+  ],
+  "rules": [],
+  "commands": [],
+  "hooks": [],
+  "lspServers": [],
+  "files": [
+    {
+      "source": "typeference/authoring:files/plugin/README.md",
+      "as": "README.md"
+    }
+  ]
+}

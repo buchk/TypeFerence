@@ -1,42 +1,113 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "target": "agent-plugin",
-  "sourceDigest": "sha256:c50ba4a2bb370d1ec1c1f8cb51616669340e803e4df8826946b4cddaa999e077",
+  "sourceDigest": "sha256:7d090e1d689cfaa57bfb1ad471418b30d8b2d02073e18d4fffa3510d6661e679",
   "artifacts": [
     {
+      "client": "copilot",
       "id": "helio/data-platform/plugins/data-platform@1.0.2",
       "mode": "manual",
-      "path": "data-platform",
-      "sourceDigest": "sha256:6bd67cd55a061b8a18205e5fb89d5d22fccf7bb5af1a476e086e558788300d10",
-      "digest": "sha256:1d0b92997176b18d5a90c8cb5d566d7a3cdd9c144a082540411da129c6b37062"
+      "path": "copilot/data-platform",
+      "sourceDigest": "sha256:b2735be48222d2e2404e0d55f29377bdea597ca8b031da66e6e909fa91b1d8b7",
+      "digest": "sha256:ced5ce62b3c5f649e63673bf70effe6fd4cee0cec958c8b855e3a22a16263a02"
     },
     {
+      "client": "copilot",
       "id": "helio/core/plugins/engineering-kit@3.1.0",
       "mode": "manual",
-      "path": "engineering-kit",
-      "sourceDigest": "sha256:8625e406a9d6c9433d4a95962f35a8969ea87cbf8979a0f5b1231d6b9955ea96",
-      "digest": "sha256:2e07351ea0cbd9b022ecab904cf55a2834fc8b879e9e7feb2d234837fae8a84d"
+      "path": "copilot/engineering-kit",
+      "sourceDigest": "sha256:321fd1aadc404d9b7753c675d9eb16d7d9cd1b20210ece96d95abd7e6437e2cf",
+      "digest": "sha256:0f1743b12a607b37d5320f5f3ea747ab3f191b51e4b119934feade14a2b80712"
     },
     {
+      "client": "copilot",
       "id": "helio/integrations/plugins/integrations@0.3.0",
       "mode": "manual",
-      "path": "integrations",
-      "sourceDigest": "sha256:30c3c07eae3a9239f6a250913215c6632476760c61a73acbad749ba98b7a763e",
-      "digest": "sha256:fd694ca77bc56c105b587facb7e30e6b0b344e5fe9887a1f9ae2a0e33f4c4fbd"
+      "path": "copilot/integrations",
+      "sourceDigest": "sha256:536a15a290370954bdba4d08deb4a1a15df6ac34310aefde5aeafbd82423065c",
+      "digest": "sha256:a0472781e2f5a66c7c67b0eae20f5689dcad436bb482af6353ed28b2a581f907"
     },
     {
+      "client": "copilot",
       "id": "helio/payments/plugins/payments@2.4.0",
       "mode": "manual",
-      "path": "payments",
-      "sourceDigest": "sha256:5e8199f41a1c291a5716af2f703ba6b2cbb0240aff9c521f83f9316e68feaf0b",
-      "digest": "sha256:ee7f46fd2dd07a3090293be6e07903a9a81a93e14bc15a2f4ab59d25d49969ce"
+      "path": "copilot/payments",
+      "sourceDigest": "sha256:c82e19093a6deae771993d7944c7726ba0c587c0766d4bf547c72e7207d81c3d",
+      "digest": "sha256:d1b43f42532299f125942354f8354b3f5ad3140e0854b7d39f1e645c490d2dda"
     },
     {
+      "client": "copilot",
       "id": "helio/payments/plugins/payments@2.4.0",
       "mode": "pipeline",
-      "path": "payments-pipeline",
-      "sourceDigest": "sha256:5e8199f41a1c291a5716af2f703ba6b2cbb0240aff9c521f83f9316e68feaf0b",
-      "digest": "sha256:8019ec670dab5031a781ef799b25aba156f42641d2f4cfe53ba20e9b5889e3a6"
+      "path": "copilot/payments-pipeline",
+      "sourceDigest": "sha256:c82e19093a6deae771993d7944c7726ba0c587c0766d4bf547c72e7207d81c3d",
+      "digest": "sha256:77b618398cc88345381d66aeb4924099e31be2f66370e4e7f721e9bb4bac409f"
+    },
+    {
+      "client": "claude",
+      "id": "helio/integrations/plugins/integrations@0.3.0",
+      "mode": "manual",
+      "path": "claude/integrations",
+      "sourceDigest": "sha256:536a15a290370954bdba4d08deb4a1a15df6ac34310aefde5aeafbd82423065c",
+      "digest": "sha256:a8767b341c7c3448860ff1eb9105a53d2866366137a64f99e2d948528e033b06"
+    },
+    {
+      "client": "codex",
+      "id": "helio/integrations/plugins/integrations@0.3.0",
+      "mode": "manual",
+      "path": "codex/integrations",
+      "sourceDigest": "sha256:536a15a290370954bdba4d08deb4a1a15df6ac34310aefde5aeafbd82423065c",
+      "digest": "sha256:a0472781e2f5a66c7c67b0eae20f5689dcad436bb482af6353ed28b2a581f907"
+    }
+  ],
+  "notBuilt": [
+    {
+      "client": "claude",
+      "id": "helio/data-platform/plugins/data-platform@1.0.2",
+      "mode": "manual",
+      "reason": "copilot-components"
+    },
+    {
+      "client": "claude",
+      "id": "helio/core/plugins/engineering-kit@3.1.0",
+      "mode": "manual",
+      "reason": "copilot-components"
+    },
+    {
+      "client": "claude",
+      "id": "helio/payments/plugins/payments@2.4.0",
+      "mode": "manual",
+      "reason": "copilot-components"
+    },
+    {
+      "client": "claude",
+      "id": "helio/payments/plugins/payments@2.4.0",
+      "mode": "pipeline",
+      "reason": "copilot-components"
+    },
+    {
+      "client": "codex",
+      "id": "helio/data-platform/plugins/data-platform@1.0.2",
+      "mode": "manual",
+      "reason": "copilot-components"
+    },
+    {
+      "client": "codex",
+      "id": "helio/core/plugins/engineering-kit@3.1.0",
+      "mode": "manual",
+      "reason": "copilot-components"
+    },
+    {
+      "client": "codex",
+      "id": "helio/payments/plugins/payments@2.4.0",
+      "mode": "manual",
+      "reason": "copilot-components"
+    },
+    {
+      "client": "codex",
+      "id": "helio/payments/plugins/payments@2.4.0",
+      "mode": "pipeline",
+      "reason": "copilot-components"
     }
   ],
   "files": []

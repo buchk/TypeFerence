@@ -2,6 +2,6 @@
   "description": "Embedded plugins' bindings promote shallowest-first (ADR-0006): a plugin that embeds another and binds the name re-points its members at its own data, and one that embeds it without binding keeps its data; an agent extension the embedding plugin lists replaces its base, and its base's objectives render with the embedding plugin's bindings.",
   "expect": "success",
   "digests": {
-    "agent-plugin": "sha256:40b80e2d35ea3a2e354066116dce980ded9373791e40bbd0de11ad69825d81eb"
+    "agent-plugin": "sha256:430a3be3b4220d4edbedf8eb503c32b6ee7b8f47cfbe6a3bbc20d1fd55f5667d"
   }
 }

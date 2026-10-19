@@ -1,0 +1,6 @@
+---
+description: Look up open tickets for a service. Use when asked what is broken.
+requiresServers:
+  - servers/case-tickets.server.tfer
+---
+Query the ticket server for open tickets on the named service.

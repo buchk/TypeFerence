@@ -2,6 +2,6 @@
   "description": "Composition: a plugin's embedding chain promotes documents and bindings, the shallowest binding wins, a plugin's own binding rebinds a promoted capability, an abstract required capability is fulfilled by an embedded profile, and an agent extension's base objectives come first.",
   "expect": "success",
   "digests": {
-    "agent-plugin": "sha256:c0cd35622f5932ebaf565d2cf5499b8db2ddedb6ebcc26e659097f5ec474d1d7"
+    "agent-plugin": "sha256:c8d13e4e9a1b8409a7219b87dededf97bd217eb04a0373fe6518af4d9056c9f8"
   }
 }

@@ -1,0 +1,6 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "integrations",
+  "version": "0.3.0",
+  "description": "README upkeep skills for Helio\u0027s integration repositories."
+}

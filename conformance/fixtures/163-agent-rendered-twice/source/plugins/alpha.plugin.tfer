@@ -1,7 +1,8 @@
 ---
 description: Alpha.
-agents:
-  - agents/ops.agent.tfer
+copilot:
+  agents:
+    - agents/ops.agent.tfer
 with:
   team: data/alpha.context.tfer
 ---

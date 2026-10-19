@@ -1,0 +1,4 @@
+---
+event: postToolUse
+bash: ./scripts/audit.sh
+---

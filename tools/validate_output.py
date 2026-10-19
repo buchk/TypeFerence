@@ -49,6 +49,10 @@ VALIDATORS = {
     "build": load_schema("typeference/build.schema.json"),
     "compatibility": load_schema("typeference/compatibility.schema.json"),
     "marketplace": load_schema("copilot/marketplace.schema.json"),
+    "claude marketplace": load_schema("claude-code/marketplace.schema.json"),
+    "claude plugin": load_schema("claude-code/plugin.schema.json"),
+    "claude mcp": load_schema("claude-code/mcp.schema.json"),
+    "codex marketplace": load_schema("codex/marketplace.schema.json"),
     "hooks": load_schema("copilot/hooks.schema.json"),
     "lsp": load_schema("copilot/lsp.schema.json"),
 }
@@ -134,11 +138,14 @@ def check_bools_and_lists(path, data):
         fail(path, "frontmatter 'argument-hint' must be a string")
 
 
-def check_skill(path):
+COPILOT_SKILL_FIELDS = {"argument-hint", "user-invocable", "disable-model-invocation", "allowed-tools"}
+
+
+def check_skill(path, copilot_fields=True):
     data, body = frontmatter(path, True)
     if data is None:
         return
-    check_fields(path, data, SKILL_FIELDS)
+    check_fields(path, data, SKILL_FIELDS if copilot_fields else SKILL_FIELDS - COPILOT_SKILL_FIELDS)
     check_string(path, data, "name", 64)
     check_string(path, data, "description", 1024)
     name = data.get("name")
@@ -222,24 +229,37 @@ def check_schema_file(path):
     count("contract schema")
 
 
-def check_plugin_dir(plugin_dir):
-    manifest = check_json(plugin_dir / "plugin.json", "plugin")
+CLIENTS = ("copilot", "claude", "codex")
+
+
+def check_plugin_dir(plugin_dir, client):
+    manifest_path = plugin_dir / (".claude-plugin/plugin.json" if client == "claude" else "plugin.json")
+    manifest = check_json(manifest_path, "claude plugin" if client == "claude" else "plugin")
     if manifest and manifest.get("name") != plugin_dir.name:
-        fail(plugin_dir / "plugin.json", f"plugin name '{manifest.get('name')}' must match its directory '{plugin_dir.name}'")
+        fail(manifest_path, f"plugin name '{manifest.get('name')}' must match its directory '{plugin_dir.name}'")
     for path in sorted(plugin_dir.rglob("*")):
         if not path.is_file():
             continue
         rel = path.relative_to(plugin_dir).as_posix()
-        if rel == "mcp.json":
+        if rel in ("plugin.json", ".claude-plugin/plugin.json"):
+            if path != manifest_path:
+                fail(path, f"the {client} adapter does not write this manifest")
+        elif rel == "mcp.json" and client != "claude":
             check_json(path, "mcp")
+        elif rel == ".mcp.json" and client == "claude":
+            check_json(path, "claude mcp")
+        elif rel in ("mcp.json", ".mcp.json"):
+            fail(path, f"the {client} adapter does not write this MCP configuration")
         elif rel == ".typeference/bundle.json":
             bundle = check_json(path, "bundle")
             if bundle and bundle.get("name") != plugin_dir.name:
                 fail(path, "bundle name must match its plugin directory")
         elif re.fullmatch(r"skills/[^/]+/SKILL\.md", rel):
-            check_skill(path)
+            check_skill(path, copilot_fields=client == "copilot")
         elif re.fullmatch(r"skills/[^/]+/references/(input|output)\.schema\.json", rel):
             check_schema_file(path)
+        elif rel.startswith("com.github.copilot/") and client != "copilot":
+            fail(path, f"the {client} adapter does not emit Copilot components")
         elif re.fullmatch(r"com\.github\.copilot/agents/[^/]+\.agent\.md", rel):
             check_agent(path)
         elif re.fullmatch(r"com\.github\.copilot/commands/[^/]+\.md", rel):
@@ -254,27 +274,67 @@ def check_plugin_dir(plugin_dir):
             fail(path, "TypeFerence does not emit this Copilot component")
 
 
+INDEXES = {
+    "copilot": (".github/plugin/marketplace.json", "marketplace"),
+    "claude": (".claude-plugin/marketplace.json", "claude marketplace"),
+    "codex": (".agents/plugins/marketplace.json", "codex marketplace"),
+}
+
+
 def check_target(target):
     build = check_json(target / ".typeference" / "build.json", "build")
     check_json(target / ".typeference" / "compatibility.json", "compatibility")
-    marketplace = target / ".github" / "plugin" / "marketplace.json"
-    if marketplace.exists():
-        check_json(marketplace, "marketplace")
-    paths = set()
+    built = {client: set() for client in CLIENTS}
     if build:
-        paths = {artifact["path"] for artifact in build.get("artifacts", [])}
-    for child in sorted(target.iterdir()):
-        if child.is_dir() and (child / "plugin.json").exists():
-            check_plugin_dir(child)
-            if build and child.name not in paths:
-                fail(child, "plugin directory is not listed in build.json")
-    for missing in sorted(paths - {c.name for c in target.iterdir() if c.is_dir()}):
-        fail(target / missing, "build.json lists a plugin directory that was not emitted")
-    check_root_files(target, build, paths)
+        for artifact in build.get("artifacts", []):
+            built[artifact["client"]].add(artifact["path"].split("/", 1)[1])
+        for skipped in build.get("notBuilt", []):
+            if skipped["client"] == "copilot":
+                fail(target, "every artifact builds for Copilot")
+    for client in CLIENTS:
+        client_dir = target / client
+        emitted = {c.name for c in client_dir.iterdir() if c.is_dir()} if client_dir.is_dir() else set()
+        for name in sorted(emitted):
+            check_plugin_dir(client_dir / name, client)
+            if build and name not in built[client]:
+                fail(client_dir / name, "plugin directory is not listed in build.json")
+        for missing in sorted(built[client] - emitted):
+            fail(client_dir / missing, "build.json lists a plugin directory that was not emitted")
+    indexes = {}
+    for client, (rel, kind) in INDEXES.items():
+        path = target / rel
+        if path.exists():
+            indexes[client] = (path, check_json(path, kind))
+    if indexes:
+        for client in CLIENTS:
+            if built[client] and client not in indexes:
+                fail(target, f"the {client} adapter built artifacts but its marketplace index is missing")
+    for client, (path, index) in indexes.items():
+        if not index:
+            continue
+        listed = []
+        for entry in index.get("plugins", []):
+            listed.append(entry["name"])
+            source = entry["source"]["path"] if client == "codex" else entry["source"]
+            if source != f"./{client}/{entry['name']}":
+                fail(path, f"entry '{entry['name']}' does not point at its {client} artifact")
+        if sorted(listed) != sorted(built[client]):
+            fail(path, f"lists {sorted(listed)}, but the {client} adapter built {sorted(built[client])}")
+    if "copilot" in indexes and "claude" in indexes and indexes["copilot"][1] and indexes["claude"][1]:
+        copilot, claude = indexes["copilot"][1], indexes["claude"][1]
+        for key in ("name", "owner", "metadata"):
+            if claude.get(key) != copilot.get(key):
+                fail(indexes["claude"][0], f"'{key}' differs from the Copilot index")
+        entries = {entry["name"]: entry for entry in copilot.get("plugins", [])}
+        for entry in claude.get("plugins", []):
+            expected = dict(entries.get(entry["name"], {}), source=f"./claude/{entry['name']}")
+            if entry != expected:
+                fail(indexes["claude"][0], f"entry '{entry['name']}' differs from its Copilot entry")
+    check_root_files(target, build)
     count("target")
 
 
-INDEX_FILES = {".typeference/build.json", ".typeference/compatibility.json", ".github/plugin/marketplace.json"}
+INDEX_FILES = {".typeference/build.json", ".typeference/compatibility.json"} | {rel for rel, _ in INDEXES.values()}
 
 
 def file_digest(path):
@@ -288,8 +348,8 @@ def file_digest(path):
     return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def check_root_files(target, build, artifact_dirs):
-    """Every file outside the artifact directories is an index file or a
+def check_root_files(target, build):
+    """Every file outside the client directories is an index file or a
     marketplace file that build.json lists with a matching digest (ADR-0004)."""
     if not build:
         return
@@ -298,7 +358,7 @@ def check_root_files(target, build, artifact_dirs):
         if not path.is_file():
             continue
         rel = path.relative_to(target).as_posix()
-        if rel.split("/", 1)[0] in artifact_dirs or rel in INDEX_FILES:
+        if rel.split("/", 1)[0] in CLIENTS or rel in INDEX_FILES:
             continue
         if rel not in listed:
             fail(path, "file is neither an artifact, an index file, nor a marketplace file listed in build.json")

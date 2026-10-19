@@ -1,22 +1,25 @@
 # TypeFerence Draft Specification
 
-Status: experimental reference draft, amended October 2026 to version 8. A
-version 8 source package declares `schemaVersion: 8` in its project manifest.
+Status: experimental reference draft, amended October 2026 to version 9. A
+version 9 source package declares `schemaVersion: 9` in its project manifest.
 Its resource documents carry no schema version, kind, or identity field; the
 manifest and each document's path supply them. Unsupported fields and schema
 versions are errors rather than extension points.
 
-TypeFerence is an authoring and reuse layer for Agent Plugins, with GitHub
-Copilot as its only output adapter (ADR-0001). Earlier source versions are not
-accepted. Design rationale is in `docs/decisions/`.
+TypeFerence is an authoring and reuse layer for agent plugins. Build compiles
+every plugin through a build adapter for each client it supports (GitHub
+Copilot, Claude Code, and Codex) and emits each client's marketplace index. A
+component that only one client reads is written under that client's keyword,
+and `copilot` is the only client keyword (ADR-0001). Earlier source versions
+are not accepted. Design rationale is in `docs/decisions/`.
 
 ## Purpose and pipeline
 
 TypeFerence defines a closed, deterministic source language for authoring
-GitHub Copilot plugins and compiling them into Agent Plugins 1.0 packages and a
-Copilot marketplace index. An organization writes its skills, agents, documents,
-typed data, and MCP servers once, specializes them per team, and ships them
-through one marketplace. It separates three operations:
+plugins and compiling them into each client's plugin packages and
+marketplace index. An organization writes its skills, agents, documents, typed data, and
+MCP servers once, specializes them per team, and ships them through one
+marketplace. It separates three operations:
 
 1. **restore** resolves declared source-package dependencies into a locked local
    package tree;
@@ -33,8 +36,38 @@ it writes new source, never artifacts.
 
 TypeFerence does not define an inference runtime, package registry server,
 installer, secret manager, model credentials, MCP server implementation, or
-deployment orchestrator. Copilot installs, enables, authenticates, and runs what
-TypeFerence emits.
+deployment orchestrator. The clients install, enable, authenticate, and run
+what TypeFerence emits.
+
+## Clients, build adapters, and client keywords
+
+Clients install plugins in different layouts. GitHub Copilot and Codex read
+Agent Plugins 1.0: `plugin.json`, Agent Skills under `skills/`, and MCP
+servers in `mcp.json`. Copilot also reads its own components from
+`com.github.copilot/`. Claude Code reads its own layout:
+`.claude-plugin/plugin.json`, `skills/`, and `.mcp.json`. Build therefore
+compiles each plugin once per client, through that client's **build
+adapter** (see "The agent-plugin target"), and every adapter starts from the
+same resolved plugin:
+
+- skills, servers, documents, data, and plugin metadata are written once and
+  built for every client;
+- a component only one client reads is written under that client's keyword.
+  `copilot` is the only client keyword: a plugin's or profile's `copilot`
+  block lists the custom agents, rules, commands, hooks, and LSP servers it
+  ships into `com.github.copilot/` (see "Native Copilot components"), and a
+  skill's or agent's `copilot` mapping holds Copilot-only frontmatter (see
+  "Copilot fields").
+
+An adapter emits only what its client runs with the meaning the source gives
+it. Where a client spells the same thing differently, such as Claude Code's
+`${CLAUDE_PLUGIN_ROOT}` for `${PLUGIN_ROOT}`, its adapter writes the client's
+spelling; nothing else is translated between clients. A plugin that an adapter
+cannot build as written, such as one with Copilot components for Claude Code
+or Codex, is not built for that client, and `build.json` records the reason; it
+is never built without part of its composition. A client component written
+outside its keyword is an error, not an omission. Build takes no option that
+changes any of this: the source alone decides.
 
 ## Identity and addressing
 
@@ -60,11 +93,11 @@ a deployment fact into one makes it source.
 
 ## Project manifest
 
-A version 8 source root contains `typeference.tfer`:
+A version 9 source root contains `typeference.tfer`:
 
 ```text
 ---
-schemaVersion: 8
+schemaVersion: 9
 name: helio/payments
 version: 1.4.0
 marketplace:
@@ -85,7 +118,7 @@ exports:
 ```
 
 The manifest is written in the frontmatter grammar and has no body.
-`schemaVersion` is the unquoted token `8`. `name` is a lowercase package name of
+`schemaVersion` is the unquoted token `9`. `name` is a lowercase package name of
 two or more `/`-separated segments, each matching `[a-z0-9][a-z0-9.-]*`; the
 name `typeference/builtin` and every name beneath it are reserved. `version` and
 every dependency version are exact semantic versions (`MAJOR.MINOR.PATCH` with
@@ -110,27 +143,27 @@ on itself.
 A manifest lists at least one plugin or export and names each at most once. A
 package with no plugins is a library. Unknown fields, deployment fields, feed
 addresses, and credentials are errors. Product entry points reject a source
-root whose manifest is absent or does not declare `schemaVersion: 8`, naming
+root whose manifest is absent or does not declare `schemaVersion: 9`, naming
 this specification.
 
 ## Documents, kinds, and identity
 
-A version 8 source document is a `.tfer` file whose suffix is its kind:
+A version 9 source document is a `.tfer` file whose suffix is its kind:
 
 | Suffix | Kind | Role |
 | --- | --- | --- |
-| `.agent.tfer` | agent | a Copilot custom agent: identity, objectives, and held documents |
+| `.agent.tfer` | agent | a Copilot custom agent: identity, objectives, and held documents; shipped through a `copilot` block |
 | `.profile.tfer` | profile | a reusable, possibly incomplete or parameterized composition that plugins embed |
 | `.capability.tfer` | capability | input and output schemas shared by unrelated skills |
 | `.skill.tfer` | skill | instructions emitted as `SKILL.md`, possibly a template |
 | `.server.tfer` | server | an MCP server that skills require |
 | `.contexttype.tfer` | contextType | the shape of a family of data documents |
 | `.context.tfer` | context | a document (Markdown) or data (typed values) |
-| `.plugin.tfer` | plugin | an installable package and its binding root: the agents, skills, documents, data, and native components that ship together |
-| `.rule.tfer` | rule | always-on Copilot guidance, emitted as a rule |
-| `.command.tfer` | command | a Copilot slash command |
-| `.hook.tfer` | hook | one Copilot hook entry and the event it handles |
-| `.lsp.tfer` | lsp | a Copilot language server |
+| `.plugin.tfer` | plugin | an installable package and its binding root: the skills, documents, data, and Copilot components that ship together |
+| `.rule.tfer` | rule | always-on Copilot guidance, emitted as a rule; shipped through a `copilot` block |
+| `.command.tfer` | command | a Copilot slash command; shipped through a `copilot` block |
+| `.hook.tfer` | hook | one Copilot hook entry and the event it handles; shipped through a `copilot` block |
+| `.lsp.tfer` | lsp | a Copilot language server; shipped through a `copilot` block |
 
 A document path is relative to the package root, uses `/`, and is clean: not
 absolute, with no empty, `.`, or `..` segment. Every segment of its stem, the
@@ -275,14 +308,15 @@ marketplace entries, and bundle metadata, never in an instruction body.
 | Kind | Fields |
 | --- | --- |
 | agent | `displayName`, `description`, `extends` (agent), `context` (documents), `copilot`, `servers` (servers scoped to the agent) |
-| profile | `displayName`, `description`, `embeds` (profiles), `parameters` (parameter name to context type), `agents` (agents), `context` (documents), `skills` (bindings), `rules` (rules), `commands` (commands), `hooks` (hooks), `lspServers` (LSP servers) |
+| profile | `displayName`, `description`, `embeds` (profiles), `parameters` (parameter name to context type), `context` (documents), `skills` (bindings), `copilot` (a Copilot block) |
 | capability | `displayName`, `description`, `inputSchema`, `outputSchema` |
 | skill | `displayName`, `description`, `binds` (capability), `extends` (skill), `parameters`, `with`, `inputSchema`, `outputSchema`, `context` (document entries), `files`, `requiresServers` (servers), `variants`, `copilot` |
 | server | `displayName`, `description`, `transport`, `command`, `args`, `env`, `cwd`, `url`, `headers` |
 | contextType | `displayName`, `description`, `instanceName`, `fields` |
 | context (document) | `displayName`, `description`, `parameters` |
 | context (data) | `displayName`, `description`, `contextType` (context type), `values` |
-| plugin | `description`, `embeds` (profiles or plugins), `agents` (agents), `context` (documents), `skills` (bindings), `with` (parameter name to data), `rules` (rules), `commands` (commands), `hooks` (hooks), `lspServers` (LSP servers), `modes`, `author`, `homepage`, `repository`, `license`, `keywords`, `category`, `tags`, `files` |
+| plugin | `description`, `embeds` (profiles or plugins), `context` (documents), `skills` (bindings), `with` (parameter name to data), `copilot` (a Copilot block), `modes`, `author`, `homepage`, `repository`, `license`, `keywords`, `category`, `tags`, `files` |
+| Copilot block | `agents` (agents), `rules` (rules), `commands` (commands), `hooks` (hooks), `lspServers` (LSP servers) |
 | rule | `displayName`, `description`, `parameters`, `paths` |
 | command | `displayName`, `description`, `parameters`, `argumentHint`, `allowedTools`, `disableModelInvocation` |
 | hook | `displayName`, `description`, `event`, `matcher`, `type`, `bash`, `powershell`, `command`, `exec`, `args`, `cwd`, `env`, `timeoutSec`, `url`, `headers`, `allowedEnvVars`, `prompt` |
@@ -307,10 +341,11 @@ embeds:
   - helio/core:profiles/team-ops.profile.tfer
 with:
   team: data/payments-team.context.tfer
-agents:
-  - agents/payments-ops.agent.tfer
 skills:
   - skills/self-heal.skill.tfer
+copilot:
+  agents:
+    - agents/payments-ops.agent.tfer
 modes:
   - manual
   - pipeline
@@ -321,18 +356,24 @@ A plugin holds:
 
 - `embeds`: profiles and plugins whose composition it takes (see
   "Composition");
-- `agents`: the custom agents it ships;
 - `skills`: skill bindings (see "Capabilities, skills, and bindings");
 - `context`: documents delivered to every agent it ships (see "Rendering held
   documents");
 - `with`: parameter bindings (see "Instances");
-- `rules`, `commands`, `hooks`, and `lspServers` (see "Native Copilot
-  components").
+- `copilot`: its Copilot block, a mapping of `agents` (the custom agents it
+  ships) and `rules`, `commands`, `hooks`, and `lspServers` (see "Native
+  Copilot components"). Each member is a reference list. A profile's
+  `copilot` block takes the same members.
+
+`agents`, `rules`, `commands`, `hooks`, and `lspServers` written directly in a
+plugin or profile, outside its `copilot` block, are errors that name the
+block. An empty or null `copilot` block contributes nothing.
 
 After composition a plugin MUST contain at least one agent, skill, rule,
 command, hook, or LSP server. A plugin whose composition contains no agent is
 a skills pack, and MUST hold no documents: without an agent there is nowhere
-to deliver them. A plugin MUST be complete: it binds every capability its
+to deliver them. A plugin whose composition contains no Copilot component
+builds for every client. A plugin MUST be complete: it binds every capability its
 composition requires and every parameter its members declare (see
 "Instances"). `modes` lists `manual`, `pipeline`, or both, each at most once,
 and defaults to `manual`.
@@ -392,8 +433,9 @@ keywords:
 category: operations
 tags:
   - on-call
-agents:
-  - agents/payments-ops.agent.tfer
+copilot:
+  agents:
+    - agents/payments-ops.agent.tfer
 ---
 ```
 
@@ -434,14 +476,15 @@ root for a marketplace, and defaults to the file name of `path`. A destination
 MUST be a clean path and MUST NOT claim a path build emits itself. Compared
 after lowercasing:
 
-- a plugin file's destination MUST NOT be `plugin.json` or `mcp.json`, and its
-  first segment MUST NOT be `skills`, `com.github.copilot`, `.typeference`, or
-  `.git`;
-- a marketplace file's first segment MUST NOT be `.typeference`, `.git`, or the
-  name of an artifact directory the build emits, and the destination MUST NOT
-  lie beneath `.github/plugin` or `.github/copilot`. The first is where the
-  marketplace index lives; the second holds repository settings, which build
-  never emits.
+- a plugin file's destination MUST NOT be `plugin.json`, `mcp.json`, or
+  `.mcp.json`, and its first segment MUST NOT be `skills`,
+  `com.github.copilot`, `.claude-plugin`, `.typeference`, or `.git`;
+- a marketplace file's first segment MUST NOT be `.typeference`, `.git`,
+  `copilot`, `claude`, or `codex`, and the destination MUST NOT lie beneath
+  `.github/plugin`, `.claude-plugin`, `.agents/plugins`, or `.github/copilot`.
+  The client directories hold the artifacts, the next three are where the
+  marketplace indexes live, and the last holds repository settings, which
+  build never emits.
 
 Destinations within one plugin's files, and within the marketplace's files,
 follow the collision and directory-spelling rules of skill files (ADR-0003).
@@ -454,7 +497,8 @@ of its artifacts.
 An agent is a Copilot custom agent: identity (`description`, `displayName`),
 objectives (its body), held documents (`context`), Copilot fields (see
 "Copilot fields"), and agent-scoped servers (see "Native Copilot
-components"). An agent composes nothing. The plugin that ships it decides
+components"). Plugins and profiles list agents in their `copilot` block,
+because a custom agent is a Copilot component. An agent composes nothing. The plugin that ships it decides
 which skills, data, and native components ship beside it, and every skill the
 plugin ships is available to the agent, because Copilot has no narrower
 attachment. Knowledge a whole plugin needs is a document the plugin or its
@@ -894,8 +938,7 @@ Across a build, one server name denotes one server document.
 ## Copilot fields
 
 A skill or agent MAY carry a `copilot` mapping of Copilot-only frontmatter.
-These fields are explicit opt-ins; the portable Agent Plugins core never
-requires them.
+These fields are explicit opt-ins, emitted only in Copilot artifacts.
 
 | Kind | Field | Type | Emitted key |
 | --- | --- | --- | --- |
@@ -928,9 +971,22 @@ recognize. A skill meant to be used only by an agent sets
 
 ## Native Copilot components
 
-Agent Plugins 1.0 defines skills and MCP servers as its portable components.
-Copilot reads further components from the plugin's `com.github.copilot/`
-directory; TypeFerence declares each as a document kind (ADR-0007).
+Agent Plugins 1.0 defines skills and MCP servers. Copilot reads further components from the plugin's `com.github.copilot/`
+directory; TypeFerence declares each as a document kind (ADR-0007), and a
+plugin or profile ships one only by listing it in its `copilot` block:
+
+```text
+copilot:
+  agents:
+    - agents/ops.agent.tfer
+  rules:
+    - rules/evidence.rule.tfer
+  hooks:
+    - hooks/audit.hook.tfer
+```
+
+An artifact contains `com.github.copilot/` only when its plugin's
+composition holds a Copilot component.
 
 **Rules** (`.rule.tfer`) are always-on guidance. A rule's body is Markdown; its
 optional `paths` is one glob that scopes it to matching files, and its
@@ -978,7 +1034,7 @@ itself MUST NOT use `${PLUGIN_DATA}`. Agent-scoped servers do not enter the
 plugin's `mcp.json`.
 
 **Enterprise defaults.** Plugins and profiles hold rules, commands, hooks,
-and LSP servers, and they promote through embedding like held documents,
+and LSP servers in their `copilot` blocks, and they promote through embedding like held documents,
 recording every contributor. A plugin ships every one its composition holds.
 A rule therefore reaches every surface where the plugin is active, whether an
 agent, a slash command, a model-invoked skill, or a pipeline run, rather than
@@ -992,7 +1048,7 @@ server name one server document.
 ## Packages, restore, and lockfiles
 
 `typeference pack` emits one canonical source package (`.tferpkg`) from a
-version 8 source root. It contains:
+version 9 source root. It contains:
 
 - package name and exact version;
 - exact dependency declarations;
@@ -1028,7 +1084,7 @@ never source.
 
 A Git route names an HTTPS repository URL, an optional package root path within
 the repository, and a tag prefix. Restore resolves a package `<name>@<version>`
-by fetching the tag `<prefix><version>`, reading the version 8 source root at
+by fetching the tag `<prefix><version>`, reading the version 9 source root at
 the package root path, verifying that its manifest declares that name and
 version, and packing it as `typeference pack` would. The resulting package
 digest is what the lockfile records and what later restores verify, exactly as
@@ -1046,7 +1102,7 @@ in a dependent's build only when the dependent's manifest lists them (see
 ## Source membership and digests
 
 The source digest hashes an explicit resource set, never an arbitrary recursive
-directory after output has been written. A version 8 package's source members
+directory after output has been written. A version 9 package's source members
 are:
 
 - the project manifest;
@@ -1082,15 +1138,19 @@ already-defined artifact directories, not source identity.
 
 Build emits the `agent-plugin` target beneath `<out>/agent-plugin/`. It is
 complete: there is no later linking step. A request for any other target fails
-with a diagnostic.
+with a diagnostic. Build takes no option that changes what the target
+contains: the source alone decides (see "Clients, build adapters, and client
+keywords").
 
 ```text
 agent-plugin/
   .github/plugin/marketplace.json
+  .claude-plugin/marketplace.json
+  .agents/plugins/marketplace.json
   .typeference/build.json
   .typeference/compatibility.json
   <marketplace file>...
-  <artifact>/
+  copilot/<artifact>/
     plugin.json
     mcp.json
     com.github.copilot/agents/<agent>.agent.md
@@ -1104,10 +1164,28 @@ agent-plugin/
     skills/<skill>/assets/...
     <plugin file>...
     .typeference/bundle.json
+  claude/<artifact>/
+    .claude-plugin/plugin.json
+    .mcp.json
+    skills/<skill>/...
+    <plugin file>...
+    .typeference/bundle.json
+  codex/<artifact>/
+    plugin.json
+    mcp.json
+    skills/<skill>/...
+    <plugin file>...
+    .typeference/bundle.json
 ```
 
-Each plugin mode is one artifact directory: `manual` emits `<plugin>` and
-`pipeline` emits `<plugin>-pipeline`. An artifact renders exactly one mode.
+Each plugin mode is one artifact: `manual` emits `<plugin>` and `pipeline`
+emits `<plugin>-pipeline`, and an artifact renders exactly one mode. Each
+client directory holds that client's build of every artifact its adapter
+builds.
+
+### The Copilot adapter
+
+The Copilot adapter builds every artifact.
 
 - `plugin.json` holds `$schema`
   (`https://agent-plugins.org/schemas/1.0.0/plugin.schema.json`), `name` (the
@@ -1130,8 +1208,8 @@ Each plugin mode is one artifact directory: `manual` emits `<plugin>` and
   section for held documents and a `## Skills` list of the emitted names of
   the skills the artifact ships, sorted.
 - `skills/<skill>/SKILL.md` is emitted for each shipped skill and instance:
-  frontmatter `name` (the emitted name), `description`, then its Copilot fields
-  in table order; a body of the skill's instructions for the artifact's mode,
+  frontmatter `name` (the emitted name), `description`, then its declared
+  Copilot fields in table order; a body of the skill's instructions for the artifact's mode,
   then, when the skill holds inline documents, a `## Context` section. File
   documents, skill files, and schemas are emitted beside it.
 - rules, commands, hooks, and LSP servers are emitted as "Native Copilot
@@ -1151,6 +1229,34 @@ Each plugin mode is one artifact directory: `manual` emits `<plugin>` and
   (the build's source digest when the building package owns the plugin, the
   locked digest otherwise) and the locked packages in its dependency closure,
   in lock order.
+
+### The Codex adapter
+
+The Codex adapter builds every artifact whose plugin's composition holds no
+Copilot component. Codex reads Agent Plugins 1.0, so its artifact is the
+Copilot artifact without `com.github.copilot/` and without Copilot fields in
+`SKILL.md`: `plugin.json`, `mcp.json`, skills, carried files, and
+`bundle.json`, each as above.
+
+### The Claude Code adapter
+
+The Claude Code adapter builds every artifact whose plugin's composition holds
+no Copilot component and none of whose shipped servers declares `cwd`, which
+Claude Code's server configuration does not express. Its artifact holds:
+
+- `.claude-plugin/plugin.json`: `name`, `version`, `description`, and the
+  metadata members, as `plugin.json` above without `$schema`;
+- `.mcp.json`, when the artifact ships servers: `mcpServers`, one entry per
+  server keyed by server name and sorted. A `stdio` entry holds `command`, then
+  `args` and `env` when declared; a `streamable-http` entry holds `type`
+  (`http`), `url`, then `headers` when declared. `${PLUGIN_ROOT}` and
+  `${PLUGIN_DATA}` are written `${CLAUDE_PLUGIN_ROOT}` and
+  `${CLAUDE_PLUGIN_DATA}`, and a `./` command is written
+  `${CLAUDE_PLUGIN_ROOT}/` followed by the path after `./`: Claude Code's
+  spellings of the plugin root and data directory;
+- skills, carried files, and `bundle.json`, as in the Codex adapter.
+
+### Rules for every adapter
 
 Frontmatter strings are double-quoted, escaping `\` and `"`. Boolean fields are
 unquoted `true` or `false`. List fields are block sequences of double-quoted
@@ -1172,21 +1278,37 @@ covers every plugin the build ships, whichever package owns it. If two distinct
 resources collapse to one emitted name, compilation fails rather than
 overwriting either.
 
-The target root holds `.typeference/build.json` (`schemaVersion` 3: target,
-the build's source digest, each artifact's plugin identity, mode, path,
-owning package source digest, and directory digest, and each marketplace
-file's path, source, and file digest) and `.typeference/compatibility.json`
-(`schemaVersion` 1). A file digest is `sha256:` and the SHA-256 of the file's
-content as `typeference-directory-v1` reads it. When the manifest declares
-`marketplace`, the root also holds `.github/plugin/marketplace.json`: `name`;
-`owner` with `name`; `metadata` with the manifest's `description` when declared,
-then the building package's `version`; and `plugins`, one entry per artifact
-with `name`, `source` (`./<artifact>`), `description`, `version` (the owning
-package's), then the plugin's metadata members as `plugin.json` orders them,
-then its `category` and `tags` when declared; and each marketplace file at its
-destination. The target directory is therefore publishable as a marketplace
-repository root. Every file in it is an index file build derives, or is
-covered by a digest in `build.json`: an artifact's files by its directory
+The target root holds `.typeference/build.json` (`schemaVersion` 4: target,
+the build's source digest; for each built artifact its client, plugin
+identity, mode, path (`<client>/<artifact>`), owning package source digest,
+and directory digest; for each artifact a client does not build, the client,
+plugin identity, mode, and reason, `copilot-components` or `server-cwd`; and
+each marketplace file's path, source, and file digest) and
+`.typeference/compatibility.json` (`schemaVersion` 1). A file digest is
+`sha256:` and the SHA-256 of the file's content as `typeference-directory-v1`
+reads it.
+
+When the manifest declares `marketplace`, the root holds each marketplace file
+at its destination and an index for each client whose adapter builds at least
+one artifact, listing that client's artifacts in artifact order:
+
+- `.github/plugin/marketplace.json`, Copilot's index: `name`; `owner` with
+  `name`; `metadata` with the manifest's `description` when declared, then the
+  building package's `version`; and `plugins`, one entry per artifact with
+  `name`, `source` (`./copilot/<artifact>`), `description`, `version` (the
+  owning package's), then the plugin's metadata members as `plugin.json`
+  orders them, then its `category` and `tags` when declared;
+- `.claude-plugin/marketplace.json`, Claude Code's index: the same members,
+  with each `source` `./claude/<artifact>`;
+- `.agents/plugins/marketplace.json`, Codex's index: `name`, and `plugins`,
+  one entry per artifact with `name`, `source` (`source` `local`, then `path`
+  `./codex/<artifact>`), `policy` (`installation` `AVAILABLE`, then
+  `authentication` `ON_INSTALL`), and `category`: the plugin's, or
+  `Productivity` when it declares none, because Codex requires one.
+
+The target directory is therefore publishable as a marketplace repository root
+that each client recognizes. Every file in it is an index file build derives,
+or is covered by a digest in `build.json`: an artifact's files by its directory
 digest, and each marketplace file by its file digest.
 
 The compatibility report lists, for each mode, every capability whose emitted
@@ -1210,7 +1332,7 @@ direct dependencies:
 
 ```text
 ---
-schemaVersion: 8
+schemaVersion: 9
 name: acme/marketplace
 version: 2026.10.1
 marketplace:
@@ -1256,7 +1378,7 @@ marketplace index, the build index, and the compatibility report.
 package that is not yet published fits the marketplace. It validates the
 marketplace package, with its locked graph, after these substitutions:
 
-- the candidate, a version 8 source directory, replaces the locked package of
+- the candidate, a version 9 source directory, replaces the locked package of
   the same name, or joins the graph as a direct dependency when the
   marketplace does not yet depend on it;
 - every dependency the candidate declares MUST be locked by the marketplace at
@@ -1296,7 +1418,7 @@ inputs MUST be byte-identical on every platform.
 
 `typeference import <source> --out <dir> [--name <package>] [--version
 <version>] [--plugin <name>] [--lossy]` converts existing GitHub Copilot
-customizations into a version 8 package. The source is, in this order of
+customizations into a version 9 package. The source is, in this order of
 detection:
 
 1. a skill directory, one that contains `SKILL.md`;
@@ -1318,8 +1440,10 @@ detection:
 Import writes:
 
 - a manifest;
-- one plugin, `plugins/<plugin>.plugin.tfer`, that lists every imported agent
-  and skill and carries the source plugin's metadata (see "Plugin metadata");
+- one plugin, `plugins/<plugin>.plugin.tfer`, that lists every imported skill,
+  lists every imported agent, command, rule, hook, and language server in its
+  `copilot` block, and carries the source plugin's metadata (see "Plugin
+  metadata");
 - for a plugin source, a plugin `files` entry for each file in the plugin
   directory that is not a component import reads, copied to
   `plugin-files/` with its destination preserved. The components are the
@@ -1339,7 +1463,7 @@ Import writes:
 - `commands/<name>.command.tfer` and `rules/<name>.rule.tfer` for each
   command and rule (a rule's `paths` or `applyTo` becomes `paths`),
   `hooks/<event>-<n>.hook.tfer` for each hook entry, and `lsp/<name>.lsp.tfer`
-  for each language server, all listed by the plugin.
+  for each language server, all listed in the plugin's `copilot` block.
 
 Imported skills require every imported server, because the source format does
 not record which skill uses which server. Authors narrow `requiresServers`
@@ -1360,10 +1484,10 @@ Import fails closed:
 - names are never rewritten. A skill's declared `name` MUST equal its directory
   name, agent and skill names MUST satisfy the Agent Skills grammar, and
   descriptions and skill instructions are required;
-- content version 8 cannot represent fails the import and is listed item by
+- content version 9 cannot represent fails the import and is listed item by
   item: unrecognized frontmatter fields, files beside `SKILL.md` outside
   `references/`, `scripts/`, and `assets/`, server values that contain `${`
-  other than the plugin variables, hook or LSP fields version 8 does not
+  other than the plugin variables, hook or LSP fields version 9 does not
   declare, plugin manifest members other than `name`, `description`,
   `version`, the metadata members, and a legacy plugin's component paths
   (`extensions` among them), metadata values that "Plugin metadata" rejects,

@@ -24,7 +24,8 @@ it is the only unit whose contents are real.
 
 1. **The plugin is the binding root.** A `.plugin.tfer` decides which agents,
    skills, documents, and native components ship together and binds every
-   parameter they declare with `with`. A marketplace lists plugins the way a
+   parameter they declare with `with`. Agents and native components are
+   Copilot components and are listed in its `copilot` block (ADR-0001). A marketplace lists plugins the way a
    solution lists projects. A plugin with no agents is a skills pack. Each
    mode (`manual`, `pipeline`) is its own artifact.
 2. **Plugins and profiles embed.** A plugin embeds any number of profiles and

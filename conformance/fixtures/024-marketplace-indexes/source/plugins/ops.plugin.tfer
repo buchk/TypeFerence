@@ -1,0 +1,8 @@
+---
+description: The operations agent, a Copilot component.
+skills:
+  - skills/notes.skill.tfer
+copilot:
+  agents:
+    - agents/ops.agent.tfer
+---

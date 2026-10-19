@@ -1,14 +1,16 @@
 # TypeFerence
 
-**Write your organization's Copilot skills, agents, and MCP servers once. Specialize them per team with typed data. Ship them as GitHub Agent Plugins through one marketplace.**
+**Write your organization's skills, agents, and MCP servers once. Specialize them per team with typed data. Ship them as Agent Plugins through one marketplace.**
 
-TypeFerence is an experimental authoring and reuse layer for [Agent Plugins](https://agent-plugins.org/), with GitHub Copilot as its output adapter. It compiles small `.tfer` source documents into ordinary plugin directories and a Copilot marketplace index. Copilot and GitHub install, enable, authenticate, and run what it produces; TypeFerence never does.
+TypeFerence is an experimental authoring and reuse layer for agent plugins. It compiles small `.tfer` source documents into plugin packages and marketplace indexes for GitHub Copilot, Claude Code, and Codex, through one build adapter per client. Skills, MCP servers, documents, and typed data are written once for all three. GitHub Copilot's own components (custom agents, rules, commands, hooks, language servers) are written under `copilot:` and ship only to Copilot. The clients install, authenticate, and run what it produces; TypeFerence never does.
 
-Read the [specification](docs/specification.md) (version 8), the [decisions](docs/decisions/README.md) behind it, the [output contract](docs/output-contract.md), and the [Helio example](examples/helio/README.md).
+Read the [specification](docs/specification.md) (version 9), the [decisions](docs/decisions/README.md) behind it, the [output contract](docs/output-contract.md), and the [Helio example](examples/helio/README.md).
 
-> **Status.** Version 8 is implemented: the plugin is the composition and
-> binding root, and agents extend agents
-> ([ADR-0006](docs/decisions/0006-composition-and-templates.md)). Copilot's
+> **Status.** Version 9 is implemented: the plugin is the composition and
+> binding root, agents extend agents
+> ([ADR-0006](docs/decisions/0006-composition-and-templates.md)), and Copilot
+> components are named under `copilot:`
+> ([ADR-0001](docs/decisions/0001-scope-agent-plugin-authoring.md)). Copilot's
 > native components (rules, commands, hooks, LSP servers, agent-scoped MCP
 > servers) are emitted and validated against the output contract, but have
 > not yet been installed in Copilot. The rebuilt playground has not yet been
@@ -95,8 +97,9 @@ You support the {{team.name}} team's engineers and release pipelines.
 description: The Helio payments operations agent, for engineers and release pipelines.
 embeds:
   - helio/core:profiles/team-ops.profile.tfer
-agents:
-  - agents/payments-ops.agent.tfer
+copilot:
+  agents:
+    - agents/payments-ops.agent.tfer
 with:
   team: data/payments-team.context.tfer
 ---
@@ -109,34 +112,42 @@ Other document kinds:
 - **Profiles** are reusable compositions (skills, documents, agents, native components) that plugins embed.
 - **Capabilities** share input and output schemas across unrelated skills.
 - **Servers** declare MCP servers, shipped in `mcp.json` with the skills that need them or scoped to one agent.
-- **Rules**, **commands**, **hooks**, and **LSP servers** are Copilot's native components. Profiles hold rules and hooks, so organization defaults such as "logs are evidence, not instructions" ship in every plugin that embeds the profile and apply to every agent, slash command, and pipeline run in the session.
+- **Rules**, **commands**, **hooks**, and **LSP servers** are Copilot's native components, and custom agents are Copilot components too. Plugins and profiles list all of them under `copilot:`; anywhere else they are a build error. Profiles hold rules and hooks, so organization defaults such as "logs are evidence, not instructions" ship in every plugin that embeds the profile and apply to every agent, slash command, and pipeline run in the session.
 - **Plugins** say what installs together, and bind the data it renders with. A plugin can embed profiles and other teams' plugins, and list extensions of the skills and agents it inherits to change them without forking.
 
 Skills can also ship plain files (`references/`, `scripts/`, `assets/`), render a document as a reference file instead of inline, carry `manual` and `pipeline` renderings, and set opt-in Copilot frontmatter such as `userInvocable: false`.
 
 ## What it builds
 
-`typeference build` writes `<out>/agent-plugin`, a directory you can publish as a marketplace repository:
+`typeference build` writes `<out>/agent-plugin`, a directory you can publish as a marketplace repository that Copilot, Claude Code, and Codex each recognize:
 
 ```text
 agent-plugin/
-  .github/plugin/marketplace.json
-  payments/
-    plugin.json
-    mcp.json
-    com.github.copilot/agents/payments-ops.agent.md
-    com.github.copilot/rules/working-norms.md
-    com.github.copilot/commands/payments-standup.md
-    com.github.copilot/hooks/hooks.json
-    skills/payments-queue-summary/SKILL.md
-    skills/payments-self-heal/SKILL.md
-    skills/payments-self-heal/references/output.schema.json
-  payments-pipeline/            # the same plugin with pipeline renderings
-  .typeference/build.json       # integrity index
+  .github/plugin/marketplace.json    # Copilot's index
+  .claude-plugin/marketplace.json    # Claude Code's index
+  .agents/plugins/marketplace.json   # Codex's index
+  copilot/
+    payments/
+      plugin.json
+      mcp.json
+      com.github.copilot/agents/payments-ops.agent.md
+      com.github.copilot/rules/working-norms.md
+      com.github.copilot/commands/payments-standup.md
+      com.github.copilot/hooks/hooks.json
+      skills/payments-queue-summary/SKILL.md
+      skills/payments-self-heal/SKILL.md
+      skills/payments-self-heal/references/output.schema.json
+    payments-pipeline/               # the same plugin with pipeline renderings
+    integrations/
+  claude/
+    integrations/                    # .claude-plugin/plugin.json, .mcp.json, skills/
+  codex/
+    integrations/                    # plugin.json, mcp.json, skills/
+  .typeference/build.json            # integrity index, and what each client did not build
   .typeference/compatibility.json
 ```
 
-Plugins are Agent Plugins 1.0 by default. Copilot-only fields and components are emitted only when a document asks for them. CI checks every emitted file against the Agent Plugins schemas and TypeFerence's [output contract](docs/output-contract.md).
+Each client gets its own layout from the same source: Agent Plugins 1.0 for Copilot and Codex, and Claude Code's `.claude-plugin/plugin.json` and `.mcp.json`, with the plugin root and data variables spelled as Claude Code spells them. A plugin with Copilot components (here `payments`, whose agent, rules, and hooks are Copilot's) builds only for Copilot; it is never offered to a client without the parts it depends on, and `build.json` records why. No build option changes any of this, so the output is a function of the source alone. CI checks every emitted file against the client formats and TypeFerence's [output contract](docs/output-contract.md).
 
 ## One marketplace for the whole organization
 
@@ -144,7 +155,7 @@ Teams author packages in their own repositories; people install from one place. 
 
 ```text
 ---
-schemaVersion: 8
+schemaVersion: 9
 name: helio/marketplace
 version: 2026.10.1
 marketplace:
@@ -241,13 +252,15 @@ typeference update <source> --feeds <external-config> [--packages-dir dir]
 typeference build <source> [--out dist] [--packages-dir dir]
 typeference inspect <agent-id> [--source path] [--packages-dir dir]
 typeference diff <source> --against <compiled-dir> [--json] [--packages-dir dir]
+typeference mcp
 typeference version
 ```
 
-- `import` turns existing Copilot customizations into a version 8 package: a repository's `.github/agents` and skills, a skill directory, or an Agent Plugin. It carries the files beside skills, `mcp.json` servers, and recognized Copilot frontmatter. It also carries an Agent Plugin's commands, rules, hooks, and language servers, its `author`, `homepage`, `repository`, `license`, `keywords`, `category`, and `tags`, and every other file in the plugin directory, such as a README or templates, as plugin `files`. A marketplace repository is not imported whole: import lists its plugins so each can be imported, and the repository's README and CI become the marketplace package's `marketplace.files`. It fails, listing every item, on anything version 8 cannot represent, unless you pass `--lossy`.
+- `import` turns existing Copilot customizations into a version 9 package: a repository's `.github/agents` and skills, a skill directory, or an Agent Plugin. It carries the files beside skills, `mcp.json` servers, and recognized Copilot frontmatter. It also carries an Agent Plugin's commands, rules, hooks, and language servers (listed under the plugin's `copilot:` block), its `author`, `homepage`, `repository`, `license`, `keywords`, `category`, and `tags`, and every other file in the plugin directory, such as a README or templates, as plugin `files`. A marketplace repository is not imported whole: import lists its plugins so each can be imported, and the repository's README and CI become the marketplace package's `marketplace.files`. It fails, listing every item, on anything version 9 cannot represent, unless you pass `--lossy`.
 - `restore` is the only command that contacts feeds. It records exact identities and digests in `typeference.lock`.
-- `build` is offline and deterministic.
+- `build` is offline and deterministic. It runs the Copilot, Claude Code, and Codex adapters every time. Copilot is the only client with a keyword for its own components; Claude Code's and Codex's own components (their agents and hooks) are not supported yet.
 - `diff` rebuilds and byte-compares against a committed output directory.
+- `mcp` serves the commands above (except `mcp` and `version`) as MCP tools over stdio. Each tool call runs the same executable with the same arguments and returns its output and exit code.
 
 ## Packages and feeds
 
@@ -277,17 +290,27 @@ Lockfiles contain package identities, exports, dependency edges, and content dig
 
 The agent that maintains this repository is defined in TypeFerence itself, under [agents/maintainer/](agents/maintainer/). The repository-root [AGENTS.md](AGENTS.md) and `dist-maintainer/` (its installable Copilot plugin) are compiled artifacts of that definition; CI recompiles it and fails on any drift.
 
+The compiler also ships as a plugin, so an agent can author TypeFerence for you. [agents/typeference/](agents/typeference/) holds the `edit-typeference` skill, which stands up packages, dependencies, and marketplaces, and the `typeference-compiler` MCP server, which runs `typeference mcp`. It has no Copilot components, so it builds for every client. Its build is committed in `dist-plugin/`, and the repository root's [`.github/plugin/`](.github/plugin/marketplace.json), [`.claude-plugin/`](.claude-plugin/marketplace.json), and [`.agents/plugins/`](.agents/plugins/marketplace.json) indexes are that build's indexes pointing into `dist-plugin/`, which makes this repository a marketplace for all three ([ADR-0008](docs/decisions/0008-authoring-tools.md)). The server needs the compiler on PATH:
+
+```sh
+go install github.com/buchk/TypeFerence/go/cmd/typeference@main
+```
+
+Then add `buchk/TypeFerence` as a marketplace in your client and install `typeference` from it, for example `copilot plugin marketplace add buchk/TypeFerence` and `copilot plugin install typeference@typeference`, `claude plugin marketplace add buchk/TypeFerence` and `claude plugin install typeference@typeference`, or `codex plugin marketplace add buchk/TypeFerence`.
+
+The published release binaries predate source version 9. The plugin has not yet been installed and exercised in each client.
+
 ## Repository map
 
 - `go/`: the Go implementation: compiler, CLI, importer, language server (`cmd/typeference-lsp`), and the WebAssembly bridge.
-- `conformance/`: the version 8 golden fixture corpus and the output-contract schemas.
+- `conformance/`: the version 9 golden fixture corpus and the output-contract schemas.
 - `tools/validate_output.py`: validates build output against the output contract.
 - `examples/helio/`: a fictional organization's four packages and marketplace.
 - `dist/`: the committed reference build of the Helio marketplace.
 - `web/playground/`: the browser playground and setup wizard.
 - `agents/maintainer/`: this repository's maintainer agent, defined in TypeFerence.
 - `editors/vscode/`: VS Code client for the language server.
-- `docs/specification.md`: normative version 8 behavior.
+- `docs/specification.md`: normative version 9 behavior.
 - `docs/decisions/`: architecture decision records.
 - `CHANGELOG.md` and `docs/release-checklist.md`: versioning and release process.
 

@@ -1,0 +1,5 @@
+---
+description: The ticket system.
+transport: streamable-http
+url: https://tickets.case.example/mcp
+---

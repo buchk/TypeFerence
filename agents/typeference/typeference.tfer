@@ -1,0 +1,11 @@
+---
+schemaVersion: 9
+name: typeference/authoring
+version: 0.1.0
+marketplace:
+  name: typeference
+  owner: TypeFerence
+  description: The TypeFerence authoring plugin, published from the TypeFerence repository.
+plugins:
+  - plugins/typeference.plugin.tfer
+---

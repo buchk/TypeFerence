@@ -2,8 +2,9 @@
 description: Base operations for another team.
 embeds:
   - plugins/base.plugin.tfer
-agents:
-  - agents/override.agent.tfer
+copilot:
+  agents:
+    - agents/override.agent.tfer
 with:
   team: data/beta.context.tfer
 ---

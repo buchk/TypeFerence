@@ -1,0 +1,10 @@
+---
+description: A kit every client installs.
+skills:
+  - skills/tickets.skill.tfer
+  - skills/signals.skill.tfer
+author:
+  name: Acme Platform
+license: MIT
+copilot:
+---

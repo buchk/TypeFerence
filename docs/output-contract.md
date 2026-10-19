@@ -2,7 +2,9 @@
 
 This document lists every file `typeference build` emits for the
 `agent-plugin` target, which format governs each one, and how CI checks it.
-The specification ("The agent-plugin target" and "Native Copilot components")
+Build runs one adapter per client (Copilot, Claude Code, Codex), each writing
+its client's layout beneath `copilot/`, `claude/`, or `codex/` and its
+client's marketplace index. The specification ("The agent-plugin target" and "Native Copilot components")
 is normative for the exact bytes. This document is the consumer's view: what a
 marketplace, an installer, or a tool reading build output may rely on.
 
@@ -10,25 +12,33 @@ marketplace, an installer, or a tool reading build output may rely on.
 
 Paths are relative to `<out>/agent-plugin/`. `<artifact>` is a plugin
 directory: `<plugin>` for manual mode, `<plugin>-pipeline` for pipeline mode.
+`<client>` is `copilot`, `claude`, or `codex`; Claude Code and Codex build only
+artifacts whose plugin has no Copilot components, and Claude Code only those
+whose servers set no `cwd`. `build.json` lists every artifact a client does not
+build, with the reason.
 
 | Path | Format owner | Emitted when | Checked against |
 | --- | --- | --- | --- |
-| `.github/plugin/marketplace.json` | Copilot | the manifest declares a marketplace | `conformance/schemas/copilot/marketplace.schema.json` |
-| `.typeference/build.json` | TypeFerence (`schemaVersion` 3) | always | `conformance/schemas/typeference/build.schema.json` |
+| `.github/plugin/marketplace.json` | Copilot | the manifest declares a marketplace | `conformance/schemas/copilot/marketplace.schema.json`; lists exactly the Copilot artifacts |
+| `.claude-plugin/marketplace.json` | Claude Code | the manifest declares a marketplace and Claude Code builds an artifact | `conformance/schemas/claude-code/marketplace.schema.json`; the Copilot entries, pointing into `claude/` |
+| `.agents/plugins/marketplace.json` | Codex | the manifest declares a marketplace and Codex builds an artifact | `conformance/schemas/codex/marketplace.schema.json`; lists exactly the Codex artifacts |
+| `.typeference/build.json` | TypeFerence (`schemaVersion` 4) | always | `conformance/schemas/typeference/build.schema.json` |
 | `.typeference/compatibility.json` | TypeFerence (`schemaVersion` 1) | always | `conformance/schemas/typeference/compatibility.schema.json` |
 | `<marketplace file>` | the author's | the manifest's `marketplace.files` lists it | its digest in `build.json` |
-| `<artifact>/plugin.json` | Agent Plugins 1.0 | always | `conformance/schemas/agent-plugins-1.0.0/plugin.schema.json` |
-| `<artifact>/mcp.json` | Agent Plugins 1.0 | a shipped skill requires a server in this mode | `conformance/schemas/agent-plugins-1.0.0/mcp.schema.json` |
-| `<artifact>/skills/<skill>/SKILL.md` | Agent Skills, plus Copilot fields | per shipped skill and instance | frontmatter fields, name grammar, name equals directory, length limits |
-| `<artifact>/skills/<skill>/references/input.schema.json`, `output.schema.json` | JSON Schema | the skill declares input or output | a valid JSON Schema |
-| `<artifact>/skills/<skill>/{references,scripts,assets}/...` | the author's | the skill lists files or file documents | digest only |
-| `<artifact>/com.github.copilot/agents/<agent>.agent.md` | Copilot | per linked agent | frontmatter fields, name equals file name, `mcp-servers` shape, no `${PLUGIN_DATA}` |
-| `<artifact>/com.github.copilot/rules/<rule>.md` | Copilot | per shipped rule | optional frontmatter of `paths` and `description`, non-empty body |
-| `<artifact>/com.github.copilot/commands/<command>.md` | Copilot | per shipped command | frontmatter fields, required `description`, non-empty body |
-| `<artifact>/com.github.copilot/hooks/hooks.json` | Copilot | the artifact ships a hook | `conformance/schemas/copilot/hooks.schema.json` |
-| `<artifact>/com.github.copilot/lsp.json` | Copilot | the artifact ships an LSP server | `conformance/schemas/copilot/lsp.schema.json` |
-| `<artifact>/<plugin file>` | the author's | the plugin's `files` lists it | digest only |
-| `<artifact>/.typeference/bundle.json` | TypeFerence (`schemaVersion` 5) | always | `conformance/schemas/typeference/bundle.schema.json` |
+| `copilot/<artifact>/plugin.json`, `codex/<artifact>/plugin.json` | Agent Plugins 1.0 | always | `conformance/schemas/agent-plugins-1.0.0/plugin.schema.json` |
+| `copilot/<artifact>/mcp.json`, `codex/<artifact>/mcp.json` | Agent Plugins 1.0 | a shipped skill requires a server in this mode | `conformance/schemas/agent-plugins-1.0.0/mcp.schema.json` |
+| `claude/<artifact>/.claude-plugin/plugin.json` | Claude Code | always | `conformance/schemas/claude-code/plugin.schema.json` |
+| `claude/<artifact>/.mcp.json` | Claude Code | a shipped skill requires a server in this mode | `conformance/schemas/claude-code/mcp.schema.json`: Claude Code's variable names, no `./` command |
+| `<client>/<artifact>/skills/<skill>/SKILL.md` | Agent Skills, plus Copilot fields in `copilot/` only | per shipped skill and instance | frontmatter fields, name grammar, name equals directory, length limits |
+| `<client>/<artifact>/skills/<skill>/references/input.schema.json`, `output.schema.json` | JSON Schema | the skill declares input or output | a valid JSON Schema |
+| `<client>/<artifact>/skills/<skill>/{references,scripts,assets}/...` | the author's | the skill lists files or file documents | digest only |
+| `copilot/<artifact>/com.github.copilot/agents/<agent>.agent.md` | Copilot | per linked agent | frontmatter fields, name equals file name, `mcp-servers` shape, no `${PLUGIN_DATA}` |
+| `copilot/<artifact>/com.github.copilot/rules/<rule>.md` | Copilot | per shipped rule | optional frontmatter of `paths` and `description`, non-empty body |
+| `copilot/<artifact>/com.github.copilot/commands/<command>.md` | Copilot | per shipped command | frontmatter fields, required `description`, non-empty body |
+| `copilot/<artifact>/com.github.copilot/hooks/hooks.json` | Copilot | the artifact ships a hook | `conformance/schemas/copilot/hooks.schema.json` |
+| `copilot/<artifact>/com.github.copilot/lsp.json` | Copilot | the artifact ships an LSP server | `conformance/schemas/copilot/lsp.schema.json` |
+| `<client>/<artifact>/<plugin file>` | the author's | the plugin's `files` lists it | digest only |
+| `<client>/<artifact>/.typeference/bundle.json` | TypeFerence (`schemaVersion` 5) | always | `conformance/schemas/typeference/bundle.schema.json` |
 
 Nothing else is emitted. In particular, build never writes repository or
 enterprise settings (no carried file may land beneath `.github/copilot/`), and

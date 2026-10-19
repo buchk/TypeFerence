@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/buchk/TypeFerence/conformance/schemas/typeference/build.schema.json",
   "title": "TypeFerence build.json",
-  "description": "The target's integrity index (.typeference/build.json, schemaVersion 3): one entry per plugin and mode, and one per marketplace file.",
+  "description": "The target's integrity index (.typeference/build.json, schemaVersion 4): one entry per client and built artifact, one per artifact a client does not build, and one per marketplace file.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -10,11 +10,12 @@
     "target",
     "sourceDigest",
     "artifacts",
+    "notBuilt",
     "files"
   ],
   "properties": {
     "schemaVersion": {
-      "const": 3
+      "const": 4
     },
     "target": {
       "const": "agent-plugin"
@@ -28,6 +29,7 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "client",
           "id",
           "mode",
           "path",
@@ -35,6 +37,13 @@
           "digest"
         ],
         "properties": {
+          "client": {
+            "enum": [
+              "copilot",
+              "claude",
+              "codex"
+            ]
+          },
           "id": {
             "$ref": "#/$defs/id"
           },
@@ -45,13 +54,50 @@
             ]
           },
           "path": {
-            "$ref": "#/$defs/name"
+            "type": "string",
+            "pattern": "^(copilot|claude|codex)/[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$"
           },
           "sourceDigest": {
             "$ref": "#/$defs/digest"
           },
           "digest": {
             "$ref": "#/$defs/digest"
+          }
+        }
+      }
+    },
+    "notBuilt": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "client",
+          "id",
+          "mode",
+          "reason"
+        ],
+        "properties": {
+          "client": {
+            "enum": [
+              "claude",
+              "codex"
+            ]
+          },
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "mode": {
+            "enum": [
+              "manual",
+              "pipeline"
+            ]
+          },
+          "reason": {
+            "enum": [
+              "copilot-components",
+              "server-cwd"
+            ]
           }
         }
       }

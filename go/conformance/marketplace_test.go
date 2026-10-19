@@ -41,7 +41,7 @@ func buildMarketplace(t *testing.T, dir string, m manifest) string {
 	if _, err := compile.Build(source, out, compile.BuildOptions{}); err != nil {
 		t.Fatal(err)
 	}
-	return filepath.Join(out, "agent-plugin")
+	return filepath.Join(out, "agent-plugin", "copilot")
 }
 
 func artifactDigest(t *testing.T, root, artifact string) string {
@@ -73,7 +73,7 @@ func TestMarketplaceBumpRewritesOnlyTheOwnersPlugins(t *testing.T) {
 	if artifactDigest(t, before, "data") == artifactDigest(t, after, "data") {
 		t.Error("releasing conformance/data must change its own plugin")
 	}
-	index, err := os.ReadFile(filepath.Join(after, ".github", "plugin", "marketplace.json"))
+	index, err := os.ReadFile(filepath.Join(after, "..", ".github", "plugin", "marketplace.json"))
 	if err != nil || !strings.Contains(string(index), `"version": "1.2.0"`) {
 		t.Fatalf("the marketplace index lists the owning package's new version: %v\n%s", err, index)
 	}
@@ -126,12 +126,12 @@ func candidate(t *testing.T, files map[string]string) (string, string) {
 	return source, pkg
 }
 
-const candidateManifest = "---\nschemaVersion: 8\nname: conformance/data\nversion: 1.2.0\ndependencies:\n  conformance/core: 1.0.0\nplugins:\n  - plugins/data.plugin.tfer\n---\n"
+const candidateManifest = "---\nschemaVersion: 9\nname: conformance/data\nversion: 1.2.0\ndependencies:\n  conformance/core: 1.0.0\nplugins:\n  - plugins/data.plugin.tfer\n---\n"
 
 func TestCandidateThatFitsValidates(t *testing.T) {
 	source, pkg := candidate(t, map[string]string{
 		"typeference.tfer":             candidateManifest,
-		"plugins/data.plugin.tfer":     "---\ndescription: The data platform agent.\nembeds:\n  - conformance/core:profiles/engineering.profile.tfer\nagents:\n  - agents/data-agent.agent.tfer\n---\n",
+		"plugins/data.plugin.tfer":     "---\ndescription: The data platform agent.\nembeds:\n  - conformance/core:profiles/engineering.profile.tfer\ncopilot:\n  agents:\n    - agents/data-agent.agent.tfer\n---\n",
 		"agents/data-agent.agent.tfer": "---\ndescription: Data agent.\n---\nHelp the data team.\n",
 	})
 	summary, err := compile.Summarize(source, compile.BuildOptions{Candidate: pkg})
@@ -163,7 +163,7 @@ func TestCandidateCollisionIsReported(t *testing.T) {
 func TestCandidateVersionSkewIsReported(t *testing.T) {
 	// Releasing a new core while payments and data still pin the old one.
 	source, pkg := candidate(t, map[string]string{
-		"typeference.tfer":         "---\nschemaVersion: 8\nname: conformance/core\nversion: 1.1.0\nexports:\n  - skills/status.skill.tfer\n---\n",
+		"typeference.tfer":         "---\nschemaVersion: 9\nname: conformance/core\nversion: 1.1.0\nexports:\n  - skills/status.skill.tfer\n---\n",
 		"skills/status.skill.tfer": "---\ndescription: Status.\n---\nReport status.\n",
 	})
 	_, err := compile.Summarize(source, compile.BuildOptions{Candidate: pkg})
@@ -174,7 +174,7 @@ func TestCandidateVersionSkewIsReported(t *testing.T) {
 
 func TestCandidateDependenciesMustBeLocked(t *testing.T) {
 	source, pkg := candidate(t, map[string]string{
-		"typeference.tfer":                  "---\nschemaVersion: 8\nname: conformance/data\nversion: 1.2.0\ndependencies:\n  conformance/core: 2.0.0\nplugins:\n  - plugins/data.plugin.tfer\n---\n",
+		"typeference.tfer":                  "---\nschemaVersion: 9\nname: conformance/data\nversion: 1.2.0\ndependencies:\n  conformance/core: 2.0.0\nplugins:\n  - plugins/data.plugin.tfer\n---\n",
 		"plugins/data.plugin.tfer":          "---\ndescription: The data kit.\nskills:\n  - skills/pipeline-status.skill.tfer\n---\n",
 		"skills/pipeline-status.skill.tfer": "---\ndescription: Pipeline status.\n---\nReport pipeline status.\n",
 	})

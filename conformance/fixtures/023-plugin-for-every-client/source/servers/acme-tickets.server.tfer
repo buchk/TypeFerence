@@ -1,0 +1,5 @@
+---
+description: Acme's ticket system.
+transport: streamable-http
+url: https://tickets.acme.example/mcp
+---

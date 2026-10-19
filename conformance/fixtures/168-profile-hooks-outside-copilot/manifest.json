@@ -1,0 +1,4 @@
+{
+  "description": "A profile that lists hooks outside its copilot block is an error: a governance hook never ships, or fails to ship, silently.",
+  "expect": "error"
+}

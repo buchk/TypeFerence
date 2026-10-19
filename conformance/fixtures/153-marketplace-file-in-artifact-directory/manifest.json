@@ -1,4 +1,0 @@
-{
-  "description": "A marketplace file cannot ship inside an artifact directory, which build owns (ADR-0004).",
-  "expect": "error"
-}

@@ -1,0 +1,10 @@
+---
+description: Build signals from a binary the plugin ships.
+transport: stdio
+command: ./bin/build-signals
+args:
+  - --cache
+  - ${PLUGIN_DATA}/cache
+env:
+  SIGNALS_HOME: ${PLUGIN_ROOT}/share
+---

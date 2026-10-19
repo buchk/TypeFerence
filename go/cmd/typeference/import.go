@@ -9,7 +9,7 @@ import (
 	"github.com/buchk/TypeFerence/go/internal/resource"
 )
 
-// importCommand turns existing GitHub Copilot customizations into a version 8
+// importCommand turns existing GitHub Copilot customizations into a version 9
 // package (ADR-0008) and validates the result through the ordinary compiler.
 //
 //	typeference import <source> --out <dir> [--name ns/name] [--version x.y.z]

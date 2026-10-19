@@ -6,8 +6,9 @@ context:
   - docs/norms.context.tfer
 skills:
   - skills/status.skill.tfer
-rules:
-  - rules/evidence.rule.tfer
-lspServers:
-  - lsp/core-config.lsp.tfer
+copilot:
+  rules:
+    - rules/evidence.rule.tfer
+  lspServers:
+    - lsp/core-config.lsp.tfer
 ---
