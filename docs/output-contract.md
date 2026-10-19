@@ -1,7 +1,12 @@
 # Output contract
 
 This document lists every file `typeference build` emits for the
-`agent-plugin` target, which format governs each one, and how CI checks it.
+`agent-plugin` target with the default `copilot` adapter, which format governs
+each one, and how CI checks it. `--adapter portable` emits the same plugin
+manifests, skills, MCP configurations, carried plugin files, and TypeFerence
+indexes, but not the Copilot extension, Copilot skill frontmatter, marketplace
+index, or marketplace files. Portable-only outputs are covered by Go tests;
+the output validator's current file contract applies to the default adapter.
 The specification ("The agent-plugin target" and "Native Copilot components")
 is normative for the exact bytes. This document is the consumer's view: what a
 marketplace, an installer, or a tool reading build output may rely on.
