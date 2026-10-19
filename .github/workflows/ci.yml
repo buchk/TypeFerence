@@ -14,7 +14,12 @@ jobs:
           go-version: stable
           cache-dependency-path: go/go.sum
       - name: gofmt
-        run: test -z "$(gofmt -l .)"
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            printf 'Files requiring gofmt:\n%s\n' "$unformatted"
+            exit 1
+          fi
         working-directory: go
       - run: go vet ./...
         working-directory: go
