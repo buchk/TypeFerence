@@ -1,8 +1,8 @@
 # TypeFerence
 
-**Write your organization's Copilot skills, agents, and MCP servers once. Specialize them per team with typed data. Ship them as GitHub Agent Plugins through one marketplace.**
+**Write reusable skills, agents, and MCP servers once. Specialize them with typed data. Compile Agent Plugins 1.0 packages, with client-specific output when needed.**
 
-TypeFerence is an experimental authoring and reuse layer for [Agent Plugins](https://agent-plugins.org/), with GitHub Copilot as its output adapter. It compiles small `.tfer` source documents into ordinary plugin directories and a Copilot marketplace index. Copilot and GitHub install, enable, authenticate, and run what it produces; TypeFerence never does.
+TypeFerence is an experimental authoring and reuse layer for [Agent Plugins](https://agent-plugins.org/). It compiles small `.tfer` source documents into ordinary Agent Plugins 1.0 directories: skills and MCP are portable, while client-specific capabilities are produced by output adapters. The default Copilot adapter also produces GitHub custom agents, hooks, and a marketplace index. Clients install, authenticate, and run the generated artifacts; TypeFerence never does.
 
 Read the [specification](docs/specification.md) (version 8), the [decisions](docs/decisions/README.md) behind it, the [output contract](docs/output-contract.md), and the [Helio example](examples/helio/README.md).
 
@@ -136,7 +136,7 @@ agent-plugin/
   .typeference/compatibility.json
 ```
 
-Plugins are Agent Plugins 1.0 by default. Copilot-only fields and components are emitted only when a document asks for them. CI checks every emitted file against the Agent Plugins schemas and TypeFerence's [output contract](docs/output-contract.md).
+Every build produces Agent Plugins 1.0 packages. By default, the Copilot adapter emits any declared Copilot-only fields and components. Use `--adapter portable` to emit only portable skills, MCP servers, plugin metadata, and TypeFerence provenance; it deliberately omits Copilot hooks, custom agents, rules, commands, language servers, and marketplace files. Those omitted features are **not** portable or enforced by other clients. CI checks the default output against the Agent Plugins schemas and TypeFerence's [output contract](docs/output-contract.md).
 
 ## One marketplace for the whole organization
 
@@ -238,7 +238,7 @@ typeference validate <source> [--packages-dir dir] [--candidate <package-dir>]
 typeference pack <source> [--out package.tferpkg]
 typeference restore <source> --feeds <external-config> [--locked] [--packages-dir dir]
 typeference update <source> --feeds <external-config> [--packages-dir dir]
-typeference build <source> [--out dist] [--packages-dir dir]
+typeference build <source> [--out dist] [--packages-dir dir] [--adapter copilot|portable]
 typeference inspect <agent-id> [--source path] [--packages-dir dir]
 typeference diff <source> --against <compiled-dir> [--json] [--packages-dir dir]
 typeference version
@@ -246,7 +246,7 @@ typeference version
 
 - `import` turns existing Copilot customizations into a version 8 package: a repository's `.github/agents` and skills, a skill directory, or an Agent Plugin. It carries the files beside skills, `mcp.json` servers, and recognized Copilot frontmatter. It also carries an Agent Plugin's commands, rules, hooks, and language servers, its `author`, `homepage`, `repository`, `license`, `keywords`, `category`, and `tags`, and every other file in the plugin directory, such as a README or templates, as plugin `files`. A marketplace repository is not imported whole: import lists its plugins so each can be imported, and the repository's README and CI become the marketplace package's `marketplace.files`. It fails, listing every item, on anything version 8 cannot represent, unless you pass `--lossy`.
 - `restore` is the only command that contacts feeds. It records exact identities and digests in `typeference.lock`.
-- `build` is offline and deterministic.
+- `build` is offline and deterministic. Its default adapter is `copilot`, retaining byte-for-byte compatibility with existing marketplace builds. `--adapter portable` produces standard Agent Plugins 1.0 packages without client-specific behavior; native Codex and Claude adapters are not yet implemented.
 - `diff` rebuilds and byte-compares against a committed output directory.
 
 ## Packages and feeds
