@@ -1,0 +1,4 @@
+{
+  "description": "Version 8 sources are not accepted: version 9 moved Copilot components into copilot blocks.",
+  "expect": "error"
+}

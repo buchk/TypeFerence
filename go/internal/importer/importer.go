@@ -20,7 +20,7 @@ type File struct {
 	Data    []byte
 }
 
-// Result is a generated version 8 source tree and what a person should know
+// Result is a generated version 9 source tree and what a person should know
 // about it.
 type Result struct {
 	Files []File
@@ -36,7 +36,7 @@ type Options struct {
 	// Plugin names the generated plugin; defaults to the imported plugin's
 	// name or the source directory's name.
 	Plugin string
-	// Lossy drops what version 8 cannot represent, listing each item in the
+	// Lossy drops what version 9 cannot represent, listing each item in the
 	// notes, instead of failing (ADR-0008).
 	Lossy bool
 }
@@ -67,7 +67,7 @@ type importedAgent struct {
 }
 
 // copilotField is one recognized Copilot frontmatter field, renamed to its
-// version 8 source key.
+// version 9 source key.
 type copilotField struct {
 	key    string
 	text   string
@@ -107,8 +107,8 @@ type importer struct {
 // Import reads GitHub Copilot customizations under source (an Agent Plugins
 // 1.0 plugin, a Copilot CLI plugin, a repository's .github/agents and skill
 // directories, or a single skill directory) and returns an equivalent
-// version 8 package: one plugin linking the imported agents and skills, the
-// files beside each skill, and the plugin's MCP servers. Anything version 8
+// version 9 package: one plugin linking the imported agents and skills, the
+// files beside each skill, and the plugin's MCP servers. Anything version 9
 // cannot represent fails the import unless Lossy is set.
 func Import(source string, options Options) (*Result, error) {
 	root, err := filepath.Abs(source)
@@ -146,7 +146,7 @@ func Import(source string, options Options) (*Result, error) {
 	}
 	if len(im.unsupported) > 0 && !im.lossy {
 		sort.Strings(im.unsupported)
-		return nil, resource.Errorf("version 8 cannot represent:\n  %s\nrerun with --lossy to import without them", strings.Join(im.unsupported, "\n  "))
+		return nil, resource.Errorf("version 9 cannot represent:\n  %s\nrerun with --lossy to import without them", strings.Join(im.unsupported, "\n  "))
 	}
 	for _, item := range im.unsupported {
 		im.notes = append(im.notes, "dropped: "+item)
@@ -240,19 +240,22 @@ func Import(source string, options Options) (*Result, error) {
 	}
 	plugin := &frontmatter{}
 	plugin.raw(0, "description", pluginDescription)
-	plugin.list(0, "agents", agentPaths)
 	plugin.list(0, "skills", skillPaths)
-	plugin.list(0, "rules", im.native.rules)
-	plugin.list(0, "commands", im.native.commands)
-	plugin.list(0, "hooks", im.native.hooks)
-	plugin.list(0, "lspServers", im.native.lsp)
+	if len(agentPaths)+len(im.native.rules)+len(im.native.commands)+len(im.native.hooks)+len(im.native.lsp) > 0 {
+		plugin.key(0, "copilot")
+		plugin.list(2, "agents", agentPaths)
+		plugin.list(2, "rules", im.native.rules)
+		plugin.list(2, "commands", im.native.commands)
+		plugin.list(2, "hooks", im.native.hooks)
+		plugin.list(2, "lspServers", im.native.lsp)
+	}
 	writeMetadata(plugin, im.metadata)
 	writeCarried(plugin, im.carried, result)
 	result.Files = append(result.Files, im.native.files...)
 	pluginPath := "plugins/" + pluginName + ".plugin.tfer"
 	result.Files = append(result.Files, File{Path: pluginPath, Content: document(plugin, "")})
 	manifest := &frontmatter{}
-	manifest.token(0, "schemaVersion", "8")
+	manifest.token(0, "schemaVersion", "9")
 	manifest.raw(0, "name", name)
 	manifest.raw(0, "version", version)
 	manifest.list(0, "plugins", []string{pluginPath})
@@ -407,7 +410,7 @@ func (im *importer) skillFiles(dir string) ([]importedFile, error) {
 }
 
 // skillCopilotFields and agentCopilotFields map recognized Copilot
-// frontmatter keys to version 8 copilot keys.
+// frontmatter keys to version 9 copilot keys.
 var skillCopilotFields = map[string]string{
 	"argument-hint":            "argumentHint",
 	"user-invocable":           "userInvocable",
@@ -723,7 +726,7 @@ func (im *importer) plugin() (string, string, error) {
 			case metadataKeys[key]:
 				im.readMetadata(source, key, manifest[key])
 			default:
-				im.unsupported = append(im.unsupported, source+": manifest member '"+key+"' has no version 8 source form")
+				im.unsupported = append(im.unsupported, source+": manifest member '"+key+"' has no version 9 source form")
 			}
 		}
 		if err := im.skillsIn(filepath.Join(im.root, "skills")); err != nil {
@@ -785,15 +788,15 @@ func (im *importer) plugin() (string, string, error) {
 		case metadataKeys[key]:
 			im.readMetadata(source, key, manifest[key])
 		case key == "hooks" || key == "mcpServers" || key == "commands" || key == "lspServers":
-			im.unsupported = append(im.unsupported, source+": '"+key+"' has no version 8 source kind")
+			im.unsupported = append(im.unsupported, source+": '"+key+"' has no version 9 source kind")
 		default:
-			im.unsupported = append(im.unsupported, source+": manifest member '"+key+"' has no version 8 source form")
+			im.unsupported = append(im.unsupported, source+": manifest member '"+key+"' has no version 9 source form")
 		}
 	}
 	legacyComponents := []string{"hooks", "hooks.json", ".mcp.json", "commands"}
 	for _, unsupported := range legacyComponents {
 		if exists(filepath.Join(im.root, unsupported)) {
-			im.unsupported = append(im.unsupported, unsupported+": has no version 8 source kind")
+			im.unsupported = append(im.unsupported, unsupported+": has no version 9 source kind")
 		}
 	}
 	agentsPrefix := strings.Trim(strings.TrimPrefix(agentsDir, "./"), "/") + "/"

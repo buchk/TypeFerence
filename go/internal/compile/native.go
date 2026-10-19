@@ -89,10 +89,18 @@ func planNative(doc *resource.Document, plan *pluginPlan, resolved *resolve.Reso
 	return nil
 }
 
-// writeNative emits an artifact's rules, commands, hooks, and language
-// servers.
-func (c *compilation) writeNative(dir string, artifact pluginArtifact, written *[]string) error {
+// writeCopilot emits an artifact's Copilot components, the members of its
+// plugin's copilot blocks, under com.github.copilot/: custom agents, rules,
+// commands, hooks, and LSP servers. An artifact without them has no such
+// directory.
+func (c *compilation) writeCopilot(dir string, artifact pluginArtifact, written *[]string) error {
 	plan := artifact.plan
+	for _, agent := range plan.Agents {
+		path := filepath.Join(dir, copilotDir, "agents", resource.Leaf(agent.ID)+".agent.md")
+		if err := writeFile(path, renderAgent(agent, c.docs), written); err != nil {
+			return err
+		}
+	}
 	for _, rule := range plan.Rules {
 		if err := writeFile(filepath.Join(dir, copilotDir, "rules", rule.Name+".md"), renderRule(rule), written); err != nil {
 			return err
@@ -351,7 +359,8 @@ func commandsValue(commands []resolve.ResolvedCommand) jsonx.Arr {
 	return arr
 }
 
-// Copilot-specific frontmatter and custom agent rendering.
+// frontmatterFields renders a skill's or agent's declared Copilot fields in
+// table order; an undeclared field is absent.
 func frontmatterFields(b *strings.Builder, c resource.CopilotFields, skill bool) {
 	boolean := func(key string, value *bool) {
 		if value == nil {

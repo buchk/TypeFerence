@@ -5,12 +5,12 @@
   "mode": "manual",
   "version": "2.4.0",
   "description": "The Helio payments operations agent, for engineers and release pipelines.",
-  "sourceDigest": "sha256:5e8199f41a1c291a5716af2f703ba6b2cbb0240aff9c521f83f9316e68feaf0b",
+  "sourceDigest": "sha256:c82e19093a6deae771993d7944c7726ba0c587c0766d4bf547c72e7207d81c3d",
   "dependencies": [
     {
       "name": "helio/core",
       "version": "3.1.0",
-      "digest": "sha256:8625e406a9d6c9433d4a95962f35a8969ea87cbf8979a0f5b1231d6b9955ea96"
+      "digest": "sha256:321fd1aadc404d9b7753c675d9eb16d7d9cd1b20210ece96d95abd7e6437e2cf"
     }
   ],
   "embeds": [
@@ -40,19 +40,19 @@
       "source": "helio/payments/plugins/payments@2.4.0"
     },
     {
-      "field": "agents",
+      "field": "copilot.agents",
       "source": "helio/payments/plugins/payments@2.4.0"
     },
     {
-      "field": "rules",
+      "field": "copilot.rules",
       "source": "helio/core/profiles/team-ops@3.1.0"
     },
     {
-      "field": "commands",
+      "field": "copilot.commands",
       "source": "helio/core/profiles/team-ops@3.1.0"
     },
     {
-      "field": "hooks",
+      "field": "copilot.hooks",
       "source": "helio/core/profiles/team-ops@3.1.0"
     }
   ],

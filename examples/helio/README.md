@@ -1,7 +1,7 @@
-# Helio, version 8
+# Helio, version 9
 
 A fictional organization, Helio Works, authoring its Copilot plugins with
-version 8 of the language.
+version 9 of the language.
 
 The reference test (`go test ./internal/compile -run TestHelioReference`)
 stages the four team packages into a temporary feed, restores the marketplace,

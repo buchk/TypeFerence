@@ -1,7 +1,8 @@
 ---
 description: Kit.
-agents:
-  - agents/a.agent.tfer
+copilot:
+  agents:
+    - agents/a.agent.tfer
 embeds:
   - profiles/one.profile.tfer
   - profiles/two.profile.tfer

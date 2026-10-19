@@ -2,6 +2,7 @@
 description: Review kit.
 embeds:
   - profiles/helpers.profile.tfer
-agents:
-  - agents/reviewer.agent.tfer
+copilot:
+  agents:
+    - agents/reviewer.agent.tfer
 ---

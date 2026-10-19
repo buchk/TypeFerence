@@ -334,16 +334,22 @@ func canonicalSchema(schema string) string {
 
 // writeAgentPlugins emits the agent-plugin target: a marketplace repository
 // root holding one Agent Plugins 1.0 package per plugin and mode.
-func (c *compilation) writeAgentPlugins(root string, adapter outputAdapter, written *[]string) error {
+func (c *compilation) writeAgentPlugins(root string, written *[]string) error {
 	artifacts := artifactsOf(c.plugins)
 	for _, artifact := range artifacts {
-		if err := c.writePluginArtifact(root, artifact, adapter, written); err != nil {
+		if err := c.writePluginArtifact(root, artifact, written); err != nil {
 			return err
 		}
 	}
-	rootFiles, err := adapter.writeMarketplace(c, root, artifacts, written)
-	if err != nil {
-		return err
+	var rootFiles []resource.PackageFile
+	if marketplace := c.project.Marketplace; marketplace != nil {
+		if err := writeFile(filepath.Join(root, ".github", "plugin", "marketplace.json"), marketplaceJSON(marketplace, c.project.Version, artifacts)+"\n", written); err != nil {
+			return err
+		}
+		rootFiles = sortedFiles(marketplace.Files)
+		if err := writeCarried(root, rootFiles, written); err != nil {
+			return err
+		}
 	}
 	if err := writeFile(filepath.Join(root, ".typeference", "compatibility.json"), compatibilityJSON(artifacts)+"\n", written); err != nil {
 		return err
@@ -436,7 +442,7 @@ func (c *compilation) artifactServers(artifact pluginArtifact) []*resource.Docum
 	return servers
 }
 
-func (c *compilation) writePluginArtifact(root string, artifact pluginArtifact, adapter outputAdapter, written *[]string) error {
+func (c *compilation) writePluginArtifact(root string, artifact pluginArtifact, written *[]string) error {
 	dir := filepath.Join(root, artifact.dir)
 	manifest := jsonx.Obj{
 		{K: "$schema", V: jsonx.Str(pluginSchemaURI)},
@@ -454,12 +460,12 @@ func (c *compilation) writePluginArtifact(root string, artifact pluginArtifact, 
 			return err
 		}
 	}
-	if err := adapter.writeArtifact(c, dir, artifact, written); err != nil {
+	if err := c.writeCopilot(dir, artifact, written); err != nil {
 		return err
 	}
 	for _, skill := range artifact.plan.Skills {
 		skillDir := filepath.Join(dir, "skills", skill.Name)
-		if err := writeFile(filepath.Join(skillDir, "SKILL.md"), renderSkill(skill, artifact.mode, adapter), written); err != nil {
+		if err := writeFile(filepath.Join(skillDir, "SKILL.md"), renderSkill(skill, artifact.mode), written); err != nil {
 			return err
 		}
 		entries, err := skillDirectory(skill)
@@ -524,13 +530,12 @@ func serverValue(s *resource.ServerConfig) jsonx.Obj {
 	return obj
 }
 
-// frontmatterFields renders opt-in Copilot fields in table order.
 // renderSkill renders a SKILL.md: Agent Skills frontmatter with opt-in
 // Copilot fields, the instructions for one mode, and inline documents.
-func renderSkill(skill resolve.ResolvedSkill, mode string, adapter outputAdapter) string {
+func renderSkill(skill resolve.ResolvedSkill, mode string) string {
 	var b strings.Builder
 	b.WriteString("---\nname: " + skill.Name + "\ndescription: " + escapeYAML(skill.Description) + "\n")
-	adapter.writeSkillFrontmatter(&b, skill.Copilot)
+	frontmatterFields(&b, skill.Copilot, true)
 	b.WriteString("---\n\n")
 	b.WriteString(strings.TrimSpace(skill.InstructionsFor(mode)) + "\n\n")
 	inline := []resolve.ResolvedDocument{}

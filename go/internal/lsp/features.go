@@ -14,17 +14,17 @@ import (
 // manifestKind is the completion vocabulary of the package manifest.
 const manifestKind = "manifest"
 
-// kindFields lists the fields each version 8 document kind accepts, offered
+// kindFields lists the fields each version 9 document kind accepts, offered
 // as completions in a key position.
 var kindFields = map[string][]string{
 	"agent":       {"displayName", "description", "extends", "context", "copilot", "servers"},
-	"profile":     {"displayName", "description", "embeds", "parameters", "agents", "context", "skills", "rules", "commands", "hooks", "lspServers"},
+	"profile":     {"displayName", "description", "embeds", "parameters", "context", "skills", "copilot"},
 	"capability":  {"displayName", "description", "inputSchema", "outputSchema"},
 	"skill":       {"displayName", "description", "binds", "extends", "parameters", "with", "inputSchema", "outputSchema", "context", "files", "requiresServers", "variants", "copilot"},
 	"server":      {"displayName", "description", "transport", "command", "args", "env", "cwd", "url", "headers"},
 	"contextType": {"displayName", "description", "instanceName", "fields"},
 	"context":     {"displayName", "description", "parameters", "contextType", "values"},
-	"plugin":      {"description", "embeds", "agents", "context", "skills", "with", "rules", "commands", "hooks", "lspServers", "modes", "author", "homepage", "repository", "license", "keywords", "category", "tags", "files"},
+	"plugin":      {"description", "embeds", "context", "skills", "with", "copilot", "modes", "author", "homepage", "repository", "license", "keywords", "category", "tags", "files"},
 	"rule":        {"displayName", "description", "parameters", "paths"},
 	"command":     {"displayName", "description", "parameters", "argumentHint", "allowedTools", "disableModelInvocation"},
 	"hook":        {"displayName", "description", "event", "matcher", "type", "bash", "powershell", "command", "exec", "args", "cwd", "env", "timeoutSec", "url", "headers", "allowedEnvVars", "prompt"},
@@ -232,8 +232,8 @@ func tokenAt(text string, line, char int) string {
 	return ""
 }
 
-// packageRoot finds the version 8 package containing a file: the nearest
-// ancestor directory whose typeference.tfer declares schemaVersion 8.
+// packageRoot finds the version 9 package containing a file: the nearest
+// ancestor directory whose typeference.tfer declares schemaVersion 9.
 func packageRoot(path string) (string, *resource.Project) {
 	dir := filepath.Dir(path)
 	for {

@@ -11,14 +11,14 @@ Format: `NNNN-short-title.md` with **Status**, **Context**, **Decision**,
 
 | ADR | Topic |
 | --- | --- |
-| [0001](0001-scope-copilot-plugin-authoring.md) | Scope: an authoring and reuse layer for Copilot plugins |
+| [0001](0001-scope-agent-plugin-authoring.md) | Scope: an authoring and reuse layer for Agent Plugins |
 | [0002](0002-one-go-implementation.md) | One Go implementation behind a normative specification |
 | [0003](0003-determinism-and-golden-digests.md) | Deterministic output, enforced by golden digests |
 | [0004](0004-packages-and-one-marketplace-build.md) | Source packages and one marketplace build |
 | [0005](0005-closed-tfer-grammar.md) | A closed `.tfer` grammar with schema-directed scalars |
 | [0006](0006-composition-and-templates.md) | Composition: plugins are the binding root, profiles embed, agents and skills extend |
 | [0007](0007-build-emits-complete-host-configuration.md) | Build emits complete Copilot configuration |
-| [0008](0008-authoring-tools.md) | Authoring tools: import, the setup wizard, and the playground |
+| [0008](0008-authoring-tools.md) | Authoring tools: import, the setup wizard, the playground, and the compiler plugin |
 
 The 41 earlier records, which document the path from a general agent-ecosystem
 model to this design, were consolidated into these in October 2026. They

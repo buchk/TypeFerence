@@ -1,5 +1,5 @@
 // Command typeference is the reference CLI. It produces deterministic Agent
-// Plugins 1.0 packages with optional client-specific output.
+// Plugins 1.0 packages, with Copilot components where the source names them.
 package main
 
 import (
@@ -109,11 +109,7 @@ func build(args []string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	adapter, err := option(args, "--adapter")
-	if err != nil {
-		return 0, err
-	}
-	files, err := compile.Build(source, output, compile.BuildOptions{PackagesDir: packagesDir, Adapter: adapter})
+	files, err := compile.Build(source, output, compile.BuildOptions{PackagesDir: packagesDir})
 	if err != nil {
 		return 0, err
 	}
@@ -357,7 +353,7 @@ Commands:
   typeference import <copilot-source> --out <dir> [--name ns/name]
       [--version x.y.z] [--plugin name] [--lossy]
       (turns existing Copilot custom agents, Agent Skills, or an Agent Plugin
-       into a version 8 package; fails on anything it cannot represent
+       into a version 9 package; fails on anything it cannot represent
        unless --lossy)
   typeference validate <source> [--packages-dir obj/typeference/packages]
       [--candidate <package-dir>]
@@ -369,9 +365,8 @@ Commands:
   typeference update <source> --feeds <external-config>
       [--packages-dir obj/typeference/packages]
   typeference build <source> [--out dist] [--packages-dir obj/typeference/packages]
-      [--adapter copilot|portable]
-      (writes <out>/agent-plugin; Copilot is the default for compatibility.
-       Portable emits Agent Plugins 1.0 skills and MCP, without client files.)
+      (writes <out>/agent-plugin: Agent Plugins 1.0 packages, with Copilot
+       components where the source lists them under 'copilot')
   typeference inspect <agent-id> [--source path] [--packages-dir dir]
   typeference diff <source> --against <compiled-dir> [--json]
       [--packages-dir obj/typeference/packages]

@@ -1,0 +1,5 @@
+---
+description: A version 8 kit.
+agents:
+  - agents/ops.agent.tfer
+---

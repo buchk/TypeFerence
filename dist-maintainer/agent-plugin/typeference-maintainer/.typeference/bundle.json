@@ -5,7 +5,7 @@
   "mode": "manual",
   "version": "0.2.0",
   "description": "The TypeFerence repository\u0027s maintainer agent, with its conformance and self-host drift skills.",
-  "sourceDigest": "sha256:aff8535fafd37a781b64abf56c7e3de9b86b92812697cbc605aa588bed5d6e9d",
+  "sourceDigest": "sha256:e69f79542f532f00731b058f4f8d431a09d1a752a6cf960d65f4b07594e3daa7",
   "dependencies": [],
   "embeds": [
     "typeference/maintainer/profiles/spec-conformance@0.2.0",
@@ -87,7 +87,7 @@
       "source": "typeference/maintainer/profiles/contribution-workflow@0.2.0"
     },
     {
-      "field": "agents",
+      "field": "copilot.agents",
       "source": "typeference/maintainer/plugins/typeference-maintainer@0.2.0"
     }
   ],

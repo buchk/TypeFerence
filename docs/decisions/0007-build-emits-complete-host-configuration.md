@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted (2026-10-07).
+Accepted (2026-10-07). Amended 2026-10-19: Copilot components are listed in
+a `copilot` block.
 
 ## Context
 
@@ -29,8 +30,10 @@ model-invoked skills, agents, pipelines), not only agent files.
    `allowed-tools` is never derived from server requirements, and an agent
    that declares `tools` must list every server its plugin's skills need;
    build fails on a gap and never adds a grant. `tools: []` means no tools.
-4. **Native components.** Rules, commands, hooks, and LSP servers are document
-   kinds emitted into `com.github.copilot/`. Enterprise defaults are rules
+4. **Native components.** Custom agents, rules, commands, hooks, and LSP
+   servers are document kinds emitted into `com.github.copilot/`. A plugin or
+   profile lists them in its `copilot` block (ADR-0001); listed anywhere else
+   they are errors. Enterprise defaults are rules
    held by plugins and profiles, so they apply wherever the plugin is active. Build checks
    what Copilot would otherwise ignore silently (hook events and matchers,
    prompt-hook placement, HTTPS hooks, LSP launch fields).

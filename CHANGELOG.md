@@ -3,7 +3,7 @@
 All notable changes to TypeFerence are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow semantic
 versioning. Tool versions (this file) are independent of the source-package
-`schemaVersion` declared in the project manifest (currently 8), which only
+`schemaVersion` declared in the project manifest (currently 9), which only
 changes when the source format changes incompatibly.
 
 TypeFerence is an experimental reference implementation; pre-1.0 versions make no
@@ -13,6 +13,16 @@ compatibility promises between minor versions.
 
 ### Changed
 
+- **Source version 9: the portable core by default, Copilot components by
+  keyword** ([ADR-0001](docs/decisions/0001-scope-agent-plugin-authoring.md)).
+  Plugins and profiles list custom agents, rules, commands, hooks, and LSP
+  servers in a `copilot:` block; written anywhere else they are build errors
+  that name the block. A plugin without one compiles to the Agent Plugins 1.0
+  core (`plugin.json`, skills, `mcp.json`) alone. Build takes no option that
+  changes what an artifact contains. Emitted plugins are byte-identical to
+  version 8 output for the same composition; `bundle.json` provenance names
+  the fields `copilot.agents`, `copilot.rules`, and so on. Import writes the
+  block. Fixtures 023 and 166-169.
 - **Source version 8: the plugin is the composition and binding root**
   ([ADR-0006](docs/decisions/0006-composition-and-templates.md)). Copilot
   installs every skill of a plugin beside every agent in it, so composition

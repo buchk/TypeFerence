@@ -1,7 +1,8 @@
 ---
 description: An agent with no tools, beside a skill that needs none.
-agents:
-  - agents/quiet.agent.tfer
+copilot:
+  agents:
+    - agents/quiet.agent.tfer
 skills:
   - skills/notes.skill.tfer
 ---

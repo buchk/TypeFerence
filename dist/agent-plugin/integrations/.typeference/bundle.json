@@ -5,12 +5,12 @@
   "mode": "manual",
   "version": "0.3.0",
   "description": "README upkeep skills for Helio\u0027s integration repositories.",
-  "sourceDigest": "sha256:30c3c07eae3a9239f6a250913215c6632476760c61a73acbad749ba98b7a763e",
+  "sourceDigest": "sha256:536a15a290370954bdba4d08deb4a1a15df6ac34310aefde5aeafbd82423065c",
   "dependencies": [
     {
       "name": "helio/core",
       "version": "3.1.0",
-      "digest": "sha256:8625e406a9d6c9433d4a95962f35a8969ea87cbf8979a0f5b1231d6b9955ea96"
+      "digest": "sha256:321fd1aadc404d9b7753c675d9eb16d7d9cd1b20210ece96d95abd7e6437e2cf"
     }
   ],
   "embeds": [],

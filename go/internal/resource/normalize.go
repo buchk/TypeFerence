@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-// Normalize materializes what version 8 derives rather than asks authors to
+// Normalize materializes what version 9 derives rather than asks authors to
 // write, over a merged document set (root package plus locked dependencies):
 //
 //   - implied capabilities: a root skill that binds no capability defines one

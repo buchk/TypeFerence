@@ -1,5 +1,6 @@
 ---
 description: Kit.
-agents:
-  - agents/a.agent.tfer
+copilot:
+  agents:
+    - agents/a.agent.tfer
 ---

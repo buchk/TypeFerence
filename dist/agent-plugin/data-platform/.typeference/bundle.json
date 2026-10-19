@@ -5,12 +5,12 @@
   "mode": "manual",
   "version": "1.0.2",
   "description": "The Helio data platform operations agent.",
-  "sourceDigest": "sha256:6bd67cd55a061b8a18205e5fb89d5d22fccf7bb5af1a476e086e558788300d10",
+  "sourceDigest": "sha256:b2735be48222d2e2404e0d55f29377bdea597ca8b031da66e6e909fa91b1d8b7",
   "dependencies": [
     {
       "name": "helio/core",
       "version": "3.1.0",
-      "digest": "sha256:8625e406a9d6c9433d4a95962f35a8969ea87cbf8979a0f5b1231d6b9955ea96"
+      "digest": "sha256:321fd1aadc404d9b7753c675d9eb16d7d9cd1b20210ece96d95abd7e6437e2cf"
     }
   ],
   "embeds": [
@@ -40,19 +40,19 @@
       "source": "helio/data-platform/plugins/data-platform@1.0.2"
     },
     {
-      "field": "agents",
+      "field": "copilot.agents",
       "source": "helio/data-platform/plugins/data-platform@1.0.2"
     },
     {
-      "field": "rules",
+      "field": "copilot.rules",
       "source": "helio/core/profiles/team-ops@3.1.0"
     },
     {
-      "field": "commands",
+      "field": "copilot.commands",
       "source": "helio/core/profiles/team-ops@3.1.0"
     },
     {
-      "field": "hooks",
+      "field": "copilot.hooks",
       "source": "helio/core/profiles/team-ops@3.1.0"
     }
   ],

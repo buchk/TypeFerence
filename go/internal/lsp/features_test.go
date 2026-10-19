@@ -8,11 +8,11 @@ import (
 	"testing"
 )
 
-// packageDir writes a minimal version 8 package manifest and returns its root.
+// packageDir writes a minimal version 9 package manifest and returns its root.
 func packageDir(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
-	writeFile(t, root, "typeference.tfer", "---\nschemaVersion: 8\nname: acme/test\nversion: 1.0.0\nplugins:\n  - plugins/kit.plugin.tfer\n---\n")
+	writeFile(t, root, "typeference.tfer", "---\nschemaVersion: 9\nname: acme/test\nversion: 1.0.0\nplugins:\n  - plugins/kit.plugin.tfer\n---\n")
 	return root
 }
 
@@ -128,7 +128,7 @@ func TestDocumentSymbolNamesTheDerivedIdentity(t *testing.T) {
 
 func TestCompositionDiagnosticSurfaces(t *testing.T) {
 	root := packageDir(t)
-	writeFile(t, root, "plugins/kit.plugin.tfer", "---\ndescription: Kit.\nagents:\n  - agents/a.agent.tfer\n---\n")
+	writeFile(t, root, "plugins/kit.plugin.tfer", "---\ndescription: Kit.\ncopilot:\n  agents:\n    - agents/a.agent.tfer\n---\n")
 	agentText := "---\ndescription: A.\nskills:\n  - skills/s.skill.tfer\n---\n"
 	agentURI := pathToURI(writeFile(t, root, "agents/a.agent.tfer", agentText))
 	// The skill binds a capability document that does not exist.

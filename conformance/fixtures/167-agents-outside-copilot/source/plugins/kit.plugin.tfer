@@ -1,0 +1,7 @@
+---
+description: A kit whose agent is outside the copilot block.
+agents:
+  - agents/ops.agent.tfer
+skills:
+  - skills/status.skill.tfer
+---

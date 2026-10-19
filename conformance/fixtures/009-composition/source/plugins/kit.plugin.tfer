@@ -2,8 +2,9 @@
 description: Composed kit.
 embeds:
   - profiles/team.profile.tfer
-agents:
-  - agents/lead.agent.tfer
+copilot:
+  agents:
+    - agents/lead.agent.tfer
 skills:
   - skills/team-status.skill.tfer
 ---

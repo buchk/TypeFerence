@@ -1,0 +1,4 @@
+{
+  "description": "A copilot block holds only Copilot components; skills are portable and listed outside it.",
+  "expect": "error"
+}

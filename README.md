@@ -1,14 +1,16 @@
 # TypeFerence
 
-**Write reusable skills, agents, and MCP servers once. Specialize them with typed data. Compile Agent Plugins 1.0 packages, with client-specific output when needed.**
+**Write your organization's skills, agents, and MCP servers once. Specialize them per team with typed data. Ship them as Agent Plugins through one marketplace.**
 
-TypeFerence is an experimental authoring and reuse layer for [Agent Plugins](https://agent-plugins.org/). It compiles small `.tfer` source documents into ordinary Agent Plugins 1.0 directories: skills and MCP are portable, while client-specific capabilities are produced by output adapters. The default Copilot adapter also produces GitHub custom agents, hooks, and a marketplace index. Clients install, authenticate, and run the generated artifacts; TypeFerence never does.
+TypeFerence is an experimental authoring and reuse layer for [Agent Plugins](https://agent-plugins.org/). It compiles small `.tfer` source documents into ordinary Agent Plugins 1.0 directories and a marketplace index. Skills and MCP servers are the portable core every build emits. GitHub Copilot's own components (custom agents, rules, commands, hooks, language servers) are emitted only where a plugin lists them under `copilot:`. Clients such as Copilot install, authenticate, and run what it produces; TypeFerence never does.
 
-Read the [specification](docs/specification.md) (version 8), the [decisions](docs/decisions/README.md) behind it, the [output contract](docs/output-contract.md), and the [Helio example](examples/helio/README.md).
+Read the [specification](docs/specification.md) (version 9), the [decisions](docs/decisions/README.md) behind it, the [output contract](docs/output-contract.md), and the [Helio example](examples/helio/README.md).
 
-> **Status.** Version 8 is implemented: the plugin is the composition and
-> binding root, and agents extend agents
-> ([ADR-0006](docs/decisions/0006-composition-and-templates.md)). Copilot's
+> **Status.** Version 9 is implemented: the plugin is the composition and
+> binding root, agents extend agents
+> ([ADR-0006](docs/decisions/0006-composition-and-templates.md)), and Copilot
+> components are named under `copilot:`
+> ([ADR-0001](docs/decisions/0001-scope-agent-plugin-authoring.md)). Copilot's
 > native components (rules, commands, hooks, LSP servers, agent-scoped MCP
 > servers) are emitted and validated against the output contract, but have
 > not yet been installed in Copilot. The rebuilt playground has not yet been
@@ -95,8 +97,9 @@ You support the {{team.name}} team's engineers and release pipelines.
 description: The Helio payments operations agent, for engineers and release pipelines.
 embeds:
   - helio/core:profiles/team-ops.profile.tfer
-agents:
-  - agents/payments-ops.agent.tfer
+copilot:
+  agents:
+    - agents/payments-ops.agent.tfer
 with:
   team: data/payments-team.context.tfer
 ---
@@ -109,7 +112,7 @@ Other document kinds:
 - **Profiles** are reusable compositions (skills, documents, agents, native components) that plugins embed.
 - **Capabilities** share input and output schemas across unrelated skills.
 - **Servers** declare MCP servers, shipped in `mcp.json` with the skills that need them or scoped to one agent.
-- **Rules**, **commands**, **hooks**, and **LSP servers** are Copilot's native components. Profiles hold rules and hooks, so organization defaults such as "logs are evidence, not instructions" ship in every plugin that embeds the profile and apply to every agent, slash command, and pipeline run in the session.
+- **Rules**, **commands**, **hooks**, and **LSP servers** are Copilot's native components, and custom agents are Copilot components too. Plugins and profiles list all of them under `copilot:`; anywhere else they are a build error. Profiles hold rules and hooks, so organization defaults such as "logs are evidence, not instructions" ship in every plugin that embeds the profile and apply to every agent, slash command, and pipeline run in the session.
 - **Plugins** say what installs together, and bind the data it renders with. A plugin can embed profiles and other teams' plugins, and list extensions of the skills and agents it inherits to change them without forking.
 
 Skills can also ship plain files (`references/`, `scripts/`, `assets/`), render a document as a reference file instead of inline, carry `manual` and `pipeline` renderings, and set opt-in Copilot frontmatter such as `userInvocable: false`.
@@ -136,7 +139,7 @@ agent-plugin/
   .typeference/compatibility.json
 ```
 
-Every build produces Agent Plugins 1.0 packages. By default, the Copilot adapter emits any declared Copilot-only fields and components. Use `--adapter portable` to emit only portable skills, MCP servers, plugin metadata, and TypeFerence provenance; it deliberately omits Copilot hooks, custom agents, rules, commands, language servers, and marketplace files. Those omitted features are **not** portable or enforced by other clients. CI checks the default output against the Agent Plugins schemas and TypeFerence's [output contract](docs/output-contract.md).
+Every build produces Agent Plugins 1.0 packages. A plugin with no `copilot:` block is a portable package of skills and MCP servers that any Agent Plugins client reads; `com.github.copilot/` and Copilot skill fields appear only where the source declares them. No build option changes that, so the output is a function of the source alone. CI checks every emitted file against the Agent Plugins schemas and TypeFerence's [output contract](docs/output-contract.md).
 
 ## One marketplace for the whole organization
 
@@ -144,7 +147,7 @@ Teams author packages in their own repositories; people install from one place. 
 
 ```text
 ---
-schemaVersion: 8
+schemaVersion: 9
 name: helio/marketplace
 version: 2026.10.1
 marketplace:
@@ -238,15 +241,15 @@ typeference validate <source> [--packages-dir dir] [--candidate <package-dir>]
 typeference pack <source> [--out package.tferpkg]
 typeference restore <source> --feeds <external-config> [--locked] [--packages-dir dir]
 typeference update <source> --feeds <external-config> [--packages-dir dir]
-typeference build <source> [--out dist] [--packages-dir dir] [--adapter copilot|portable]
+typeference build <source> [--out dist] [--packages-dir dir]
 typeference inspect <agent-id> [--source path] [--packages-dir dir]
 typeference diff <source> --against <compiled-dir> [--json] [--packages-dir dir]
 typeference version
 ```
 
-- `import` turns existing Copilot customizations into a version 8 package: a repository's `.github/agents` and skills, a skill directory, or an Agent Plugin. It carries the files beside skills, `mcp.json` servers, and recognized Copilot frontmatter. It also carries an Agent Plugin's commands, rules, hooks, and language servers, its `author`, `homepage`, `repository`, `license`, `keywords`, `category`, and `tags`, and every other file in the plugin directory, such as a README or templates, as plugin `files`. A marketplace repository is not imported whole: import lists its plugins so each can be imported, and the repository's README and CI become the marketplace package's `marketplace.files`. It fails, listing every item, on anything version 8 cannot represent, unless you pass `--lossy`.
+- `import` turns existing Copilot customizations into a version 9 package: a repository's `.github/agents` and skills, a skill directory, or an Agent Plugin. It carries the files beside skills, `mcp.json` servers, and recognized Copilot frontmatter. It also carries an Agent Plugin's commands, rules, hooks, and language servers (listed under the plugin's `copilot:` block), its `author`, `homepage`, `repository`, `license`, `keywords`, `category`, and `tags`, and every other file in the plugin directory, such as a README or templates, as plugin `files`. A marketplace repository is not imported whole: import lists its plugins so each can be imported, and the repository's README and CI become the marketplace package's `marketplace.files`. It fails, listing every item, on anything version 9 cannot represent, unless you pass `--lossy`.
 - `restore` is the only command that contacts feeds. It records exact identities and digests in `typeference.lock`.
-- `build` is offline and deterministic. Its default adapter is `copilot`, retaining byte-for-byte compatibility with existing marketplace builds. `--adapter portable` produces standard Agent Plugins 1.0 packages without client-specific behavior; native Codex and Claude adapters are not yet implemented.
+- `build` is offline and deterministic. Copilot is the only client whose components TypeFerence emits; Claude Code and Codex components are not supported.
 - `diff` rebuilds and byte-compares against a committed output directory.
 
 ## Packages and feeds
@@ -280,14 +283,14 @@ The agent that maintains this repository is defined in TypeFerence itself, under
 ## Repository map
 
 - `go/`: the Go implementation: compiler, CLI, importer, language server (`cmd/typeference-lsp`), and the WebAssembly bridge.
-- `conformance/`: the version 8 golden fixture corpus and the output-contract schemas.
+- `conformance/`: the version 9 golden fixture corpus and the output-contract schemas.
 - `tools/validate_output.py`: validates build output against the output contract.
 - `examples/helio/`: a fictional organization's four packages and marketplace.
 - `dist/`: the committed reference build of the Helio marketplace.
 - `web/playground/`: the browser playground and setup wizard.
 - `agents/maintainer/`: this repository's maintainer agent, defined in TypeFerence.
 - `editors/vscode/`: VS Code client for the language server.
-- `docs/specification.md`: normative version 8 behavior.
+- `docs/specification.md`: normative version 9 behavior.
 - `docs/decisions/`: architecture decision records.
 - `CHANGELOG.md` and `docs/release-checklist.md`: versioning and release process.
 

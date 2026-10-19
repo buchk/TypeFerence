@@ -1,0 +1,7 @@
+{
+  "description": "The portable core (ADR-0001): a plugin of skills and the server they require, with an empty copilot block, emits plugin.json, mcp.json, and skills only; no com.github.copilot directory exists.",
+  "expect": "success",
+  "digests": {
+    "agent-plugin": "sha256:fee92b286699d5fc907eea020579487c75bb4ff7d4d6d4f9f1530edb0d5c3874"
+  }
+}

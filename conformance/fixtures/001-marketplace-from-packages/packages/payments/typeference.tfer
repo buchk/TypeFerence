@@ -1,5 +1,5 @@
 ---
-schemaVersion: 8
+schemaVersion: 9
 name: conformance/payments
 version: 2.0.0
 dependencies:

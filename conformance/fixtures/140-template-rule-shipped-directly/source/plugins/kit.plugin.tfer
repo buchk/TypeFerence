@@ -1,5 +1,6 @@
 ---
 description: Kit.
-rules:
-  - rules/team.rule.tfer
+copilot:
+  rules:
+    - rules/team.rule.tfer
 ---

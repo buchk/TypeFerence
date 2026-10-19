@@ -26,7 +26,7 @@ type Manifest struct {
 	SchemaVersion    int    `json:"schemaVersion"`
 }
 
-// Scaffold maps a validated AnswerSet to an ordinary version 8 package: norm
+// Scaffold maps a validated AnswerSet to an ordinary version 9 package: norm
 // statements as Markdown documents, a team contract and a template skill, a
 // profile embedding chain, one agent, and the plugin that embeds the chain,
 // ships the agent, and binds its team's data. The output contains only
@@ -127,13 +127,14 @@ func Scaffold(as *AnswerSet) (*SourceTree, Manifest, error) {
 	add(pluginPath, fence(
 		fmt.Sprintf("description: The %s agent with the %s defaults it inherits.", titleize(agentName), org),
 		listField("embeds", []string{parent}),
-		listField("agents", []string{agentPath}),
+		"copilot:",
+		fmt.Sprintf("  agents:\n    - %s", agentPath),
 		"with:",
 		fmt.Sprintf("  team: %s", dataPath),
 	))
 
 	add("typeference.tfer", fence(
-		"schemaVersion: 8",
+		"schemaVersion: 9",
 		fmt.Sprintf("name: %s/starter-suite", org),
 		fmt.Sprintf("version: %s", ver),
 		listField("plugins", []string{pluginPath}),

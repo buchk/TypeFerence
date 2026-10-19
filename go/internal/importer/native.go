@@ -13,7 +13,7 @@ import (
 )
 
 // nativeImport collects an Agent Plugin's Copilot components (ADR-0007):
-// commands, rules, hooks, and language servers, as version 8 documents.
+// commands, rules, hooks, and language servers, as version 9 documents.
 type nativeImport struct {
 	files    []File
 	commands []string

@@ -1,6 +1,6 @@
 # Specification evidence matrix
 
-This matrix connects the normative version 8 specification to executable
+This matrix connects the normative version 9 specification to executable
 evidence. It is a review aid, not a second specification: when text and tests
 disagree, `docs/specification.md` wins and both the implementation and evidence
 must be corrected.
@@ -12,7 +12,8 @@ tests cover diagnostics, internal invariants, and rendered content.
 
 | Normative area | Golden evidence | Focused implementation evidence |
 | --- | --- | --- |
-| Manifest, version 8 only | 116 | `internal/compile`: every build test; `internal/lsp`: `TestServerReportsDocumentsOutsideAPackage` |
+| Manifest, version 9 only | 116, 166 | `internal/compile`: every build test; `internal/lsp`: `TestServerReportsDocumentsOutsideAPackage` |
+| The portable core; Copilot components only in `copilot` blocks | 023, 167, 168, 169 | `internal/compile`: `TestPluginWithoutCopilotBlockIsPortable`, `TestComponentOutsideCopilotBlockNamesTheBlock` |
 | Kinds from suffixes; removed kinds | 115 | `internal/resource` decoding through every fixture |
 | Removed fields (`sealed`, `a2a`) | 123, 126 | — |
 | Descriptions after rendering | 128 | — |

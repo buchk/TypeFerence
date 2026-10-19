@@ -1,0 +1,6 @@
+---
+description: A portable kit any Agent Plugins client reads.
+skills:
+  - skills/tickets.skill.tfer
+copilot:
+---

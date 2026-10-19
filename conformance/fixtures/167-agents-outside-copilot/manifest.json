@@ -1,0 +1,4 @@
+{
+  "description": "A plugin that lists agents outside its copilot block is an error, not a portable build that drops them (ADR-0001).",
+  "expect": "error"
+}

@@ -1,0 +1,7 @@
+---
+description: A kit embedding a profile with a misplaced hook.
+embeds:
+  - profiles/enterprise.profile.tfer
+skills:
+  - skills/status.skill.tfer
+---

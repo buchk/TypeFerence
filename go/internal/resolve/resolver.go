@@ -450,7 +450,7 @@ func (r *Resolver) ResolvePlugin(id string) (*ResolvedPlugin, error) {
 		}
 		plugin.Agents = append(plugin.Agents, agent)
 		for _, source := range c.agents[r.docs[agentID].Role].sources {
-			plugin.Provenance = append(plugin.Provenance, ProvenanceEntry{Field: "agents", Source: source})
+			plugin.Provenance = append(plugin.Provenance, ProvenanceEntry{Field: "copilot.agents", Source: source})
 		}
 	}
 	for _, ruleID := range c.rules {
@@ -460,7 +460,7 @@ func (r *Resolver) ResolvePlugin(id string) (*ResolvedPlugin, error) {
 		}
 		plugin.Rules = append(plugin.Rules, rule)
 		for _, source := range c.nativeSource[ruleID] {
-			plugin.Provenance = append(plugin.Provenance, ProvenanceEntry{Field: "rules", Source: source})
+			plugin.Provenance = append(plugin.Provenance, ProvenanceEntry{Field: "copilot.rules", Source: source})
 		}
 	}
 	for _, commandID := range c.commands {
@@ -470,19 +470,19 @@ func (r *Resolver) ResolvePlugin(id string) (*ResolvedPlugin, error) {
 		}
 		plugin.Commands = append(plugin.Commands, command)
 		for _, source := range c.nativeSource[commandID] {
-			plugin.Provenance = append(plugin.Provenance, ProvenanceEntry{Field: "commands", Source: source})
+			plugin.Provenance = append(plugin.Provenance, ProvenanceEntry{Field: "copilot.commands", Source: source})
 		}
 	}
 	for _, hookID := range c.hooks {
 		plugin.Hooks = append(plugin.Hooks, hookID)
 		for _, source := range c.nativeSource[hookID] {
-			plugin.Provenance = append(plugin.Provenance, ProvenanceEntry{Field: "hooks", Source: source})
+			plugin.Provenance = append(plugin.Provenance, ProvenanceEntry{Field: "copilot.hooks", Source: source})
 		}
 	}
 	for _, lspID := range c.lsp {
 		plugin.LSP = append(plugin.LSP, lspID)
 		for _, source := range c.nativeSource[lspID] {
-			plugin.Provenance = append(plugin.Provenance, ProvenanceEntry{Field: "lspServers", Source: source})
+			plugin.Provenance = append(plugin.Provenance, ProvenanceEntry{Field: "copilot.lspServers", Source: source})
 		}
 	}
 	return plugin, nil
