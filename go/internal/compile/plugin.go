@@ -334,22 +334,16 @@ func canonicalSchema(schema string) string {
 
 // writeAgentPlugins emits the agent-plugin target: a marketplace repository
 // root holding one Agent Plugins 1.0 package per plugin and mode.
-func (c *compilation) writeAgentPlugins(root string, written *[]string) error {
+func (c *compilation) writeAgentPlugins(root string, adapter outputAdapter, written *[]string) error {
 	artifacts := artifactsOf(c.plugins)
 	for _, artifact := range artifacts {
-		if err := c.writePluginArtifact(root, artifact, written); err != nil {
+		if err := c.writePluginArtifact(root, artifact, adapter, written); err != nil {
 			return err
 		}
 	}
-	var rootFiles []resource.PackageFile
-	if marketplace := c.project.Marketplace; marketplace != nil {
-		if err := writeFile(filepath.Join(root, ".github", "plugin", "marketplace.json"), marketplaceJSON(marketplace, c.project.Version, artifacts)+"\n", written); err != nil {
-			return err
-		}
-		rootFiles = sortedFiles(marketplace.Files)
-		if err := writeCarried(root, rootFiles, written); err != nil {
-			return err
-		}
+	rootFiles, err := adapter.writeMarketplace(c, root, artifacts, written)
+	if err != nil {
+		return err
 	}
 	if err := writeFile(filepath.Join(root, ".typeference", "compatibility.json"), compatibilityJSON(artifacts)+"\n", written); err != nil {
 		return err
@@ -442,7 +436,7 @@ func (c *compilation) artifactServers(artifact pluginArtifact) []*resource.Docum
 	return servers
 }
 
-func (c *compilation) writePluginArtifact(root string, artifact pluginArtifact, written *[]string) error {
+func (c *compilation) writePluginArtifact(root string, artifact pluginArtifact, adapter outputAdapter, written *[]string) error {
 	dir := filepath.Join(root, artifact.dir)
 	manifest := jsonx.Obj{
 		{K: "$schema", V: jsonx.Str(pluginSchemaURI)},
@@ -460,15 +454,12 @@ func (c *compilation) writePluginArtifact(root string, artifact pluginArtifact, 
 			return err
 		}
 	}
-	for _, agent := range artifact.plan.Agents {
-		path := filepath.Join(dir, "com.github.copilot", "agents", resource.Leaf(agent.ID)+".agent.md")
-		if err := writeFile(path, renderAgent(agent, c.docs), written); err != nil {
-			return err
-		}
+	if err := adapter.writeArtifact(c, dir, artifact, written); err != nil {
+		return err
 	}
 	for _, skill := range artifact.plan.Skills {
 		skillDir := filepath.Join(dir, "skills", skill.Name)
-		if err := writeFile(filepath.Join(skillDir, "SKILL.md"), renderSkill(skill, artifact.mode), written); err != nil {
+		if err := writeFile(filepath.Join(skillDir, "SKILL.md"), renderSkill(skill, artifact.mode, adapter), written); err != nil {
 			return err
 		}
 		entries, err := skillDirectory(skill)
@@ -480,9 +471,6 @@ func (c *compilation) writePluginArtifact(root string, artifact pluginArtifact, 
 				return err
 			}
 		}
-	}
-	if err := c.writeNative(dir, artifact, written); err != nil {
-		return err
 	}
 	if err := writeCarried(dir, artifact.plan.Files, written); err != nil {
 		return err
@@ -537,78 +525,12 @@ func serverValue(s *resource.ServerConfig) jsonx.Obj {
 }
 
 // frontmatterFields renders opt-in Copilot fields in table order.
-func frontmatterFields(b *strings.Builder, c resource.CopilotFields, skill bool) {
-	boolean := func(key string, value *bool) {
-		if value == nil {
-			return
-		}
-		text := "false"
-		if *value {
-			text = "true"
-		}
-		b.WriteString(key + ": " + text + "\n")
-	}
-	list := func(key string, values []string) {
-		if values == nil {
-			return
-		}
-		if len(values) == 0 {
-			b.WriteString(key + ": []\n")
-			return
-		}
-		b.WriteString(key + ":\n")
-		for _, value := range values {
-			b.WriteString("  - " + escapeYAML(value) + "\n")
-		}
-	}
-	if skill {
-		if c.ArgumentHint != nil {
-			b.WriteString("argument-hint: " + escapeYAML(*c.ArgumentHint) + "\n")
-		}
-		boolean("user-invocable", c.UserInvocable)
-		boolean("disable-model-invocation", c.DisableModelInvocation)
-		list("allowed-tools", c.AllowedTools)
-		return
-	}
-	if c.Model != nil {
-		b.WriteString("model: " + escapeYAML(*c.Model) + "\n")
-	}
-	list("tools", c.Tools)
-	boolean("user-invocable", c.UserInvocable)
-	boolean("disable-model-invocation", c.DisableModelInvocation)
-}
-
-// renderAgent renders a Copilot custom agent profile: identity and
-// objectives, held documents, and the names of the skills its artifact
-// ships beside it.
-func renderAgent(agent *resolve.ResolvedAgent, docs map[string]*resource.Document) string {
-	var b strings.Builder
-	b.WriteString("---\nname: " + resource.Leaf(agent.ID) + "\ndescription: " + escapeYAML(agent.Description) + "\n")
-	frontmatterFields(&b, agent.Copilot, false)
-	agentServersFrontmatter(&b, docs, agent.Servers)
-	b.WriteString("---\n\n# " + agent.DisplayName + "\n\n")
-	for _, objective := range agent.Objectives {
-		if content := strings.TrimSpace(objective.Content); content != "" {
-			b.WriteString(content + "\n\n")
-		}
-	}
-	writeDocuments(&b, agent.Documents)
-	if len(agent.Skills) > 0 {
-		b.WriteString("## Skills\n\n")
-		for _, skill := range agent.Skills {
-			b.WriteString("- " + skill.Name + "\n")
-		}
-		b.WriteString("\n")
-	}
-	return strings.TrimRight(b.String(), "\n") + "\n"
-}
-
 // renderSkill renders a SKILL.md: Agent Skills frontmatter with opt-in
 // Copilot fields, the instructions for one mode, and inline documents.
-func renderSkill(skill resolve.ResolvedSkill, mode string) string {
+func renderSkill(skill resolve.ResolvedSkill, mode string, adapter outputAdapter) string {
 	var b strings.Builder
 	b.WriteString("---\nname: " + skill.Name + "\ndescription: " + escapeYAML(skill.Description) + "\n")
-	frontmatterFields(&b, skill.Copilot, true)
+	adapter.writeSkillFrontmatter(&b, skill.Copilot)
 	b.WriteString("---\n\n")
 	b.WriteString(strings.TrimSpace(skill.InstructionsFor(mode)) + "\n\n")
 	inline := []resolve.ResolvedDocument{}
