@@ -11,6 +11,18 @@ compatibility promises between minor versions.
 
 ## [Unreleased]
 
+### Added
+
+- **The compiler as a plugin, and this repository as a marketplace**
+  ([ADR-0008](docs/decisions/0008-authoring-tools.md)). `typeference mcp`
+  serves validate, build, diff, inspect, import, init, restore, update, and
+  pack as MCP tools over stdio; each call runs the same executable with the
+  same arguments. `agents/typeference` compiles to a portable plugin in
+  `dist-plugin/` holding the `edit-typeference` skill and that server, and
+  the root `.github/plugin/marketplace.json` is its index with sources
+  pointing into `dist-plugin/`. `make selfhost` regenerates both; CI fails on
+  drift and validates `dist-plugin/` against the output contract.
+
 ### Changed
 
 - **Source version 9: the portable core by default, Copilot components by

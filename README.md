@@ -244,6 +244,7 @@ typeference update <source> --feeds <external-config> [--packages-dir dir]
 typeference build <source> [--out dist] [--packages-dir dir]
 typeference inspect <agent-id> [--source path] [--packages-dir dir]
 typeference diff <source> --against <compiled-dir> [--json] [--packages-dir dir]
+typeference mcp
 typeference version
 ```
 
@@ -251,6 +252,7 @@ typeference version
 - `restore` is the only command that contacts feeds. It records exact identities and digests in `typeference.lock`.
 - `build` is offline and deterministic. Copilot is the only client whose components TypeFerence emits; Claude Code and Codex components are not supported.
 - `diff` rebuilds and byte-compares against a committed output directory.
+- `mcp` serves the commands above (except `mcp` and `version`) as MCP tools over stdio. Each tool call runs the same executable with the same arguments and returns its output and exit code.
 
 ## Packages and feeds
 
@@ -279,6 +281,16 @@ Lockfiles contain package identities, exports, dependency edges, and content dig
 ## Self-hosting
 
 The agent that maintains this repository is defined in TypeFerence itself, under [agents/maintainer/](agents/maintainer/). The repository-root [AGENTS.md](AGENTS.md) and `dist-maintainer/` (its installable Copilot plugin) are compiled artifacts of that definition; CI recompiles it and fails on any drift.
+
+The compiler also ships as a plugin, so an agent can author TypeFerence for you. [agents/typeference/](agents/typeference/) is a portable plugin (no `copilot:` block) holding the `edit-typeference` skill, which stands up packages, dependencies, and marketplaces, and the `typeference-compiler` MCP server, which runs `typeference mcp`. Its build is committed in `dist-plugin/`, and [.github/plugin/marketplace.json](.github/plugin/marketplace.json) is that build's index with each source pointing into `dist-plugin/`, which makes this repository a marketplace ([ADR-0008](docs/decisions/0008-authoring-tools.md)). The server needs the compiler on PATH:
+
+```sh
+go install github.com/buchk/TypeFerence/go/cmd/typeference@main
+copilot plugin marketplace add buchk/TypeFerence
+copilot plugin install typeference@typeference
+```
+
+The published release binaries predate source version 9. The plugin has not yet been installed and exercised in Copilot.
 
 ## Repository map
 

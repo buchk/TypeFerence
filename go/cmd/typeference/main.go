@@ -49,6 +49,8 @@ func run(args []string) int {
 		code, err = inspect(args)
 	case "diff":
 		code, err = diff(args)
+	case "mcp":
+		code, err = mcpCommand(args)
 	case "link", "publish", "eval", "equivalence":
 		return fail(fmt.Sprintf("the %s command was removed in version 7", args[0]))
 	case "version", "--version":
@@ -370,6 +372,9 @@ Commands:
   typeference inspect <agent-id> [--source path] [--packages-dir dir]
   typeference diff <source> --against <compiled-dir> [--json]
       [--packages-dir obj/typeference/packages]
+  typeference mcp
+      (serves these commands as MCP tools over stdio; each tool call runs
+       this executable with the same arguments)
   typeference version
 `)
 	return 0

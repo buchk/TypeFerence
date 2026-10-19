@@ -1,0 +1,7 @@
+---
+description: The typeference compiler's commands as MCP tools. Needs the typeference binary on PATH.
+transport: stdio
+command: typeference
+args:
+  - mcp
+---

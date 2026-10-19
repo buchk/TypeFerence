@@ -72,6 +72,15 @@ jobs:
       - name: Root AGENTS.md is the compiled agent file without its frontmatter
         run: |
           awk 'n >= 2 && (seen || $0 != "") { seen = 1; print } /^---$/ { n++ }'             dist-maintainer/agent-plugin/typeference-maintainer/com.github.copilot/agents/typeference-maintainer.agent.md             | cmp - AGENTS.md
+      # dist-plugin is the build of agents/typeference (the TypeFerence
+      # plugin), and the root marketplace index is that build's index with
+      # each source prefixed by dist-plugin/agent-plugin/ (ADR-0008).
+      - name: Recompile the TypeFerence plugin and diff committed artifacts
+        run: go run ./cmd/typeference diff ../agents/typeference --against ../dist-plugin
+        working-directory: go
+      - name: Root marketplace index points into dist-plugin
+        run: |
+          sed 's|"source": "\./|"source": "./dist-plugin/agent-plugin/|' dist-plugin/agent-plugin/.github/plugin/marketplace.json             | cmp - .github/plugin/marketplace.json
 
   # Output contract (docs/output-contract.md): every emitted JSON file and
   # frontmatter block must satisfy the host formats and TypeFerence's own
@@ -93,7 +102,7 @@ jobs:
       - name: Build every success fixture and keep its output
         run: TF_OUTPUT_DIR="$RUNNER_TEMP/fixture-output" go test ./conformance -run TestConformance -count=1
         working-directory: go
-      - run: python tools/validate_output.py "$RUNNER_TEMP/fixture-output" dist dist-maintainer
+      - run: python tools/validate_output.py "$RUNNER_TEMP/fixture-output" dist dist-maintainer dist-plugin
 
   docs:
     runs-on: ubuntu-latest

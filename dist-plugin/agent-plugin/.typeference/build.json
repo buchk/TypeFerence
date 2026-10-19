@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 3,
+  "target": "agent-plugin",
+  "sourceDigest": "sha256:f15ee96e72ccd9bebaa880b582ce6a73faede65ee1941c4a5fb2c24e27f51db8",
+  "artifacts": [
+    {
+      "id": "typeference/authoring/plugins/typeference@0.1.0",
+      "mode": "manual",
+      "path": "typeference",
+      "sourceDigest": "sha256:f15ee96e72ccd9bebaa880b582ce6a73faede65ee1941c4a5fb2c24e27f51db8",
+      "digest": "sha256:e6d6a35012506932fefb42e3c7fec43150c5cf92eb96a49147b53b5239da7793"
+    }
+  ],
+  "files": []
+}

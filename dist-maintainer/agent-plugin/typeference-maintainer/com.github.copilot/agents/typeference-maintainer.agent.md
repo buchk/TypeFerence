@@ -137,6 +137,7 @@ Commit messages are conventional and written for a critical human reader.
 | `docs/decisions/` | Architecture decision records. |
 | `go/` | The implementation (static binary; module `github.com/buchk/TypeFerence/go`). |
 | `go/cmd/typeference-lsp/` | Language server for version 9 `.tfer` packages. |
+| `go/internal/mcpserver/` | `typeference mcp`: the CLI's commands as MCP tools over stdio. |
 | `editors/vscode/` | VS Code client for the language server. |
 | `go/conformance/` | Determinism runner (`-update` regenerates digests). |
 | `conformance/` | Golden-file fixture corpus for version 9. |
@@ -144,11 +145,14 @@ Commit messages are conventional and written for a critical human reader.
 | `dist/` | Committed reference output of the Helio marketplace (byte-compared in tests). |
 | `web/playground/` | Browser playground running the compiler as WebAssembly. |
 | `agents/maintainer/` | This definition; compiled into `dist-maintainer/` and the root `AGENTS.md`. |
+| `agents/typeference/` | The TypeFerence plugin (the `edit-typeference` skill and the compiler's MCP server); compiled into `dist-plugin/`. |
+| `.github/plugin/marketplace.json` | Root marketplace index, derived from `dist-plugin/`'s index by `make selfhost`. |
 | `.github/workflows/ci.yml` | Build, test, determinism, and self-host drift gates. |
 
 The root `AGENTS.md` is generated from this definition. To change it, edit the
 documents under `agents/maintainer/` and run `make selfhost`; never edit the
-generated file directly.
+generated file directly. The same holds for `dist-plugin/` and the root
+marketplace index, generated from `agents/typeference/`.
 
 ## Skills
 

@@ -40,14 +40,27 @@ conformance:
 MAINTAINER_AGENT := dist-maintainer/agent-plugin/typeference-maintainer/com.github.copilot/agents/typeference-maintainer.agent.md
 STRIP_FRONTMATTER := awk 'n >= 2 && (seen || $$0 != "") { seen = 1; print } /^---$$/ { n++ }'
 
+#
+# Also recompile the TypeFerence plugin (agents/typeference) into dist-plugin
+# and derive the repository-root marketplace index from its build: the same
+# index with each plugin source prefixed by the committed path, which makes
+# this repository a marketplace (ADR-0008).
+ROOT_MARKETPLACE := .github/plugin/marketplace.json
+ROOT_SOURCES := sed 's|"source": "\./|"source": "./dist-plugin/agent-plugin/|' dist-plugin/agent-plugin/.github/plugin/marketplace.json
+
 selfhost: build-go
 	$(BINDIR)/typeference$(shell $(GO) env GOEXE) build agents/maintainer --out dist-maintainer
 	$(STRIP_FRONTMATTER) $(MAINTAINER_AGENT) > AGENTS.md
+	$(BINDIR)/typeference$(shell $(GO) env GOEXE) build agents/typeference --out dist-plugin
+	mkdir -p .github/plugin
+	$(ROOT_SOURCES) > $(ROOT_MARKETPLACE)
 
-# Fail if the committed artifacts have drifted from the definition.
+# Fail if the committed artifacts have drifted from the definitions.
 selfhost-check: build-go
 	$(BINDIR)/typeference$(shell $(GO) env GOEXE) diff agents/maintainer --against dist-maintainer
 	$(STRIP_FRONTMATTER) $(MAINTAINER_AGENT) | cmp - AGENTS.md
+	$(BINDIR)/typeference$(shell $(GO) env GOEXE) diff agents/typeference --against dist-plugin
+	$(ROOT_SOURCES) | cmp - $(ROOT_MARKETPLACE)
 
 # Regenerate the committed reference output of the Helio marketplace
 # (examples/helio): the reference test stages its packages, restores the

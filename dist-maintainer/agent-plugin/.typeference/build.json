@@ -1,14 +1,14 @@
 {
   "schemaVersion": 3,
   "target": "agent-plugin",
-  "sourceDigest": "sha256:e69f79542f532f00731b058f4f8d431a09d1a752a6cf960d65f4b07594e3daa7",
+  "sourceDigest": "sha256:0958094a549f56a76d7ee9bfb50511cab5666adec4957eebdb5e8000f0db5dbe",
   "artifacts": [
     {
       "id": "typeference/maintainer/plugins/typeference-maintainer@0.2.0",
       "mode": "manual",
       "path": "typeference-maintainer",
-      "sourceDigest": "sha256:e69f79542f532f00731b058f4f8d431a09d1a752a6cf960d65f4b07594e3daa7",
-      "digest": "sha256:d53db27e802e1f52dd7c55805380daa4d34fbfd244b1dd559f0bfde88e10a822"
+      "sourceDigest": "sha256:0958094a549f56a76d7ee9bfb50511cab5666adec4957eebdb5e8000f0db5dbe",
+      "digest": "sha256:fe87ac8f6505b59154b588ac2c97f3ac32569bba8b1e211ecf23153437ffa5fd"
     }
   ],
   "files": []

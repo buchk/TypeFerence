@@ -1,0 +1,18 @@
+---
+description: Author, extend, and check TypeFerence packages and marketplaces with the typeference compiler as an MCP server.
+skills:
+  - skills/edit-typeference.skill.tfer
+homepage: https://github.com/buchk/TypeFerence
+repository: https://github.com/buchk/TypeFerence
+license: Apache-2.0
+keywords:
+  - typeference
+  - agent-plugins
+  - authoring
+  - marketplace
+category: development
+tags:
+  - authoring
+files:
+  - files/plugin/README.md
+---
