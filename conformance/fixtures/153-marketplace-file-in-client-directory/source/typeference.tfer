@@ -1,0 +1,13 @@
+---
+schemaVersion: 9
+name: conformance/case
+version: 1.0.0
+marketplace:
+  name: conformance-agents
+  owner: Conformance Platform
+  files:
+    - path: files/README.md
+      as: Copilot/kit/README.md
+plugins:
+  - plugins/kit.plugin.tfer
+---

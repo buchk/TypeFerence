@@ -41,7 +41,7 @@ func buildMarketplace(t *testing.T, dir string, m manifest) string {
 	if _, err := compile.Build(source, out, compile.BuildOptions{}); err != nil {
 		t.Fatal(err)
 	}
-	return filepath.Join(out, "agent-plugin")
+	return filepath.Join(out, "agent-plugin", "copilot")
 }
 
 func artifactDigest(t *testing.T, root, artifact string) string {
@@ -73,7 +73,7 @@ func TestMarketplaceBumpRewritesOnlyTheOwnersPlugins(t *testing.T) {
 	if artifactDigest(t, before, "data") == artifactDigest(t, after, "data") {
 		t.Error("releasing conformance/data must change its own plugin")
 	}
-	index, err := os.ReadFile(filepath.Join(after, ".github", "plugin", "marketplace.json"))
+	index, err := os.ReadFile(filepath.Join(after, "..", ".github", "plugin", "marketplace.json"))
 	if err != nil || !strings.Contains(string(index), `"version": "1.2.0"`) {
 		t.Fatalf("the marketplace index lists the owning package's new version: %v\n%s", err, index)
 	}

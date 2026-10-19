@@ -1,0 +1,6 @@
+---
+description: Build signals from a binary the plugin ships, run from its data directory.
+transport: stdio
+command: ./bin/build-signals
+cwd: ${PLUGIN_DATA}
+---

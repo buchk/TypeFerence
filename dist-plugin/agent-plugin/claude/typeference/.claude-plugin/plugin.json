@@ -1,0 +1,14 @@
+{
+  "name": "typeference",
+  "version": "0.1.0",
+  "description": "Author, extend, and check TypeFerence packages and marketplaces with the typeference compiler as an MCP server.",
+  "homepage": "https://github.com/buchk/TypeFerence",
+  "repository": "https://github.com/buchk/TypeFerence",
+  "license": "Apache-2.0",
+  "keywords": [
+    "typeference",
+    "agent-plugins",
+    "authoring",
+    "marketplace"
+  ]
+}

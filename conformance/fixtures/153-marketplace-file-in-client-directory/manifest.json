@@ -1,0 +1,4 @@
+{
+  "description": "A marketplace file cannot ship inside a client directory, where build writes each client's artifacts (ADR-0004); the check ignores case.",
+  "expect": "error"
+}

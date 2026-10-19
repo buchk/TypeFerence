@@ -1,0 +1,8 @@
+---
+description: Read build signals for the current branch.
+requiresServers:
+  - servers/acme-signals.server.tfer
+copilot:
+  argumentHint: "[branch]"
+---
+Report failing build signals for the current branch.

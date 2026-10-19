@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "typeference-compiler": {
+      "command": "typeference",
+      "args": [
+        "mcp"
+      ]
+    }
+  }
+}

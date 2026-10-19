@@ -267,14 +267,6 @@ func validateLibraryNames(c *compilation) error {
 		}
 		artifactNames[artifact.dir] = artifact.plan.ID
 	}
-	if marketplace := c.project.Marketplace; marketplace != nil {
-		for _, file := range marketplace.Files {
-			first := strings.ToLower(strings.SplitN(file.As, "/", 2)[0])
-			if id, clash := artifactNames[first]; clash {
-				return resource.Errorf("%s: marketplace file %s ships as %s, inside the artifact directory of %s; build owns that directory", resource.ManifestFile, file.Source, file.As, id)
-			}
-		}
-	}
 	return nil
 }
 
@@ -332,18 +324,28 @@ func canonicalSchema(schema string) string {
 	return jsonx.Indented(value) + "\n"
 }
 
-// writeAgentPlugins emits the agent-plugin target: a marketplace repository
-// root holding one Agent Plugins 1.0 package per plugin and mode.
+// writeAgentPlugins emits the agent-plugin target: each client's build of
+// every artifact its adapter builds, each client's marketplace index, and the
+// build and compatibility indexes.
 func (c *compilation) writeAgentPlugins(root string, written *[]string) error {
 	artifacts := artifactsOf(c.plugins)
-	for _, artifact := range artifacts {
-		if err := c.writePluginArtifact(root, artifact, written); err != nil {
-			return err
+	built := map[string][]pluginArtifact{}
+	var skipped []skippedArtifact
+	for _, client := range clients {
+		for _, artifact := range artifacts {
+			if reason := c.skipReason(client, artifact); reason != "" {
+				skipped = append(skipped, skippedArtifact{client: client, artifact: artifact, reason: reason})
+				continue
+			}
+			if err := c.writePluginArtifact(root, client, artifact, written); err != nil {
+				return err
+			}
+			built[client] = append(built[client], artifact)
 		}
 	}
 	var rootFiles []resource.PackageFile
 	if marketplace := c.project.Marketplace; marketplace != nil {
-		if err := writeFile(filepath.Join(root, ".github", "plugin", "marketplace.json"), marketplaceJSON(marketplace, c.project.Version, artifacts)+"\n", written); err != nil {
+		if err := writeMarketplaces(root, marketplace, c.project.Version, built, written); err != nil {
 			return err
 		}
 		rootFiles = sortedFiles(marketplace.Files)
@@ -354,7 +356,7 @@ func (c *compilation) writeAgentPlugins(root string, written *[]string) error {
 	if err := writeFile(filepath.Join(root, ".typeference", "compatibility.json"), compatibilityJSON(artifacts)+"\n", written); err != nil {
 		return err
 	}
-	return writeBuildIndex(root, artifacts, rootFiles, c.provenance, written)
+	return writeBuildIndex(root, built, skipped, rootFiles, c.provenance, written)
 }
 
 // sortedFiles orders carried files by destination.
@@ -442,30 +444,22 @@ func (c *compilation) artifactServers(artifact pluginArtifact) []*resource.Docum
 	return servers
 }
 
-func (c *compilation) writePluginArtifact(root string, artifact pluginArtifact, written *[]string) error {
-	dir := filepath.Join(root, artifact.dir)
-	manifest := jsonx.Obj{
-		{K: "$schema", V: jsonx.Str(pluginSchemaURI)},
-		{K: "name", V: jsonx.Str(artifact.dir)},
-		{K: "version", V: jsonx.Str(artifact.plan.Version)},
-		{K: "description", V: jsonx.Str(artifact.plan.Description)},
-	}
-	manifest = append(manifest, metadataMembers(artifact.plan.Metadata)...)
-	if err := writeFile(filepath.Join(dir, "plugin.json"), jsonx.Indented(manifest)+"\n", written); err != nil {
+// writePluginArtifact writes one client's build of an artifact beneath
+// <root>/<client>/<artifact>.
+func (c *compilation) writePluginArtifact(root, client string, artifact pluginArtifact, written *[]string) error {
+	dir := filepath.Join(root, client, artifact.dir)
+	servers := c.artifactServers(artifact)
+	if err := writeClientConfig(client, dir, artifact, servers, written); err != nil {
 		return err
 	}
-	servers := c.artifactServers(artifact)
-	if len(servers) > 0 {
-		if err := writeFile(filepath.Join(dir, "mcp.json"), mcpJSON(servers)+"\n", written); err != nil {
+	if client == clientCopilot {
+		if err := c.writeCopilot(dir, artifact, written); err != nil {
 			return err
 		}
 	}
-	if err := c.writeCopilot(dir, artifact, written); err != nil {
-		return err
-	}
 	for _, skill := range artifact.plan.Skills {
 		skillDir := filepath.Join(dir, "skills", skill.Name)
-		if err := writeFile(filepath.Join(skillDir, "SKILL.md"), renderSkill(skill, artifact.mode), written); err != nil {
+		if err := writeFile(filepath.Join(skillDir, "SKILL.md"), renderSkill(skill, artifact.mode, client == clientCopilot), written); err != nil {
 			return err
 		}
 		entries, err := skillDirectory(skill)
@@ -530,12 +524,15 @@ func serverValue(s *resource.ServerConfig) jsonx.Obj {
 	return obj
 }
 
-// renderSkill renders a SKILL.md: Agent Skills frontmatter with opt-in
-// Copilot fields, the instructions for one mode, and inline documents.
-func renderSkill(skill resolve.ResolvedSkill, mode string) string {
+// renderSkill renders a SKILL.md: Agent Skills frontmatter, with the skill's
+// Copilot fields in a Copilot artifact, the instructions for one mode, and
+// inline documents.
+func renderSkill(skill resolve.ResolvedSkill, mode string, copilotFields bool) string {
 	var b strings.Builder
 	b.WriteString("---\nname: " + skill.Name + "\ndescription: " + escapeYAML(skill.Description) + "\n")
-	frontmatterFields(&b, skill.Copilot, true)
+	if copilotFields {
+		frontmatterFields(&b, skill.Copilot, true)
+	}
 	b.WriteString("---\n\n")
 	b.WriteString(strings.TrimSpace(skill.InstructionsFor(mode)) + "\n\n")
 	inline := []resolve.ResolvedDocument{}
@@ -697,49 +694,36 @@ func bundleJSON(artifact pluginArtifact, servers []*resource.Document) string {
 	})
 }
 
-// marketplaceJSON renders the Copilot marketplace index. Each artifact is
-// listed by relative source so the target directory can be published as the
-// marketplace repository root.
-func marketplaceJSON(marketplace *resource.Marketplace, version string, artifacts []pluginArtifact) string {
-	plugins := jsonx.Arr{}
-	for _, artifact := range artifacts {
-		entry := jsonx.Obj{
-			{K: "name", V: jsonx.Str(artifact.dir)},
-			{K: "source", V: jsonx.Str("./" + artifact.dir)},
-			{K: "description", V: jsonx.Str(artifact.plan.Description)},
-			{K: "version", V: jsonx.Str(artifact.plan.Version)},
-		}
-		entry = append(entry, metadataMembers(artifact.plan.Metadata)...)
-		plugins = append(plugins, append(entry, catalogMembers(artifact.plan.Metadata)...))
-	}
-	metadata := jsonx.Obj{}
-	if marketplace.Description != "" {
-		metadata = append(metadata, jsonx.Member{K: "description", V: jsonx.Str(marketplace.Description)})
-	}
-	return jsonx.Indented(jsonx.Obj{
-		{K: "name", V: jsonx.Str(marketplace.Name)},
-		{K: "owner", V: jsonx.Obj{{K: "name", V: jsonx.Str(marketplace.Owner)}}},
-		{K: "metadata", V: append(metadata, jsonx.Member{K: "version", V: jsonx.Str(version)})},
-		{K: "plugins", V: plugins},
-	})
-}
-
-// writeBuildIndex writes the target's integrity index: one entry per plugin
-// and mode, each with its owning package's source digest, and one per
-// marketplace file with its file digest.
-func writeBuildIndex(root string, artifacts []pluginArtifact, files []resource.PackageFile, provenance buildProvenance, written *[]string) error {
+// writeBuildIndex writes the target's integrity index: one entry per client
+// and built artifact, each with its owning package's source digest; one per
+// artifact a client does not build, with the reason; and one per marketplace
+// file with its file digest.
+func writeBuildIndex(root string, built map[string][]pluginArtifact, skipped []skippedArtifact, files []resource.PackageFile, provenance buildProvenance, written *[]string) error {
 	entries := jsonx.Arr{}
-	for _, artifact := range artifacts {
-		digest, err := HashDirectory(filepath.Join(root, artifact.dir))
-		if err != nil {
-			return err
+	for _, client := range clients {
+		for _, artifact := range built[client] {
+			path := client + "/" + artifact.dir
+			digest, err := HashDirectory(filepath.Join(root, filepath.FromSlash(path)))
+			if err != nil {
+				return err
+			}
+			entries = append(entries, jsonx.Obj{
+				{K: "client", V: jsonx.Str(client)},
+				{K: "id", V: jsonx.Str(artifact.plan.ID)},
+				{K: "mode", V: jsonx.Str(artifact.mode)},
+				{K: "path", V: jsonx.Str(path)},
+				{K: "sourceDigest", V: jsonx.Str(artifact.plan.Provenance.SourceDigest)},
+				{K: "digest", V: jsonx.Str("sha256:" + digest)},
+			})
 		}
-		entries = append(entries, jsonx.Obj{
-			{K: "id", V: jsonx.Str(artifact.plan.ID)},
-			{K: "mode", V: jsonx.Str(artifact.mode)},
-			{K: "path", V: jsonx.Str(artifact.dir)},
-			{K: "sourceDigest", V: jsonx.Str(artifact.plan.Provenance.SourceDigest)},
-			{K: "digest", V: jsonx.Str("sha256:" + digest)},
+	}
+	notBuilt := jsonx.Arr{}
+	for _, skip := range skipped {
+		notBuilt = append(notBuilt, jsonx.Obj{
+			{K: "client", V: jsonx.Str(skip.client)},
+			{K: "id", V: jsonx.Str(skip.artifact.plan.ID)},
+			{K: "mode", V: jsonx.Str(skip.artifact.mode)},
+			{K: "reason", V: jsonx.Str(skip.reason)},
 		})
 	}
 	fileEntries := jsonx.Arr{}
@@ -752,10 +736,11 @@ func writeBuildIndex(root string, artifacts []pluginArtifact, files []resource.P
 		})
 	}
 	index := jsonx.Indented(jsonx.Obj{
-		{K: "schemaVersion", V: jsonx.Num("3")},
+		{K: "schemaVersion", V: jsonx.Num("4")},
 		{K: "target", V: jsonx.Str(TargetName)},
 		{K: "sourceDigest", V: jsonx.Str(provenance.SourceDigest)},
 		{K: "artifacts", V: entries},
+		{K: "notBuilt", V: notBuilt},
 		{K: "files", V: fileEntries},
 	}) + "\n"
 	return writeFile(filepath.Join(root, ".typeference", "build.json"), index, written)

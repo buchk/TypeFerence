@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "typeference",
-      "source": "./dist-plugin/agent-plugin/typeference",
+      "source": "./dist-plugin/agent-plugin/copilot/typeference",
       "description": "Author, extend, and check TypeFerence packages and marketplaces with the typeference compiler as an MCP server.",
       "version": "0.1.0",
       "homepage": "https://github.com/buchk/TypeFerence",

@@ -1,0 +1,14 @@
+---
+schemaVersion: 9
+name: conformance/case
+version: 1.0.0
+marketplace:
+  name: case-agents
+  owner: Case Platform
+  description: Every client's index from one source.
+plugins:
+  - plugins/tickets.plugin.tfer
+  - plugins/notes.plugin.tfer
+  - plugins/ops.plugin.tfer
+  - plugins/signals.plugin.tfer
+---

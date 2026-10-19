@@ -2,7 +2,7 @@
 
 **Write your organization's skills, agents, and MCP servers once. Specialize them per team with typed data. Ship them as Agent Plugins through one marketplace.**
 
-TypeFerence is an experimental authoring and reuse layer for [Agent Plugins](https://agent-plugins.org/). It compiles small `.tfer` source documents into ordinary Agent Plugins 1.0 directories and a marketplace index. Skills and MCP servers are the portable core every build emits. GitHub Copilot's own components (custom agents, rules, commands, hooks, language servers) are emitted only where a plugin lists them under `copilot:`. Clients such as Copilot install, authenticate, and run what it produces; TypeFerence never does.
+TypeFerence is an experimental authoring and reuse layer for agent plugins. It compiles small `.tfer` source documents into plugin packages and marketplace indexes for GitHub Copilot, Claude Code, and Codex, through one build adapter per client. Skills, MCP servers, documents, and typed data are written once for all three. GitHub Copilot's own components (custom agents, rules, commands, hooks, language servers) are written under `copilot:` and ship only to Copilot. The clients install, authenticate, and run what it produces; TypeFerence never does.
 
 Read the [specification](docs/specification.md) (version 9), the [decisions](docs/decisions/README.md) behind it, the [output contract](docs/output-contract.md), and the [Helio example](examples/helio/README.md).
 
@@ -119,27 +119,35 @@ Skills can also ship plain files (`references/`, `scripts/`, `assets/`), render 
 
 ## What it builds
 
-`typeference build` writes `<out>/agent-plugin`, a directory you can publish as a marketplace repository:
+`typeference build` writes `<out>/agent-plugin`, a directory you can publish as a marketplace repository that Copilot, Claude Code, and Codex each recognize:
 
 ```text
 agent-plugin/
-  .github/plugin/marketplace.json
-  payments/
-    plugin.json
-    mcp.json
-    com.github.copilot/agents/payments-ops.agent.md
-    com.github.copilot/rules/working-norms.md
-    com.github.copilot/commands/payments-standup.md
-    com.github.copilot/hooks/hooks.json
-    skills/payments-queue-summary/SKILL.md
-    skills/payments-self-heal/SKILL.md
-    skills/payments-self-heal/references/output.schema.json
-  payments-pipeline/            # the same plugin with pipeline renderings
-  .typeference/build.json       # integrity index
+  .github/plugin/marketplace.json    # Copilot's index
+  .claude-plugin/marketplace.json    # Claude Code's index
+  .agents/plugins/marketplace.json   # Codex's index
+  copilot/
+    payments/
+      plugin.json
+      mcp.json
+      com.github.copilot/agents/payments-ops.agent.md
+      com.github.copilot/rules/working-norms.md
+      com.github.copilot/commands/payments-standup.md
+      com.github.copilot/hooks/hooks.json
+      skills/payments-queue-summary/SKILL.md
+      skills/payments-self-heal/SKILL.md
+      skills/payments-self-heal/references/output.schema.json
+    payments-pipeline/               # the same plugin with pipeline renderings
+    integrations/
+  claude/
+    integrations/                    # .claude-plugin/plugin.json, .mcp.json, skills/
+  codex/
+    integrations/                    # plugin.json, mcp.json, skills/
+  .typeference/build.json            # integrity index, and what each client did not build
   .typeference/compatibility.json
 ```
 
-Every build produces Agent Plugins 1.0 packages. A plugin with no `copilot:` block is a portable package of skills and MCP servers that any Agent Plugins client reads; `com.github.copilot/` and Copilot skill fields appear only where the source declares them. No build option changes that, so the output is a function of the source alone. CI checks every emitted file against the Agent Plugins schemas and TypeFerence's [output contract](docs/output-contract.md).
+Each client gets its own layout from the same source: Agent Plugins 1.0 for Copilot and Codex, and Claude Code's `.claude-plugin/plugin.json` and `.mcp.json`, with the plugin root and data variables spelled as Claude Code spells them. A plugin with Copilot components (here `payments`, whose agent, rules, and hooks are Copilot's) builds only for Copilot; it is never offered to a client without the parts it depends on, and `build.json` records why. No build option changes any of this, so the output is a function of the source alone. CI checks every emitted file against the client formats and TypeFerence's [output contract](docs/output-contract.md).
 
 ## One marketplace for the whole organization
 
@@ -250,7 +258,7 @@ typeference version
 
 - `import` turns existing Copilot customizations into a version 9 package: a repository's `.github/agents` and skills, a skill directory, or an Agent Plugin. It carries the files beside skills, `mcp.json` servers, and recognized Copilot frontmatter. It also carries an Agent Plugin's commands, rules, hooks, and language servers (listed under the plugin's `copilot:` block), its `author`, `homepage`, `repository`, `license`, `keywords`, `category`, and `tags`, and every other file in the plugin directory, such as a README or templates, as plugin `files`. A marketplace repository is not imported whole: import lists its plugins so each can be imported, and the repository's README and CI become the marketplace package's `marketplace.files`. It fails, listing every item, on anything version 9 cannot represent, unless you pass `--lossy`.
 - `restore` is the only command that contacts feeds. It records exact identities and digests in `typeference.lock`.
-- `build` is offline and deterministic. Copilot is the only client whose components TypeFerence emits; Claude Code and Codex components are not supported.
+- `build` is offline and deterministic. It runs the Copilot, Claude Code, and Codex adapters every time. Copilot is the only client with a keyword for its own components; Claude Code's and Codex's own components (their agents and hooks) are not supported yet.
 - `diff` rebuilds and byte-compares against a committed output directory.
 - `mcp` serves the commands above (except `mcp` and `version`) as MCP tools over stdio. Each tool call runs the same executable with the same arguments and returns its output and exit code.
 
@@ -282,15 +290,15 @@ Lockfiles contain package identities, exports, dependency edges, and content dig
 
 The agent that maintains this repository is defined in TypeFerence itself, under [agents/maintainer/](agents/maintainer/). The repository-root [AGENTS.md](AGENTS.md) and `dist-maintainer/` (its installable Copilot plugin) are compiled artifacts of that definition; CI recompiles it and fails on any drift.
 
-The compiler also ships as a plugin, so an agent can author TypeFerence for you. [agents/typeference/](agents/typeference/) is a portable plugin (no `copilot:` block) holding the `edit-typeference` skill, which stands up packages, dependencies, and marketplaces, and the `typeference-compiler` MCP server, which runs `typeference mcp`. Its build is committed in `dist-plugin/`, and [.github/plugin/marketplace.json](.github/plugin/marketplace.json) is that build's index with each source pointing into `dist-plugin/`, which makes this repository a marketplace ([ADR-0008](docs/decisions/0008-authoring-tools.md)). The server needs the compiler on PATH:
+The compiler also ships as a plugin, so an agent can author TypeFerence for you. [agents/typeference/](agents/typeference/) holds the `edit-typeference` skill, which stands up packages, dependencies, and marketplaces, and the `typeference-compiler` MCP server, which runs `typeference mcp`. It has no Copilot components, so it builds for every client. Its build is committed in `dist-plugin/`, and the repository root's [`.github/plugin/`](.github/plugin/marketplace.json), [`.claude-plugin/`](.claude-plugin/marketplace.json), and [`.agents/plugins/`](.agents/plugins/marketplace.json) indexes are that build's indexes pointing into `dist-plugin/`, which makes this repository a marketplace for all three ([ADR-0008](docs/decisions/0008-authoring-tools.md)). The server needs the compiler on PATH:
 
 ```sh
 go install github.com/buchk/TypeFerence/go/cmd/typeference@main
-copilot plugin marketplace add buchk/TypeFerence
-copilot plugin install typeference@typeference
 ```
 
-The published release binaries predate source version 9. The plugin has not yet been installed and exercised in Copilot.
+Then add `buchk/TypeFerence` as a marketplace in your client and install `typeference` from it, for example `copilot plugin marketplace add buchk/TypeFerence` and `copilot plugin install typeference@typeference`, `claude plugin marketplace add buchk/TypeFerence` and `claude plugin install typeference@typeference`, or `codex plugin marketplace add buchk/TypeFerence`.
+
+The published release binaries predate source version 9. The plugin has not yet been installed and exercised in each client.
 
 ## Repository map
 

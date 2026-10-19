@@ -59,14 +59,14 @@ func TestRestoreMaterializesTransitiveGraphForOfflineBuild(t *testing.T) {
 	if _, err := compile.Build(root, out, compile.BuildOptions{PackagesDir: packagesDir}); err != nil {
 		t.Fatalf("offline build could not consume restored graph: %v", err)
 	}
-	skill, err := os.ReadFile(filepath.Join(out, "agent-plugin", "payments", "skills", "payments-review", "SKILL.md"))
+	skill, err := os.ReadFile(filepath.Join(out, "agent-plugin", "copilot", "payments", "skills", "payments-review", "SKILL.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(skill), "Review the change for correctness.") || !strings.Contains(string(skill), "Also check reconciliation.") {
 		t.Fatalf("a cross-package extension must carry its base's instructions then its own:\n%s", skill)
 	}
-	agent, err := os.ReadFile(filepath.Join(out, "agent-plugin", "payments", "com.github.copilot", "agents", "payments.agent.md"))
+	agent, err := os.ReadFile(filepath.Join(out, "agent-plugin", "copilot", "payments", "com.github.copilot", "agents", "payments.agent.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -241,11 +241,11 @@ func TestBinarySkillFilesPackByteForByte(t *testing.T) {
 	if _, err := compile.Build(source, out, compile.BuildOptions{}); err != nil {
 		t.Fatal(err)
 	}
-	emitted, err := os.ReadFile(filepath.Join(out, "agent-plugin", "kit", "skills", "logo", "assets", "logo.bin"))
+	emitted, err := os.ReadFile(filepath.Join(out, "agent-plugin", "copilot", "kit", "skills", "logo", "assets", "logo.bin"))
 	if err != nil || string(emitted) != string(binary) {
 		t.Fatalf("binary skill file must be emitted byte for byte, got %v (%v)", emitted, err)
 	}
-	if _, err := os.Stat(filepath.Join(out, "agent-plugin", "kit", "skills", "logo", "references", "notes.md")); err != nil {
+	if _, err := os.Stat(filepath.Join(out, "agent-plugin", "copilot", "kit", "skills", "logo", "references", "notes.md")); err != nil {
 		t.Fatalf("a files entry without 'as' ships under references/: %v", err)
 	}
 }

@@ -2,6 +2,6 @@
   "description": "Skill files and output contracts (ADR-0006): plain files ship under references/ by default or at their 'as' path, and declared or capability schemas ship as references/input.schema.json and references/output.schema.json.",
   "expect": "success",
   "digests": {
-    "agent-plugin": "sha256:36e5777447c61c874311cd4ae9cac9e67f8a287ad204859af7969d430c74132a"
+    "agent-plugin": "sha256:49c80792b20595f7f3b49d8ae13dac482cf44b164f367aef0ad3e409039788c2"
   }
 }

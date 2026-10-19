@@ -19,10 +19,10 @@ displayName: Repository Map
 | `web/playground/` | Browser playground running the compiler as WebAssembly. |
 | `agents/maintainer/` | This definition; compiled into `dist-maintainer/` and the root `AGENTS.md`. |
 | `agents/typeference/` | The TypeFerence plugin (the `edit-typeference` skill and the compiler's MCP server); compiled into `dist-plugin/`. |
-| `.github/plugin/marketplace.json` | Root marketplace index, derived from `dist-plugin/`'s index by `make selfhost`. |
+| `.github/plugin/`, `.claude-plugin/`, `.agents/plugins/` | Root marketplace indexes for Copilot, Claude Code, and Codex, derived from `dist-plugin/` by `make selfhost` (`tools/root-marketplaces.sh`). |
 | `.github/workflows/ci.yml` | Build, test, determinism, and self-host drift gates. |
 
 The root `AGENTS.md` is generated from this definition. To change it, edit the
 documents under `agents/maintainer/` and run `make selfhost`; never edit the
 generated file directly. The same holds for `dist-plugin/` and the root
-marketplace index, generated from `agents/typeference/`.
+marketplace indexes, generated from `agents/typeference/`.

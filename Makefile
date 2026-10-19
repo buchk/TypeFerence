@@ -37,30 +37,27 @@ conformance:
 # committed artifacts: dist-maintainer (the installable Copilot plugin) and the
 # repository-root AGENTS.md, which is the maintainer agent file without its
 # frontmatter.
-MAINTAINER_AGENT := dist-maintainer/agent-plugin/typeference-maintainer/com.github.copilot/agents/typeference-maintainer.agent.md
+MAINTAINER_AGENT := dist-maintainer/agent-plugin/copilot/typeference-maintainer/com.github.copilot/agents/typeference-maintainer.agent.md
 STRIP_FRONTMATTER := awk 'n >= 2 && (seen || $$0 != "") { seen = 1; print } /^---$$/ { n++ }'
 
 #
 # Also recompile the TypeFerence plugin (agents/typeference) into dist-plugin
-# and derive the repository-root marketplace index from its build: the same
-# index with each plugin source prefixed by the committed path, which makes
-# this repository a marketplace (ADR-0008).
-ROOT_MARKETPLACE := .github/plugin/marketplace.json
-ROOT_SOURCES := sed 's|"source": "\./|"source": "./dist-plugin/agent-plugin/|' dist-plugin/agent-plugin/.github/plugin/marketplace.json
+# and derive the repository-root marketplace indexes from its build, one per
+# client, which makes this repository a marketplace for Copilot, Claude Code,
+# and Codex (ADR-0008).
 
 selfhost: build-go
 	$(BINDIR)/typeference$(shell $(GO) env GOEXE) build agents/maintainer --out dist-maintainer
 	$(STRIP_FRONTMATTER) $(MAINTAINER_AGENT) > AGENTS.md
 	$(BINDIR)/typeference$(shell $(GO) env GOEXE) build agents/typeference --out dist-plugin
-	mkdir -p .github/plugin
-	$(ROOT_SOURCES) > $(ROOT_MARKETPLACE)
+	sh tools/root-marketplaces.sh
 
 # Fail if the committed artifacts have drifted from the definitions.
 selfhost-check: build-go
 	$(BINDIR)/typeference$(shell $(GO) env GOEXE) diff agents/maintainer --against dist-maintainer
 	$(STRIP_FRONTMATTER) $(MAINTAINER_AGENT) | cmp - AGENTS.md
 	$(BINDIR)/typeference$(shell $(GO) env GOEXE) diff agents/typeference --against dist-plugin
-	$(ROOT_SOURCES) | cmp - $(ROOT_MARKETPLACE)
+	sh tools/root-marketplaces.sh --check
 
 # Regenerate the committed reference output of the Helio marketplace
 # (examples/helio): the reference test stages its packages, restores the

@@ -6,17 +6,18 @@ Its resource documents carry no schema version, kind, or identity field; the
 manifest and each document's path supply them. Unsupported fields and schema
 versions are errors rather than extension points.
 
-TypeFerence is an authoring and reuse layer for Agent Plugins 1.0. Every build
-emits the portable Agent Plugins core; a component that only one client reads
-is emitted only where source names it under that client's keyword, and
-`copilot` is the only client keyword (ADR-0001). Earlier source versions are
-not accepted. Design rationale is in `docs/decisions/`.
+TypeFerence is an authoring and reuse layer for agent plugins. Build compiles
+every plugin through a build adapter for each client it supports (GitHub
+Copilot, Claude Code, and Codex) and emits each client's marketplace index. A
+component that only one client reads is written under that client's keyword,
+and `copilot` is the only client keyword (ADR-0001). Earlier source versions
+are not accepted. Design rationale is in `docs/decisions/`.
 
 ## Purpose and pipeline
 
 TypeFerence defines a closed, deterministic source language for authoring
-plugins and compiling them into Agent Plugins 1.0 packages and a marketplace
-index. An organization writes its skills, agents, documents, typed data, and
+plugins and compiling them into each client's plugin packages and
+marketplace index. An organization writes its skills, agents, documents, typed data, and
 MCP servers once, specializes them per team, and ships them through one
 marketplace. It separates three operations:
 
@@ -35,30 +36,38 @@ it writes new source, never artifacts.
 
 TypeFerence does not define an inference runtime, package registry server,
 installer, secret manager, model credentials, MCP server implementation, or
-deployment orchestrator. Agent Plugins clients such as GitHub Copilot install,
-enable, authenticate, and run what TypeFerence emits.
+deployment orchestrator. The clients install, enable, authenticate, and run
+what TypeFerence emits.
 
-## The portable core and client keywords
+## Clients, build adapters, and client keywords
 
-Agent Plugins 1.0 defines a portable core: `plugin.json`, Agent Skills under
-`skills/`, and MCP servers in `mcp.json`. Clients read further components from
-a reverse-domain extension directory, which the portable core never requires.
-TypeFerence follows the same split in source:
+Clients install plugins in different layouts. GitHub Copilot and Codex read
+Agent Plugins 1.0: `plugin.json`, Agent Skills under `skills/`, and MCP
+servers in `mcp.json`. Copilot also reads its own components from
+`com.github.copilot/`. Claude Code reads its own layout:
+`.claude-plugin/plugin.json`, `skills/`, and `.mcp.json`. Build therefore
+compiles each plugin once per client, through that client's **build
+adapter** (see "The agent-plugin target"), and every adapter starts from the
+same resolved plugin:
 
-- skills, servers, documents, data, and plugin metadata compile to the
-  portable core, and a plugin that uses only them compiles to a package any
-  Agent Plugins client reads;
-- a client-specific component reaches an artifact only when source names it
-  under the client's keyword. `copilot` is the only client keyword: a plugin's
-  or profile's `copilot` block lists the custom agents, rules, commands,
-  hooks, and LSP servers it ships into `com.github.copilot/` (see "Native
-  Copilot components"), and a skill's or agent's `copilot` mapping holds
-  Copilot-only frontmatter (see "Copilot fields").
+- skills, servers, documents, data, and plugin metadata are written once and
+  built for every client;
+- a component only one client reads is written under that client's keyword.
+  `copilot` is the only client keyword: a plugin's or profile's `copilot`
+  block lists the custom agents, rules, commands, hooks, and LSP servers it
+  ships into `com.github.copilot/` (see "Native Copilot components"), and a
+  skill's or agent's `copilot` mapping holds Copilot-only frontmatter (see
+  "Copilot fields").
 
-Nothing client-specific is inferred, translated to another client, or emitted
-by default. A client component written outside its keyword is an error, not
-an omission. Distribution is outside Agent Plugins 1.0; the marketplace index
-build emits (see "The agent-plugin target") is the format Copilot documents.
+An adapter emits only what its client runs with the meaning the source gives
+it. Where a client spells the same thing differently, such as Claude Code's
+`${CLAUDE_PLUGIN_ROOT}` for `${PLUGIN_ROOT}`, its adapter writes the client's
+spelling; nothing else is translated between clients. A plugin that an adapter
+cannot build as written, such as one with Copilot components for Claude Code
+or Codex, is not built for that client, and `build.json` records the reason; it
+is never built without part of its composition. A client component written
+outside its keyword is an error, not an omission. Build takes no option that
+changes any of this: the source alone decides.
 
 ## Identity and addressing
 
@@ -364,7 +373,7 @@ After composition a plugin MUST contain at least one agent, skill, rule,
 command, hook, or LSP server. A plugin whose composition contains no agent is
 a skills pack, and MUST hold no documents: without an agent there is nowhere
 to deliver them. A plugin whose composition contains no Copilot component
-compiles to the portable core alone. A plugin MUST be complete: it binds every capability its
+builds for every client. A plugin MUST be complete: it binds every capability its
 composition requires and every parameter its members declare (see
 "Instances"). `modes` lists `manual`, `pipeline`, or both, each at most once,
 and defaults to `manual`.
@@ -467,14 +476,15 @@ root for a marketplace, and defaults to the file name of `path`. A destination
 MUST be a clean path and MUST NOT claim a path build emits itself. Compared
 after lowercasing:
 
-- a plugin file's destination MUST NOT be `plugin.json` or `mcp.json`, and its
-  first segment MUST NOT be `skills`, `com.github.copilot`, `.typeference`, or
-  `.git`;
-- a marketplace file's first segment MUST NOT be `.typeference`, `.git`, or the
-  name of an artifact directory the build emits, and the destination MUST NOT
-  lie beneath `.github/plugin` or `.github/copilot`. The first is where the
-  marketplace index lives; the second holds repository settings, which build
-  never emits.
+- a plugin file's destination MUST NOT be `plugin.json`, `mcp.json`, or
+  `.mcp.json`, and its first segment MUST NOT be `skills`,
+  `com.github.copilot`, `.claude-plugin`, `.typeference`, or `.git`;
+- a marketplace file's first segment MUST NOT be `.typeference`, `.git`,
+  `copilot`, `claude`, or `codex`, and the destination MUST NOT lie beneath
+  `.github/plugin`, `.claude-plugin`, `.agents/plugins`, or `.github/copilot`.
+  The client directories hold the artifacts, the next three are where the
+  marketplace indexes live, and the last holds repository settings, which
+  build never emits.
 
 Destinations within one plugin's files, and within the marketplace's files,
 follow the collision and directory-spelling rules of skill files (ADR-0003).
@@ -928,8 +938,7 @@ Across a build, one server name denotes one server document.
 ## Copilot fields
 
 A skill or agent MAY carry a `copilot` mapping of Copilot-only frontmatter.
-These fields are explicit opt-ins; the portable Agent Plugins core never
-requires them.
+These fields are explicit opt-ins, emitted only in Copilot artifacts.
 
 | Kind | Field | Type | Emitted key |
 | --- | --- | --- | --- |
@@ -962,8 +971,7 @@ recognize. A skill meant to be used only by an agent sets
 
 ## Native Copilot components
 
-Agent Plugins 1.0 defines skills and MCP servers as its portable components.
-Copilot reads further components from the plugin's `com.github.copilot/`
+Agent Plugins 1.0 defines skills and MCP servers. Copilot reads further components from the plugin's `com.github.copilot/`
 directory; TypeFerence declares each as a document kind (ADR-0007), and a
 plugin or profile ships one only by listing it in its `copilot` block:
 
@@ -1130,18 +1138,19 @@ already-defined artifact directories, not source identity.
 
 Build emits the `agent-plugin` target beneath `<out>/agent-plugin/`. It is
 complete: there is no later linking step. A request for any other target fails
-with a diagnostic. Build takes no option that changes which components an
-artifact contains: the source alone decides (see "The portable core and client
-keywords"). Files under `com.github.copilot/` and Copilot fields in `SKILL.md`
-appear only where the source declares them.
+with a diagnostic. Build takes no option that changes what the target
+contains: the source alone decides (see "Clients, build adapters, and client
+keywords").
 
 ```text
 agent-plugin/
   .github/plugin/marketplace.json
+  .claude-plugin/marketplace.json
+  .agents/plugins/marketplace.json
   .typeference/build.json
   .typeference/compatibility.json
   <marketplace file>...
-  <artifact>/
+  copilot/<artifact>/
     plugin.json
     mcp.json
     com.github.copilot/agents/<agent>.agent.md
@@ -1155,10 +1164,28 @@ agent-plugin/
     skills/<skill>/assets/...
     <plugin file>...
     .typeference/bundle.json
+  claude/<artifact>/
+    .claude-plugin/plugin.json
+    .mcp.json
+    skills/<skill>/...
+    <plugin file>...
+    .typeference/bundle.json
+  codex/<artifact>/
+    plugin.json
+    mcp.json
+    skills/<skill>/...
+    <plugin file>...
+    .typeference/bundle.json
 ```
 
-Each plugin mode is one artifact directory: `manual` emits `<plugin>` and
-`pipeline` emits `<plugin>-pipeline`. An artifact renders exactly one mode.
+Each plugin mode is one artifact: `manual` emits `<plugin>` and `pipeline`
+emits `<plugin>-pipeline`, and an artifact renders exactly one mode. Each
+client directory holds that client's build of every artifact its adapter
+builds.
+
+### The Copilot adapter
+
+The Copilot adapter builds every artifact.
 
 - `plugin.json` holds `$schema`
   (`https://agent-plugins.org/schemas/1.0.0/plugin.schema.json`), `name` (the
@@ -1203,6 +1230,34 @@ Each plugin mode is one artifact directory: `manual` emits `<plugin>` and
   locked digest otherwise) and the locked packages in its dependency closure,
   in lock order.
 
+### The Codex adapter
+
+The Codex adapter builds every artifact whose plugin's composition holds no
+Copilot component. Codex reads Agent Plugins 1.0, so its artifact is the
+Copilot artifact without `com.github.copilot/` and without Copilot fields in
+`SKILL.md`: `plugin.json`, `mcp.json`, skills, carried files, and
+`bundle.json`, each as above.
+
+### The Claude Code adapter
+
+The Claude Code adapter builds every artifact whose plugin's composition holds
+no Copilot component and none of whose shipped servers declares `cwd`, which
+Claude Code's server configuration does not express. Its artifact holds:
+
+- `.claude-plugin/plugin.json`: `name`, `version`, `description`, and the
+  metadata members, as `plugin.json` above without `$schema`;
+- `.mcp.json`, when the artifact ships servers: `mcpServers`, one entry per
+  server keyed by server name and sorted. A `stdio` entry holds `command`, then
+  `args` and `env` when declared; a `streamable-http` entry holds `type`
+  (`http`), `url`, then `headers` when declared. `${PLUGIN_ROOT}` and
+  `${PLUGIN_DATA}` are written `${CLAUDE_PLUGIN_ROOT}` and
+  `${CLAUDE_PLUGIN_DATA}`, and a `./` command is written
+  `${CLAUDE_PLUGIN_ROOT}/` followed by the path after `./`: Claude Code's
+  spellings of the plugin root and data directory;
+- skills, carried files, and `bundle.json`, as in the Codex adapter.
+
+### Rules for every adapter
+
 Frontmatter strings are double-quoted, escaping `\` and `"`. Boolean fields are
 unquoted `true` or `false`. List fields are block sequences of double-quoted
 strings.
@@ -1223,21 +1278,37 @@ covers every plugin the build ships, whichever package owns it. If two distinct
 resources collapse to one emitted name, compilation fails rather than
 overwriting either.
 
-The target root holds `.typeference/build.json` (`schemaVersion` 3: target,
-the build's source digest, each artifact's plugin identity, mode, path,
-owning package source digest, and directory digest, and each marketplace
-file's path, source, and file digest) and `.typeference/compatibility.json`
-(`schemaVersion` 1). A file digest is `sha256:` and the SHA-256 of the file's
-content as `typeference-directory-v1` reads it. When the manifest declares
-`marketplace`, the root also holds `.github/plugin/marketplace.json`: `name`;
-`owner` with `name`; `metadata` with the manifest's `description` when declared,
-then the building package's `version`; and `plugins`, one entry per artifact
-with `name`, `source` (`./<artifact>`), `description`, `version` (the owning
-package's), then the plugin's metadata members as `plugin.json` orders them,
-then its `category` and `tags` when declared; and each marketplace file at its
-destination. The target directory is therefore publishable as a marketplace
-repository root. Every file in it is an index file build derives, or is
-covered by a digest in `build.json`: an artifact's files by its directory
+The target root holds `.typeference/build.json` (`schemaVersion` 4: target,
+the build's source digest; for each built artifact its client, plugin
+identity, mode, path (`<client>/<artifact>`), owning package source digest,
+and directory digest; for each artifact a client does not build, the client,
+plugin identity, mode, and reason, `copilot-components` or `server-cwd`; and
+each marketplace file's path, source, and file digest) and
+`.typeference/compatibility.json` (`schemaVersion` 1). A file digest is
+`sha256:` and the SHA-256 of the file's content as `typeference-directory-v1`
+reads it.
+
+When the manifest declares `marketplace`, the root holds each marketplace file
+at its destination and an index for each client whose adapter builds at least
+one artifact, listing that client's artifacts in artifact order:
+
+- `.github/plugin/marketplace.json`, Copilot's index: `name`; `owner` with
+  `name`; `metadata` with the manifest's `description` when declared, then the
+  building package's `version`; and `plugins`, one entry per artifact with
+  `name`, `source` (`./copilot/<artifact>`), `description`, `version` (the
+  owning package's), then the plugin's metadata members as `plugin.json`
+  orders them, then its `category` and `tags` when declared;
+- `.claude-plugin/marketplace.json`, Claude Code's index: the same members,
+  with each `source` `./claude/<artifact>`;
+- `.agents/plugins/marketplace.json`, Codex's index: `name`, and `plugins`,
+  one entry per artifact with `name`, `source` (`source` `local`, then `path`
+  `./codex/<artifact>`), `policy` (`installation` `AVAILABLE`, then
+  `authentication` `ON_INSTALL`), and `category`: the plugin's, or
+  `Productivity` when it declares none, because Codex requires one.
+
+The target directory is therefore publishable as a marketplace repository root
+that each client recognizes. Every file in it is an index file build derives,
+or is covered by a digest in `build.json`: an artifact's files by its directory
 digest, and each marketplace file by its file digest.
 
 The compatibility report lists, for each mode, every capability whose emitted

@@ -100,8 +100,8 @@ modes:
 ---
 ```
 
-- A plugin without a `copilot:` block is the portable Agent Plugins core:
-  `plugin.json`, skills, `mcp.json`.
+- Build writes every plugin for Copilot, Claude Code, and Codex. A plugin
+  with a `copilot:` block builds only for Copilot.
 - `agents`, `rules`, `commands`, `hooks`, and `lspServers` outside the block
   are errors. Skills never go inside it.
 - Every skill a plugin ships sits beside every agent it ships.

@@ -1,0 +1,11 @@
+---
+description: Ticket lookups for any Agent Plugins client.
+skills:
+  - skills/tickets.skill.tfer
+category: support
+tags:
+  - tickets
+modes:
+  - manual
+  - pipeline
+---

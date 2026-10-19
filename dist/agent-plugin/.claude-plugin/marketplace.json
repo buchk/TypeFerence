@@ -1,0 +1,17 @@
+{
+  "name": "helio-agents",
+  "owner": {
+    "name": "Helio Platform"
+  },
+  "metadata": {
+    "version": "2026.10.1"
+  },
+  "plugins": [
+    {
+      "name": "integrations",
+      "source": "./claude/integrations",
+      "description": "README upkeep skills for Helio\u0027s integration repositories.",
+      "version": "0.3.0"
+    }
+  ]
+}

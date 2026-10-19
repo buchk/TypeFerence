@@ -34,30 +34,31 @@ var pluginFiles = fileTarget{
 	defaultAs: path.Base,
 	check: func(destination string) string {
 		lower := strings.ToLower(destination)
-		if lower == "plugin.json" || lower == "mcp.json" {
+		if lower == "plugin.json" || lower == "mcp.json" || lower == ".mcp.json" {
 			return "is a file build emits"
 		}
 		switch strings.SplitN(lower, "/", 2)[0] {
-		case "skills", "com.github.copilot", ".typeference", ".git":
+		case "skills", "com.github.copilot", ".claude-plugin", ".typeference", ".git":
 			return "is beneath a directory build emits or excludes"
 		}
 		return ""
 	},
 }
 
-// marketplaceFiles ship at the target root (ADR-0004). That no destination
-// enters an artifact directory is checked by build, which knows the
-// artifacts.
+// marketplaceFiles ship at the target root (ADR-0004), beside the client
+// directories that hold the artifacts and the clients' marketplace indexes.
 var marketplaceFiles = fileTarget{
 	defaultAs: path.Base,
 	check: func(destination string) string {
 		lower := strings.ToLower(destination)
 		switch strings.SplitN(lower, "/", 2)[0] {
-		case ".typeference", ".git":
+		case ".typeference", ".git", "copilot", "claude", "codex":
 			return "is beneath a directory build emits or excludes"
 		}
 		for _, reserved := range []struct{ dir, holds string }{
-			{".github/plugin", "the marketplace index build emits"},
+			{".github/plugin", "Copilot's marketplace index"},
+			{".claude-plugin", "Claude Code's marketplace index"},
+			{".agents/plugins", "Codex's marketplace index"},
 			{".github/copilot", "repository settings, which build never emits"},
 		} {
 			if lower == reserved.dir || strings.HasPrefix(lower, reserved.dir+"/") {

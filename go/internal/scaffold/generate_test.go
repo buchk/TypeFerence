@@ -66,10 +66,10 @@ func TestGeneratedTreeCompilesWithOrdinaryCompiler(t *testing.T) {
 	if _, err := compile.Build(src, out, compile.BuildOptions{}); err != nil {
 		t.Fatalf("generated tree must compile: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(out, "agent-plugin", "ticket-bot", "plugin.json")); err != nil {
+	if _, err := os.Stat(filepath.Join(out, "agent-plugin", "copilot", "ticket-bot", "plugin.json")); err != nil {
 		t.Fatalf("the generated plugin set must emit the agent's plugin: %v", err)
 	}
-	skill, err := os.ReadFile(filepath.Join(out, "agent-plugin", "ticket-bot", "skills", "ticket-bot-status", "SKILL.md"))
+	skill, err := os.ReadFile(filepath.Join(out, "agent-plugin", "copilot", "ticket-bot", "skills", "ticket-bot-status", "SKILL.md"))
 	if err != nil || !strings.Contains(string(skill), "Summarize where Ticket Bot's work stands") {
 		t.Fatalf("the starter template skill must be instantiated with the team's data: %v\n%s", err, skill)
 	}

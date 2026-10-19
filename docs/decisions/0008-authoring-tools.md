@@ -37,10 +37,11 @@ second semantics.
    the same arguments a person would type and returns its output and exit
    code, so the server owns no semantics. `agents/typeference` is an ordinary
    package whose plugin holds an authoring skill and that server and nothing
-   Copilot-specific, so it is a portable plugin. Its build is committed in
-   `dist-plugin/`, and the repository root's `.github/plugin/marketplace.json`
-   is that build's index with each plugin source prefixed by the committed
-   path, which makes this repository a marketplace. `make selfhost`
+   Copilot-specific, so it builds for every client. Its build is committed in
+   `dist-plugin/`, and the repository root's three marketplace indexes
+   (`.github/plugin/`, `.claude-plugin/`, and `.agents/plugins/`) are that
+   build's indexes with each plugin path prefixed by the committed path, which
+   makes this repository a marketplace for Copilot, Claude Code, and Codex. `make selfhost`
    regenerates both and CI fails on drift, as it does for `AGENTS.md`. The
    server is a bare `typeference` command: installing the plugin does not
    install the compiler, and the skill says how to.
@@ -54,7 +55,7 @@ second semantics.
 - An agent with the plugin installed can stand up a package, its
   dependencies, and its marketplace, and checks its work with the same
   validate, build, and diff a person runs.
-- The root marketplace index is derived outside build, like `AGENTS.md`: the
+- The root marketplace indexes are derived outside build, like `AGENTS.md`: the
   path where this repository commits its build output is a fact about this
   repository, not about the package.
 

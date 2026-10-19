@@ -1,0 +1,8 @@
+---
+description: A kit carrying its own Claude manifest.
+skills:
+  - skills/status.skill.tfer
+files:
+  - path: files/plugin.json
+    as: .claude-plugin/plugin.json
+---

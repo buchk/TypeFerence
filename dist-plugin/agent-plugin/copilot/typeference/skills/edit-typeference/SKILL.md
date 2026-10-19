@@ -1,0 +1,65 @@
+---
+name: edit-typeference
+description: "Stand up, extend, and check TypeFerence packages - plugins, skills, agents, MCP servers, typed team data, dependencies, and an organization marketplace. Use when asked to create or change .tfer sources, import existing Copilot customizations, add or bump a dependency, or build and publish a marketplace."
+---
+
+# Edit TypeFerence packages
+
+TypeFerence compiles `.tfer` source packages into Agent Plugins 1.0 packages and a marketplace index. The source is the only thing anyone edits: build output is regenerated, never hand-edited. Your job is to change source, then prove the change with the compiler.
+
+The `typeference-compiler` MCP server gives you the CLI as tools: `typeference_validate`, `typeference_build`, `typeference_diff`, `typeference_inspect`, `typeference_import`, `typeference_init`, `typeference_restore`, `typeference_update`, and `typeference_pack`. Each runs the CLI once and returns its output and exit code. Paths resolve against the server's working directory; pass absolute paths when unsure.
+
+The normative rules are the specification: https://github.com/buchk/TypeFerence/blob/main/docs/specification.md. `references/language.md` summarizes the source language and `references/ecosystem.md` covers packages, feeds, and marketplaces. When they and a compiler diagnostic disagree, the compiler is right; report the disagreement.
+
+## Before you start
+
+1. Make sure the compiler runs: call `typeference_validate` on any package, or run `typeference version`. If the server failed to start, the `typeference` binary is not on PATH. It is a single static Go binary; with Go 1.24 or later, install it with `go install github.com/buchk/TypeFerence/go/cmd/typeference@main`, or clone the repository and run `make build-go`. Published release binaries predate source version 9, so do not use them for version 9 packages. Tell the person what you need instead of guessing.
+2. Find the package root: the directory holding `typeference.tfer`. Its manifest declares `schemaVersion: 9`. A manifest that declares another version is not something this compiler builds; say so rather than rewriting it silently.
+3. Read the manifest, then the plugins it lists. The plugin is the binding root: it decides what ships together and binds every parameter its members declare.
+
+## Standing up a new package
+
+Pick the starting point that loses the least:
+
+- **Existing Copilot customizations** (a repository's `.github/agents` and skills, a skill directory, or an Agent Plugin): call `typeference_import` with the source and an empty `out` directory. Import fails closed and lists everything it cannot represent; show the person that list before considering `lossy`, because a dropped hook or tool restriction changes behavior. Import does not factor anything: afterwards, move shared text into profiles, templates, and extensions deliberately.
+- **A team starter from answers**: `typeference_init` with a setup answer set.
+- **From scratch**: write the manifest, one plugin, and its skills by hand, following `references/language.md`.
+
+Then name it: the package `name` is `<org>/<package>` in lowercase, and the version is an exact semantic version.
+
+## Making a change
+
+1. Decide where the change belongs before you write it:
+   - shared behavior goes in the shared package, as a profile, a template skill with parameters, or a base skill or agent others extend;
+   - a team's variation is an extension (`extends`) or data bound with `with`, never a copy;
+   - anything one team supplies (names, queues, repositories) is a field of a context type and a value in that team's data document.
+2. Keep Copilot-only parts under `copilot:`. Skills, servers, documents, and data build for Copilot, Claude Code, and Codex; a plugin with Copilot components builds only for Copilot, and `.typeference/build.json` lists what each client did not get. Custom agents, rules, commands, hooks, and language servers are Copilot components: list them only under a plugin's or profile's `copilot:` block. Copilot-only skill or agent frontmatter goes in that document's own `copilot:` mapping. Never add a `copilot:` block the person did not ask for.
+3. Validate after every meaningful edit with `typeference_validate`. Exit code 2 is a diagnostic: read it, fix the source, rerun. Do not work around a diagnostic by renaming, dropping, or inferring something the person did not decide.
+4. Build with `typeference_build` into a directory under `dist`, `bin`, or `obj` (or outside the package). The target holds one directory per client (`copilot/`, `claude/`, `codex/`) and each client's marketplace index. Inspect the emitted files that matter for the change, such as `copilot/<plugin>/skills/*/SKILL.md`, `copilot/<plugin>/com.github.copilot/agents/*.agent.md`, `claude/<plugin>/.mcp.json`, and the indexes, and read `.typeference/build.json` for any plugin a client did not get.
+5. If the repository commits build output, compare it with `typeference_diff` against that directory, then rebuild into it so the committed output matches the source. Every changed file in the diff should be one you can explain.
+6. Use `typeference_inspect` with an agent's identity (`<package>/<path stem>@<version>`) to see how an agent resolved: its extension chain, objectives by source, documents, and the skills shipped beside it.
+
+## Dependencies
+
+A package uses another package's documents by declaring an exact version under `dependencies` and referencing exported paths as `<package>:<path>`. The other package must list the document in `exports` (or, for a plugin, in `plugins`).
+
+1. Add or change the exact version in `dependencies`.
+2. Restore with `typeference_restore` (first time) or `typeference_update` (after a version change). Both need the person's external feed configuration file; it is never part of source and never committed into the package. If there is none, ask where packages are published; `references/ecosystem.md` shows the format.
+3. Restore writes `typeference.lock` and materializes packages under `obj/typeference/packages`. Commit the lockfile; never commit `obj`.
+4. Build and validate as usual; build itself never contacts a feed.
+
+## Marketplaces
+
+An organization ships one marketplace: the build of a marketplace package whose manifest declares `marketplace` and lists the plugins of its dependencies as `<package>:<path>`. Teams publish their packages to a feed; the marketplace package pins them. To check a team package that is not published yet against the marketplace, call `typeference_validate` on the marketplace package with `candidate` set to the team package. The published marketplace repository holds only build output, so a README or CI workflow it needs is a `marketplace.files` entry in the manifest.
+
+## Rules that fail builds
+
+- Names: plugin, skill, agent, and instance names are lowercase words joined by single hyphens; server names have at least two such words (`acme-tickets`), so they never replace a person's own server.
+- Descriptions are required on agents, skills, plugins, and commands, are single lines, and stay under 1024 characters after field references resolve.
+- Server values never contain secrets, and `${` appears only as `${PLUGIN_ROOT}` or `${PLUGIN_DATA}`.
+- An agent that declares `copilot.tools` must name every server its plugin's skills require, as `<server>/*` or `<server>/<tool>`.
+- Every emitted name means one thing across the whole build, including every package a marketplace ships.
+
+## Reporting back
+
+Tell the person what you changed in source, what the compiler reported, and which emitted files changed and why. If you could not validate or build, say so and why; never report a change as working on the strength of the source alone.

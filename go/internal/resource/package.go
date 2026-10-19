@@ -942,7 +942,7 @@ func (d *documentDecoder) withCopilotComponents(fields map[string]func(*tferlex.
 	}
 	for _, key := range copilotComponents {
 		fields[key] = func(n *tferlex.Node) error {
-			return d.errorf(n, "'%s' are Copilot components; list them under 'copilot' (docs/specification.md, \"The portable core and client keywords\")", n.Key)
+			return d.errorf(n, "'%s' are Copilot components; list them under 'copilot' (docs/specification.md, \"Clients, build adapters, and client keywords\")", n.Key)
 		}
 	}
 	return fields

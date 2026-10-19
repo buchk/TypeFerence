@@ -1,0 +1,17 @@
+{
+  "name": "helio-agents",
+  "plugins": [
+    {
+      "name": "integrations",
+      "source": {
+        "source": "local",
+        "path": "./codex/integrations"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

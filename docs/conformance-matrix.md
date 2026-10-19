@@ -13,7 +13,7 @@ tests cover diagnostics, internal invariants, and rendered content.
 | Normative area | Golden evidence | Focused implementation evidence |
 | --- | --- | --- |
 | Manifest, version 9 only | 116, 166 | `internal/compile`: every build test; `internal/lsp`: `TestServerReportsDocumentsOutsideAPackage` |
-| The portable core; Copilot components only in `copilot` blocks | 023, 167, 168, 169 | `internal/compile`: `TestPluginWithoutCopilotBlockIsPortable`, `TestComponentOutsideCopilotBlockNamesTheBlock` |
+| Build adapters for Copilot, Claude Code, and Codex; each client's index; Copilot components only in `copilot` blocks | 023, 024, 153, 167, 168, 169, 170, 171, 172 | `internal/compile`: `TestPluginBuildsForEveryClient`, `TestAdaptersSkipWhatTheirClientCannotRun`, `TestComponentOutsideCopilotBlockNamesTheBlock`; `tools/validate_output.py` client schemas |
 | Kinds from suffixes; removed kinds | 115 | `internal/resource` decoding through every fixture |
 | Removed fields (`sealed`, `a2a`) | 123, 126 | — |
 | Descriptions after rendering | 128 | — |

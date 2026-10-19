@@ -96,10 +96,14 @@ Workflow for a team change:
    A README or CI workflow that repository needs is a `marketplace.files`
    entry, so it arrives through build too.
 
-## Installing from a marketplace in Copilot
+## Installing from a marketplace
 
-People add the marketplace repository and install plugins from it, for
-example `copilot plugin marketplace add OWNER/REPO` then
-`copilot plugin install <plugin>@<marketplace>`. Which repositories enable
-which plugins (`.github/copilot/settings.json`) is deployment; build never
-writes it.
+The published repository holds each client's index, so people add the same
+repository in whichever client they use and install from it:
+`copilot plugin marketplace add OWNER/REPO` then
+`copilot plugin install <plugin>@<marketplace>`;
+`claude plugin marketplace add OWNER/REPO` then
+`claude plugin install <plugin>@<marketplace>`; or
+`codex plugin marketplace add OWNER/REPO`. A plugin with Copilot components
+appears only in Copilot's index. Which repositories enable which plugins is
+deployment; build never writes it.

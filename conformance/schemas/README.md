@@ -7,6 +7,8 @@ schemas in CI. See [docs/output-contract.md](../../docs/output-contract.md).
 | --- | --- | --- |
 | `agent-plugins-1.0.0/` | `plugin.schema.json`, `mcp.schema.json` | Vendored unchanged from [agentplugins/agent-plugins-spec](https://github.com/agentplugins/agent-plugins-spec) |
 | `copilot/` | `hooks.schema.json`, `lsp.schema.json`, `marketplace.schema.json` | Written by TypeFerence from the Copilot CLI plugin reference |
+| `claude-code/` | `plugin.schema.json`, `mcp.schema.json`, `marketplace.schema.json` | Written by TypeFerence from the Claude Code plugin and marketplace references; covers what the Claude Code adapter writes |
+| `codex/` | `marketplace.schema.json` | Written by TypeFerence from the Codex plugin documentation; covers the `.agents/plugins` index build writes |
 | `typeference/` | `bundle.schema.json`, `build.schema.json`, `compatibility.schema.json` | TypeFerence's own `.typeference/` files |
 
 ## Agent Plugins schemas

@@ -1,0 +1,7 @@
+{
+  "description": "Build adapters (ADR-0001): a plugin with no Copilot components builds for Copilot and Codex in Agent Plugins 1.0 and for Claude Code in its own layout, where .mcp.json spells the plugin root and data directory as Claude Code does and a ./ command becomes a path under ${CLAUDE_PLUGIN_ROOT}. Copilot skill fields appear only in the Copilot build, and an empty copilot block contributes nothing.",
+  "expect": "success",
+  "digests": {
+    "agent-plugin": "sha256:e2ca2771180b7f3c6ffdd2e2f0d83b0a85da4b476f6322bca66fa699b1823647"
+  }
+}

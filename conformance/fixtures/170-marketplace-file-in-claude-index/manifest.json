@@ -1,0 +1,4 @@
+{
+  "description": "A marketplace file may not claim .claude-plugin/, where build emits Claude Code's marketplace index.",
+  "expect": "error"
+}

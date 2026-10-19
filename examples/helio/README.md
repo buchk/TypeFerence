@@ -87,50 +87,55 @@ emits:
 
 ```text
 dist/agent-plugin/
-  .github/plugin/marketplace.json
-  .typeference/build.json
+  .github/plugin/marketplace.json             # Copilot: every plugin
+  .claude-plugin/marketplace.json             # Claude Code: integrations
+  .agents/plugins/marketplace.json            # Codex: integrations
+  .typeference/build.json                     # notBuilt: the plugins with Copilot components
   .typeference/compatibility.json
-  engineering-kit/
-    plugin.json
-    com.github.copilot/lsp.json               # helio-config
-    skills/repository-status/SKILL.md
-  payments/
-    plugin.json
-    mcp.json                                  # helio-tickets
-    com.github.copilot/agents/payments-ops.agent.md   # mcp-servers: helio-ledger
-    com.github.copilot/rules/working-norms.md
-    com.github.copilot/commands/payments-standup.md
-    com.github.copilot/hooks/hooks.json       # policy-check
-    skills/payments-queue-summary/SKILL.md
-    skills/payments-onboard-teammate/SKILL.md
-    skills/payments-onboard-teammate/references/onboarding-guide.md
-    skills/payments-self-heal/SKILL.md
-    skills/payments-self-heal/references/report-template.md
-    skills/payments-self-heal/references/output.schema.json
-  payments-pipeline/
-    ...                                       # same shape, pipeline renderings;
-                                              # mcp.json adds helio-builds
-  data-platform/
-    plugin.json
-    mcp.json
-    com.github.copilot/agents/data-ops.agent.md
-    com.github.copilot/rules/working-norms.md
-    com.github.copilot/commands/data-platform-standup.md
-    com.github.copilot/hooks/hooks.json
-    skills/data-platform-queue-summary/SKILL.md
-    skills/data-platform-onboard-teammate/...
-    skills/data-platform-self-heal/...
-  integrations/
-    plugin.json
-    skills/billing-readme/SKILL.md
-    skills/ledger-readme/SKILL.md
+  claude/integrations/                        # .claude-plugin/plugin.json, skills/
+  codex/integrations/                         # plugin.json, skills/
+  copilot/
+    engineering-kit/
+      plugin.json
+      com.github.copilot/lsp.json               # helio-config
+      skills/repository-status/SKILL.md
+    payments/
+      plugin.json
+      mcp.json                                  # helio-tickets
+      com.github.copilot/agents/payments-ops.agent.md   # mcp-servers: helio-ledger
+      com.github.copilot/rules/working-norms.md
+      com.github.copilot/commands/payments-standup.md
+      com.github.copilot/hooks/hooks.json       # policy-check
+      skills/payments-queue-summary/SKILL.md
+      skills/payments-onboard-teammate/SKILL.md
+      skills/payments-onboard-teammate/references/onboarding-guide.md
+      skills/payments-self-heal/SKILL.md
+      skills/payments-self-heal/references/report-template.md
+      skills/payments-self-heal/references/output.schema.json
+    payments-pipeline/
+      ...                                       # same shape, pipeline renderings;
+                                                # mcp.json adds helio-builds
+    data-platform/
+      plugin.json
+      mcp.json
+      com.github.copilot/agents/data-ops.agent.md
+      com.github.copilot/rules/working-norms.md
+      com.github.copilot/commands/data-platform-standup.md
+      com.github.copilot/hooks/hooks.json
+      skills/data-platform-queue-summary/SKILL.md
+      skills/data-platform-onboard-teammate/...
+      skills/data-platform-self-heal/...
+    integrations/
+      plugin.json
+      skills/billing-readme/SKILL.md
+      skills/ledger-readme/SKILL.md
 ```
 
 The compatibility report lists the `self-heal` family (`payments-self-heal`
 and `data-platform-self-heal`), because they implement one capability. Each
 team installs only its own plugin.
 
-### `payments/skills/payments-queue-summary/SKILL.md`
+### `copilot/payments/skills/payments-queue-summary/SKILL.md`
 
 ```markdown
 ---
@@ -143,7 +148,7 @@ them by age, and call out anything that would block a critical-tier
 release. Read tickets through the helio-tickets server; never change them.
 ```
 
-### `payments/mcp.json`
+### `copilot/payments/mcp.json`
 
 ```json
 {
@@ -157,7 +162,7 @@ release. Read tickets through the helio-tickets server; never change them.
 }
 ```
 
-### `payments/com.github.copilot/agents/payments-ops.agent.md`
+### `copilot/payments/com.github.copilot/agents/payments-ops.agent.md`
 
 ```markdown
 ---
@@ -189,7 +194,7 @@ and keep changes small enough to review in one sitting.
 - payments-self-heal
 ```
 
-### `payments/com.github.copilot/rules/working-norms.md`
+### `copilot/payments/com.github.copilot/rules/working-norms.md`
 
 ```markdown
 ---
@@ -202,7 +207,7 @@ description: "Helio working norms for every agent, skill, and pipeline run."
 - Never write credentials, tokens, or resolved secrets into output.
 ```
 
-### `payments/com.github.copilot/commands/payments-standup.md`
+### `copilot/payments/com.github.copilot/commands/payments-standup.md`
 
 ```markdown
 ---
@@ -215,7 +220,7 @@ PAY-OPS queue since the last standup, what is blocked, and who owns
 each blocker. Keep it under ten lines.
 ```
 
-### `payments/com.github.copilot/hooks/hooks.json`
+### `copilot/payments/com.github.copilot/hooks/hooks.json`
 
 ```json
 {
@@ -233,7 +238,7 @@ each blocker. Keep it under ten lines.
 }
 ```
 
-### `engineering-kit/com.github.copilot/lsp.json`
+### `copilot/engineering-kit/com.github.copilot/lsp.json`
 
 ```json
 {
@@ -251,7 +256,7 @@ each blocker. Keep it under ten lines.
 }
 ```
 
-### `integrations/skills/billing-readme/SKILL.md`
+### `copilot/integrations/skills/billing-readme/SKILL.md`
 
 ```markdown
 ---

@@ -63,7 +63,7 @@
           },
           "source": {
             "type": "string",
-            "pattern": "^\\./[a-z0-9]+(-[a-z0-9]+)*$"
+            "pattern": "^\\./copilot/[a-z0-9]+(-[a-z0-9]+)*$"
           },
           "description": {
             "type": "string"

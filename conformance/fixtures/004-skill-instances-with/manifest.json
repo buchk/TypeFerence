@@ -2,6 +2,6 @@
   "description": "Skill instances without an agent (ADR-0006): two skills extend one template and bind it with 'with', shipping in a skills-only plugin under their own names; an optional field's default fills a reference.",
   "expect": "success",
   "digests": {
-    "agent-plugin": "sha256:d52ce844a554c1b581eaa95eab0b652531b31e7c3aa6cf947ef9a30b298f2bcc"
+    "agent-plugin": "sha256:8342a102aef379062f7266883a626e742564c3ca21438dc8932567443dcd9d7d"
   }
 }
