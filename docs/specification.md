@@ -1082,7 +1082,14 @@ already-defined artifact directories, not source identity.
 
 Build emits the `agent-plugin` target beneath `<out>/agent-plugin/`. It is
 complete: there is no later linking step. A request for any other target fails
-with a diagnostic.
+with a diagnostic. The optional `--adapter` controls client-specific output:
+`copilot` is the default and preserves the pre-adapter artifact bytes;
+`portable` emits only Agent Plugins 1.0 skills and MCP components, plugin
+metadata, carried plugin files, and TypeFerence provenance. The output root
+remains `<out>/agent-plugin/` for both adapters. An unknown adapter fails;
+there is no silent fallback. Both adapters use the same composition and
+resolution pipeline. Adapter-specific components do not acquire portable
+semantics merely by appearing in TypeFerence provenance.
 
 ```text
 agent-plugin/
@@ -1122,7 +1129,7 @@ Each plugin mode is one artifact directory: `manual` emits `<plugin>` and
   entry holds `type` (`stdio`), `command`, then `args`, `env`, and `cwd` when
   declared; a `streamable-http` entry holds `type` (`streamable-http`), `url`,
   then `headers` when declared.
-- `com.github.copilot/agents/<agent>.agent.md` is emitted for each shipped
+- With the `copilot` adapter, `com.github.copilot/agents/<agent>.agent.md` is emitted for each shipped
   agent: frontmatter `name` (the agent's identity leaf), `description`, its
   Copilot fields in table order, then its agent-scoped `mcp-servers`; a body
   of the `# displayName` title and the resolved objectives, each source's text
@@ -1130,12 +1137,14 @@ Each plugin mode is one artifact directory: `manual` emits `<plugin>` and
   section for held documents and a `## Skills` list of the emitted names of
   the skills the artifact ships, sorted.
 - `skills/<skill>/SKILL.md` is emitted for each shipped skill and instance:
-  frontmatter `name` (the emitted name), `description`, then its Copilot fields
-  in table order; a body of the skill's instructions for the artifact's mode,
+  frontmatter `name` (the emitted name), `description`, then (only for the
+  `copilot` adapter) its Copilot fields in table order; a body of the skill's instructions for the artifact's mode,
   then, when the skill holds inline documents, a `## Context` section. File
   documents, skill files, and schemas are emitted beside it.
-- rules, commands, hooks, and LSP servers are emitted as "Native Copilot
-  components" defines.
+- With the `copilot` adapter, rules, commands, hooks, and LSP servers are
+  emitted as "Native Copilot components" defines. The `portable` adapter
+  does not translate or enforce those capabilities; a later host adapter
+  must explicitly define and test any such mapping.
 - each of the plugin's carried files is emitted at its destination.
 - `.typeference/bundle.json` (`schemaVersion` 5) records the plugin identity,
   artifact name, mode, version, description, the owning package's provenance,
